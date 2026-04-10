@@ -1,0 +1,13 @@
+skill,model_type,variable,detail_type,detail_value,detail_rank
+SWITCH,ranger,or_pct,importance,0.976141720074402,1
+SWITCH,ranger,mid_pct,importance,0.953433986117269,2
+SWITCH,ranger,mid_100,importance,0.865142480483944,3
+SWITCH,ranger,stl_pct,importance,0.783010152318482,4
+SWITCH,ranger,or_pct,temporal_selection_frequency,0.8,1
+SWITCH,ranger,mid_pct,temporal_selection_frequency,0.6,2
+SWITCH,ranger,mid_100,temporal_selection_frequency,0.6,3
+SWITCH,ranger,stl_pct,temporal_selection_frequency,0.6,4
+SWITCH,ranger,or_pct,temporal_rank_score,0.515384615384615,1
+SWITCH,ranger,mid_pct,temporal_rank_score,0.833333333333333,2
+SWITCH,ranger,mid_100,temporal_rank_score,0.28125,3
+SWITCH,ranger,stl_pct,temporal_rank_score,0.234126984126984,4

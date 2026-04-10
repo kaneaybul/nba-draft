@@ -1,0 +1,786 @@
+draft_year,pick_overall,player,realgm_profile_url,team,draft_trades,pos,ht,wt,age,yos,pre_draft_team,draft_class,nationality,player_key
+2023,1,Victor Wembanyama,https://basketball.realgm.com/player/Victor-Wembanyama/Summary/136048,SAN,"",F,7-4,235,19,2,Boulogne-Levallois (France),2004 DOB *,France,victor wembanyama
+2023,2,Brandon Miller,https://basketball.realgm.com/player/Brandon-Miller/Summary/151234,CHA,"",F,6-7,200,20,2,Alabama,Fr *,United States,brandon miller
+2023,3,Scoot Henderson,https://basketball.realgm.com/player/Scoot-Henderson/Summary/151559,POR,"",G,6-3,207,19,2,NBA G League Ignite,2004 DOB,United States,scoot henderson
+2023,4,Amen Thompson,https://basketball.realgm.com/player/Amen-Thompson/Summary/176051,HOU,"",G,6-7,200,20,2,Overtime Elite (Georgia),2003 DOB,United States,amen thompson
+2023,5,Ausar Thompson,https://basketball.realgm.com/player/Ausar-Thompson/Summary/176052,DET,"",G,6-7,205,20,2,Overtime Elite (Georgia),2003 DOB,United States,ausar thompson
+2023,6,Anthony Black,https://basketball.realgm.com/player/Anthony-Black/Summary/176057,ORL,"",G,6-7,200,19,2,Arkansas,Fr *,United States,anthony black
+2023,7,Bilal Coulibaly,https://basketball.realgm.com/player/Bilal-Coulibaly/Summary/175550,IND,IND to WAS,GF,6-7,195,18,2,Boulogne-Levallois (France),2004 DOB *,France,bilal coulibaly
+2023,8,Jarace Walker,https://basketball.realgm.com/player/Jarace-Walker/Summary/135362,WAS,WAS to IND,G,6-7,235,19,2,Houston,Fr *,United States,jarace walker
+2023,9,Taylor Hendricks,https://basketball.realgm.com/player/Taylor-Hendricks/Summary/149561,UTH,"",F,6-9,215,19,2,UCF,Fr *,United States,taylor hendricks
+2023,10,Cason Wallace,https://basketball.realgm.com/player/Cason-Wallace/Summary/170045,DAL,DAL to OKC,G,6-3,195,19,2,Kentucky,Fr *,United States,cason wallace
+2023,11,Jett Howard,https://basketball.realgm.com/player/Jett-Howard/Summary/135128,ORL,"",GF,6-8,215,19,2,Michigan,Fr *,United States,jett howard
+2023,12,Dereck Lively II,https://basketball.realgm.com/player/Dereck-Lively-II/Summary/150098,OKC,OKC to DAL,C,7-1,230,19,2,Duke,Fr *,United States,dereck lively
+2023,13,Gradey Dick,https://basketball.realgm.com/player/Gradey-Dick/Summary/151289,TOR,"",GF,6-7,200,19,2,Kansas,Fr *,United States,gradey dick
+2023,14,Jordan Hawkins,https://basketball.realgm.com/player/Jordan-Hawkins/Summary/151351,NOP,"",G,6-5,190,21,2,UConn,So *,United States,jordan hawkins
+2023,15,Kobe Bufkin,https://basketball.realgm.com/player/Kobe-Bufkin/Summary/151485,ATL,"",G,6-4,195,19,2,Michigan,So *,United States,kobe bufkin
+2023,16,Keyonte George,https://basketball.realgm.com/player/Keyonte-George/Summary/151235,UTH,"",G,6-4,185,19,2,Baylor,Fr *,United States,keyonte george
+2023,17,Jalen Hood-Schifino,https://basketball.realgm.com/player/Jalen-Hood-Schifino/Summary/136030,LAL,"",PG,6-5,210,20,2,Indiana,Fr *,United States,jalen hood schifino
+2023,18,"Jaime Jaquez, Jr.",https://basketball.realgm.com/player/Jaime-Jaquez-Jr/Summary/103926,MIA,"",GF,6-6,225,22,2,UCLA,Sr *,United States / Mexico,jaime jaquez
+2023,19,Brandin Podziemski,https://basketball.realgm.com/player/Brandin-Podziemski/Summary/175953,GOS,"",G,6-4,205,20,2,Santa Clara,So *,United States,brandin podziemski
+2023,20,Cam Whitmore,https://basketball.realgm.com/player/Cam-Whitmore/Summary/176080,HOU,"",F,6-6,230,18,2,Villanova,Fr *,United States,cam whitmore
+2023,21,Noah Clowney,https://basketball.realgm.com/player/Noah-Clowney/Summary/162215,BRK,"",F,6-10,210,18,2,Alabama,Fr *,United States,noah clowney
+2023,22,Dariq Whitehead,https://basketball.realgm.com/player/Dariq-Whitehead/Summary/143334,BRK,"",F,6-6,220,18,2,Duke,Fr *,United States,dariq whitehead
+2023,23,Kris Murray,https://basketball.realgm.com/player/Kris-Murray/Summary/163409,POR,"",F,6-8,218,22,2,Iowa,Jr *,United States,kris murray
+2023,24,Olivier-Maxence Prosper,https://basketball.realgm.com/player/Olivier-Maxence-Prosper/Summary/133797,SAC,SAC to DAL,F,6-7,230,20,2,Marquette,Jr *,Canada,olivier maxence prosper
+2023,25,Marcus Sasser,https://basketball.realgm.com/player/Marcus-Sasser/Summary/148690,MEM,"MEM to BOS
+BOS to DET",G,6-1,195,22,2,Houston,Sr *,United States,marcus sasser
+2023,26,Ben Sheppard,https://basketball.realgm.com/player/Ben-Sheppard/Summary/151867,IND,"",G,6-6,190,21,2,Belmont,Sr *,United States,ben sheppard
+2023,27,"Nick Smith, Jr.",https://basketball.realgm.com/player/Nick-Smith-Jr/Summary/151487,CHA,"",G,6-2,185,19,2,Arkansas,Fr *,United States,nick smith
+2023,28,Brice Sensabaugh,https://basketball.realgm.com/player/Brice-Sensabaugh/Summary/182894,UTH,"",F,6-6,235,19,2,Ohio State,Fr *,United States,brice sensabaugh
+2023,29,Julian Strawther,https://basketball.realgm.com/player/Julian-Strawther/Summary/117369,IND,IND to DEN,GF,6-6,205,21,2,Gonzaga,Jr *,United States / Puerto Rico,julian strawther
+2023,30,Kobe Brown,https://basketball.realgm.com/player/Kobe-Brown/Summary/108567,LAC,"",GF,6-7,250,23,2,Missouri,Sr *,United States,kobe brown
+2023,31,James Nnaji,https://basketball.realgm.com/player/James-Nnaji/Summary/168792,DET,"DET to BOS
+BOS to CHA
+CHA to NYK",C,6-11,250,18,0,FC Barcelona II (Spain),2004 DOB *,Nigeria,james nnaji
+2023,32,Jalen Pickett,https://basketball.realgm.com/player/Jalen-Pickett/Summary/135782,IND,IND to DEN,F,6-2,202,23,2,Penn State,Sr,United States,jalen pickett
+2023,33,Leonard Miller,https://basketball.realgm.com/player/Leonard-Miller/Summary/150556,SAN,SAN to MIN,F,6-10,220,19,2,NBA G League Ignite,2003 DOB,Canada,leonard miller
+2023,34,Colby Jones,https://basketball.realgm.com/player/Colby-Jones/Summary/148719,CHA,"CHA to BOS
+BOS to SAC",GF,6-6,207,21,2,Xavier,Jr *,United States,colby jones
+2023,35,Julian Phillips,https://basketball.realgm.com/player/Julian-Phillips/Summary/162086,BOS,"BOS to WAS
+WAS to CHI",F,6-6,201,19,2,Tennessee,Fr *,United States,julian phillips
+2023,36,"Andre Jackson, Jr.",https://basketball.realgm.com/player/Andre-Jackson-Jr/Summary/133189,ORL,ORL to MIL,G,6-6,209,21,2,UConn,Jr *,United States,andre jackson
+2023,37,Hunter Tyson,https://basketball.realgm.com/player/Hunter-Tyson/Summary/132189,OKC,OKC to DEN,SF,6-8,215,23,2,Clemson,Sr,United States,hunter tyson
+2023,38,Jordan Walsh,https://basketball.realgm.com/player/Jordan-Walsh/Summary/151494,SAC,SAC to BOS,F,6-6,205,19,2,Arkansas,Fr *,United States,jordan walsh
+2023,39,Mouhamed Gueye,https://basketball.realgm.com/player/Mouhamed-Gueye/Summary/160946,CHA,"CHA to BOS
+BOS to ATL",F,6-11,210,20,2,Washington State,So *,Senegal,mouhamed gueye
+2023,40,Maxwell Lewis,https://basketball.realgm.com/player/Maxwell-Lewis/Summary/139158,DEN,DEN to LAL,SF,6-7,215,20,2,Pepperdine,So *,United States,maxwell lewis
+2023,41,Amari Bailey,https://basketball.realgm.com/player/Amari-Bailey/Summary/142391,CHA,"",G,6-5,185,19,1,UCLA,Fr *,United States,amari bailey
+2023,42,Tristan Vukcevic,https://basketball.realgm.com/player/Tristan-Vukcevic/Summary/136227,WAS,"",F,7-0,220,20,2,KK Partizan (Serbia),2003 DOB *,Italy / Serbia,tristan vukcevic
+2023,43,Rayan Rupert,https://basketball.realgm.com/player/Rayan-Rupert/Summary/152400,POR,"",G,6-7,205,19,2,New Zealand (New Zealand),2004 DOB *,France,rayan rupert
+2023,44,Sidy Cissoko,https://basketball.realgm.com/player/Sidy-Cissoko/Summary/175693,SAN,"",GF,6-6,220,19,2,NBA G League Ignite,2004 DOB,France,sidy cissoko
+2023,45,G.G. Jackson,https://basketball.realgm.com/player/GG-Jackson/Summary/182761,MEM,"",PF,6-9,210,18,2,South Carolina,Fr *,United States,g g jackson
+2023,46,Seth Lundy,https://basketball.realgm.com/player/Seth-Lundy/Summary/120267,ATL,"",GF,6-4,220,23,2,Penn State,Sr *,United States,seth lundy
+2023,47,Mojave King,https://basketball.realgm.com/player/Mojave-King/Summary/138963,LAL,"LAL to IND
+IND to NOP
+NOP to HOU",G,6-5,195,21,0,NBA G League Ignite,2002 DOB,New Zealand,mojave king
+2023,48,Jordan Miller,https://basketball.realgm.com/player/Jordan-Miller/Summary/139875,LAC,"",G,6-5,194,23,2,Miami (FL),Sr,United States,jordan miller
+2023,49,Emoni Bates,https://basketball.realgm.com/player/Emoni-Bates/Summary/117537,CLE,"",SF,6-9,202,19,2,Eastern Michigan,So *,United States,emoni bates
+2023,50,Keyontae Johnson,https://basketball.realgm.com/player/Keyontae-Johnson/Summary/117566,OKC,"",F,6-4,230,23,1,Kansas State,Sr *,United States,keyontae johnson
+2023,51,Jalen Wilson,https://basketball.realgm.com/player/Jalen-Wilson/Summary/117480,BRK,"",F,6-6,220,22,2,Kansas,Jr *,United States,jalen wilson
+2023,52,Toumani Camara,https://basketball.realgm.com/player/Toumani-Camara/Summary/108765,PHX,"",SF,6-7,230,23,2,Dayton,Sr *,Belgium,toumani camara
+2023,53,Jaylen Clark,https://basketball.realgm.com/player/Jaylen-Clark/Summary/132635,MIN,"",G,6-5,205,21,2,UCLA,Jr *,United States,jaylen clark
+2023,54,Jalen Slawson,https://basketball.realgm.com/player/Jalen-Slawson/Summary/140024,SAC,"",F,6-7,215,23,1,Furman,Sr,United States,jalen slawson
+2023,55,Isaiah Wong,https://basketball.realgm.com/player/Isaiah-Wong/Summary/120268,IND,"",G,6-4,184,22,2,Miami (FL),Sr *,United States,isaiah wong
+2023,56,Tarik Biberovic,https://basketball.realgm.com/player/Tarik-Biberovic/Summary/105732,MEM,"",G,6-7,218,22,0,Fenerbahce Beko (Turkey),2001 DOB,Bosnia and Herzegovina / Turkey,tarik biberovic
+2023,57,Trayce Jackson-Davis,https://basketball.realgm.com/player/Trayce-Jackson-Davis/Summary/126857,WAS,WAS to GOS,F,6-9,245,23,2,Indiana,Sr *,United States,trayce jackson davis
+2023,58,Chris Livingston,https://basketball.realgm.com/player/Chris-Livingston/Summary/117541,MIL,"",F,6-6,220,19,2,Kentucky,Fr *,United States,chris livingston
+2014,1,Andrew Wiggins,https://basketball.realgm.com/player/Andrew-Wiggins/Summary/24682,CLE,"",F,6-6,197,19,11,Kansas,Fr *,Canada,andrew wiggins
+2014,2,Jabari Parker,https://basketball.realgm.com/player/Jabari-Parker/Summary/24302,MIL,"",F,6-8,245,19,8,Duke,Fr *,United States,jabari parker
+2014,3,Joel Embiid,https://basketball.realgm.com/player/Joel-Embiid/Summary/49880,PHL,"",C,7-0,270,20,11,Kansas,Fr *,Cameroon / United States,joel embiid
+2014,4,Aaron Gordon,https://basketball.realgm.com/player/Aaron-Gordon/Summary/24308,ORL,"",F,6-8,235,18,11,Arizona,Fr *,United States,aaron gordon
+2014,5,Dante Exum,https://basketball.realgm.com/player/Dante-Exum/Summary/28245,UTH,"",PG,6-5,214,18,9,Australian Institute of Sport (Australian Capital Territory),1995 DOB *,Australia,dante exum
+2014,6,Marcus Smart,https://basketball.realgm.com/player/Marcus-Smart/Summary/24275,BOS,"",PG,6-3,220,20,11,Oklahoma State,So *,United States,marcus smart
+2014,7,Julius Randle,https://basketball.realgm.com/player/Julius-Randle/Summary/24301,LAL,"",PF,6-9,250,19,11,Kentucky,Fr *,United States,julius randle
+2014,8,Nik Stauskas,https://basketball.realgm.com/player/Nik-Stauskas/Summary/26608,SAC,"",SG,6-6,205,20,6,Michigan,So *,Canada,nik stauskas
+2014,9,Noah Vonleh,https://basketball.realgm.com/player/Noah-Vonleh/Summary/24323,CHA,"",FC,6-10,257,18,8,Indiana,Fr *,United States,noah vonleh
+2014,10,Elfrid Payton,https://basketball.realgm.com/player/Elfrid-Payton/Summary/31736,PHL,PHL to ORL,G,6-3,195,20,9,Louisiana,Jr *,United States,elfrid payton
+2014,11,Doug McDermott,https://basketball.realgm.com/player/Doug-McDermott/Summary/23478,DEN,DEN to CHI,F,6-7,225,22,11,Creighton,Sr,United States,doug mcdermott
+2014,12,Dario Saric,https://basketball.realgm.com/player/Dario-Saric/Summary/24342,ORL,ORL to PHL,SF,6-10,225,20,9,KK Cibona (Croatia),1994 DOB *,Croatia,dario saric
+2014,13,Zach LaVine,https://basketball.realgm.com/player/Zach-LaVine/Summary/41396,MIN,"",SG,6-5,200,19,11,UCLA,Fr *,United States,zach lavine
+2014,14,T.J. Warren,https://basketball.realgm.com/player/TJ-Warren/Summary/24292,PHX,"",F,6-8,220,20,10,NC State,So *,United States,t j warren
+2014,15,Adreian Payne,https://basketball.realgm.com/player/Adreian-Payne/Summary/9303,ATL,"",C,6-10,237,23,4,Michigan State,Sr,United States,adreian payne
+2014,16,Jusuf Nurkic,https://basketball.realgm.com/player/Jusuf-Nurkic/Summary/32965,CHI,CHI to DEN,FC,6-11,290,19,11,Cedevita (Croatia),1994 DOB *,Bosnia and Herzegovina,jusuf nurkic
+2014,17,James Young,https://basketball.realgm.com/player/James-Young/Summary/24681,BOS,"",SG,6-6,215,18,4,Kentucky,Fr *,United States,james young
+2014,18,Tyler Ennis,https://basketball.realgm.com/player/Tyler-Ennis/Summary/27049,PHX,"",PG,6-3,182,19,4,Syracuse,Fr *,Canada,tyler ennis
+2014,19,Gary Harris,https://basketball.realgm.com/player/Gary-Harris/Summary/24252,CHI,CHI to DEN,SG,6-4,210,19,11,Michigan State,So *,United States,gary harris
+2014,20,Bruno Caboclo,https://basketball.realgm.com/player/Bruno-Caboclo/Summary/59172,TOR,"",PF,6-9,218,18,7,Pinheiros Sky (Brazil),1995 DOB *,Brazil,bruno caboclo
+2014,21,Mitch McGary,https://basketball.realgm.com/player/Mitch-McGary/Summary/24656,OKC,"",C,6-10,255,22,2,Michigan,So *,United States,mitch mcgary
+2014,22,Jordan Adams,https://basketball.realgm.com/player/Jordan-Adams/Summary/24296,MEM,"",SG,6-5,209,19,2,UCLA,So *,United States,jordan adams
+2014,23,Rodney Hood,https://basketball.realgm.com/player/Rodney-Hood/Summary/24165,UTH,"",F,6-8,208,21,8,Duke,So *,United States,rodney hood
+2014,24,Shabazz Napier,https://basketball.realgm.com/player/Shabazz-Napier/Summary/22395,CHA,CHA to MIA,PG,6-1,180,22,6,UConn,Sr,United States / Puerto Rico,shabazz napier
+2014,25,Clint Capela,https://basketball.realgm.com/player/Clint-Capela/Summary/28284,HOU,"",PF,6-10,256,20,11,Chalon-Sur-Saone (France),1994 DOB *,Switzerland,clint capela
+2014,26,P.J. Hairston,https://basketball.realgm.com/player/PJ-Hairston/Summary/24153,MIA,MIA to CHA,SG,6-6,230,21,2,Texas Legends,1992 DOB *,United States,p j hairston
+2014,27,Bogdan Bogdanovic,https://basketball.realgm.com/player/Bogdan-Bogdanovic/Summary/24809,PHX,PHX to SAC,SG,6-5,225,21,8,KK Partizan (Serbia),1992 DOB,Serbia,bogdan bogdanovic
+2014,28,C.J. Wilcox,https://basketball.realgm.com/player/CJ-Wilcox/Summary/6964,LAC,"",SG,6-5,201,23,3,Washington,Sr,United States,c j wilcox
+2014,29,Josh Huestis,https://basketball.realgm.com/player/Josh-Huestis/Summary/23259,OKC,"",SF,6-7,230,22,3,Stanford,Sr,United States,josh huestis
+2014,30,Kyle Anderson,https://basketball.realgm.com/player/Kyle-Anderson/Summary/24265,SAN,"",PF,6-8,230,20,11,UCLA,So *,United States / China,kyle anderson
+2014,31,Damien Inglis,https://basketball.realgm.com/player/Damien-Inglis/Summary/27710,MIL,"",PF,6-8,246,19,2,Chorale Roanne Basket (France),1995 DOB *,France,damien inglis
+2014,32,K.J. McDaniels,https://basketball.realgm.com/player/KJ-McDaniels/Summary/28823,PHL,"",GF,6-6,205,21,4,Clemson,Jr *,United States,k j mcdaniels
+2014,33,Joe Harris,https://basketball.realgm.com/player/Joe-Harris/Summary/23549,CLE,"",SG,6-6,220,22,10,Virginia,Sr,United States,joe harris
+2014,34,Cleanthony Early,https://basketball.realgm.com/player/Cleanthony-Early/Summary/44097,NYK,"",F,6-8,210,23,2,Wichita State,Sr,United States,cleanthony early
+2014,35,Jarnell Stokes,https://basketball.realgm.com/player/Jarnell-Stokes/Summary/24264,UTH,UTH to MEM,FC,6-9,260,20,4,Tennessee,Jr *,United States,jarnell stokes
+2014,36,Johnny O'Bryant,https://basketball.realgm.com/player/Johnny-OBryant/Summary/24170,MIL,"",FC,6-9,257,21,4,LSU,Jr *,United States,johnny o bryant
+2014,37,DeAndre Daniels,https://basketball.realgm.com/player/DeAndre-Daniels/Summary/24636,TOR,"",SF,6-9,196,22,0,UConn,Jr *,United States,deandre daniels
+2014,38,Spencer Dinwiddie,https://basketball.realgm.com/player/Spencer-Dinwiddie/Summary/30385,DET,"",PG,6-5,215,21,11,Colorado,Jr *,United States,spencer dinwiddie
+2014,39,Jerami Grant,https://basketball.realgm.com/player/Jerami-Grant/Summary/24661,PHL,"",F,6-7,213,20,11,Syracuse,So *,United States,jerami grant
+2014,40,Glenn Robinson,https://basketball.realgm.com/player/Glenn-Robinson/Summary/28500,MIN,"",SF,6-6,222,20,7,Michigan,So *,United States,glenn robinson
+2014,41,Nikola Jokic,https://basketball.realgm.com/player/Nikola-Jokic/Summary/49571,DEN,"",C,6-11,284,19,10,KK Mega Bemax (Serbia),1995 DOB *,Serbia,nikola jokic
+2014,42,Nick Johnson,https://basketball.realgm.com/player/Nick-Johnson/Summary/24163,HOU,"",SG,6-3,200,21,1,Arizona,Jr *,United States,nick johnson
+2014,43,Edy Tavares,https://basketball.realgm.com/player/Edy-Tavares/Summary/39662,ATL,"",C,7-3,265,22,2,Dreamland Gran Canaria (Spain),1992 DOB,Cape Verde,edy tavares
+2014,44,Markel Brown,https://basketball.realgm.com/player/Markel-Brown/Summary/9283,MIN,MIN to BRK,SG,6-3,190,22,3,Oklahoma State,Sr,United States,markel brown
+2014,45,Dwight Powell,https://basketball.realgm.com/player/Dwight-Powell/Summary/9346,CHA,CHA to CLE,PF,6-10,240,22,11,Stanford,Sr,Canada,dwight powell
+2014,46,Jordan Clarkson,https://basketball.realgm.com/player/Jordan-Clarkson/Summary/22892,WAS,WAS to LAL,G,6-5,194,22,11,Missouri,Jr *,United States / Philippines,jordan clarkson
+2014,47,Russ Smith,https://basketball.realgm.com/player/Russ-Smith/Summary/22406,PHL,PHL to NOP,G,6-0,165,23,2,Louisville,Sr,United States,russ smith
+2014,48,Lamar Patterson,https://basketball.realgm.com/player/Lamar-Patterson/Summary/6235,MIL,MIL to ATL,F,6-5,225,22,2,Pittsburgh,Sr,United States,lamar patterson
+2014,49,Cameron Bairstow,https://basketball.realgm.com/player/Cameron-Bairstow/Summary/22372,CHI,"",F,6-9,250,23,2,New Mexico,Sr,Australia,cameron bairstow
+2014,50,Alec Brown,https://basketball.realgm.com/player/Alec-Brown/Summary/23740,PHX,"",C,7-1,235,21,0,Green Bay,Sr,United States,alec brown
+2014,51,Thanasis Antetokounmpo,https://basketball.realgm.com/player/Thanasis-Antetokounmpo/Summary/50244,NYK,"",SF,6-7,219,21,6,Delaware 87ers,1992 DOB,Greece / Nigeria,thanasis antetokounmpo
+2014,52,Vasilije Micic,https://basketball.realgm.com/player/Vasilije-Micic/Summary/26557,PHL,PHL to OKC,PG,6-3,188,20,2,KK Mega Bemax (Serbia),1994 DOB *,Serbia,vasilije micic
+2014,53,Alessandro Gentile,https://basketball.realgm.com/player/Alessandro-Gentile/Summary/25901,MIN,MIN to HOU,SF,6-6,228,21,0,AX Armani Exchange Milan (Italy),1992 DOB,Italy,alessandro gentile
+2014,54,Nemanja Dangubic,https://basketball.realgm.com/player/Nemanja-Dangubic/Summary/24806,PHL,"PHL to SAN
+SAN to BRK
+BRK to MEM",SF,6-9,176,21,0,KK Mega Bemax (Serbia),1993 DOB *,Serbia,nemanja dangubic
+2014,55,Semaj Christon,https://basketball.realgm.com/player/Semaj-Christon/Summary/26729,MIA,"MIA to CHA
+CHA to OKC",PG,6-3,190,21,1,Xavier,So *,United States,semaj christon
+2014,56,Devyn Marble,https://basketball.realgm.com/player/Devyn-Marble/Summary/22342,DEN,DEN to ORL,GF,6-6,192,21,2,Iowa,Sr,United States,devyn marble
+2014,57,Louis Labeyrie,https://basketball.realgm.com/player/Louis-Labeyrie/Summary/27509,IND,"IND to NYK
+NYK to LAL",PF,6-10,200,22,0,Boulogne-Levallois (France),1992 DOB,France,louis labeyrie
+2014,58,Jordan McRae,https://basketball.realgm.com/player/Jordan-McRae/Summary/9345,SAN,SAN to PHL,G,6-5,179,23,4,Tennessee,Sr,United States,jordan mcrae
+2014,59,Xavier Thames,https://basketball.realgm.com/player/Xavier-Thames/Summary/7010,TOR,TOR to BRK,G,6-3,187,23,0,San Diego State,Sr,United States,xavier thames
+2014,60,Cory Jefferson,https://basketball.realgm.com/player/Cory-Jefferson/Summary/4149,SAN,"SAN to PHL
+PHL to BRK",PF,6-9,215,23,2,Baylor,Sr,United States,cory jefferson
+2015,1,Karl-Anthony Towns,https://basketball.realgm.com/player/Karl-Anthony-Towns/Summary/39311,MIN,"",C,7-0,248,19,10,Kentucky,Fr *,United States / Dominican Republic,karl anthony towns
+2015,2,D'Angelo Russell,https://basketball.realgm.com/player/DAngelo-Russell/Summary/41490,LAL,"",SG,6-3,193,19,10,Ohio State,Fr *,United States,d angelo russell
+2015,3,Jahlil Okafor,https://basketball.realgm.com/player/Jahlil-Okafor/Summary/24685,PHL,"",C,6-10,270,19,7,Duke,Fr *,United States / Nigeria,jahlil okafor
+2015,4,Kristaps Porzingis,https://basketball.realgm.com/player/Kristaps-Porzingis/Summary/32861,NYK,"",FC,7-2,240,19,10,Real Betis Baloncesto (Spain),1995 DOB *,Latvia,kristaps porzingis
+2015,5,Mario Hezonja,https://basketball.realgm.com/player/Mario-Hezonja/Summary/24763,ORL,"",SG,6-8,220,20,5,FC Barcelona II (Spain),1995 DOB *,Croatia,mario hezonja
+2015,6,Willie Cauley-Stein,https://basketball.realgm.com/player/Willie-Cauley-Stein/Summary/24287,SAC,"",C,7-0,240,21,8,Kentucky,Jr *,United States,willie cauley stein
+2015,7,Emmanuel Mudiay,https://basketball.realgm.com/player/Emmanuel-Mudiay/Summary/24680,DEN,"",SG,6-5,200,19,6,Guangzhou Loong Lions (China),1996 DOB,United States / Democratic Republic of the Congo,emmanuel mudiay
+2015,8,Stanley Johnson,https://basketball.realgm.com/player/Stanley-Johnson/Summary/26756,DET,"",G,6-6,242,19,8,Arizona,Fr *,United States,stanley johnson
+2015,9,Frank Kaminsky,https://basketball.realgm.com/player/Frank-Kaminsky/Summary/28751,CHA,"",F,7-0,240,22,8,Wisconsin,Sr,United States,frank kaminsky
+2015,10,Justise Winslow,https://basketball.realgm.com/player/Justise-Winslow/Summary/30323,MIA,"",SF,6-6,222,19,9,Duke,Fr *,United States,justise winslow
+2015,11,Myles Turner,https://basketball.realgm.com/player/Myles-Turner/Summary/52575,IND,"",FC,6-11,250,19,10,Texas,Fr *,United States,myles turner
+2015,12,Trey Lyles,https://basketball.realgm.com/player/Trey-Lyles/Summary/28238,UTH,"",SF,6-9,234,19,10,Kentucky,Fr *,Canada / United States,trey lyles
+2015,13,Devin Booker,https://basketball.realgm.com/player/Devin-Booker/Summary/41438,PHX,"",SG,6-5,206,18,10,Kentucky,Fr *,United States,devin booker
+2015,14,Cameron Payne,https://basketball.realgm.com/player/Cameron-Payne/Summary/57476,OKC,"",G,6-2,183,20,10,Murray State,So *,United States,cameron payne
+2015,15,"Kelly Oubre, Jr.",https://basketball.realgm.com/player/Kelly-Oubre-Jr/Summary/52352,ATL,ATL to WAS,SF,6-8,210,19,10,Kansas,Fr *,United States,kelly oubre
+2015,16,Terry Rozier,https://basketball.realgm.com/player/Terry-Rozier/Summary/24644,BOS,"",G,6-1,190,21,10,Louisville,So *,United States,terry rozier
+2015,17,Rashad Vaughn,https://basketball.realgm.com/player/Rashad-Vaughn/Summary/42082,MIL,"",SF,6-6,210,18,3,UNLV,Fr *,United States,rashad vaughn
+2015,18,Sam Dekker,https://basketball.realgm.com/player/Sam-Dekker/Summary/28239,HOU,"",SF,6-9,230,21,5,Wisconsin,Jr *,United States,sam dekker
+2015,19,Jerian Grant,https://basketball.realgm.com/player/Jerian-Grant/Summary/9389,WAS,"WAS to ATL
+ATL to NYK",SG,6-4,198,22,4,Notre Dame,Sr,United States,jerian grant
+2015,20,Delon Wright,https://basketball.realgm.com/player/Delon-Wright/Summary/56842,TOR,"",G,6-4,185,23,10,Utah,Sr,United States,delon wright
+2015,21,Justin Anderson,https://basketball.realgm.com/player/Justin-Anderson/Summary/24291,DAL,"",F,6-6,230,21,6,Virginia,Jr *,United States,justin anderson
+2015,22,Bobby Portis,https://basketball.realgm.com/player/Bobby-Portis/Summary/41433,CHI,"",PF,6-9,250,20,10,Arkansas,So *,United States,bobby portis
+2015,23,Rondae Hollis-Jefferson,https://basketball.realgm.com/player/Rondae-Hollis-Jefferson/Summary/24675,POR,POR to BRK,SF,6-6,217,20,6,Arizona,So *,United States / Jordan,rondae hollis jefferson
+2015,24,Tyus Jones,https://basketball.realgm.com/player/Tyus-Jones/Summary/26752,CLE,CLE to MIN,PG,6-0,196,19,10,Duke,Fr *,United States,tyus jones
+2015,25,Jarell Martin,https://basketball.realgm.com/player/Jarell-Martin/Summary/41442,MEM,"",F,6-10,239,21,4,LSU,So *,United States,jarell martin
+2015,26,Nikola Milutinov,https://basketball.realgm.com/player/Nikola-Milutinov/Summary/27707,SAN,SAN to BRK,C,7-0,220,20,0,KK Partizan (Serbia),1994 DOB *,Serbia,nikola milutinov
+2015,27,"Larry Nance, Jr.",https://basketball.realgm.com/player/Larry-Nance-Jr/Summary/30624,LAL,"",SF,6-6,245,22,10,Wyoming,Sr,United States,larry nance
+2015,28,R.J. Hunter,https://basketball.realgm.com/player/RJ-Hunter/Summary/44712,BOS,"",G,6-4,185,21,4,Georgia State,Jr *,United States,r j hunter
+2015,29,Chris McCullough,https://basketball.realgm.com/player/Chris-McCullough/Summary/41445,BRK,"",PF,6-11,200,20,3,Syracuse,Fr *,United States,chris mccullough
+2015,30,Kevon Looney,https://basketball.realgm.com/player/Kevon-Looney/Summary/41494,GOS,"",PF,6-9,222,19,10,UCLA,Fr *,United States,kevon looney
+2015,31,Cedi Osman,https://basketball.realgm.com/player/Cedi-Osman/Summary/27813,MIN,MIN to CLE,GF,6-7,230,20,7,Anadolu Efes (Turkey),1995 DOB *,North Macedonia / Turkey,cedi osman
+2015,32,Montrezl Harrell,https://basketball.realgm.com/player/Montrezl-Harrell/Summary/24290,HOU,"",F,6-7,240,21,8,Louisville,Jr *,United States,montrezl harrell
+2015,33,Jordan Mickey,https://basketball.realgm.com/player/Jordan-Mickey/Summary/28236,BOS,"",PF,6-8,235,20,3,LSU,So *,United States,jordan mickey
+2015,34,Anthony Brown,https://basketball.realgm.com/player/Anthony-Brown/Summary/6998,LAL,"",GF,6-7,225,22,3,Stanford,Sr,United States,anthony brown
+2015,35,Willy Hernangomez,https://basketball.realgm.com/player/Willy-Hernangomez/Summary/37870,PHL,PHL to NYK,C,6-11,250,21,7,Cajasol Seville U18 (Spain),1994 DOB *,Spain,willy hernangomez
+2015,36,Rakeem Christmas,https://basketball.realgm.com/player/Rakeem-Christmas/Summary/24156,MIN,"MIN to CLE
+CLE to IND",PF,6-9,255,23,2,Syracuse,Sr,United States / U.S. Virgin Islands,rakeem christmas
+2015,37,Richaun Holmes,https://basketball.realgm.com/player/Richaun-Holmes/Summary/42932,PHL,"",F,6-9,235,21,10,Bowling Green,Sr,United States,richaun holmes
+2015,38,Darrun Hilliard,https://basketball.realgm.com/player/Darrun-Hilliard/Summary/28956,DET,"",SG,6-6,220,22,3,Villanova,Sr,United States,darrun hilliard
+2015,39,Juan Vaulet,https://basketball.realgm.com/player/Juan-Vaulet/Summary/41359,CHA,"CHA to BRK
+BRK to IND
+IND to BRK
+BRK to NYK",F,6-6,200,19,0,Weber Bahia Estudiantes (Argentina),1996 DOB *,Argentina,juan vaulet
+2015,40,Josh Richardson,https://basketball.realgm.com/player/Josh-Richardson/Summary/28787,MIA,"",G,6-5,200,21,10,Tennessee,Sr,United States,josh richardson
+2015,41,Pat Connaughton,https://basketball.realgm.com/player/Pat-Connaughton/Summary/24234,BRK,BRK to POR,SF,6-5,209,22,10,Notre Dame,Sr,United States,pat connaughton
+2015,42,Olivier Hanlan,https://basketball.realgm.com/player/Olivier-Hanlan/Summary/24723,UTH,UTH to SAN,G,6-4,190,22,0,Boston College,Jr *,Canada,olivier hanlan
+2015,43,Joe Young,https://basketball.realgm.com/player/Joe-Young/Summary/22869,IND,"",G,6-2,180,22,3,Oregon,Sr,United States,joe young
+2015,44,Andrew Harrison,https://basketball.realgm.com/player/Andrew-Harrison/Summary/24306,PHX,PHX to MEM,G,6-4,210,20,3,Kentucky,So *,United States,andrew harrison
+2015,45,Marcus Thornton,https://basketball.realgm.com/player/Marcus-Thornton/Summary/31272,BOS,"",G,6-4,190,22,1,William & Mary,Sr,United States,marcus thornton
+2015,46,Norman Powell,https://basketball.realgm.com/player/Norman-Powell/Summary/24195,MIL,MIL to TOR,SG,6-3,215,22,10,UCLA,Sr,United States,norman powell
+2015,47,Arturas Gudaitis,https://basketball.realgm.com/player/Arturas-Gudaitis/Summary/26545,PHL,"PHL to SAC
+SAC to CLE",C,6-10,254,22,0,Zalgiris (Lithuania),1993 DOB,Lithuania,arturas gudaitis
+2015,48,Dakari Johnson,https://basketball.realgm.com/player/Dakari-Johnson/Summary/24676,OKC,"",C,7-0,255,19,1,Kentucky,So *,United States,dakari johnson
+2015,49,Aaron White,https://basketball.realgm.com/player/Aaron-White/Summary/28759,WAS,WAS to BRK,F,6-9,220,22,0,Iowa,Sr,United States,aaron white
+2015,50,Marcus Eriksson,https://basketball.realgm.com/player/Marcus-Eriksson/Summary/26852,ATL,"",GF,6-7,178,21,0,BAXI Manresa (Spain),1993 DOB,Sweden,marcus eriksson
+2015,51,Tyler Harvey,https://basketball.realgm.com/player/Tyler-Harvey/Summary/31059,ORL,"ORL to MEM
+MEM to CHA",G,6-4,185,21,0,Eastern Washington,Jr *,United States,tyler harvey
+2015,52,Satnam Singh,https://basketball.realgm.com/player/Satnam-Singh/Summary/28904,DAL,DAL to MEM,C,7-2,290,19,0,"",1995 DOB *,India,satnam singh
+2015,53,Dom Pointer,https://basketball.realgm.com/player/Dom-Pointer/Summary/24174,CLE,"",SF,6-5,200,23,1,St. John's,Sr,United States,dom pointer
+2015,54,Daniel Diez,https://basketball.realgm.com/player/Daniel-Diez/Summary/25833,UTH,"UTH to POR
+POR to NYK
+NYK to POR",SF,6-8,216,22,0,Gipuzkoa Basket (Spain),1993 DOB,Spain,daniel diez
+2015,55,Cady Lalanne,https://basketball.realgm.com/player/Cady-Lalanne/Summary/31910,SAN,SAN to GOS,FC,6-9,242,23,0,Massachusetts,Sr,Haiti,cady lalanne
+2015,56,Branden Dawson,https://basketball.realgm.com/player/Branden-Dawson/Summary/24160,NOP,NOP to LAC,F,6-6,230,22,1,Michigan State,Sr,United States,branden dawson
+2015,57,Nikola Radicevic,https://basketball.realgm.com/player/Nikola-Radicevic/Summary/25779,DEN,"DEN to DET
+DET to NYK",PG,6-5,200,21,0,Real Betis Baloncesto (Spain),1994 DOB *,Serbia,nikola radicevic
+2015,58,J.P. Tokoto,https://basketball.realgm.com/player/JP-Tokoto/Summary/24272,PHL,"",GF,6-6,200,21,0,North Carolina,Jr *,United States / Cameroon,j p tokoto
+2015,59,Dimitrios Agravanis,https://basketball.realgm.com/player/Dimitrios-Agravanis/Summary/26515,ATL,"ATL to CLE
+CLE to SAC
+SAC to MIL",F,6-10,210,20,0,Olympiacos (Greece),1994 DOB *,Greece,dimitrios agravanis
+2015,60,Luka Mitrovic,https://basketball.realgm.com/player/Luka-Mitrovic/Summary/24808,PHL,"PHL to SAC
+SAC to LAC
+LAC to NYK",PF,6-8,200,22,0,KK Crvena Zvezda (Serbia),1993 DOB,Serbia,luka mitrovic
+2016,1,Ben Simmons,https://basketball.realgm.com/player/Ben-Simmons/Summary/41364,PHL,"",PF,6-10,240,19,9,LSU,Fr *,Australia,ben simmons
+2016,2,Brandon Ingram,https://basketball.realgm.com/player/Brandon-Ingram/Summary/72279,LAL,"",SF,6-8,190,18,9,Duke,Fr *,United States,brandon ingram
+2016,3,Jaylen Brown,https://basketball.realgm.com/player/Jaylen-Brown/Summary/52544,BOS,"",SF,6-6,223,19,9,California,Fr *,United States,jaylen brown
+2016,4,Dragan Bender,https://basketball.realgm.com/player/Dragan-Bender/Summary/41582,PHX,"",PF,7-1,235,18,4,Maccabi FOX Tel Aviv (Israel),1997 DOB *,Bosnia and Herzegovina / Croatia,dragan bender
+2016,5,Kris Dunn,https://basketball.realgm.com/player/Kris-Dunn/Summary/28240,MIN,"",SG,6-3,205,22,9,Providence,Jr *,United States,kris dunn
+2016,6,Buddy Hield,https://basketball.realgm.com/player/Buddy-Hield/Summary/42415,NOP,"",G,6-4,220,23,9,Oklahoma,Sr,Bahamas,buddy hield
+2016,7,Jamal Murray,https://basketball.realgm.com/player/Jamal-Murray/Summary/49976,DEN,"",SG,6-4,215,19,9,Kentucky,Fr *,Canada,jamal murray
+2016,8,Marquese Chriss,https://basketball.realgm.com/player/Marquese-Chriss/Summary/72600,SAC,SAC to PHX,PF,6-9,240,18,6,Washington,Fr *,United States,marquese chriss
+2016,9,Jakob Poeltl,https://basketball.realgm.com/player/Jakob-Poeltl/Summary/53231,TOR,"",C,7-0,253,20,9,Utah,So *,Austria,jakob poeltl
+2016,10,Thon Maker,https://basketball.realgm.com/player/Thon-Maker/Summary/42192,MIL,"",C,7-0,221,19,5,Athlete Institute Prep (Ontario),1997 DOB *,South Sudan / Australia,thon maker
+2016,11,Domantas Sabonis,https://basketball.realgm.com/player/Domantas-Sabonis/Summary/33381,ORL,ORL to OKC,PF,6-10,240,20,9,Gonzaga,So *,United States / Lithuania,domantas sabonis
+2016,12,Taurean Prince,https://basketball.realgm.com/player/Taurean-Prince/Summary/42410,UTH,UTH to ATL,F,6-6,218,22,9,Baylor,Sr,United States,taurean prince
+2016,13,George Papagiannis,https://basketball.realgm.com/player/George-Papagiannis/Summary/32198,PHX,PHX to SAC,C,7-2,275,18,2,Panathinaikos (Greece),1997 DOB *,Greece,george papagiannis
+2016,14,Denzel Valentine,https://basketball.realgm.com/player/Denzel-Valentine/Summary/44077,CHI,"",F,6-4,220,22,6,Michigan State,Sr,United States,denzel valentine
+2016,15,Juancho Hernangomez,https://basketball.realgm.com/player/Juancho-Hernangomez/Summary/52816,DEN,"",F,6-9,215,20,7,Movistar Estudiantes (Spain),1995 DOB *,Spain,juancho hernangomez
+2016,16,Guerschon Yabusele,https://basketball.realgm.com/player/Guerschon-Yabusele/Summary/29646,BOS,"",PF,6-7,265,20,3,Rouen Metropole Basket (France),1995 DOB *,France,guerschon yabusele
+2016,17,Wade Baldwin IV,https://basketball.realgm.com/player/Wade-Baldwin-IV/Summary/81056,MEM,"",G,6-4,220,20,3,Vanderbilt,So *,United States,wade baldwin
+2016,18,Henry Ellenson,https://basketball.realgm.com/player/Henry-Ellenson/Summary/54842,DET,"",PF,6-10,240,19,5,Marquette,Fr *,United States,henry ellenson
+2016,19,Malik Beasley,https://basketball.realgm.com/player/Malik-Beasley/Summary/73131,DEN,"",SG,6-4,187,19,9,Florida State,Fr *,United States,malik beasley
+2016,20,Caris LeVert,https://basketball.realgm.com/player/Caris-LeVert/Summary/42322,IND,IND to BRK,G,6-7,205,21,9,Michigan,Sr,United States,caris levert
+2016,21,DeAndre' Bembry,https://basketball.realgm.com/player/DeAndre-Bembry/Summary/49891,ATL,"",GF,6-5,210,21,6,Saint Joseph's,Jr *,United States,deandre bembry
+2016,22,Malachi Richardson,https://basketball.realgm.com/player/Malachi-Richardson/Summary/49322,CHA,CHA to SAC,SF,6-6,205,20,3,Syracuse,Fr *,United States,malachi richardson
+2016,23,Ante Zizic,https://basketball.realgm.com/player/Ante-Zizic/Summary/49134,BOS,"",C,6-11,254,19,3,KK Cibona (Croatia),1997 DOB *,Croatia,ante zizic
+2016,24,Timothe Luwawu-Cabarrot,https://basketball.realgm.com/player/Timothe-Luwawu-Cabarrot/Summary/46508,PHL,"",F,6-7,210,21,6,KK Mega Bemax (Serbia),1995 DOB *,France,timothe luwawu cabarrot
+2016,25,Brice Johnson,https://basketball.realgm.com/player/Brice-Johnson/Summary/24658,LAC,"",PF,6-10,230,21,2,North Carolina,Sr,United States,brice johnson
+2016,26,Furkan Korkmaz,https://basketball.realgm.com/player/Furkan-Korkmaz/Summary/54510,PHL,"",SG,6-7,202,18,7,Anadolu Efes (Turkey),1997 DOB *,Turkey,furkan korkmaz
+2016,27,Pascal Siakam,https://basketball.realgm.com/player/Pascal-Siakam/Summary/81426,TOR,"",F,6-8,245,22,9,New Mexico State,So *,Cameroon,pascal siakam
+2016,28,Skal Labissiere,https://basketball.realgm.com/player/Skal-Labissiere/Summary/42074,PHX,PHX to SAC,C,6-10,235,20,5,Kentucky,Fr *,Haiti,skal labissiere
+2016,29,Dejounte Murray,https://basketball.realgm.com/player/Dejounte-Murray/Summary/73136,SAN,"",SG,6-4,180,19,9,Washington,Fr *,United States,dejounte murray
+2016,30,Damian Jones,https://basketball.realgm.com/player/Damian-Jones/Summary/42379,GOS,"",PF,6-10,245,20,8,Vanderbilt,Jr *,United States,damian jones
+2016,31,Deyonta Davis,https://basketball.realgm.com/player/Deyonta-Davis/Summary/73162,BOS,BOS to MEM,PF,6-9,237,19,3,Michigan State,Fr *,United States,deyonta davis
+2016,32,Ivica Zubac,https://basketball.realgm.com/player/Ivica-Zubac/Summary/49290,LAL,"",C,7-0,240,19,9,KK Mega Bemax (Serbia),1997 DOB *,Bosnia and Herzegovina / Croatia,ivica zubac
+2016,33,Cheick Diallo,https://basketball.realgm.com/player/Cheick-Diallo/Summary/49975,LAC,LAC to NOP,PF,6-8,219,19,5,Kansas,Fr *,Mali,cheick diallo
+2016,34,Tyler Ulis,https://basketball.realgm.com/player/Tyler-Ulis/Summary/52567,PHX,"",PG,5-10,149,20,3,Kentucky,So *,United States,tyler ulis
+2016,35,Rade Zagorac,https://basketball.realgm.com/player/Rade-Zagorac/Summary/30700,BOS,BOS to MEM,SF,6-9,205,20,0,KK Mega Bemax (Serbia),1995 DOB *,Serbia,rade zagorac
+2016,36,Malcolm Brogdon,https://basketball.realgm.com/player/Malcolm-Brogdon/Summary/24209,MIL,"",SG,6-5,229,23,9,Virginia,Sr,United States,malcolm brogdon
+2016,37,Chinanu Onuaku,https://basketball.realgm.com/player/Chinanu-Onuaku/Summary/54847,HOU,"",C,6-9,250,19,2,Louisville,So *,United States,chinanu onuaku
+2016,38,Patrick McCaw,https://basketball.realgm.com/player/Patrick-McCaw/Summary/80940,MIL,MIL to GOS,G,6-7,181,20,5,UNLV,So *,United States,patrick mccaw
+2016,39,David Michineau,https://basketball.realgm.com/player/David-Michineau/Summary/29325,NOP,"NOP to LAC
+LAC to SAC
+SAC to BRK",PG,6-4,180,22,0,Chalon-Sur-Saone (France),1994 DOB,France,david michineau
+2016,40,Diamond Stone,https://basketball.realgm.com/player/Diamond-Stone/Summary/41493,NOP,NOP to LAC,C,6-11,255,19,1,Maryland,Fr *,United States,diamond stone
+2016,41,Stephen Zimmerman,https://basketball.realgm.com/player/Stephen-Zimmerman/Summary/54846,ORL,"",C,6-11,240,19,1,UNLV,Fr *,United States,stephen zimmerman
+2016,42,Isaiah Whitehead,https://basketball.realgm.com/player/Isaiah-Whitehead/Summary/42078,UTH,UTH to BRK,SG,6-4,213,21,3,Seton Hall,So *,United States,isaiah whitehead
+2016,43,Zhou Qi,https://basketball.realgm.com/player/Zhou-Qi/Summary/33432,HOU,"",C,7-1,210,20,2,Xinjiang Guanghui (China),1996 DOB *,China,zhou qi
+2016,44,Isaia Cordinier,https://basketball.realgm.com/player/Isaia-Cordinier/Summary/47713,ATL,ATL to BRK,G,6-5,197,19,0,Denain ASC Voltaire (France),1996 DOB *,France,isaia cordinier
+2016,45,Demetrius Jackson,https://basketball.realgm.com/player/Demetrius-Jackson/Summary/43395,BOS,"",G,6-1,200,21,3,Notre Dame,Jr *,United States,demetrius jackson
+2016,46,A.J. Hammons,https://basketball.realgm.com/player/AJ-Hammons/Summary/24294,DAL,"",C,7-0,250,23,2,Purdue,Sr,United States,a j hammons
+2016,47,Jake Layman,https://basketball.realgm.com/player/Jake-Layman/Summary/41248,ORL,ORL to POR,SF,6-8,209,22,6,Maryland,Sr,United States,jake layman
+2016,48,Paul Zipser,https://basketball.realgm.com/player/Paul-Zipser/Summary/26506,CHI,"",F,6-8,226,22,2,Next Generation Team Munich (Germany),1994 DOB,Germany,paul zipser
+2016,49,Michael Patrick Gbinije,https://basketball.realgm.com/player/Michael-Patrick-Gbinije/Summary/24168,DET,"",SF,6-6,200,24,1,Syracuse,Sr,United States / Nigeria,michael patrick gbinije
+2016,50,Georges Niang,https://basketball.realgm.com/player/Georges-Niang/Summary/42429,IND,"",F,6-6,230,23,9,Iowa State,Sr,United States,georges niang
+2016,51,Ben Bentil,https://basketball.realgm.com/player/Ben-Bentil/Summary/80300,BOS,"",F,6-9,235,21,1,Providence,So *,Ghana / United States,ben bentil
+2016,52,Joel Bolomboy,https://basketball.realgm.com/player/Joel-Bolomboy/Summary/45041,UTH,"",FC,6-9,235,22,2,Weber State,Sr,United States / Russia,joel bolomboy
+2016,53,Petr Cornelie,https://basketball.realgm.com/player/Petr-Cornelie/Summary/41355,DEN,"",C,6-11,220,20,1,Le Mans Sarthe Basket (France),1995 DOB *,France,petr cornelie
+2016,54,Kay Felder,https://basketball.realgm.com/player/Kay-Felder/Summary/57281,ATL,ATL to CLE,PG,5-9,176,21,2,Oakland,Jr *,United States,kay felder
+2016,55,Marcus Paige,https://basketball.realgm.com/player/Marcus-Paige/Summary/24262,BRK,BRK to UTH,G,6-0,164,22,1,North Carolina,Sr,United States,marcus paige
+2016,56,Daniel Hamilton,https://basketball.realgm.com/player/Daniel-Hamilton/Summary/42072,DEN,DEN to OKC,SG,6-7,195,20,2,UConn,So *,United States,daniel hamilton
+2016,57,Zhelin Wang,https://basketball.realgm.com/player/Zhelin-Wang/Summary/24848,MEM,"MEM to LAL
+LAL to NYK",C,7-0,251,22,0,Fujian (China),1994 DOB,China,zhelin wang
+2016,58,Abdel Nader,https://basketball.realgm.com/player/Abdel-Nader/Summary/31320,BOS,"",SF,6-6,225,22,5,Iowa State,Sr,United States / Egypt,abdel nader
+2016,59,Isaiah Cousins,https://basketball.realgm.com/player/Isaiah-Cousins/Summary/42414,SAC,"",G,6-4,191,22,0,Oklahoma,Sr,United States,isaiah cousins
+2016,60,Tyrone Wallace,https://basketball.realgm.com/player/Tyrone-Wallace/Summary/44085,UTH,"",G,6-5,198,22,4,California,Sr,United States,tyrone wallace
+2017,1,Markelle Fultz,https://basketball.realgm.com/player/Markelle-Fultz/Summary/85903,PHL,"",PG,6-4,209,19,8,Washington,Fr *,United States,markelle fultz
+2017,2,Lonzo Ball,https://basketball.realgm.com/player/Lonzo-Ball/Summary/59501,LAL,"",PG,6-5,190,19,8,UCLA,Fr *,United States,lonzo ball
+2017,3,Jayson Tatum,https://basketball.realgm.com/player/Jayson-Tatum/Summary/52034,BOS,"",SF,6-8,210,19,8,Duke,Fr *,United States,jayson tatum
+2017,4,Josh Jackson,https://basketball.realgm.com/player/Josh-Jackson/Summary/52032,PHX,"",SF,6-8,207,20,5,Kansas,Fr *,United States,josh jackson
+2017,5,De'Aaron Fox,https://basketball.realgm.com/player/DeAaron-Fox/Summary/59503,SAC,"",PG,6-3,185,19,8,Kentucky,Fr *,United States,de aaron fox
+2017,6,Jonathan Isaac,https://basketball.realgm.com/player/Jonathan-Isaac/Summary/85618,ORL,"",SF,6-10,230,19,8,Florida State,Fr *,United States,jonathan isaac
+2017,7,Lauri Markkanen,https://basketball.realgm.com/player/Lauri-Markkanen/Summary/53967,MIN,MIN to CHI,SF,7-1,240,20,8,Arizona,Fr *,Finland,lauri markkanen
+2017,8,Frank Ntilikina,https://basketball.realgm.com/player/Frank-Ntilikina/Summary/71575,NYK,"",PG,6-4,200,18,7,Strasbourg IG (France),1998 DOB *,Belgium / France,frank ntilikina
+2017,9,Dennis Smith,https://basketball.realgm.com/player/Dennis-Smith/Summary/72281,DAL,"",PG,6-2,205,19,7,NC State,Fr *,United States,dennis smith
+2017,10,Zach Collins,https://basketball.realgm.com/player/Zach-Collins/Summary/85659,SAC,SAC to POR,C,6-9,240,19,8,Gonzaga,Fr *,United States,zach collins
+2017,11,Malik Monk,https://basketball.realgm.com/player/Malik-Monk/Summary/52554,CHA,"",SG,6-3,200,19,8,Kentucky,Fr *,United States,malik monk
+2017,12,Luke Kennard,https://basketball.realgm.com/player/Luke-Kennard/Summary/42084,DET,"",SG,6-5,206,20,8,Duke,So *,United States,luke kennard
+2017,13,Donovan Mitchell,https://basketball.realgm.com/player/Donovan-Mitchell/Summary/76937,DEN,DEN to UTH,SG,6-2,215,20,8,Louisville,So *,United States,donovan mitchell
+2017,14,Bam Adebayo,https://basketball.realgm.com/player/Bam-Adebayo/Summary/76939,MIA,"",C,6-9,255,19,8,Kentucky,Fr *,United States,bam adebayo
+2017,15,Justin Jackson,https://basketball.realgm.com/player/Justin-Jackson/Summary/24674,POR,POR to SAC,F,6-8,220,22,7,North Carolina,Jr *,United States,justin jackson
+2017,16,Justin Patton,https://basketball.realgm.com/player/Justin-Patton/Summary/83954,CHI,CHI to MIN,C,7-0,241,20,4,Creighton,Fr *,United States,justin patton
+2017,17,D.J. Wilson,https://basketball.realgm.com/player/DJ-Wilson/Summary/79864,MIL,"",F,6-10,231,21,6,Michigan,So *,United States,d j wilson
+2017,18,T.J. Leaf,https://basketball.realgm.com/player/TJ-Leaf/Summary/59509,IND,"",PF,6-10,225,20,4,UCLA,Fr *,United States / Israel,t j leaf
+2017,19,John Collins,https://basketball.realgm.com/player/John-Collins/Summary/83940,ATL,"",PF,6-9,226,19,8,Wake Forest,So *,United States,john collins
+2017,20,Harry Giles,https://basketball.realgm.com/player/Harry-Giles/Summary/50939,POR,POR to SAC,PF,6-10,240,19,5,Duke,Fr *,United States,harry giles
+2017,21,Terrance Ferguson,https://basketball.realgm.com/player/Terrance-Ferguson/Summary/52037,OKC,"",SG,6-7,190,19,4,Adelaide (Australia),1998 DOB,United States,terrance ferguson
+2017,22,Jarrett Allen,https://basketball.realgm.com/player/Jarrett-Allen/Summary/85599,BRK,"",C,6-9,243,19,8,Texas,Fr *,United States,jarrett allen
+2017,23,OG Anunoby,https://basketball.realgm.com/player/OG-Anunoby/Summary/84076,TOR,"",SF,6-7,240,19,8,Indiana,So *,England / United States,og anunoby
+2017,24,Tyler Lydon,https://basketball.realgm.com/player/Tyler-Lydon/Summary/72594,UTH,UTH to DEN,PF,6-10,225,21,2,Syracuse,So *,United States,tyler lydon
+2017,25,Anzejs Pasecniks,https://basketball.realgm.com/player/Anzejs-Pasecniks/Summary/32736,ORL,ORL to PHL,C,7-1,229,21,2,Dreamland Gran Canaria (Spain),1995 DOB,Latvia,anzejs pasecniks
+2017,26,Caleb Swanigan,https://basketball.realgm.com/player/Caleb-Swanigan/Summary/73167,POR,"",C,6-9,260,20,3,Purdue,So *,United States,caleb swanigan
+2017,27,Kyle Kuzma,https://basketball.realgm.com/player/Kyle-Kuzma/Summary/81004,BRK,BRK to LAL,F,6-8,221,21,8,Utah,Jr *,United States,kyle kuzma
+2017,28,Tony Bradley,https://basketball.realgm.com/player/Tony-Bradley/Summary/76384,LAL,LAL to UTH,C,6-10,248,19,7,North Carolina,Fr *,United States,tony bradley
+2017,29,Derrick White,https://basketball.realgm.com/player/Derrick-White/Summary/61344,SAN,"",G,6-4,190,22,8,Colorado,Sr,United States,derrick white
+2017,30,Josh Hart,https://basketball.realgm.com/player/Josh-Hart/Summary/41440,UTH,UTH to LAL,SG,6-5,215,22,8,Villanova,Sr,United States,josh hart
+2017,31,Frank Jackson,https://basketball.realgm.com/player/Frank-Jackson/Summary/76759,CHA,CHA to NOP,SG,6-3,205,19,6,Duke,Fr *,United States,frank jackson
+2017,32,Davon Reed,https://basketball.realgm.com/player/Davon-Reed/Summary/41448,PHX,"",SF,6-5,206,22,4,Miami (FL),Sr,United States / Puerto Rico,davon reed
+2017,33,Wesley Iwundu,https://basketball.realgm.com/player/Wesley-Iwundu/Summary/59227,ORL,"",F,6-6,195,22,5,Kansas State,Sr,United States,wesley iwundu
+2017,34,Frank Mason,https://basketball.realgm.com/player/Frank-Mason/Summary/56870,SAC,"",G,5-11,190,23,4,Kansas,Sr,United States,frank mason
+2017,35,Ivan Rabb,https://basketball.realgm.com/player/Ivan-Rabb/Summary/41495,ORL,ORL to MEM,PF,6-10,220,20,3,California,So *,United States,ivan rabb
+2017,36,Jonah Bolden,https://basketball.realgm.com/player/Jonah-Bolden/Summary/42067,PHL,"",SF,6-10,220,21,2,FMP Beograd (Serbia),1996 DOB,Australia,jonah bolden
+2017,37,Semi Ojeleye,https://basketball.realgm.com/player/Semi-Ojeleye/Summary/41446,BOS,"",SF,6-6,240,22,5,Southern Methodist,Jr *,United States,semi ojeleye
+2017,38,Jordan Bell,https://basketball.realgm.com/player/Jordan-Bell/Summary/42069,CHI,CHI to GOS,PF,6-7,216,22,5,Oregon,Jr *,United States,jordan bell
+2017,39,Jawun Evans,https://basketball.realgm.com/player/Jawun-Evans/Summary/73147,PHL,PHL to LAC,PG,6-0,190,20,2,Oklahoma State,So *,United States,jawun evans
+2017,40,Dwayne Bacon,https://basketball.realgm.com/player/Dwayne-Bacon/Summary/76232,NOP,NOP to CHA,SF,6-6,221,21,4,Florida State,So *,United States,dwayne bacon
+2017,41,Tyler Dorsey,https://basketball.realgm.com/player/Tyler-Dorsey/Summary/41957,ATL,"",SG,6-5,183,21,3,Oregon,So *,United States / Greece,tyler dorsey
+2017,42,Thomas Bryant,https://basketball.realgm.com/player/Thomas-Bryant/Summary/52030,UTH,UTH to LAL,C,6-9,248,19,8,Indiana,So *,United States,thomas bryant
+2017,43,Isaiah Hartenstein,https://basketball.realgm.com/player/Isaiah-Hartenstein/Summary/54263,HOU,"",PF,7-0,250,19,7,Zalgiris (Lithuania),1998 DOB *,United States / Germany,isaiah hartenstein
+2017,44,Damyean Dotson,https://basketball.realgm.com/player/Damyean-Dotson/Summary/29195,NYK,"",SG,6-5,205,23,5,Houston,Sr,United States,damyean dotson
+2017,45,Dillon Brooks,https://basketball.realgm.com/player/Dillon-Brooks/Summary/53413,HOU,HOU to MEM,F,6-7,225,21,8,Oregon,Jr *,Canada,dillon brooks
+2017,46,Sterling Brown,https://basketball.realgm.com/player/Sterling-Brown/Summary/56931,PHL,PHL to MIL,G,6-5,219,22,6,Southern Methodist,Sr,United States,sterling brown
+2017,47,Ike Anigbogu,https://basketball.realgm.com/player/Ike-Anigbogu/Summary/85735,IND,"",C,6-9,252,18,2,UCLA,Fr *,United States,ike anigbogu
+2017,48,Sindarius Thornwell,https://basketball.realgm.com/player/Sindarius-Thornwell/Summary/41449,MIL,MIL to LAC,SG,6-4,215,22,3,South Carolina,Sr,United States,sindarius thornwell
+2017,49,Vlatko Cancar,https://basketball.realgm.com/player/Vlatko-Cancar/Summary/54147,DEN,"",SF,6-8,236,20,6,KK Mega Bemax (Serbia),1997 DOB *,Slovenia,vlatko cancar
+2017,50,Mathias Lessort,https://basketball.realgm.com/player/Mathias-Lessort/Summary/32776,PHL,"PHL to LAC
+LAC to MIN
+MIN to NYK
+NYK to WAS",F,6-9,250,21,0,Nanterre 92 (France),1995 DOB,France,mathias lessort
+2017,51,Monte Morris,https://basketball.realgm.com/player/Monte-Morris/Summary/56883,DEN,"",G,6-2,183,21,8,Iowa State,Sr,United States / Nigeria,monte morris
+2017,52,Edmond Sumner,https://basketball.realgm.com/player/Edmond-Sumner/Summary/52565,NOP,NOP to IND,G,6-4,196,21,6,Xavier,So *,United States,edmond sumner
+2017,53,Kadeem Allen,https://basketball.realgm.com/player/Kadeem-Allen/Summary/32975,BOS,"",G,6-3,200,24,3,Arizona,Sr,United States,kadeem allen
+2017,54,Alec Peters,https://basketball.realgm.com/player/Alec-Peters/Summary/57287,PHX,"",F,6-9,225,22,1,Valparaiso,Sr,United States,alec peters
+2017,55,Nigel Williams-Goss,https://basketball.realgm.com/player/Nigel-Williams-Goss/Summary/24633,UTH,"",SG,6-3,190,22,1,Gonzaga,Jr *,United States,nigel williams goss
+2017,56,Jabari Bird,https://basketball.realgm.com/player/Jabari-Bird/Summary/27074,BOS,"",SG,6-6,198,22,2,California,Sr,United States,jabari bird
+2017,57,Sasha Vezenkov,https://basketball.realgm.com/player/Sasha-Vezenkov/Summary/27768,BRK,"BRK to CLE
+CLE to SAC",PF,6-8,225,21,1,FC Barcelona II (Spain),1995 DOB,Cyprus / Bulgaria,sasha vezenkov
+2017,58,Ognjen Jaramaz,https://basketball.realgm.com/player/Ognjen-Jaramaz/Summary/27833,NYK,"",SG,6-4,181,21,0,KK Mega Bemax (Serbia),1995 DOB,Serbia,ognjen jaramaz
+2017,59,Jaron Blossomgame,https://basketball.realgm.com/player/Jaron-Blossomgame/Summary/42292,SAN,"",F,6-8,220,23,1,Clemson,Sr,United States,jaron blossomgame
+2017,60,Alpha Kaba,https://basketball.realgm.com/player/Alpha-Kaba/Summary/72635,ATL,"ATL to HOU
+HOU to ATL",PF,6-10,242,21,0,KK Mega Bemax (Serbia),1996 DOB *,France / Guinea,alpha kaba
+2018,1,Deandre Ayton,https://basketball.realgm.com/player/Deandre-Ayton/Summary/74086,PHX,"",C,7-0,252,19,7,Arizona,Fr *,Bahamas,deandre ayton
+2018,2,Marvin Bagley III,https://basketball.realgm.com/player/Marvin-Bagley-III/Summary/81676,SAC,"",PF,6-10,235,19,7,Duke,Fr *,United States,marvin bagley
+2018,3,Luka Doncic,https://basketball.realgm.com/player/Luka-Doncic/Summary/54148,ATL,ATL to DAL,SF,6-8,230,19,7,Real Madrid (Spain),1999 DOB *,Slovenia,luka doncic
+2018,4,"Jaren Jackson, Jr.",https://basketball.realgm.com/player/Jaren-Jackson-Jr/Summary/88806,MEM,"",PF,6-10,242,18,7,Michigan State,Fr *,United States,jaren jackson
+2018,5,Trae Young,https://basketball.realgm.com/player/Trae-Young/Summary/88934,DAL,DAL to ATL,PG,6-2,164,19,7,Oklahoma,Fr *,United States,trae young
+2018,6,Mo Bamba,https://basketball.realgm.com/player/Mo-Bamba/Summary/88784,ORL,"",C,7-0,231,20,7,Texas,Fr *,United States,mo bamba
+2018,7,"Wendell Carter, Jr.",https://basketball.realgm.com/player/Wendell-Carter-Jr/Summary/76236,CHI,"",PF,6-10,270,19,7,Duke,Fr *,United States,wendell carter
+2018,8,Collin Sexton,https://basketball.realgm.com/player/Collin-Sexton/Summary/104930,CLE,"",PG,6-3,190,19,7,Alabama,Fr *,United States,collin sexton
+2018,9,Kevin Knox II,https://basketball.realgm.com/player/Kevin-Knox-II/Summary/91700,NYK,"",SF,6-8,215,18,7,Kentucky,Fr *,United States,kevin knox
+2018,10,Mikal Bridges,https://basketball.realgm.com/player/Mikal-Bridges/Summary/52342,PHL,PHL to PHX,SG,6-6,209,21,7,Villanova,Jr *,United States,mikal bridges
+2018,11,Shai Gilgeous-Alexander,https://basketball.realgm.com/player/Shai-Gilgeous-Alexander/Summary/104915,CHA,CHA to LAC,PG,6-6,195,19,7,Kentucky,Fr *,Canada,shai gilgeous alexander
+2018,12,Miles Bridges,https://basketball.realgm.com/player/Miles-Bridges/Summary/74071,LAC,LAC to CHA,SF,6-7,225,20,6,Michigan State,So *,United States,miles bridges
+2018,13,Jerome Robinson,https://basketball.realgm.com/player/Jerome-Robinson/Summary/85560,LAC,"",SG,6-5,190,21,4,Boston College,Jr *,United States,jerome robinson
+2018,14,"Michael Porter, Jr.",https://basketball.realgm.com/player/Michael-Porter-Jr/Summary/81696,DEN,"",PF,6-10,218,19,7,Missouri,Fr *,United States,michael porter
+2018,15,"Troy Brown, Jr.",https://basketball.realgm.com/player/Troy-Brown-Jr/Summary/74084,WAS,"",SF,6-7,215,18,6,Oregon,Fr *,United States,troy brown
+2018,16,Zhaire Smith,https://basketball.realgm.com/player/Zhaire-Smith/Summary/121978,PHX,PHX to PHL,SG,6-4,205,19,3,Texas Tech,Fr *,United States,zhaire smith
+2018,17,Donte DiVincenzo,https://basketball.realgm.com/player/Donte-DiVincenzo/Summary/83939,MIL,"",SG,6-4,203,21,7,Villanova,So *,United States,donte divincenzo
+2018,18,Lonnie Walker,https://basketball.realgm.com/player/Lonnie-Walker/Summary/88916,SAN,"",SG,6-4,204,19,7,Miami (FL),Fr *,United States,lonnie walker
+2018,19,Kevin Huerter,https://basketball.realgm.com/player/Kevin-Huerter/Summary/89387,ATL,"",SF,6-6,190,19,7,Maryland,So *,United States,kevin huerter
+2018,20,Josh Okogie,https://basketball.realgm.com/player/Josh-Okogie/Summary/94058,MIN,"",SG,6-4,213,19,7,Georgia Tech,So *,Nigeria / United States,josh okogie
+2018,21,Grayson Allen,https://basketball.realgm.com/player/Grayson-Allen/Summary/52340,UTH,"",SG,6-3,198,22,7,Duke,Sr,United States,grayson allen
+2018,22,Chandler Hutchison,https://basketball.realgm.com/player/Chandler-Hutchison/Summary/80965,CHI,"",SG,6-6,210,22,4,Boise State,Sr,United States,chandler hutchison
+2018,23,Aaron Holiday,https://basketball.realgm.com/player/Aaron-Holiday/Summary/54843,IND,"",PG,6-0,185,21,7,UCLA,Jr *,United States,aaron holiday
+2018,24,Anfernee Simons,https://basketball.realgm.com/player/Anfernee-Simons/Summary/106511,POR,"",SG,6-3,200,19,7,IMG Academy (Florida),1999 DOB *,United States,anfernee simons
+2018,25,Moe Wagner,https://basketball.realgm.com/player/Moe-Wagner/Summary/75563,LAL,"",PF,6-11,245,21,7,Michigan,Jr *,Germany,moe wagner
+2018,26,Landry Shamet,https://basketball.realgm.com/player/Landry-Shamet/Summary/84169,PHL,"",PG,6-5,190,21,7,Wichita State,So *,United States,landry shamet
+2018,27,Robert Williams,https://basketball.realgm.com/player/Robert-Williams/Summary/90402,BOS,"",PF,6-9,249,20,7,Texas A&M,So *,United States,robert williams
+2018,28,Jacob Evans,https://basketball.realgm.com/player/Jacob-Evans/Summary/83990,GOS,"",SG,6-6,210,21,2,Cincinnati,Jr *,United States,jacob evans
+2018,29,Dzanan Musa,https://basketball.realgm.com/player/Dzanan-Musa/Summary/75657,BRK,"",SG,6-9,217,19,2,Cedevita (Croatia),1999 DOB *,Bosnia and Herzegovina,dzanan musa
+2018,30,Omari Spellman,https://basketball.realgm.com/player/Omari-Spellman/Summary/74078,ATL,"",PF,6-8,245,20,3,Villanova,Fr *,United States / Lebanon,omari spellman
+2018,31,Elie Okobo,https://basketball.realgm.com/player/Elie-Okobo/Summary/65475,PHX,"",PG,6-3,190,20,2,Pau-Orthez (France),1997 DOB *,France,elie okobo
+2018,32,Jevon Carter,https://basketball.realgm.com/player/Jevon-Carter/Summary/80283,MEM,"",PG,6-0,190,22,7,West Virginia,Sr,United States,jevon carter
+2018,33,Jalen Brunson,https://basketball.realgm.com/player/Jalen-Brunson/Summary/52545,DAL,"",PG,6-2,190,21,7,Villanova,Jr *,United States,jalen brunson
+2018,34,Devonte' Graham,https://basketball.realgm.com/player/Devonte-Graham/Summary/41320,ATL,ATL to CHA,PG,6-1,195,23,6,Kansas,Sr,United States,devonte graham
+2018,35,"Melvin Frazier, Jr.",https://basketball.realgm.com/player/Melvin-Frazier-Jr/Summary/83909,ORL,"",SF,6-5,215,21,3,Tulane,Jr *,United States,melvin frazier
+2018,36,Mitchell Robinson,https://basketball.realgm.com/player/Mitchell-Robinson/Summary/88862,NYK,"",C,7-0,240,20,7,"",*,United States,mitchell robinson
+2018,37,"Gary Trent, Jr.",https://basketball.realgm.com/player/Gary-Trent-Jr/Summary/88908,SAC,SAC to POR,SG,6-5,204,19,7,Duke,Fr *,United States,gary trent
+2018,38,Khyri Thomas,https://basketball.realgm.com/player/Khyri-Thomas/Summary/84388,PHL,PHL to DET,SG,6-3,210,22,3,Creighton,Jr *,United States,khyri thomas
+2018,39,Isaac Bonga,https://basketball.realgm.com/player/Isaac-Bonga/Summary/77638,PHL,PHL to LAL,SG,6-8,180,18,4,Fraport Skyliners (Germany),1999 DOB *,Germany,isaac bonga
+2018,40,Rodions Kurucs,https://basketball.realgm.com/player/Rodions-Kurucs/Summary/77633,BRK,"",SF,6-9,230,20,3,Barca (Spain),1998 DOB *,Latvia,rodions kurucs
+2018,41,Jarred Vanderbilt,https://basketball.realgm.com/player/Jarred-Vanderbilt/Summary/76237,ORL,ORL to DEN,PF,6-8,214,19,7,Kentucky,Fr *,United States,jarred vanderbilt
+2018,42,"Bruce Brown, Jr.",https://basketball.realgm.com/player/Bruce-Brown-Jr/Summary/85612,DET,"",SG,6-4,202,21,7,Miami (FL),So *,United States,bruce brown
+2018,43,Justin Jackson,https://basketball.realgm.com/player/Justin-Jackson/Summary/41335,DEN,DEN to ORL,SF,6-7,225,21,0,Maryland,So *,Canada,justin jackson
+2018,44,Yusuf Sanon,https://basketball.realgm.com/player/Yusuf-Sanon/Summary/95051,WAS,"WAS to NYK
+NYK to HOU",SG,6-4,185,18,0,Union Olimpija (Slovenia),1999 DOB *,Ukraine,yusuf sanon
+2018,45,Hamidou Diallo,https://basketball.realgm.com/player/Hamidou-Diallo/Summary/88100,BRK,"BRK to CHA
+CHA to OKC",SG,6-5,202,19,6,Kentucky,Fr *,United States / Guinea,hamidou diallo
+2018,46,De'Anthony Melton,https://basketball.realgm.com/player/DeAnthony-Melton/Summary/85714,HOU,HOU to PHX,SG,6-2,200,20,7,USC,So *,United States,de anthony melton
+2018,47,Svi Mykhailiuk,https://basketball.realgm.com/player/Svi-Mykhailiuk/Summary/41726,LAL,"",SF,6-7,205,21,7,Kansas,Sr,Ukraine,svi mykhailiuk
+2018,48,Keita Bates-Diop,https://basketball.realgm.com/player/Keita-Bates-Diop/Summary/71803,MIN,"",SF,6-8,229,22,6,Ohio State,Jr *,United States,keita bates diop
+2018,49,Chimezie Metu,https://basketball.realgm.com/player/Chimezie-Metu/Summary/76976,SAN,"",PF,6-10,225,21,6,USC,Jr *,United States / Nigeria,chimezie metu
+2018,50,Alize Johnson,https://basketball.realgm.com/player/Alize-Johnson/Summary/106664,IND,"",SF,6-9,212,22,5,Missouri State,Sr,United States,alize johnson
+2018,51,Tony Carr,https://basketball.realgm.com/player/Tony-Carr/Summary/88727,NOP,"",PG,6-5,200,20,0,Penn State,So *,United States,tony carr
+2018,52,Vince Edwards,https://basketball.realgm.com/player/Vince-Edwards/Summary/79905,UTH,UTH to HOU,SF,6-8,225,22,1,Purdue,Sr,United States,vince edwards
+2018,53,Devon Hall,https://basketball.realgm.com/player/Devon-Hall/Summary/56796,OKC,"",SG,6-5,215,22,1,Virginia,Sr,United States,devon hall
+2018,54,Shake Milton,https://basketball.realgm.com/player/Shake-Milton/Summary/73155,DAL,DAL to PHL,SG,6-5,205,21,7,Southern Methodist,Jr *,United States,shake milton
+2018,55,Arnoldas Kulboka,https://basketball.realgm.com/player/Arnoldas-Kulboka/Summary/72296,CHA,"",SF,6-10,225,20,1,Orlandina Basket (Italy),1998 DOB *,Lithuania,arnoldas kulboka
+2018,56,Raymond Spalding,https://basketball.realgm.com/player/Raymond-Spalding/Summary/83900,PHL,PHL to DAL,PF,6-9,225,21,3,Louisville,Jr *,United States,raymond spalding
+2018,57,Kevin Hervey,https://basketball.realgm.com/player/Kevin-Hervey/Summary/81478,OKC,"",PF,6-9,230,21,1,Texas-Arlington,Sr,United States,kevin hervey
+2018,58,Thomas Welsh,https://basketball.realgm.com/player/Thomas-Welsh/Summary/64323,DEN,"",C,7-0,255,22,1,UCLA,Sr,United States,thomas welsh
+2018,59,George King,https://basketball.realgm.com/player/George-King/Summary/56831,PHX,"",SF,6-6,220,24,2,Colorado,Sr,United States,george king
+2018,60,Kostas Antetokounmpo,https://basketball.realgm.com/player/Kostas-Antetokounmpo/Summary/93018,PHL,PHL to DAL,PF,6-10,200,20,4,Dayton,Fr *,Greece / United States,kostas antetokounmpo
+2019,1,Zion Williamson,https://basketball.realgm.com/player/Zion-Williamson/Summary/104845,NOP,"",PF,6-6,284,18,6,Duke,Fr *,United States,zion williamson
+2019,2,Ja Morant,https://basketball.realgm.com/player/Ja-Morant/Summary/121815,MEM,"",G,6-2,174,19,6,Murray State,So *,United States,ja morant
+2019,3,R.J. Barrett,https://basketball.realgm.com/player/RJ-Barrett/Summary/103893,NYK,"",SG,6-6,214,19,6,Duke,Fr *,Canada,r j barrett
+2019,4,De'Andre Hunter,https://basketball.realgm.com/player/DeAndre-Hunter/Summary/86000,LAL,"LAL to NOP
+NOP to ATL",PF,6-7,221,21,6,Virginia,So *,United States,de andre hunter
+2019,5,Darius Garland,https://basketball.realgm.com/player/Darius-Garland/Summary/81685,CLE,"",G,6-1,192,19,6,Vanderbilt,Fr *,United States,darius garland
+2019,6,Jarrett Culver,https://basketball.realgm.com/player/Jarrett-Culver/Summary/107965,PHX,PHX to MIN,SG,6-6,195,20,4,Texas Tech,So *,United States,jarrett culver
+2019,7,Coby White,https://basketball.realgm.com/player/Coby-White/Summary/107976,CHI,"",PG,6-4,210,19,6,North Carolina,Fr *,United States,coby white
+2019,8,Jaxson Hayes,https://basketball.realgm.com/player/Jaxson-Hayes/Summary/122662,ATL,ATL to NOP,PF,7-0,220,19,6,Texas,Fr *,United States,jaxson hayes
+2019,9,Rui Hachimura,https://basketball.realgm.com/player/Rui-Hachimura/Summary/72649,WAS,"",F,6-8,230,21,6,Gonzaga,Jr *,Japan,rui hachimura
+2019,10,Cam Reddish,https://basketball.realgm.com/player/Cam-Reddish/Summary/81697,ATL,"",G,6-7,217,19,6,Duke,Fr *,United States,cam reddish
+2019,11,Cameron Johnson,https://basketball.realgm.com/player/Cameron-Johnson/Summary/80114,MIN,MIN to PHX,G,6-8,210,23,6,North Carolina,Sr,United States,cameron johnson
+2019,12,P.J. Washington,https://basketball.realgm.com/player/PJ-Washington/Summary/81703,CHA,"",PF,6-7,230,20,6,Kentucky,So *,United States,p j washington
+2019,13,Tyler Herro,https://basketball.realgm.com/player/Tyler-Herro/Summary/104388,MIA,"",SG,6-5,195,19,6,Kentucky,Fr *,United States,tyler herro
+2019,14,Romeo Langford,https://basketball.realgm.com/player/Romeo-Langford/Summary/104403,BOS,"",SG,6-5,216,19,4,Indiana,Fr *,United States,romeo langford
+2019,15,Sekou Doumbouya,https://basketball.realgm.com/player/Sekou-Doumbouya/Summary/98052,DET,"",F,6-8,235,18,3,CSP Limoges (France),2000 DOB *,France / Guinea,sekou doumbouya
+2019,16,Chuma Okeke,https://basketball.realgm.com/player/Chuma-Okeke/Summary/88842,ORL,"",PF,6-7,229,20,5,Auburn,So *,United States,chuma okeke
+2019,17,Nickeil Alexander-Walker,https://basketball.realgm.com/player/Nickeil-Alexander-Walker/Summary/95702,BRK,"BRK to ATL
+ATL to NOP",SG,6-5,205,20,6,Virginia Tech,So *,Canada,nickeil alexander walker
+2019,18,Goga Bitadze,https://basketball.realgm.com/player/Goga-Bitadze/Summary/75906,IND,"",C,6-11,250,19,6,KK Mega Bemax (Serbia),1999 DOB *,Georgia,goga bitadze
+2019,19,Luka Samanic,https://basketball.realgm.com/player/Luka-Samanic/Summary/94639,SAN,"",PF,6-10,227,19,5,Union Olimpija (Slovenia),2000 DOB *,Croatia,luka samanic
+2019,20,Matisse Thybulle,https://basketball.realgm.com/player/Matisse-Thybulle/Summary/84040,BOS,BOS to PHL,SF,6-5,202,22,6,Washington,Sr,United States / Australia,matisse thybulle
+2019,21,Brandon Clarke,https://basketball.realgm.com/player/Brandon-Clarke/Summary/84518,OKC,OKC to MEM,PF,6-8,215,22,6,Gonzaga,Jr *,Canada,brandon clarke
+2019,22,Grant Williams,https://basketball.realgm.com/player/Grant-Williams/Summary/89395,BOS,"",SF,6-7,236,20,6,Tennessee,Jr *,United States,grant williams
+2019,23,Darius Bazley,https://basketball.realgm.com/player/Darius-Bazley/Summary/107562,UTH,"UTH to MEM
+MEM to OKC",PF,6-9,216,19,5,"",*,United States,darius bazley
+2019,24,Ty Jerome,https://basketball.realgm.com/player/Ty-Jerome/Summary/85677,PHL,"PHL to BOS
+BOS to PHX",PG,6-5,195,21,6,Virginia,Jr *,United States,ty jerome
+2019,25,Nassir Little,https://basketball.realgm.com/player/Nassir-Little/Summary/104404,POR,"",SF,6-6,220,19,5,North Carolina,Fr *,United States,nassir little
+2019,26,Dylan Windler,https://basketball.realgm.com/player/Dylan-Windler/Summary/87241,CLE,"",SF,6-7,196,22,5,Belmont,Sr,United States,dylan windler
+2019,27,Mfiondu Kabengele,https://basketball.realgm.com/player/Mfiondu-Kabengele/Summary/107079,BRK,BRK to LAC,SF,6-10,250,21,3,Florida State,So *,Canada,mfiondu kabengele
+2019,28,Jordan Poole,https://basketball.realgm.com/player/Jordan-Poole/Summary/88853,GOS,"",SG,6-4,194,20,6,Michigan,So *,United States,jordan poole
+2019,29,Keldon Johnson,https://basketball.realgm.com/player/Keldon-Johnson/Summary/104395,SAN,"",SF,6-6,220,19,6,Kentucky,Fr *,United States,keldon johnson
+2019,30,"Kevin Porter, Jr.",https://basketball.realgm.com/player/Kevin-Porter-Jr/Summary/95883,MIL,"MIL to DET
+DET to CLE",SF,6-5,203,19,5,USC,Fr *,United States,kevin porter
+2019,31,Nicolas Claxton,https://basketball.realgm.com/player/Nicolas-Claxton/Summary/108483,BRK,"",C,6-11,215,20,6,Georgia,So *,United States / U.S. Virgin Islands,nicolas claxton
+2019,32,KZ Okpala,https://basketball.realgm.com/player/KZ-Okpala/Summary/106472,PHX,PHX to MIA,SG,6-8,215,20,4,Stanford,So *,United States / Nigeria,kz okpala
+2019,33,Carsen Edwards,https://basketball.realgm.com/player/Carsen-Edwards/Summary/93803,PHL,PHL to BOS,PG,5-11,200,21,3,Purdue,Jr *,United States,carsen edwards
+2019,34,Bruno Fernando,https://basketball.realgm.com/player/Bruno-Fernando/Summary/91004,PHL,PHL to ATL,C,6-9,240,20,6,Maryland,So *,Angola,bruno fernando
+2019,35,Didi Louzada,https://basketball.realgm.com/player/Didi-Louzada/Summary/92177,ATL,ATL to NOP,SF,6-5,215,19,2,Franca (Brazil),1999 DOB *,Brazil,didi louzada
+2019,36,Cody Martin,https://basketball.realgm.com/player/Cody-Martin/Summary/80112,CHA,"",F,6-6,205,23,6,Nevada,Sr,United States,cody martin
+2019,37,Deividas Sirvydis,https://basketball.realgm.com/player/Deividas-Sirvydis/Summary/107580,DAL,DAL to DET,GF,6-8,190,19,2,Lietuvos Rytas II (Lithuania),2000 DOB *,Lithuania,deividas sirvydis
+2019,38,Daniel Gafford,https://basketball.realgm.com/player/Daniel-Gafford/Summary/97090,CHI,"",C,6-10,265,20,6,Arkansas,So *,United States,daniel gafford
+2019,39,Alen Smailagic,https://basketball.realgm.com/player/Alen-Smailagic/Summary/108634,NOP,NOP to GOS,PF,6-10,215,18,2,Santa Cruz Warriors,2000 DOB,Serbia,alen smailagic
+2019,40,Justin James,https://basketball.realgm.com/player/Justin-James/Summary/84791,SAC,"",SG,6-7,190,22,3,Wyoming,Sr,United States,justin james
+2019,41,Eric Paschall,https://basketball.realgm.com/player/Eric-Paschall/Summary/80338,GOS,"",F,6-6,255,22,4,Villanova,Sr,United States,eric paschall
+2019,42,Admiral Schofield,https://basketball.realgm.com/player/Admiral-Schofield/Summary/84318,PHL,PHL to WAS,SF,6-5,241,22,4,Tennessee,Sr,United States,admiral schofield
+2019,43,Jaylen Nowell,https://basketball.realgm.com/player/Jaylen-Nowell/Summary/88837,MIN,"",SG,6-4,201,19,6,Washington,So *,United States,jaylen nowell
+2019,44,Bol Bol,https://basketball.realgm.com/player/Bol-Bol/Summary/89958,MIA,MIA to DEN,C,7-3,220,19,6,Oregon,Fr *,United States,bol bol
+2019,45,Isaiah Roby,https://basketball.realgm.com/player/Isaiah-Roby/Summary/86028,DET,DET to DAL,SF,6-8,230,21,4,Nebraska,Jr *,United States,isaiah roby
+2019,46,Talen Horton-Tucker,https://basketball.realgm.com/player/Talen-Horton-Tucker/Summary/121522,ORL,ORL to LAL,SF,6-4,234,18,6,Iowa State,Fr *,United States,talen horton tucker
+2019,47,Ignas Brazdeikis,https://basketball.realgm.com/player/Ignas-Brazdeikis/Summary/92196,SAC,SAC to NYK,SF,6-7,221,20,3,Michigan,Fr *,Lithuania / Canada,ignas brazdeikis
+2019,48,Terance Mann,https://basketball.realgm.com/player/Terance-Mann/Summary/73135,LAC,"",SG,6-6,215,22,6,Florida State,Sr,United States,terance mann
+2019,49,Quinndary Weatherspoon,https://basketball.realgm.com/player/Quinndary-Weatherspoon/Summary/83967,SAN,"",SG,6-3,205,22,3,Mississippi State,Sr,United States,quinndary weatherspoon
+2019,50,Jarrell Brantley,https://basketball.realgm.com/player/Jarrell-Brantley/Summary/89301,IND,IND to UTH,SF,6-5,250,23,3,Charleston,Sr,United States,jarrell brantley
+2019,51,Tremont Waters,https://basketball.realgm.com/player/Tremont-Waters/Summary/88918,BOS,"",PG,5-10,175,21,3,LSU,So *,United States / Puerto Rico,tremont waters
+2019,52,Jalen McDaniels,https://basketball.realgm.com/player/Jalen-McDaniels/Summary/90832,CHA,"",PF,6-9,190,21,6,San Diego State,So *,United States,jalen mcdaniels
+2019,53,Justin Wright-Foreman,https://basketball.realgm.com/player/Justin-Wright-Foreman/Summary/84328,UTH,"",SG,6-0,190,21,1,Hofstra,Sr,United States,justin wright foreman
+2019,54,Marial Shayok,https://basketball.realgm.com/player/Marial-Shayok/Summary/26697,PHL,"",G,6-5,198,23,1,Iowa State,Sr,Canada / South Sudan,marial shayok
+2019,55,Kyle Guy,https://basketball.realgm.com/player/Kyle-Guy/Summary/76387,NYK,NYK to SAC,SG,6-1,167,21,3,Virginia,Jr *,United States,kyle guy
+2019,56,Jaylen Hands,https://basketball.realgm.com/player/Jaylen-Hands/Summary/81688,LAC,"LAC to BRK
+BRK to DET",G,6-3,180,20,0,UCLA,So *,United States,jaylen hands
+2019,57,Jordan Bone,https://basketball.realgm.com/player/Jordan-Bone/Summary/107062,NOP,"NOP to ATL
+ATL to PHL
+PHL to DET",SG,6-2,180,21,2,Tennessee,Jr *,United States,jordan bone
+2019,58,Miye Oni,https://basketball.realgm.com/player/Miye-Oni/Summary/93804,GOS,GOS to UTH,SF,6-5,206,21,3,Yale,Jr *,United States / Nigeria,miye oni
+2019,59,Dewan Hernandez,https://basketball.realgm.com/player/Dewan-Hernandez/Summary/74082,TOR,"",FC,6-10,235,22,1,Miami (FL),Jr *,United States,dewan hernandez
+2019,60,Vanja Marinkovic,https://basketball.realgm.com/player/Vanja-Marinkovic/Summary/49609,SAC,"SAC to LAC
+LAC to MEM
+MEM to BRK
+BRK to LAC",G,6-6,194,22,0,KK Partizan (Serbia),1997 DOB,Serbia,vanja marinkovic
+2020,1,Anthony Edwards,https://basketball.realgm.com/player/Anthony-Edwards/Summary/117444,MIN,"",SF,6-4,225,19,5,Georgia,Fr *,United States,anthony edwards
+2020,2,James Wiseman,https://basketball.realgm.com/player/James-Wiseman/Summary/107990,GOS,"",C,6-11,240,19,5,Memphis,Fr *,United States,james wiseman
+2020,3,LaMelo Ball,https://basketball.realgm.com/player/LaMelo-Ball/Summary/103892,CHA,"",G,6-7,180,19,5,Illawarra (Australia),2001 DOB,United States,lamelo ball
+2020,4,Patrick Williams,https://basketball.realgm.com/player/Patrick-Williams/Summary/132443,CHI,"",G,6-6,235,19,5,Florida State,Fr *,United States,patrick williams
+2020,5,Isaac Okoro,https://basketball.realgm.com/player/Isaac-Okoro/Summary/117420,CLE,"",SG,6-4,225,19,5,Auburn,Fr *,United States,isaac okoro
+2020,6,Onyeka Okongwu,https://basketball.realgm.com/player/Onyeka-Okongwu/Summary/103946,ATL,"",PF,6-10,240,19,5,USC,Fr *,United States,onyeka okongwu
+2020,7,Killian Hayes,https://basketball.realgm.com/player/Killian-Hayes/Summary/108654,DET,"",G,6-4,195,19,5,Ratiopharm Ulm (Germany),2001 DOB *,France / United States,killian hayes
+2020,8,Obi Toppin,https://basketball.realgm.com/player/Obi-Toppin/Summary/121580,NYK,"",F,6-9,220,22,5,Dayton,So *,United States,obi toppin
+2020,9,Deni Avdija,https://basketball.realgm.com/player/Deni-Avdija/Summary/116938,WAS,"",SG,6-8,228,19,5,Maccabi Tel Aviv U18 (Israel),2001 DOB *,Israel,deni avdija
+2020,10,Jalen Smith,https://basketball.realgm.com/player/Jalen-Smith/Summary/92804,PHX,"",C,6-8,244,20,5,Maryland,So *,United States,jalen smith
+2020,11,Devin Vassell,https://basketball.realgm.com/player/Devin-Vassell/Summary/132173,SAN,"",SG,6-5,200,20,5,Florida State,So *,United States,devin vassell
+2020,12,Tyrese Haliburton,https://basketball.realgm.com/player/Tyrese-Haliburton/Summary/132168,SAC,"",PG,6-5,185,20,5,Iowa State,So *,United States,tyrese haliburton
+2020,13,"Kira Lewis, Jr.",https://basketball.realgm.com/player/Kira-Lewis-Jr/Summary/117441,NOP,"",PG,6-1,170,19,4,Alabama,So *,United States,kira lewis
+2020,14,Aaron Nesmith,https://basketball.realgm.com/player/Aaron-Nesmith/Summary/132149,BOS,"",F,6-5,215,21,5,Vanderbilt,So *,United States,aaron nesmith
+2020,15,Cole Anthony,https://basketball.realgm.com/player/Cole-Anthony/Summary/105342,ORL,"",PG,6-2,185,20,5,North Carolina,Fr *,United States,cole anthony
+2020,16,Isaiah Stewart II,https://basketball.realgm.com/player/Isaiah-Stewart-II/Summary/117418,POR,"POR to HOU
+HOU to DET",C,6-8,250,19,5,Washington,Fr *,United States,isaiah stewart
+2020,17,Aleksej Pokusevski,https://basketball.realgm.com/player/Aleksej-Pokusevski/Summary/130811,MIN,MIN to OKC,C,7-0,210,18,4,Olympiacos U18 (Greece),2001 DOB *,Serbia,aleksej pokusevski
+2020,18,Josh Green,https://basketball.realgm.com/player/Josh-Green/Summary/107565,DAL,"",SG,6-6,200,20,5,Arizona,Fr *,United States / Australia,josh green
+2020,19,Saddiq Bey,https://basketball.realgm.com/player/Saddiq-Bey/Summary/120280,BRK,BRK to DET,F,6-8,215,21,5,Villanova,So *,United States,saddiq bey
+2020,20,Precious Achiuwa,https://basketball.realgm.com/player/Precious-Achiuwa/Summary/107977,MIA,"",SF,6-8,243,21,5,Memphis,Fr *,Nigeria,precious achiuwa
+2020,21,Tyrese Maxey,https://basketball.realgm.com/player/Tyrese-Maxey/Summary/108178,PHL,"",PG,6-2,200,20,5,Kentucky,Fr *,United States,tyrese maxey
+2020,22,Zeke Nnaji,https://basketball.realgm.com/player/Zeke-Nnaji/Summary/132518,DEN,"",PF,6-10,240,19,5,Arizona,Fr *,United States,zeke nnaji
+2020,23,Leandro Bolmaro,https://basketball.realgm.com/player/Leandro-Bolmaro/Summary/120098,NYK,NYK to MIN,SG,6-6,200,20,2,FC Barcelona II (Spain),2000 DOB *,Argentina,leandro bolmaro
+2020,24,R.J. Hampton,https://basketball.realgm.com/player/RJ-Hampton/Summary/117366,MIL,MIL to DEN,G,6-4,175,19,4,New Zealand (New Zealand),2001 DOB,United States,r j hampton
+2020,25,Immanuel Quickley,https://basketball.realgm.com/player/Immanuel-Quickley/Summary/104825,OKC,OKC to NYK,PG,6-2,190,21,5,Kentucky,So *,United States,immanuel quickley
+2020,26,Payton Pritchard,https://basketball.realgm.com/player/Payton-Pritchard/Summary/59506,BOS,"",PG,6-1,195,22,5,Oregon,Sr,United States,payton pritchard
+2020,27,Udoka Azubuike,https://basketball.realgm.com/player/Udoka-Azubuike/Summary/71574,UTH,"",C,6-11,270,21,4,Kansas,Sr,Nigeria,udoka azubuike
+2020,28,Jaden McDaniels,https://basketball.realgm.com/player/Jaden-McDaniels/Summary/132425,LAL,"LAL to OKC
+OKC to MIN",F,6-9,185,20,5,Washington,Fr *,United States,jaden mcdaniels
+2020,29,Malachi Flynn,https://basketball.realgm.com/player/Malachi-Flynn/Summary/89432,TOR,"",PG,6-1,185,22,5,San Diego State,Jr *,United States,malachi flynn
+2020,30,Desmond Bane,https://basketball.realgm.com/player/Desmond-Bane/Summary/107663,BOS,BOS to MEM,SG,6-6,215,22,5,TCU,Sr,United States,desmond bane
+2020,31,Tyrell Terry,https://basketball.realgm.com/player/Tyrell-Terry/Summary/117533,DAL,"",PG,6-2,170,20,2,Stanford,Fr *,United States,tyrell terry
+2020,32,"Vernon Carey, Jr.",https://basketball.realgm.com/player/Vernon-Carey-Jr/Summary/107983,CHA,"",PF,6-10,270,19,3,Duke,Fr *,United States,vernon carey
+2020,33,Daniel Oturu,https://basketball.realgm.com/player/Daniel-Oturu/Summary/121152,MIN,MIN to LAC,FC,6-8,240,21,2,Minnesota,So *,United States,daniel oturu
+2020,34,Theo Maledon,https://basketball.realgm.com/player/Theo-Maledon/Summary/105847,PHL,PHL to OKC,PG,6-4,175,19,4,ASVEL Basket (France),2001 DOB *,France,theo maledon
+2020,35,"Xavier Tillman, Sr.",https://basketball.realgm.com/player/Xavier-Tillman-Sr/Summary/88905,SAC,SAC to MEM,PF,6-8,245,21,5,Michigan State,Jr *,United States,xavier tillman
+2020,36,Tyler Bey,https://basketball.realgm.com/player/Tyler-Bey/Summary/85695,PHL,PHL to DAL,PF,6-7,215,22,1,Colorado,Jr *,United States,tyler bey
+2020,37,Vit Krejci,https://basketball.realgm.com/player/Vit-Krejci/Summary/95013,WAS,WAS to OKC,PG,6-8,195,20,4,Zaragoza U18 (Spain),2000 DOB *,Czech Republic,vit krejci
+2020,38,Saben Lee,https://basketball.realgm.com/player/Saben-Lee/Summary/95908,UTH,UTH to DET,G,6-2,183,21,4,Vanderbilt,Jr *,United States,saben lee
+2020,39,Elijah Hughes,https://basketball.realgm.com/player/Elijah-Hughes/Summary/95914,NOP,NOP to UTH,SF,6-5,215,22,2,Syracuse,Jr *,United States,elijah hughes
+2020,40,Robert Woodard II,https://basketball.realgm.com/player/Robert-Woodard-II/Summary/81706,MEM,MEM to SAC,G,6-7,230,21,2,Mississippi State,So *,United States,robert woodard
+2020,41,Tre Jones,https://basketball.realgm.com/player/Tre-Jones/Summary/92235,SAN,"",PG,6-1,190,20,5,Duke,So *,United States,tre jones
+2020,42,Nick Richards,https://basketball.realgm.com/player/Nick-Richards/Summary/88857,NOP,NOP to CHA,C,6-11,245,22,5,Kentucky,Jr *,Jamaica,nick richards
+2020,43,Jahmi'us Ramsey,https://basketball.realgm.com/player/Jahmius-Ramsey/Summary/120272,SAC,"",PG,6-3,190,19,3,Texas Tech,Fr *,United States,jahmi us ramsey
+2020,44,Marko Simonovic,https://basketball.realgm.com/player/Marko-Simonovic/Summary/95242,CHI,"",C,7-0,220,21,2,KK Mega Bemax (Serbia),1999 DOB *,Montenegro,marko simonovic
+2020,45,Jordan Nwora,https://basketball.realgm.com/player/Jordan-Nwora/Summary/76982,MIL,"",F,6-8,225,22,4,Louisville,Jr *,United States / Nigeria,jordan nwora
+2020,46,C.J. Elleby,https://basketball.realgm.com/player/CJ-Elleby/Summary/132313,POR,"",SF,6-6,200,20,2,Washington State,So *,United States,c j elleby
+2020,47,Yam Madar,https://basketball.realgm.com/player/Yam-Madar/Summary/133147,BOS,"",G,6-3,180,19,0,Hapoel Tel Aviv (Israel),2000 DOB *,Israel,yam madar
+2020,48,Nico Mannion,https://basketball.realgm.com/player/Nico-Mannion/Summary/117373,GOS,"",PG,6-3,190,19,1,Arizona,Fr *,Italy / United States,nico mannion
+2020,49,Isaiah Joe,https://basketball.realgm.com/player/Isaiah-Joe/Summary/132164,PHL,"",SG,6-4,165,21,5,Arkansas,So *,United States,isaiah joe
+2020,50,Skylar Mays,https://basketball.realgm.com/player/Skylar-Mays/Summary/85943,ATL,"",PG,6-3,205,23,4,LSU,Sr,United States,skylar mays
+2020,51,Justinian Jessup,https://basketball.realgm.com/player/Justinian-Jessup/Summary/86984,GOS,"GOS to MEM
+MEM to PHL",SF,6-5,202,22,0,Boise State,Sr,United States,justinian jessup
+2020,52,K.J. Martin,https://basketball.realgm.com/player/KJ-Martin/Summary/129710,SAC,SAC to HOU,F,6-6,215,19,5,IMG Academy (Florida),2001 DOB *,United States,k j martin
+2020,53,Cassius Winston,https://basketball.realgm.com/player/Cassius-Winston/Summary/74073,OKC,OKC to WAS,PG,6-1,185,22,2,Michigan State,Sr,United States,cassius winston
+2020,54,Cassius Stanley,https://basketball.realgm.com/player/Cassius-Stanley/Summary/81701,IND,"",G,6-5,190,21,2,Duke,Fr *,United States,cassius stanley
+2020,55,Jay Scrubb,https://basketball.realgm.com/player/Jay-Scrubb/Summary/132361,BRK,BRK to LAC,SG,6-4,220,20,3,John A. Logan,So *,United States,jay scrubb
+2020,56,Grant Riller,https://basketball.realgm.com/player/Grant-Riller/Summary/85385,CHA,"",SG,6-0,195,23,2,Charleston,Sr,United States,grant riller
+2020,57,Reggie Perry,https://basketball.realgm.com/player/Reggie-Perry/Summary/81695,LAC,LAC to BRK,F,6-8,250,20,2,Mississippi State,So *,United States,reggie perry
+2020,58,"Paul Reed, Jr.",https://basketball.realgm.com/player/Paul-Reed-Jr/Summary/121485,PHL,"",F,6-9,210,21,5,DePaul,Jr *,United States,paul reed
+2020,59,Jalen Harris,https://basketball.realgm.com/player/Jalen-Harris/Summary/107049,TOR,"",SG,6-5,195,22,1,Nevada,Jr *,United States / Jordan,jalen harris
+2020,60,Sam Merrill,https://basketball.realgm.com/player/Sam-Merrill/Summary/109478,NOP,NOP to MIL,G,6-4,205,24,5,Utah State,Sr,United States,sam merrill
+2021,1,Cade Cunningham,https://basketball.realgm.com/player/Cade-Cunningham/Summary/124839,DET,"",SF,6-6,220,19,4,Oklahoma State,Fr *,United States,cade cunningham
+2021,2,Jalen Green,https://basketball.realgm.com/player/Jalen-Green/Summary/117342,HOU,"",SG,6-4,186,19,4,NBA G League Ignite,2002 DOB,United States,jalen green
+2021,3,Evan Mobley,https://basketball.realgm.com/player/Evan-Mobley/Summary/117327,CLE,"",PF,6-11,215,20,4,USC,Fr *,United States,evan mobley
+2021,4,Scottie Barnes,https://basketball.realgm.com/player/Scottie-Barnes/Summary/119506,TOR,"",SF,6-8,237,19,4,Florida State,Fr *,United States,scottie barnes
+2021,5,Jalen Suggs,https://basketball.realgm.com/player/Jalen-Suggs/Summary/117344,ORL,"",SG,6-5,205,20,4,Gonzaga,Fr *,United States,jalen suggs
+2021,6,Josh Giddey,https://basketball.realgm.com/player/Josh-Giddey/Summary/150528,OKC,"",G,6-7,214,18,4,Adelaide (Australia),2002 DOB *,Australia,josh giddey
+2021,7,Jonathan Kuminga,https://basketball.realgm.com/player/Jonathan-Kuminga/Summary/127826,GOS,"",F,6-7,225,18,4,NBA G League Ignite,2002 DOB,Democratic Republic of the Congo,jonathan kuminga
+2021,8,Franz Wagner,https://basketball.realgm.com/player/Franz-Wagner/Summary/108861,ORL,"",SF,6-10,220,19,4,Michigan,So *,Germany,franz wagner
+2021,9,Davion Mitchell,https://basketball.realgm.com/player/Davion-Mitchell/Summary/89964,SAC,"",PG,6-0,202,22,4,Baylor,Jr *,United States,davion mitchell
+2021,10,Ziaire Williams,https://basketball.realgm.com/player/Ziaire-Williams/Summary/137400,NOP,NOP to MEM,F,6-9,185,19,4,Stanford,Fr *,United States,ziaire williams
+2021,11,James Bouknight,https://basketball.realgm.com/player/James-Bouknight/Summary/128317,CHA,"",G,6-5,190,20,3,UConn,So *,United States,james bouknight
+2021,12,Joshua Primo,https://basketball.realgm.com/player/Joshua-Primo/Summary/134341,SAN,"",G,6-4,189,18,3,Alabama,Fr *,Canada,joshua primo
+2021,13,Chris Duarte,https://basketball.realgm.com/player/Chris-Duarte/Summary/105378,IND,"",PG,6-5,190,24,4,Oregon,Sr *,Canada / Dominican Republic,chris duarte
+2021,14,Moses Moody,https://basketball.realgm.com/player/Moses-Moody/Summary/132632,GOS,"",SG,6-5,211,19,4,Arkansas,Fr *,United States,moses moody
+2021,15,Corey Kispert,https://basketball.realgm.com/player/Corey-Kispert/Summary/105831,WAS,"",SF,6-6,224,22,4,Gonzaga,Sr *,United States,corey kispert
+2021,16,Alperen Sengun,https://basketball.realgm.com/player/Alperen-Sengun/Summary/137853,OKC,OKC to HOU,C,6-11,243,19,4,Besiktas Icrypex (Turkey),2002 DOB *,Turkey,alperen sengun
+2021,17,Trey Murphy III,https://basketball.realgm.com/player/Trey-Murphy-III/Summary/139788,MEM,MEM to NOP,G,6-8,206,21,4,Virginia,Jr *,United States,trey murphy
+2021,18,Tre Mann,https://basketball.realgm.com/player/Tre-Mann/Summary/117467,OKC,"",PG,6-4,178,20,4,Florida,So *,United States,tre mann
+2021,19,Kai Jones,https://basketball.realgm.com/player/Kai-Jones/Summary/120102,NYK,NYK to CHA,PF,6-11,221,20,4,Texas,So *,Bahamas,kai jones
+2021,20,Jalen Johnson,https://basketball.realgm.com/player/Jalen-Johnson/Summary/117333,ATL,"",PF,6-8,219,19,4,Duke,Fr *,United States,jalen johnson
+2021,21,Keon Johnson,https://basketball.realgm.com/player/Keon-Johnson/Summary/117372,NYK,NYK to LAC,PG,6-5,185,19,4,Tennessee,Fr *,United States,keon johnson
+2021,22,Isaiah Jackson,https://basketball.realgm.com/player/Isaiah-Jackson/Summary/132627,LAL,LAL to IND,PF,6-8,205,19,4,Kentucky,Fr *,United States,isaiah jackson
+2021,23,Usman Garuba,https://basketball.realgm.com/player/Usman-Garuba/Summary/108741,HOU,"",C,6-8,229,19,3,Real Madrid (Spain),2002 DOB *,Spain,usman garuba
+2021,24,Josh Christopher,https://basketball.realgm.com/player/Josh-Christopher/Summary/120138,HOU,"",G,6-4,215,19,4,Arizona State,Fr *,United States,josh christopher
+2021,25,Quentin Grimes,https://basketball.realgm.com/player/Quentin-Grimes/Summary/107566,LAC,LAC to NYK,SG,6-5,207,21,4,Houston,Jr *,United States,quentin grimes
+2021,26,Bones Hyland,https://basketball.realgm.com/player/Bones-Hyland/Summary/120125,DEN,"",G,6-2,169,20,4,VCU,So *,United States,bones hyland
+2021,27,Cam Thomas,https://basketball.realgm.com/player/Cam-Thomas/Summary/132633,BRK,"",PG,6-3,210,19,4,LSU,Fr *,United States,cam thomas
+2021,28,Jaden Springer,https://basketball.realgm.com/player/Jaden-Springer/Summary/117325,PHL,"",SG,6-4,202,18,4,Tennessee,Fr *,United States,jaden springer
+2021,29,Day'Ron Sharpe,https://basketball.realgm.com/player/DayRon-Sharpe/Summary/135668,PHX,PHX to BRK,PF,6-10,265,19,4,North Carolina,Fr *,United States,day ron sharpe
+2021,30,Santi Aldama,https://basketball.realgm.com/player/Santi-Aldama/Summary/119596,UTH,UTH to MEM,C,7-0,215,20,4,Loyola (MD),So *,Spain,santi aldama
+2021,31,Isaiah Todd,https://basketball.realgm.com/player/Isaiah-Todd/Summary/117340,MIL,"MIL to IND
+IND to WAS",PF,6-10,220,19,2,NBA G League Ignite,2001 DOB,United States,isaiah todd
+2021,32,Jeremiah Robinson-Earl,https://basketball.realgm.com/player/Jeremiah-Robinson-Earl/Summary/103951,NYK,NYK to OKC,PF,6-9,240,20,4,Villanova,So *,United States,jeremiah robinson earl
+2021,33,Jason Preston,https://basketball.realgm.com/player/Jason-Preston/Summary/139852,ORL,ORL to LAC,G,6-3,181,21,4,Ohio,Jr *,United States,jason preston
+2021,34,Rokas Jokubaitis,https://basketball.realgm.com/player/Rokas-Jokubaitis/Summary/108679,OKC,OKC to NYK,PG,6-4,182,20,0,Zalgiris (Lithuania),2000 DOB *,Lithuania,rokas jokubaitis
+2021,35,Herb Jones,https://basketball.realgm.com/player/Herb-Jones/Summary/105363,NOP,"",SF,6-7,206,22,4,Alabama,Sr *,United States,herb jones
+2021,36,Miles McBride,https://basketball.realgm.com/player/Miles-McBride/Summary/132462,OKC,OKC to NYK,G,6-2,195,20,4,West Virginia,So *,United States,miles mcbride
+2021,37,J.T. Thor,https://basketball.realgm.com/player/JT-Thor/Summary/143359,DET,DET to CHA,PF,6-9,203,18,4,Auburn,Fr *,United States / South Sudan,j t thor
+2021,38,Ayo Dosunmu,https://basketball.realgm.com/player/Ayo-Dosunmu/Summary/107970,CHI,"",PG,6-4,201,21,4,Illinois,Jr *,United States,ayo dosunmu
+2021,39,Neemias Queta,https://basketball.realgm.com/player/Neemias-Queta/Summary/120369,SAC,"",C,7-0,248,22,4,Utah State,Jr *,Portugal,neemias queta
+2021,40,Jared Butler,https://basketball.realgm.com/player/Jared-Butler/Summary/127262,NOP,"NOP to MEM
+MEM to UTH",PG,6-3,193,20,4,Baylor,Jr *,United States,jared butler
+2021,41,Joe Wieskamp,https://basketball.realgm.com/player/Joe-Wieskamp/Summary/89520,SAN,"",SF,6-6,212,21,2,Iowa,Jr *,United States,joe wieskamp
+2021,42,Isaiah Livers,https://basketball.realgm.com/player/Isaiah-Livers/Summary/107423,DET,"",PF,6-6,232,23,3,Michigan,Sr *,United States,isaiah livers
+2021,43,Greg Brown III,https://basketball.realgm.com/player/Greg-Brown-III/Summary/117334,NOP,NOP to POR,SF,6-7,206,19,3,Texas,Fr *,United States,greg brown
+2021,44,Kessler Edwards,https://basketball.realgm.com/player/Kessler-Edwards/Summary/88952,BRK,"",SG,6-8,203,20,4,Pepperdine,Jr *,United States,kessler edwards
+2021,45,Juhann Begarin,https://basketball.realgm.com/player/Juhann-Begarin/Summary/123854,BOS,"",SG,6-5,214,18,0,Paris Basketball (France),2002 DOB *,France,juhann begarin
+2021,46,Dalano Banton,https://basketball.realgm.com/player/Dalano-Banton/Summary/132170,TOR,"",PG,6-8,203,21,4,Nebraska,So *,Canada,dalano banton
+2021,47,David Johnson,https://basketball.realgm.com/player/David-Johnson/Summary/132437,TOR,"",SG,6-4,203,20,1,Louisville,So *,United States,david johnson
+2021,48,Sharife Cooper,https://basketball.realgm.com/player/Sharife-Cooper/Summary/117356,ATL,"",PG,6-0,176,20,2,Auburn,Fr *,United States,sharife cooper
+2021,49,Marcus Zegarowski,https://basketball.realgm.com/player/Marcus-Zegarowski/Summary/108211,BRK,"",PG,6-2,181,22,0,Creighton,Jr *,United States,marcus zegarowski
+2021,50,Filip Petrusev,https://basketball.realgm.com/player/Filip-Petrusev/Summary/75786,PHL,"",FC,6-11,225,21,1,KK Mega Bemax (Serbia),2000 DOB,Serbia,filip petrusev
+2021,51,"B.J. Boston, Jr.",https://basketball.realgm.com/player/BJ-Boston-Jr/Summary/126853,MEM,"MEM to NOP
+NOP to LAC",SG,6-6,188,19,4,Kentucky,Fr *,United States,b j boston
+2021,52,Luka Garza,https://basketball.realgm.com/player/Luka-Garza/Summary/105352,DET,"",C,6-10,243,22,4,Iowa,Sr *,United States / Bosnia and Herzegovina,luka garza
+2021,53,Charles Bassey,https://basketball.realgm.com/player/Charles-Bassey/Summary/88593,PHL,"",PF,6-10,230,20,4,Western Kentucky,Jr *,Nigeria / United States,charles bassey
+2021,54,Sandro Mamukelashvili,https://basketball.realgm.com/player/Sandro-Mamukelashvili/Summary/103506,IND,IND to MIL,F,6-9,240,22,4,Seton Hall,Sr *,Georgia,sandro mamukelashvili
+2021,55,Aaron Wiggins,https://basketball.realgm.com/player/Aaron-Wiggins/Summary/120275,OKC,"",F,6-5,190,22,4,Maryland,Jr *,United States,aaron wiggins
+2021,56,Scottie Lewis,https://basketball.realgm.com/player/Scottie-Lewis/Summary/107987,CHA,"",SF,6-5,185,21,1,Florida,So *,United States,scottie lewis
+2021,57,Balsa Koprivica,https://basketball.realgm.com/player/Balsa-Koprivica/Summary/104912,CHA,"CHA to DET
+DET to LAC
+LAC to UTH
+UTH to OKC",C,7-1,240,21,0,Florida State,So *,United States / Serbia,balsa koprivica
+2021,58,Jericho Sims,https://basketball.realgm.com/player/Jericho-Sims/Summary/105383,NYK,"",C,6-10,250,22,4,Texas,Sr *,United States,jericho sims
+2021,59,Raiquan Gray,https://basketball.realgm.com/player/Raiquan-Gray/Summary/104922,BRK,"",PF,6-7,269,22,2,Florida State,Jr *,United States,raiquan gray
+2021,60,Georgios Kalaitzakis,https://basketball.realgm.com/player/Georgios-Kalaitzakis/Summary/94544,IND,IND to MIL,F,6-7,205,22,1,Panathinaikos (Greece),1999 DOB,Greece,georgios kalaitzakis
+2022,1,Paolo Banchero,https://basketball.realgm.com/player/Paolo-Banchero/Summary/134150,ORL,"",C,6-10,250,19,3,Duke,Fr *,United States / Italy,paolo banchero
+2022,2,Chet Holmgren,https://basketball.realgm.com/player/Chet-Holmgren/Summary/134799,OKC,"",C,7-1,208,20,3,Gonzaga,Fr *,United States,chet holmgren
+2022,3,"Jabari Smith, Jr.",https://basketball.realgm.com/player/Jabari-Smith-Jr/Summary/145673,HOU,"",F,6-11,220,19,3,Auburn,Fr *,United States,jabari smith
+2022,4,Keegan Murray,https://basketball.realgm.com/player/Keegan-Murray/Summary/163374,SAC,"",F,6-8,225,21,3,Iowa,So *,United States,keegan murray
+2022,5,Jaden Ivey,https://basketball.realgm.com/player/Jaden-Ivey/Summary/148740,DET,"",G,6-3,195,20,3,Purdue,So *,United States,jaden ivey
+2022,6,Bennedict Mathurin,https://basketball.realgm.com/player/Bennedict-Mathurin/Summary/147080,IND,"",GF,6-5,210,20,3,Arizona,So *,Canada / Haiti,bennedict mathurin
+2022,7,Shaedon Sharpe,https://basketball.realgm.com/player/Shaedon-Sharpe/Summary/150554,POR,"",F,6-5,210,19,3,Kentucky,RS-Fr *,Canada,shaedon sharpe
+2022,8,Dyson Daniels,https://basketball.realgm.com/player/Dyson-Daniels/Summary/151792,NOP,"",GF,6-7,199,19,3,NBA G League Ignite,2003 DOB,Australia,dyson daniels
+2022,9,Jeremy Sochan,https://basketball.realgm.com/player/Jeremy-Sochan/Summary/139379,SAN,"",SG,6-8,230,19,3,Baylor,Fr *,United States / Poland,jeremy sochan
+2022,10,Johnny Davis,https://basketball.realgm.com/player/Johnny-Davis/Summary/117363,WAS,"",F,6-4,195,20,3,Wisconsin,So *,United States,johnny davis
+2022,11,Ousmane Dieng,https://basketball.realgm.com/player/Ousmane-Dieng/Summary/148828,NYK,NYK to OKC,SG,6-9,185,19,3,New Zealand (New Zealand),2003 DOB *,France / Qatar,ousmane dieng
+2022,12,Jalen Williams,https://basketball.realgm.com/player/Jalen-Williams/Summary/135764,OKC,"",G,6-5,211,21,3,Santa Clara,Jr *,United States,jalen williams
+2022,13,Jalen Duren,https://basketball.realgm.com/player/Jalen-Duren/Summary/137931,CHA,"CHA to NYK
+NYK to DET",PF,6-10,250,18,3,Memphis,Fr *,United States,jalen duren
+2022,14,Ochai Agbaji,https://basketball.realgm.com/player/Ochai-Agbaji/Summary/130970,CLE,"",SF,6-5,215,22,3,Kansas,Sr *,United States,ochai agbaji
+2022,15,Mark Williams,https://basketball.realgm.com/player/Mark-Williams/Summary/132629,CHA,"",C,7-1,240,20,3,Duke,So *,United States,mark williams
+2022,16,"A.J. Griffin, Jr.",https://basketball.realgm.com/player/AJ-Griffin-Jr/Summary/143343,ATL,"",SG,6-6,220,18,2,Duke,Fr *,United States,a j griffin
+2022,17,Tari Eason,https://basketball.realgm.com/player/Tari-Eason/Summary/127888,HOU,"",F,6-8,215,21,3,LSU,So *,United States,tari eason
+2022,18,Dalen Terry,https://basketball.realgm.com/player/Dalen-Terry/Summary/132642,CHI,"",PG,6-6,210,19,3,Arizona,So *,United States,dalen terry
+2022,19,Jake LaRavia,https://basketball.realgm.com/player/Jake-LaRavia/Summary/151853,MIN,MIN to MEM,F,6-7,235,20,3,Wake Forest,Jr *,United States,jake laravia
+2022,20,Malaki Branham,https://basketball.realgm.com/player/Malaki-Branham/Summary/135900,SAN,"",GF,6-4,180,19,3,Ohio State,Fr *,United States,malaki branham
+2022,21,Christian Braun,https://basketball.realgm.com/player/Christian-Braun/Summary/143286,DEN,"",SF,6-6,220,21,3,Kansas,Jr *,United States,christian braun
+2022,22,Walker Kessler,https://basketball.realgm.com/player/Walker-Kessler/Summary/132628,MEM,"MEM to MIN
+MIN to UTH",C,7-2,245,20,3,Auburn,So *,United States,walker kessler
+2022,23,David Roddy,https://basketball.realgm.com/player/David-Roddy/Summary/134247,PHL,PHL to MEM,F,6-5,255,21,3,Colorado State,Jr *,United States,david roddy
+2022,24,MarJon Beauchamp,https://basketball.realgm.com/player/MarJon-Beauchamp/Summary/117599,MIL,"",SG,6-7,199,21,3,NBA G League Ignite,2000 DOB,United States,marjon beauchamp
+2022,25,Blake Wesley,https://basketball.realgm.com/player/Blake-Wesley/Summary/131835,SAN,"",SG,6-4,190,19,3,Notre Dame,Fr *,United States,blake wesley
+2022,26,"Wendell Moore, Jr.",https://basketball.realgm.com/player/Wendell-Moore-Jr/Summary/108165,DAL,"DAL to HOU
+HOU to MIN",SF,6-5,215,20,3,Duke,Jr *,United States,wendell moore
+2022,27,Nikola Jovic,https://basketball.realgm.com/player/Nikola-Jovic/Summary/148861,MIA,"",F,6-10,205,19,3,KK Mega Bemax (Serbia),2003 DOB *,Serbia,nikola jovic
+2022,28,"Patrick Baldwin, Jr.",https://basketball.realgm.com/player/Patrick-Baldwin-Jr/Summary/117526,GOS,"",SG,7-0,220,19,3,Milwaukee,Fr *,United States,patrick baldwin
+2022,29,"TyTy Washington, Jr.",https://basketball.realgm.com/player/TyTy-Washington-Jr/Summary/135606,MEM,"MEM to MIN
+MIN to HOU",PG,6-3,195,20,3,Kentucky,Fr *,United States,tyty washington
+2022,30,Peyton Watson,https://basketball.realgm.com/player/Peyton-Watson/Summary/133038,OKC,OKC to DEN,GF,6-8,200,19,3,UCLA,Fr *,United States,peyton watson
+2022,31,Andrew Nembhard,https://basketball.realgm.com/player/Andrew-Nembhard/Summary/92194,IND,"",PG,6-4,191,22,3,Gonzaga,Sr *,Canada,andrew nembhard
+2022,32,Caleb Houstan,https://basketball.realgm.com/player/Caleb-Houstan/Summary/117539,ORL,"",SF,6-8,205,19,3,Michigan,Fr *,Canada,caleb houstan
+2022,33,Christian Koloko,https://basketball.realgm.com/player/Christian-Koloko/Summary/131565,TOR,"",C,6-11,225,22,3,Arizona,Jr *,Cameroon,christian koloko
+2022,34,Jaylin Williams,https://basketball.realgm.com/player/Jaylin-Williams/Summary/152736,OKC,"",C,6-9,240,19,3,Arkansas,So *,United States,jaylin williams
+2022,35,Max Christie,https://basketball.realgm.com/player/Max-Christie/Summary/135151,LAL,"",F,6-5,190,19,3,Michigan State,Fr *,United States,max christie
+2022,36,Gabriele Procida,https://basketball.realgm.com/player/Gabriele-Procida/Summary/136730,POR,"POR to DET
+DET to UTH",SG,6-6,191,20,0,Fortituto Kontatto Bologna (Italy),2002 DOB *,Italy,gabriele procida
+2022,37,Jaden Hardy,https://basketball.realgm.com/player/Jaden-Hardy/Summary/126838,SAC,SAC to DAL,SG,6-3,198,19,3,NBA G League Ignite,2002 DOB,United States,jaden hardy
+2022,38,Kennedy Chandler,https://basketball.realgm.com/player/Kennedy-Chandler/Summary/117531,SAN,SAN to MEM,PG,6-0,170,19,1,Tennessee,Fr *,United States,kennedy chandler
+2022,39,Khalifa Diop,https://basketball.realgm.com/player/Khalifa-Diop/Summary/128505,CLE,"",FC,6-10,231,20,0,Dreamland Gran Canaria (Spain),2002 DOB *,Senegal,khalifa diop
+2022,40,Bryce McGowens,https://basketball.realgm.com/player/Bryce-McGowens/Summary/151325,MIN,MIN to CHA,GF,6-6,190,19,3,Nebraska,Fr *,United States,bryce mcgowens
+2022,41,E.J. Liddell,https://basketball.realgm.com/player/EJ-Liddell/Summary/107392,NOP,"",PF,6-6,240,21,3,Ohio State,Jr *,United States,e j liddell
+2022,42,Trevor Keels,https://basketball.realgm.com/player/Trevor-Keels/Summary/128473,NYK,"",PG,6-3,215,18,1,Duke,Fr *,United States,trevor keels
+2022,43,Moussa Diabate,https://basketball.realgm.com/player/Moussa-Diabate/Summary/126848,LAC,"",PF,6-10,210,20,3,Michigan,Fr *,France,moussa diabate
+2022,44,Ryan Rollins,https://basketball.realgm.com/player/Ryan-Rollins/Summary/169177,ATL,ATL to GOS,G,6-3,180,19,3,Toledo,So *,United States,ryan rollins
+2022,45,Josh Minott,https://basketball.realgm.com/player/Josh-Minott/Summary/175934,CHA,CHA to MIN,F,6-8,205,19,3,Memphis,Fr *,United States,josh minott
+2022,46,Ismael Kamagate,https://basketball.realgm.com/player/Ismael-Kamagate/Summary/132958,DET,"DET to POR
+POR to DEN
+DEN to LAC",C,6-11,220,21,0,Paris Basketball (France),2001 DOB *,France,ismael kamagate
+2022,47,"Vincent Williams, Jr.",https://basketball.realgm.com/player/Vincent-Williams-Jr/Summary/132218,MEM,"",SF,6-4,205,21,3,VCU,Sr *,United States,vincent williams
+2022,48,Kendall Brown,https://basketball.realgm.com/player/Kendall-Brown/Summary/137162,MIN,MIN to IND,G,6-6,205,19,3,Baylor,Fr *,United States,kendall brown
+2022,49,Isaiah Mobley,https://basketball.realgm.com/player/Isaiah-Mobley/Summary/103943,CLE,"",SF,6-8,238,22,3,USC,Jr *,United States / Bahamas,isaiah mobley
+2022,50,Matteo Spagnolo,https://basketball.realgm.com/player/Matteo-Spagnolo/Summary/129211,MIN,"",SG,6-6,196,19,0,Vanoli Cremona (Italy),2003 DOB *,Italy,matteo spagnolo
+2022,51,Tyrese Martin,https://basketball.realgm.com/player/Tyrese-Martin/Summary/120264,GOS,GOS to ATL,GF,6-6,215,23,2,UConn,Sr *,United States,tyrese martin
+2022,52,Karlo Matkovic,https://basketball.realgm.com/player/Karlo-Matkovic/Summary/118836,NOP,"",PF,6-10,231,21,1,KK Mega Bemax (Serbia),2001 DOB *,Bosnia and Herzegovina / Croatia,karlo matkovic
+2022,53,J.D. Davison,https://basketball.realgm.com/player/JD-Davison/Summary/151480,BOS,"",F,6-1,195,19,3,Alabama,Fr *,United States,j d davison
+2022,54,Yannick Nzosa,https://basketball.realgm.com/player/Yannick-Nzosa/Summary/129212,WAS,"",C,6-10,174,18,0,Unicaja (Spain),2003 DOB *,Democratic Republic of the Congo,yannick nzosa
+2022,55,Gui Santos,https://basketball.realgm.com/player/Gui-Santos/Summary/139404,GOS,"",GF,6-7,185,20,2,Minas (Brazil),2002 DOB *,Brazil / Portugal,gui santos
+2022,56,Luke Travers,https://basketball.realgm.com/player/Luke-Travers/Summary/133808,CLE,"",F,6-6,207,20,1,Perth (Australia),2001 DOB *,Australia,luke travers
+2022,57,Jabari Walker,https://basketball.realgm.com/player/Jabari-Walker/Summary/162031,POR,"",F,6-7,237,19,3,Colorado,So *,United States,jabari walker
+2022,58,Hugo Besson,https://basketball.realgm.com/player/Hugo-Besson/Summary/127398,IND,"IND to MIL
+MIL to NYK",G,6-3,196,21,0,New Zealand (New Zealand),2001 DOB *,France,hugo besson
+2024,1,Zaccharie Risacher,https://basketball.realgm.com/player/Zaccharie-Risacher/Summary/175806,ATL,"",F,6-8,200,19,1,JL Bourg-en-Bresse (France),2005 DOB *,Spain / France,zaccharie risacher
+2024,2,Alex Sarr,https://basketball.realgm.com/player/Alex-Sarr/Summary/162806,WAS,"",FC,7-0,205,19,1,Perth (Australia),2005 DOB *,France,alex sarr
+2024,3,Reed Sheppard,https://basketball.realgm.com/player/Reed-Sheppard/Summary/179670,HOU,"",G,6-2,185,20,1,Kentucky,Fr *,United States,reed sheppard
+2024,4,Stephon Castle,https://basketball.realgm.com/player/Stephon-Castle/Summary/163089,SAN,"",G,6-6,215,19,1,UConn,Fr *,United States,stephon castle
+2024,5,Ron Holland,https://basketball.realgm.com/player/Ron-Holland/Summary/162288,DET,"",F,6-8,206,18,1,NBA G League Ignite,2005 DOB *,United States,ron holland
+2024,6,Tidjane Salaun,https://basketball.realgm.com/player/Tidjane-Salaun/Summary/162807,CHA,"",F,6-10,207,18,1,Cholet Basket (France),2005 DOB *,France,tidjane salaun
+2024,7,Donovan Clingan,https://basketball.realgm.com/player/Donovan-Clingan/Summary/176054,POR,"",C,7-2,280,20,1,UConn,So *,United States,donovan clingan
+2024,8,Rob Dillingham,https://basketball.realgm.com/player/Rob-Dillingham/Summary/162009,SAN,SAN to MIN,G,6-2,175,19,1,Kentucky,Fr *,United States,rob dillingham
+2024,9,Zach Edey,https://basketball.realgm.com/player/Zach-Edey/Summary/133800,MEM,"",C,7-3,305,22,1,Purdue,Sr *,Canada,zach edey
+2024,10,Cody Williams,https://basketball.realgm.com/player/Cody-Williams/Summary/191127,UTH,"",F,6-8,190,19,1,Colorado,Fr *,United States,cody williams
+2024,11,Matas Buzelis,https://basketball.realgm.com/player/Matas-Buzelis/Summary/176589,CHI,"",F,6-8,196,19,1,NBA G League Ignite,2004 DOB *,United States / Lithuania,matas buzelis
+2024,12,Nikola Topic,https://basketball.realgm.com/player/Nikola-Topic/Summary/179307,OKC,"",PG,6-6,200,18,1,KK Crvena Zvezda (Serbia),2005 DOB *,Serbia,nikola topic
+2024,13,Devin Carter,https://basketball.realgm.com/player/Devin-Carter/Summary/162039,SAC,"",G,6-2,195,22,1,Providence,Jr *,United States,devin carter
+2024,14,Bub Carrington,https://basketball.realgm.com/player/Bub-Carrington/Summary/186450,POR,POR to WAS,G,6-4,190,18,1,Pittsburgh,Fr *,United States,bub carrington
+2024,15,Kel'el Ware,https://basketball.realgm.com/player/Kelel-Ware/Summary/149694,MIA,"",PF,7-0,230,20,1,Indiana,So *,United States,kel el ware
+2024,16,Jared McCain,https://basketball.realgm.com/player/Jared-McCain/Summary/161548,PHL,"",G,6-3,195,20,1,Duke,Fr *,United States,jared mccain
+2024,17,Dalton Knecht,https://basketball.realgm.com/player/Dalton-Knecht/Summary/166488,LAL,"",F,6-6,215,23,1,Tennessee,Sr,United States,dalton knecht
+2024,18,Tristan Da Silva,https://basketball.realgm.com/player/Tristan-Da-Silva/Summary/150739,ORL,"",F,6-8,217,23,1,Colorado,Sr *,Germany / Brazil,tristan da silva
+2024,19,Ja'Kobe Walter,https://basketball.realgm.com/player/JaKobe-Walter/Summary/170128,TOR,"",F,6-4,180,19,1,Baylor,Fr *,United States,ja kobe walter
+2024,20,Jaylon Tyson,https://basketball.realgm.com/player/Jaylon-Tyson/Summary/162380,CLE,"",F,6-6,215,21,1,California,Jr *,United States,jaylon tyson
+2024,21,Yves Missi,https://basketball.realgm.com/player/Yves-Missi/Summary/188144,NOP,"",C,6-11,235,20,1,Baylor,Fr *,Cameroon,yves missi
+2024,22,DaRon Holmes II,https://basketball.realgm.com/player/DaRon-Holmes-II/Summary/139163,PHX,PHX to DEN,PF,6-9,225,21,1,Dayton,Jr *,United States,daron holmes
+2024,23,A.J. Johnson,https://basketball.realgm.com/player/AJ-Johnson/Summary/161547,MIL,"",G,6-5,160,19,1,Illawarra (Australia),2004 DOB *,United States,a j johnson
+2024,24,Kyshawn George,https://basketball.realgm.com/player/Kyshawn-George/Summary/137573,NYK,NYK to WAS,F,6-8,200,20,1,Miami (FL),Fr *,Switzerland / Canada,kyshawn george
+2024,25,Pacome Dadiet,https://basketball.realgm.com/player/Pacome-Dadiet/Summary/162803,NYK,"",SF,6-9,210,18,1,Ratiopharm Ulm (Germany),2005 DOB *,France,pacome dadiet
+2024,26,Dillon Jones,https://basketball.realgm.com/player/Dillon-Jones/Summary/135508,WAS,"WAS to NYK
+NYK to OKC",PG,6-5,235,22,1,Weber State,Sr *,United States,dillon jones
+2024,27,"Terrence Shannon, Jr.",https://basketball.realgm.com/player/Terrence-Shannon-Jr/Summary/134233,MIN,"",F,6-6,215,23,1,Illinois,Sr,United States,terrence shannon
+2024,28,Ryan Dunn,https://basketball.realgm.com/player/Ryan-Dunn/Summary/162315,DEN,DEN to PHX,G,6-7,216,21,1,Virginia,So *,United States,ryan dunn
+2024,29,Isaiah Collier,https://basketball.realgm.com/player/Isaiah-Collier/Summary/160206,UTH,"",G,6-4,210,19,1,USC,Fr *,United States,isaiah collier
+2024,30,Baylor Scheierman,https://basketball.realgm.com/player/Baylor-Scheierman/Summary/134595,BOS,"",PG,6-6,205,23,1,Creighton,Sr,United States,baylor scheierman
+2024,31,Jonathan Mogbo,https://basketball.realgm.com/player/Jonathan-Mogbo/Summary/135126,TOR,"",F,6-9,225,22,1,San Francisco,Jr *,United States,jonathan mogbo
+2024,32,Kyle Filipowski,https://basketball.realgm.com/player/Kyle-Filipowski/Summary/176056,UTH,"",C,6-11,250,20,1,Duke,So *,United States,kyle filipowski
+2024,33,Tyler Smith,https://basketball.realgm.com/player/Tyler-Smith/Summary/170123,MIL,"",F,6-9,224,19,1,NBA G League Ignite,2004 DOB *,United States,tyler smith
+2024,34,Tyler Kolek,https://basketball.realgm.com/player/Tyler-Kolek/Summary/150699,POR,POR to NYK,G,6-2,195,23,1,Marquette,Jr *,United States,tyler kolek
+2024,35,Johnny Furphy,https://basketball.realgm.com/player/Johnny-Furphy/Summary/205398,SAN,SAN to IND,F,6-8,200,19,1,Kansas,Fr *,Australia,johnny furphy
+2024,36,Juan Nunez,https://basketball.realgm.com/player/Juan-Nunez/Summary/152515,IND,IND to SAN,PG,6-4,190,20,0,Ratiopharm Ulm (Germany),2004 DOB *,Spain,juan nunez
+2024,37,Bobi Klintman,https://basketball.realgm.com/player/Bobi-Klintman/Summary/147161,MIN,MIN to DET,F,6-9,225,21,1,Cairns (Australia),2003 DOB *,Sweden,bobi klintman
+2024,38,Ajay Mitchell,https://basketball.realgm.com/player/Ajay-Mitchell/Summary/139191,NYK,NYK to OKC,PG,6-4,190,22,1,UC Santa Barbara,Jr *,Belgium,ajay mitchell
+2024,39,Jaylen Wells,https://basketball.realgm.com/player/Jaylen-Wells/Summary/188834,MEM,"",F,6-7,206,20,1,Washington State,Jr *,United States,jaylen wells
+2024,40,Oso Ighodaro,https://basketball.realgm.com/player/Oso-Ighodaro/Summary/151448,POR,"POR to OKC
+OKC to NYK
+NYK to PHX",F,6-11,235,21,1,Marquette,Jr *,United States,oso ighodaro
+2024,41,Adem Bona,https://basketball.realgm.com/player/Adem-Bona/Summary/137855,PHL,"",C,6-10,235,21,1,UCLA,So *,Nigeria / Turkey,adem bona
+2024,42,K.J. Simpson,https://basketball.realgm.com/player/KJ-Simpson/Summary/151391,CHA,"",G,6-2,189,21,1,Colorado,Jr *,United States,k j simpson
+2024,43,Nikola Djurisic,https://basketball.realgm.com/player/Nikola-Djurisic/Summary/152577,MIA,MIA to ATL,F,6-8,214,20,0,KK Mega Bemax (Serbia),2004 DOB *,Belgium / Serbia,nikola djurisic
+2024,44,Pelle Larsson,https://basketball.realgm.com/player/Pelle-Larsson/Summary/121029,HOU,HOU to MIA,SG,6-5,215,23,1,Arizona,Sr *,Sweden,pelle larsson
+2024,45,Jamal Shead,https://basketball.realgm.com/player/Jamal-Shead/Summary/148713,SAC,SAC to TOR,G,6-1,200,21,1,Houston,Sr *,United States,jamal shead
+2024,46,Cameron Christie,https://basketball.realgm.com/player/Cameron-Christie/Summary/192084,LAC,"",SG,6-5,190,18,1,Minnesota,Fr *,United States,cameron christie
+2024,47,Antonio Reeves,https://basketball.realgm.com/player/Antonio-Reeves/Summary/127856,ORL,ORL to NOP,GF,6-5,205,23,1,Kentucky,Sr,United States,antonio reeves
+2024,48,Harrison Ingram,https://basketball.realgm.com/player/Harrison-Ingram/Summary/135416,SAN,"",F,6-5,230,21,1,North Carolina,Jr *,United States,harrison ingram
+2024,49,Tristen Newton,https://basketball.realgm.com/player/Tristen-Newton/Summary/135028,IND,"",SG,6-5,190,23,1,UConn,Sr,United States,tristen newton
+2024,50,Enrique Freeman,https://basketball.realgm.com/player/Enrique-Freeman/Summary/157173,IND,"",F,6-9,220,23,1,Akron,Sr,United States,enrique freeman
+2024,51,Melvin Ajinca,https://basketball.realgm.com/player/Melvin-Ajinca/Summary/152393,NYK,NYK to DAL,SF,6-8,218,20,0,Saint-Quentin Basketball (France),2004 DOB *,France,melvin ajinca
+2024,52,Quinten Post,https://basketball.realgm.com/player/Quinten-Post/Summary/142361,GOS,"GOS to OKC
+OKC to POR
+POR to GOS",C,7-0,238,24,1,Boston College,Sr,Netherlands,quinten post
+2024,53,Cam Spencer,https://basketball.realgm.com/player/Cam-Spencer/Summary/134471,DET,DET to MEM,SG,6-3,205,24,1,UConn,Sr,United States,cam spencer
+2024,54,Anton Watson,https://basketball.realgm.com/player/Anton-Watson/Summary/132419,BOS,"",SF,6-8,225,23,1,Gonzaga,Sr,United States,anton watson
+2024,55,Bronny James,https://basketball.realgm.com/player/Bronny-James/Summary/117543,LAL,"",G,6-2,210,19,1,USC,Fr *,United States,bronny james
+2024,56,"Kevin McCullar, Jr.",https://basketball.realgm.com/player/Kevin-McCullar-Jr/Summary/132445,PHX,PHX to NYK,PG,6-6,210,23,1,Kansas,Sr,United States,kevin mccullar
+2024,57,Ulrich Chomche,https://basketball.realgm.com/player/Ulrich-Chomche/Summary/155584,MEM,MEM to TOR,PF,6-11,235,18,1,NBA Academy Africa (Senegal),2005 DOB *,Cameroon,ulrich chomche
+2024,58,Ariel Hukporti,https://basketball.realgm.com/player/Ariel-Hukporti/Summary/116911,DAL,DAL to NYK,C,7-0,246,22,1,MHP Riesen (Germany),2002 DOB,Germany / Togo,ariel hukporti
+2025,1,Cooper Flagg,https://basketball.realgm.com/player/Cooper-Flagg/Summary/196882,DAL,"",F,6-9,205,18,0,Duke,Fr *,United States,cooper flagg
+2025,2,Dylan Harper,https://basketball.realgm.com/player/Dylan-Harper/Summary/183006,SAN,"",GF,6-5,215,19,0,Rutgers,Fr *,United States,dylan harper
+2025,3,V.J. Edgecombe,https://basketball.realgm.com/player/VJ-Edgecombe/Summary/211409,PHL,"",F,6-4,190,19,0,Baylor,Fr *,United States / Bahamas,j edgecombe
+2025,4,Kon Knueppel,https://basketball.realgm.com/player/Kon-Knueppel/Summary/201503,CHA,"",F,6-6,215,19,0,Duke,Fr *,United States,kon knueppel
+2025,5,Ace Bailey,https://basketball.realgm.com/player/Ace-Bailey/Summary/193999,UTH,"",SF,6-9,200,18,0,Rutgers,Fr *,United States,ace bailey
+2025,6,Tre Johnson,https://basketball.realgm.com/player/Tre-Johnson/Summary/183923,WAS,"",SG,6-5,190,19,0,Texas,Fr *,United States,tre johnson
+2025,7,Jeremiah Fears,https://basketball.realgm.com/player/Jeremiah-Fears/Summary/211987,NOP,"",G,6-3,190,18,0,Oklahoma,Fr *,United States,jeremiah fears
+2025,8,Egor Demin,https://basketball.realgm.com/player/Egor-Demin/Summary/183714,BRK,"",PG,6-8,200,19,0,Brigham Young,Fr *,Russia,egor demin
+2025,9,Collin Murray-Boyles,https://basketball.realgm.com/player/Collin-Murray-Boyles/Summary/202374,TOR,"",F,6-7,245,20,0,South Carolina,So *,United States,collin murray boyles
+2025,10,Khaman Maluach,https://basketball.realgm.com/player/Khaman-Maluach/Summary/185649,HOU,HOU to PHX,C,7-1,250,18,0,Duke,Fr *,South Sudan,khaman maluach
+2025,11,Cedric Coward,https://basketball.realgm.com/player/Cedric-Coward/Summary/187064,POR,POR to MEM,F,6-5,206,21,0,Washington State,RS-So *,United States,cedric coward
+2025,12,Noa Essengue,https://basketball.realgm.com/player/Noa-Essengue/Summary/188669,CHI,"",F,6-8,194,18,0,Ratiopharm Ulm (Germany),2006 DOB *,France,noa essengue
+2025,13,Derik Queen,https://basketball.realgm.com/player/Derik-Queen/Summary/182775,ATL,ATL to NOP,C,6-9,250,20,0,Maryland,Fr *,United States,derik queen
+2025,14,Carter Bryant,https://basketball.realgm.com/player/Carter-Bryant/Summary/191063,SAN,"",F,6-6,220,19,0,Arizona,Fr *,United States,carter bryant
+2025,15,Thomas Sorber,https://basketball.realgm.com/player/Thomas-Sorber/Summary/201515,OKC,"",FC,6-9,250,19,0,Georgetown,Fr *,United States,thomas sorber
+2025,16,Yang Hansen,https://basketball.realgm.com/player/Yang-Hansen/Summary/202779,MEM,MEM to POR,C,7-1,270,19,0,Qingdao (China),2005 DOB *,China,yang hansen
+2025,17,Joan Beringer,https://basketball.realgm.com/player/Joan-Beringer/Summary/209899,MIN,"",C,6-11,230,18,0,Cedevita (Croatia),2006 DOB *,France,joan beringer
+2025,18,"Walter Clayton, Jr.",https://basketball.realgm.com/player/Walter-Clayton-Jr/Summary/183386,WAS,WAS to UTH,G,6-4,195,22,0,Florida,Sr,United States,walter clayton
+2025,19,Nolan Traore,https://basketball.realgm.com/player/Nolan-Traore/Summary/188668,BRK,"",F,6-3,185,19,0,Centre Federal Du Basket-Ball (France),2006 DOB *,France,nolan traore
+2025,20,Kasparas Jakucionis,https://basketball.realgm.com/player/Kasparas-Jakucionis/Summary/175532,MIA,"",G,6-5,200,19,0,Illinois,Fr *,Lithuania,kasparas jakucionis
+2025,21,Will Riley,https://basketball.realgm.com/player/Will-Riley/Summary/216250,UTH,UTH to WAS,F,6-9,180,19,0,Illinois,Fr *,Canada,will riley
+2025,22,Drake Powell,https://basketball.realgm.com/player/Drake-Powell/Summary/200361,ATL,ATL to BRK,F,6-5,195,19,0,North Carolina,Fr *,United States,drake powell
+2025,23,Asa Newell,https://basketball.realgm.com/player/Asa-Newell/Summary/194002,NOP,NOP to ATL,PF,6-10,220,19,0,Georgia,Fr *,United States,asa newell
+2025,24,Nique Clifford,https://basketball.realgm.com/player/Nique-Clifford/Summary/151296,OKC,OKC to SAC,F,6-5,175,23,0,Colorado State,Sr,United States,nique clifford
+2025,25,Jase Richardson,https://basketball.realgm.com/player/Jase-Richardson/Summary/191062,ORL,"",G,6-1,180,19,0,Michigan State,Fr *,United States,jase richardson
+2025,26,Ben Saraf,https://basketball.realgm.com/player/Ben-Saraf/Summary/183472,BRK,"",G,6-6,200,19,0,Ratiopharm Ulm (Germany),2006 DOB *,South Africa / Israel,ben saraf
+2025,27,Danny Wolf,https://basketball.realgm.com/player/Danny-Wolf/Summary/182083,BRK,"",C,6-11,250,21,0,Michigan,Jr *,United States / Israel,danny wolf
+2025,28,Hugo Gonzalez,https://basketball.realgm.com/player/Hugo-Gonzalez/Summary/165262,BOS,"",F,6-6,200,19,0,Real Madrid (Spain),2006 DOB *,Spain,hugo gonzalez
+2025,29,Liam McNeeley,https://basketball.realgm.com/player/Liam-McNeeley/Summary/182769,PHX,PHX to CHA,F,6-7,210,19,0,UConn,Fr *,United States,liam mcneeley
+2025,30,Yanic Konan Niederhauser,https://basketball.realgm.com/player/Yanic-Konan-Niederhauser/Summary/183165,LAC,"",F,6-11,242,22,0,Penn State,Jr *,Switzerland,yanic konan niederhauser
+2025,31,Rasheer Fleming,https://basketball.realgm.com/player/Rasheer-Fleming/Summary/188739,MIN,MIN to PHX,F,6-9,240,20,0,Saint Joseph's,Jr *,United States,rasheer fleming
+2025,32,Noah Penda,https://basketball.realgm.com/player/Noah-Penda/Summary/165599,BOS,BOS to ORL,F,6-7,215,20,0,Le Mans Sarthe Basket (France),2005 DOB *,France,noah penda
+2025,33,Sion James,https://basketball.realgm.com/player/Sion-James/Summary/135591,CHA,"",PG,6-5,220,22,0,Duke,Sr,United States,sion james
+2025,34,Ryan Kalkbrenner,https://basketball.realgm.com/player/Ryan-Kalkbrenner/Summary/134681,CHA,"",C,7-1,256,23,0,Creighton,Sr,United States,ryan kalkbrenner
+2025,35,Johni Broome,https://basketball.realgm.com/player/Johni-Broome/Summary/161518,PHL,"",C,6-9,244,22,0,Auburn,Sr,United States,johni broome
+2025,36,Adou Thiero,https://basketball.realgm.com/player/Adou-Thiero/Summary/150070,BRK,BRK to LAL,G,6-7,220,21,0,Arkansas,Jr *,United States,adou thiero
+2025,37,Chaz Lanier,https://basketball.realgm.com/player/Chaz-Lanier/Summary/169259,DET,"",G,6-3,206,23,0,Tennessee,Sr,United States,chaz lanier
+2025,38,Kam Jones,https://basketball.realgm.com/player/Kam-Jones/Summary/175956,SAN,SAN to IND,F,6-4,200,23,0,Marquette,Sr,United States,kam jones
+2025,39,Alijah Martin,https://basketball.realgm.com/player/Alijah-Martin/Summary/134875,TOR,"",PG,6-2,210,23,0,Florida,Sr,United States,alijah martin
+2025,40,Micah Peavy,https://basketball.realgm.com/player/Micah-Peavy/Summary/117378,WAS,WAS to NOP,SF,6-7,215,23,0,Georgetown,Sr,United States,micah peavy
+2025,41,Koby Brea,https://basketball.realgm.com/player/Koby-Brea/Summary/157545,GOS,GOS to PHX,GF,6-5,215,22,0,Kentucky,Sr,United States,koby brea
+2025,42,Maxime Raynaud,https://basketball.realgm.com/player/Maxime-Raynaud/Summary/152390,SAC,"",C,7-1,250,22,0,Stanford,Sr,France,maxime raynaud
+2025,43,Jamir Watkins,https://basketball.realgm.com/player/Jamir-Watkins/Summary/169098,WAS,"",F,6-6,210,23,0,Florida State,Sr *,United States,jamir watkins
+2025,44,Brooks Barnhizer,https://basketball.realgm.com/player/Brooks-Barnhizer/Summary/162075,OKC,"",SF,6-5,230,23,0,Northwestern,Sr,United States,brooks barnhizer
+2025,45,Rocco Zikarsky,https://basketball.realgm.com/player/Rocco-Zikarsky/Summary/185238,CHI,"CHI to LAL
+LAL to MIN",C,7-3,227,18,0,Brisbane (Australia),2006 DOB *,Australia,rocco zikarsky
+2025,46,Amari Williams,https://basketball.realgm.com/player/Amari-Williams/Summary/139293,ORL,ORL to BOS,PF,6-11,250,23,0,Kentucky,Sr,England,amari williams
+2025,47,Bogoljub Markovic,https://basketball.realgm.com/player/Bogoljub-Markovic/Summary/182945,MIL,"",PF,6-11,210,19,0,OKK Beograd (Serbia),2005 DOB *,Serbia,bogoljub markovic
+2025,48,Javon Small,https://basketball.realgm.com/player/Javon-Small/Summary/176352,MEM,"",G,6-1,190,22,0,West Virginia,Sr,United States,javon small
+2025,49,Tyrese Proctor,https://basketball.realgm.com/player/Tyrese-Proctor/Summary/161766,CLE,"",PG,6-4,185,21,0,Duke,Jr *,Australia,tyrese proctor
+2025,50,Kobe Sanders,https://basketball.realgm.com/player/Kobe-Sanders/Summary/169211,NYK,NYK to LAC,F,6-8,207,23,0,Nevada,Sr,United States,kobe sanders
+2025,51,Mohamed Diawara,https://basketball.realgm.com/player/Mohamed-Diawara/Summary/162802,LAC,LAC to NYK,PF,6-9,225,20,0,Cholet Basket (France),2005 DOB *,France,mohamed diawara
+2025,52,Alex Toohey,https://basketball.realgm.com/player/Alex-Toohey/Summary/177212,PHX,PHX to GOS,F,6-8,223,21,0,Sydney (Australia),2004 DOB *,Australia,alex toohey
+2025,53,John Tonje,https://basketball.realgm.com/player/John-Tonje/Summary/134602,UTH,"",GF,6-4,218,24,0,Wisconsin,Sr,United States / Cameroon,john tonje
+2025,54,Taelon Peter,https://basketball.realgm.com/player/Taelon-Peter/Summary/169890,IND,"",G,6-3,185,23,0,Liberty,Sr,United States,taelon peter
+2025,55,Lachlan Olbrich,https://basketball.realgm.com/player/Lachlan-Olbrich/Summary/186799,LAL,LAL to CHI,C,6-8,236,21,0,Illawarra (Australia),2003 DOB,Australia,lachlan olbrich
+2025,56,Will Richard,https://basketball.realgm.com/player/Will-Richard/Summary/165336,MEM,MEM to GOS,F,6-3,206,22,0,Florida,Sr,United States,will richard
+2025,57,Max Shulga,https://basketball.realgm.com/player/Max-Shulga/Summary/151886,ORL,ORL to BOS,G,6-4,210,23,0,VCU,Sr,Ukraine,max shulga
+2025,58,Saliou Niang,https://basketball.realgm.com/player/Saliou-Niang/Summary/174547,CLE,"",F,6-5,190,21,0,Dolomiti Energia Trento (Italy),2004 DOB *,Senegal / Italy,saliou niang
+2025,59,Jahmai Mashack,https://basketball.realgm.com/player/Jahmai-Mashack/Summary/133022,HOU,"HOU to GOS
+GOS to MEM",F,6-4,203,22,0,Tennessee,Sr,United States,jahmai mashack

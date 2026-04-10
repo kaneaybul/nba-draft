@@ -1,0 +1,13 @@
+skill,model_type,variable,detail_type,detail_value,detail_rank
+SWITCH,ranger,height_wo_shoes_in,importance,1.04103869957907,1
+SWITCH,ranger,or_pct,importance,1.03042419427066,2
+SWITCH,ranger,blk_pct,importance,0.929298464975778,3
+SWITCH,ranger,wingspan_in,importance,0.912496380449125,4
+SWITCH,ranger,or_pct,temporal_selection_frequency,0.8,1
+SWITCH,ranger,height_wo_shoes_in,temporal_selection_frequency,0.8,2
+SWITCH,ranger,wingspan_in,temporal_selection_frequency,0.8,3
+SWITCH,ranger,blk_pct,temporal_selection_frequency,0.6,4
+SWITCH,ranger,or_pct,temporal_rank_score,0.633333333333333,1
+SWITCH,ranger,height_wo_shoes_in,temporal_rank_score,0.483333333333333,2
+SWITCH,ranger,wingspan_in,temporal_rank_score,0.225,3
+SWITCH,ranger,blk_pct,temporal_rank_score,0.207051282051282,4
