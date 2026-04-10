@@ -1,0 +1,33 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+.vscode/
+
+# Generated outputs
+processed/**
+!processed/draft/
+processed/draft/**
+!processed/draft/RECOVERY_NOTES.md
+!processed/draft/debug_make_preds.R
+!processed/draft/debug_publish_flow.R
+!processed/draft/debug_read_pred.R
+
+# Downloaded / generated raw data
+raw/**/*.csv
+raw/**/*.rds
+raw/**/*.rda
+raw/**/*.rdata
+
+# Model artifacts and exports
+*.rds
+*.rda
+*.rdata
+*.xlsx
+!ref/draftvar.xlsx
+
+# Experiment logs
+*.log

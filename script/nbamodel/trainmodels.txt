@@ -1,0 +1,206 @@
+library(dplyr)
+library(readr)
+library(purrr)
+
+resolve_base_dir <- function() {
+  candidates <- c(
+    getwd(),
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", "..")
+  )
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate_norm, "raw")) &&
+        dir.exists(file.path(candidate_norm, "script"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+add_alias_columns <- function(df) {
+  alias_pairs <- c(
+    "X3PA_100" = "3PA_100",
+    "X3P_PERC" = "3P_PERC",
+    "X3PA"     = "3PA",
+    "X3P"      = "3P"
+  )
+
+  for (target_name in names(alias_pairs)) {
+    source_name <- alias_pairs[[target_name]]
+    if (!(target_name %in% names(df)) && source_name %in% names(df)) {
+      df[[target_name]] <- df[[source_name]]
+    }
+  }
+
+  df
+}
+
+parse_exclude_years <- function(var_name, default_value = "") {
+  raw_value <- trimws(Sys.getenv(var_name, default_value))
+  if (!nzchar(raw_value) || tolower(raw_value) %in% c("none", "false", "no", "0")) {
+    return(integer(0))
+  }
+
+  years <- suppressWarnings(as.integer(trimws(strsplit(raw_value, ",", fixed = TRUE)[[1]])))
+  years[is.finite(years)]
+}
+
+extract_model_terms <- function(skillmap, model_flag) {
+  skills <- setdiff(names(skillmap), "VAR")
+
+  term1_row <- skillmap %>% filter(VAR == "Term1")
+  term2_row <- skillmap %>% filter(VAR == "Term2")
+  term3_row <- skillmap %>% filter(VAR == "Term3")
+  flag_row  <- skillmap %>% filter(VAR == model_flag)
+
+  if (nrow(term1_row) != 1 || nrow(term2_row) != 1 || nrow(term3_row) != 1 || nrow(flag_row) != 1) {
+    stop("skillmap.csv must contain exactly one Term1, Term2, Term3, and ", model_flag, " row.")
+  }
+
+  terms <- map(skills, function(skill_name) {
+    use_flag <- suppressWarnings(as.numeric(flag_row[[skill_name]][1]))
+    if (!identical(use_flag, 1)) {
+      return(character(0))
+    }
+
+    these_terms <- c(
+      term1_row[[skill_name]][1],
+      term2_row[[skill_name]][1],
+      term3_row[[skill_name]][1]
+    )
+
+    these_terms[!is.na(these_terms) & these_terms != ""]
+  }) %>%
+    unlist(use.names = FALSE) %>%
+    unique()
+
+  terms
+}
+
+build_results_table <- function(fit, style = c("off", "def")) {
+  style <- match.arg(style)
+
+  fit_summary <- summary(fit)
+  coef_df <- as.data.frame(fit_summary$coefficients)
+  coef_df$term <- rownames(coef_df)
+  rownames(coef_df) <- NULL
+
+  coef_df$r_squared <- unname(fit_summary$r.squared)
+  coef_df$adj_r_squared <- unname(fit_summary$adj.r.squared)
+  coef_df$model_sigma <- unname(fit_summary$sigma)
+  coef_df$n <- length(stats::fitted(fit))
+
+  if (style == "off") {
+    coef_df %>%
+      select(
+        Estimate,
+        `Std. Error`,
+        `t value`,
+        `Pr(>|t|)`,
+        term,
+        r_squared,
+        adj_r_squared,
+        model_sigma,
+        n
+      )
+  } else {
+    coef_df %>%
+      transmute(
+        term = term,
+        estimate = Estimate,
+        std_error = `Std. Error`,
+        t_value = `t value`,
+        p_value = `Pr(>|t|)`,
+        r_squared = r_squared,
+        adj_r_squared = adj_r_squared,
+        model_sigma = model_sigma,
+        n = n
+      )
+  }
+}
+
+base_dir <- resolve_base_dir()
+source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+processed_dir <- file.path(base_dir, "processed")
+livedata_dir <- get_live_data_dir(base_dir, create = TRUE)
+results_dir <- file.path(processed_dir, "modelresults")
+ref_dir <- file.path(base_dir, "ref")
+
+dir.create(results_dir, recursive = TRUE, showWarnings = FALSE)
+migrate_legacy_live_data_files(base_dir, files = c("offdata.csv", "defdata.csv"))
+
+off_fp <- file.path(livedata_dir, "offdata.csv")
+def_fp <- file.path(livedata_dir, "defdata.csv")
+impact_fp <- file.path(livedata_dir, "impactoutput.csv")
+skillmap_fp <- file.path(ref_dir, "skillmap.csv")
+off_out_fp <- file.path(results_dir, "off_lm_1_results.csv")
+def_out_fp <- file.path(results_dir, "def_lm_1_results.csv")
+
+off_hist <- read_csv(off_fp, show_col_types = FALSE) %>% add_alias_columns()
+def_hist <- read_csv(def_fp, show_col_types = FALSE) %>% add_alias_columns()
+impact_hist <- read_csv(impact_fp, show_col_types = FALSE)
+skillmap <- read_csv(skillmap_fp, show_col_types = FALSE)
+
+if (!"off_dep" %in% names(off_hist) || !"def_dep" %in% names(def_hist)) {
+  impact_join <- impact_hist %>%
+    transmute(
+      nba_id = as.character(nba_id),
+      year = as.integer(year),
+      off_dep = as.numeric(off_dep),
+      def_dep = as.numeric(def_dep)
+    )
+
+  if (!"off_dep" %in% names(off_hist)) {
+    off_hist <- off_hist %>%
+      mutate(
+        nba_id = as.character(nba_id),
+        year = as.integer(year)
+      ) %>%
+      left_join(impact_join %>% select(nba_id, year, off_dep), by = c("nba_id", "year")) %>%
+      filter(!is.na(off_dep))
+  }
+
+  if (!"def_dep" %in% names(def_hist)) {
+    def_hist <- def_hist %>%
+      mutate(
+        nba_id = as.character(nba_id),
+        year = as.integer(year)
+      ) %>%
+      left_join(impact_join %>% select(nba_id, year, def_dep), by = c("nba_id", "year")) %>%
+      filter(!is.na(def_dep))
+  }
+}
+
+off_terms <- extract_model_terms(skillmap, "Offense?")
+def_terms <- extract_model_terms(skillmap, "Defense?")
+
+if (length(off_terms) == 0) stop("No offense model terms were found in skillmap.csv.")
+if (length(def_terms) == 0) stop("No defense model terms were found in skillmap.csv.")
+
+off_formula <- as.formula(paste("off_dep ~", paste(off_terms, collapse = " + ")))
+def_formula <- as.formula(paste("def_dep ~", paste(def_terms, collapse = " + ")))
+
+def_exclude_years <- parse_exclude_years("DEF_MODEL_EXCLUDE_YEARS", "2016,2017")
+def_fit_hist <- def_hist
+if (length(def_exclude_years) > 0) {
+  def_fit_hist <- def_fit_hist %>%
+    mutate(year = as.integer(year)) %>%
+    filter(!year %in% def_exclude_years)
+  message("Excluding defense model years: ", paste(def_exclude_years, collapse = ", "))
+  message("Defense fit rows after exclusion: ", nrow(def_fit_hist))
+}
+
+off_fit <- lm(off_formula, data = off_hist)
+def_fit <- lm(def_formula, data = def_fit_hist)
+
+off_results <- build_results_table(off_fit, style = "off")
+def_results <- build_results_table(def_fit, style = "def")
+
+write_csv(off_results, off_out_fp)
+write_csv(def_results, def_out_fp)
+
+message("Trained offense model and wrote results to: ", off_out_fp)
+message("Trained defense model and wrote results to: ", def_out_fp)

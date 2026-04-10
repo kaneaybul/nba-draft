@@ -1,0 +1,563 @@
+library(dplyr)
+library(tidyr)
+library(readr)
+library(purrr)
+library(openxlsx)
+
+# =========================================================
+# FILE PATHS
+# =========================================================
+resolve_base_dir <- function() {
+  candidates <- c(
+    getwd(),
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", "..")
+  )
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate_norm, "raw")) &&
+        dir.exists(file.path(candidate_norm, "script"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+base_dir      <- resolve_base_dir()
+source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+processed_dir <- file.path(base_dir, "processed")
+livedata_dir  <- get_live_data_dir(base_dir, create = TRUE)
+results_dir   <- file.path(processed_dir, "modelresults")
+
+migrate_legacy_live_data_files(
+  base_dir,
+  files = c("offdata.csv", "defdata.csv", "impactoutput.csv", "skilloutput.csv", "skilloutput.xlsx")
+)
+
+off_hist_path <- file.path(livedata_dir, "offdata.csv")
+def_hist_path <- file.path(livedata_dir, "defdata.csv")
+impact_path   <- file.path(livedata_dir, "impactoutput.csv")
+
+skill_path <- file.path(base_dir, "ref", "skillmap.csv")
+off_path   <- file.path(results_dir, "off_lm_1_results.csv")
+def_path   <- file.path(results_dir, "def_lm_1_results.csv")
+
+out_csv  <- file.path(livedata_dir, "skilloutput.csv")
+out_xlsx <- file.path(livedata_dir, "skilloutput.xlsx")
+
+# =========================================================
+# HELPERS
+# =========================================================
+add_alias_columns <- function(df) {
+  alias_pairs <- c(
+    "X3PA_100" = "3PA_100",
+    "X3P_PERC" = "3P_PERC",
+    "X3PA"     = "3PA",
+    "X3P"      = "3P"
+  )
+
+  for (target_name in names(alias_pairs)) {
+    source_name <- alias_pairs[[target_name]]
+    if (!(target_name %in% names(df)) && source_name %in% names(df)) {
+      df[[target_name]] <- df[[source_name]]
+    }
+  }
+
+  df
+}
+
+clean_display_name <- function(x) {
+  x <- as.character(x)
+  x <- trimws(x)
+  x[x == ""] <- NA_character_
+  x <- iconv(x, from = "", to = "ASCII//TRANSLIT")
+  x <- gsub("[?`']", "", x)
+  x <- gsub("\\s+", " ", x)
+  trimws(x)
+}
+
+eval_term <- function(data, term_string) {
+  if (term_string %in% names(data)) {
+    out <- suppressWarnings(as.numeric(data[[term_string]]))
+    if (length(out) != nrow(data)) {
+      stop("Term did not evaluate to one value per input row: ", term_string)
+    }
+    return(out)
+  }
+
+  mm <- model.matrix(
+    as.formula(paste0("~ 0 + ", term_string)),
+    data = data,
+    na.action = stats::na.pass
+  )
+  out <- as.numeric(mm[, 1])
+  if (length(out) != nrow(data)) {
+    stop("Term did not evaluate to one value per input row: ", term_string)
+  }
+  out
+}
+
+safe_z <- function(x) {
+  s <- sd(x, na.rm = TRUE)
+  m <- mean(x, na.rm = TRUE)
+
+  if (is.na(s) || s == 0) {
+    return(rep(0, length(x)))
+  }
+
+  (x - m) / s
+}
+
+write_csv_with_retry <- function(df, path, attempts = 5, sleep_seconds = 2) {
+  last_error <- NULL
+
+  for (i in seq_len(attempts)) {
+    result <- tryCatch(
+      {
+        readr::write_csv(df, path)
+        TRUE
+      },
+      error = function(e) e
+    )
+
+    if (isTRUE(result)) {
+      return(invisible(TRUE))
+    }
+
+    last_error <- result
+    message("Write attempt ", i, " failed for ", path)
+
+    if (i < attempts) {
+      Sys.sleep(sleep_seconds)
+    }
+  }
+
+  stop(
+    paste0(
+      "Could not write output file: ", path, "\n",
+      "If this file is open in Excel or another program, close it and try again.\n",
+      "Original error: ", conditionMessage(last_error)
+    )
+  )
+}
+
+save_workbook_with_retry <- function(wb, path, attempts = 5, sleep_seconds = 2) {
+  last_error <- NULL
+
+  for (i in seq_len(attempts)) {
+    result <- tryCatch(
+      {
+        saveWorkbook(wb, path, overwrite = TRUE)
+        TRUE
+      },
+      error = function(e) e
+    )
+
+    if (isTRUE(result)) {
+      return(invisible(TRUE))
+    }
+
+    last_error <- result
+    message("Write attempt ", i, " failed for ", path)
+
+    if (i < attempts) {
+      Sys.sleep(sleep_seconds)
+    }
+  }
+
+  stop(
+    paste0(
+      "Could not write output file: ", path, "\n",
+      "If this file is open in Excel or another program, close it and try again.\n",
+      "Original error: ", conditionMessage(last_error)
+    )
+  )
+}
+
+# =========================================================
+# READ FILES
+# =========================================================
+off_hist <- read_csv(off_hist_path, show_col_types = FALSE)
+def_hist <- read_csv(def_hist_path, show_col_types = FALSE)
+impact_hist <- read_csv(impact_path, show_col_types = FALSE)
+skillmap <- read_csv(skill_path, show_col_types = FALSE)
+off_raw  <- read_csv(off_path, show_col_types = FALSE)
+def_raw  <- read_csv(def_path, show_col_types = FALSE)
+
+off_hist <- add_alias_columns(off_hist)
+def_hist <- add_alias_columns(def_hist)
+
+# =========================================================
+# BASIC CHECKS
+# =========================================================
+required_id_cols <- c("player_name", "year")
+
+missing_off_id_cols <- setdiff(required_id_cols, names(off_hist))
+missing_def_id_cols <- setdiff(required_id_cols, names(def_hist))
+
+if (length(missing_off_id_cols) > 0) {
+  stop(
+    paste0(
+      "offdata.csv is missing required column(s): ",
+      paste(missing_off_id_cols, collapse = ", ")
+    )
+  )
+}
+
+if (length(missing_def_id_cols) > 0) {
+  stop(
+    paste0(
+      "defdata.csv is missing required column(s): ",
+      paste(missing_def_id_cols, collapse = ", ")
+    )
+  )
+}
+
+required_impact_cols <- c("nba_id", "player_name", "year", "off_dep", "def_dep")
+missing_impact_cols <- setdiff(required_impact_cols, names(impact_hist))
+
+if (length(missing_impact_cols) > 0) {
+  stop(
+    paste0(
+      "impactoutput.csv is missing required column(s): ",
+      paste(missing_impact_cols, collapse = ", ")
+    )
+  )
+}
+
+if (!"VAR" %in% names(skillmap)) {
+  stop("skillmap.csv must contain a VAR column.")
+}
+
+# =========================================================
+# COEFFICIENT TABLES
+# =========================================================
+off_coef <- off_raw %>%
+  select(term, estimate = Estimate) %>%
+  mutate(model = "off")
+
+def_coef <- def_raw %>%
+  select(term, estimate) %>%
+  mutate(model = "def")
+
+off_intercept <- off_coef %>%
+  filter(term == "(Intercept)") %>%
+  pull(estimate)
+
+def_intercept <- def_coef %>%
+  filter(term == "(Intercept)") %>%
+  pull(estimate)
+
+if (length(off_intercept) != 1) stop("Could not find exactly one offense intercept.")
+if (length(def_intercept) != 1) stop("Could not find exactly one defense intercept.")
+
+off_intercept <- off_intercept[[1]]
+def_intercept <- def_intercept[[1]]
+
+# =========================================================
+# SKILLMAP -> LONG
+# =========================================================
+skills <- setdiff(names(skillmap), "VAR")
+
+term1_row <- skillmap %>% filter(VAR == "Term1")
+term2_row <- skillmap %>% filter(VAR == "Term2")
+term3_row <- skillmap %>% filter(VAR == "Term3")
+off_row   <- skillmap %>% filter(VAR == "Offense?")
+def_row   <- skillmap %>% filter(VAR == "Defense?")
+
+if (nrow(term1_row) != 1 || nrow(term2_row) != 1 || nrow(term3_row) != 1 ||
+    nrow(off_row) != 1 || nrow(def_row) != 1) {
+  stop("skillmap.csv must have exactly one row each for Term1, Term2, Term3, Offense?, Defense?.")
+}
+
+skillmap_long <- map_dfr(skills, function(skill_name) {
+  these_terms <- c(
+    term1_row[[skill_name]][1],
+    term2_row[[skill_name]][1],
+    term3_row[[skill_name]][1]
+  )
+
+  these_terms <- these_terms[!is.na(these_terms) & these_terms != ""]
+
+  tibble(
+    skill = skill_name,
+    term = these_terms,
+    off_flag = suppressWarnings(as.numeric(off_row[[skill_name]][1])),
+    def_flag = suppressWarnings(as.numeric(def_row[[skill_name]][1]))
+  )
+}) %>%
+  mutate(
+    model = case_when(
+      off_flag == 1 ~ "off",
+      def_flag == 1 ~ "def",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(model)) %>%
+  select(skill, term, model)
+
+# =========================================================
+# MODEL-SPECIFIC TERM MAPS
+# =========================================================
+off_skill_terms <- skillmap_long %>%
+  filter(model == "off") %>%
+  inner_join(
+    off_coef %>% filter(term != "(Intercept)"),
+    by = c("term", "model")
+  ) %>%
+  distinct(skill, term, model, estimate)
+
+def_skill_terms <- skillmap_long %>%
+  filter(model == "def") %>%
+  inner_join(
+    def_coef %>% filter(term != "(Intercept)"),
+    by = c("term", "model")
+  ) %>%
+  distinct(skill, term, model, estimate)
+
+if (nrow(off_skill_terms) == 0) stop("No overlap found between offense skillmap terms and offense coefficients.")
+if (nrow(def_skill_terms) == 0) stop("No overlap found between defense skillmap terms and defense coefficients.")
+
+bad_off_terms <- off_skill_terms %>%
+  count(term) %>%
+  filter(n > 1)
+
+bad_def_terms <- def_skill_terms %>%
+  count(term) %>%
+  filter(n > 1)
+
+if (nrow(bad_off_terms) > 0) {
+  print(bad_off_terms, n = Inf)
+  stop("Offense term mapping duplicated one or more terms.")
+}
+
+if (nrow(bad_def_terms) > 0) {
+  print(bad_def_terms, n = Inf)
+  stop("Defense term mapping duplicated one or more terms.")
+}
+
+# =========================================================
+# GENERIC MODEL BUILDER
+# =========================================================
+build_model_skill_table <- function(hist_df, skill_terms) {
+  unique_terms <- unique(skill_terms$term)
+  id_cols <- intersect(c("nba_id", "player_name", "year"), names(hist_df))
+
+  failed_terms <- character(0)
+  term_eval_list <- vector("list", length(unique_terms))
+  names(term_eval_list) <- unique_terms
+
+  for (tm in unique_terms) {
+    val <- tryCatch(
+      eval_term(hist_df, tm),
+      error = function(e) e
+    )
+
+    if (inherits(val, "error")) {
+      failed_terms <- c(failed_terms, tm)
+    } else {
+      term_eval_list[[tm]] <- val
+    }
+  }
+
+  if (length(failed_terms) > 0) {
+    stop(
+      paste0(
+        "These terms could not be evaluated:\n",
+        paste(failed_terms, collapse = "\n")
+      )
+    )
+  }
+
+  term_values <- hist_df %>%
+    select(all_of(id_cols))
+
+  for (tm in unique_terms) {
+    term_values[[tm]] <- term_eval_list[[tm]]
+  }
+
+  term_values_long <- term_values %>%
+    pivot_longer(
+      cols = -all_of(id_cols),
+      names_to = "term",
+      values_to = "term_value"
+    )
+
+  skill_contrib_long <- term_values_long %>%
+    inner_join(skill_terms, by = "term") %>%
+    mutate(contribution = term_value * estimate)
+
+  skill_scores <- skill_contrib_long %>%
+    group_by(across(all_of(id_cols)), skill) %>%
+    summarise(skill_score = sum(contribution, na.rm = TRUE), .groups = "drop")
+
+  skill_scores %>%
+    select(all_of(id_cols), skill, skill_score) %>%
+    pivot_wider(
+      names_from = skill,
+      values_from = skill_score,
+      values_fill = 0
+    )
+}
+
+# =========================================================
+# BUILD OFFENSE / DEFENSE TABLES
+# =========================================================
+off_tbl <- build_model_skill_table(
+  hist_df = off_hist,
+  skill_terms = off_skill_terms
+)
+
+def_tbl <- build_model_skill_table(
+  hist_df = def_hist,
+  skill_terms = def_skill_terms
+)
+
+# =========================================================
+# CHECK FOR OVERLAPPING SKILL NAMES
+# =========================================================
+off_skill_names <- setdiff(names(off_tbl), c("nba_id", "player_name", "year"))
+def_skill_names <- setdiff(names(def_tbl), c("nba_id", "player_name", "year"))
+
+overlap_skills <- intersect(off_skill_names, def_skill_names)
+
+if (length(overlap_skills) > 0) {
+  stop(
+    paste0(
+      "These skill names exist on both offense and defense, so prefixes cannot be safely removed:\n",
+      paste(overlap_skills, collapse = "\n")
+    )
+  )
+}
+
+# =========================================================
+# MERGE TOGETHER
+# =========================================================
+join_keys <- intersect(names(off_tbl), names(def_tbl))
+join_keys <- intersect(c("nba_id", "player_name", "year"), join_keys)
+
+final_tbl <- full_join(off_tbl, def_tbl, by = join_keys)
+
+skill_cols <- setdiff(names(final_tbl), c("nba_id", "player_name", "year"))
+final_tbl[skill_cols] <- lapply(final_tbl[skill_cols], function(x) ifelse(is.na(x), 0, x))
+
+impact_tbl <- impact_hist %>%
+  transmute(
+    nba_id = as.character(nba_id),
+    player_name_impact = clean_display_name(player_name),
+    year = as.integer(year),
+    IMPACT_OFF = as.numeric(off_dep),
+    IMPACT_DEF = as.numeric(def_dep),
+    IMPACT_TOTAL = IMPACT_OFF + IMPACT_DEF
+  ) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+final_tbl <- final_tbl %>%
+  mutate(
+    nba_id = as.character(nba_id),
+    year = as.integer(year)
+  ) %>%
+  left_join(impact_tbl, by = c("nba_id", "year")) %>%
+  mutate(
+    player_name = clean_display_name(coalesce(player_name, player_name_impact))
+  ) %>%
+  select(-player_name_impact)
+
+# =========================================================
+# ADD INTERCEPTS AND TOTALS
+# =========================================================
+final_tbl <- final_tbl %>%
+  mutate(
+    off_intercept = off_intercept,
+    def_intercept = def_intercept
+  )
+
+off_skill_cols <- off_skill_names
+def_skill_cols <- def_skill_names
+
+final_tbl <- final_tbl %>%
+  mutate(
+    OFF = off_intercept + rowSums(across(all_of(off_skill_cols)), na.rm = TRUE),
+    DEF = def_intercept + rowSums(across(all_of(def_skill_cols)), na.rm = TRUE),
+    TOTAL = OFF + DEF
+  ) %>%
+  arrange(year, desc(TOTAL), player_name)
+
+# =========================================================
+# ADD Z-SCORED SKILL COLUMNS
+# =========================================================
+all_skill_cols <- c(sort(off_skill_cols), sort(def_skill_cols))
+raw_skill_cols <- paste0(all_skill_cols, "_raw")
+
+for (i in seq_along(all_skill_cols)) {
+  final_tbl[[raw_skill_cols[[i]]]] <- final_tbl[[all_skill_cols[[i]]]]
+}
+
+for (i in seq_along(all_skill_cols)) {
+  skill_col <- all_skill_cols[[i]]
+  raw_col <- raw_skill_cols[[i]]
+
+  final_tbl <- final_tbl %>%
+    group_by(year) %>%
+    mutate(!!skill_col := safe_z(.data[[raw_col]])) %>%
+    ungroup()
+}
+
+# =========================================================
+# REORDER COLUMNS
+# =========================================================
+final_tbl <- final_tbl %>%
+  select(
+    nba_id,
+    player_name,
+    year,
+    IMPACT_OFF,
+    IMPACT_DEF,
+    IMPACT_TOTAL,
+    off_intercept,
+    def_intercept,
+    all_of(all_skill_cols),
+    all_of(raw_skill_cols),
+    OFF,
+    DEF,
+    TOTAL
+  )
+
+# =========================================================
+# WRITE MASTER CSV
+# =========================================================
+write_csv_with_retry(final_tbl, out_csv)
+
+# =========================================================
+# WRITE EXCEL WORKBOOK
+# =========================================================
+wb <- createWorkbook()
+
+addWorksheet(wb, "Master")
+writeData(wb, "Master", final_tbl)
+freezePane(wb, "Master", firstActiveRow = 2, firstActiveCol = 3)
+addFilter(wb, "Master", row = 1, cols = 1:ncol(final_tbl))
+setColWidths(wb, "Master", cols = 1:ncol(final_tbl), widths = "auto")
+
+years <- sort(unique(final_tbl$year))
+
+for (yr in years) {
+  season_df <- final_tbl %>%
+    filter(year == yr) %>%
+    arrange(desc(TOTAL), player_name)
+
+  sheet_name <- as.character(yr)
+  addWorksheet(wb, sheet_name)
+  writeData(wb, sheet_name, season_df)
+  freezePane(wb, sheet_name, firstActiveRow = 2, firstActiveCol = 3)
+  addFilter(wb, sheet_name, row = 1, cols = 1:ncol(season_df))
+  setColWidths(wb, sheet_name, cols = 1:ncol(season_df), widths = "auto")
+}
+
+save_workbook_with_retry(wb, out_xlsx)
+
+cat("Done.\n")
+cat("Master CSV written to:\n", out_csv, "\n")
+cat("Excel workbook written to:\n", out_xlsx, "\n")

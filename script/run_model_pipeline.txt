@@ -1,0 +1,65 @@
+resolve_base_dir <- function() {
+  candidates <- c(
+    getwd(),
+    file.path(getwd(), "..")
+  )
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate_norm, "raw")) &&
+        dir.exists(file.path(candidate_norm, "script"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+run_step <- function(base_dir, label, relative_path) {
+  script_path <- file.path(base_dir, relative_path)
+  message("")
+  message("=== ", label, " ===")
+  message("Running: ", script_path)
+
+  tryCatch(
+    {
+      source(script_path, local = new.env(parent = globalenv()))
+      message("Completed: ", label)
+    },
+    error = function(e) {
+      stop(
+        paste0(
+          "Pipeline stopped at '", label, "' (", relative_path, ").\n",
+          "Error: ", conditionMessage(e)
+        ),
+        call. = FALSE
+      )
+    }
+  )
+}
+
+base_dir <- resolve_base_dir()
+epm_dir <- file.path(base_dir, "raw", "epm")
+epm_files <- list.files(epm_dir, pattern = "^epm\\d{2}\\.csv$", full.names = TRUE)
+
+message("Full model pipeline starting from: ", base_dir)
+
+if (length(epm_files) == 0) {
+  stop(
+    paste0(
+      "No EPM files were found in ", epm_dir, ".\n",
+      "This repo does not currently include an EPM pull script, so the pipeline stops here."
+    ),
+    call. = FALSE
+  )
+}
+
+run_step(base_dir, "Pull Databallr Stats", file.path("script", "data", "pulldataballrstats.txt"))
+run_step(base_dir, "Build Switch Data", file.path("script", "switch", "switchpullall.txt"))
+run_step(base_dir, "Build Impact Targets", file.path("script", "data", "createimpact.txt"))
+run_step(base_dir, "Build Model Datasets", file.path("script", "nbamodel", "createtestdata.txt"))
+run_step(base_dir, "Train Models", file.path("script", "nbamodel", "trainmodels.txt"))
+run_step(base_dir, "Build Skill Output", file.path("script", "output", "impactoutput.txt"))
+
+message("")
+message("Full model pipeline completed successfully.")
