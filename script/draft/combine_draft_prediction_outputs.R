@@ -23,13 +23,22 @@ read_if_exists <- function(path) {
 }
 
 normalize_join_name <- function(x) {
-  x <- tolower(trimws(as.character(x)))
+  raw_x <- as.character(x)
+  safe_x <- suppressWarnings(iconv(raw_x, from = "UTF-8", to = "UTF-8", sub = ""))
+  fill_idx <- is.na(safe_x) & !is.na(raw_x)
+  safe_x[fill_idx] <- raw_x[fill_idx]
+  converted <- suppressWarnings(iconv(safe_x, from = "", to = "ASCII//TRANSLIT", sub = ""))
+  fill_idx <- is.na(converted) & !is.na(safe_x)
+  converted[fill_idx] <- safe_x[fill_idx]
+  x <- tolower(trimws(converted))
   x <- gsub("&", " and ", x, fixed = TRUE)
   x <- gsub("[^a-z0-9 ]+", " ", x)
   x <- gsub("\\b(jr|sr|ii|iii|iv|v)\\b", " ", x)
   x <- gsub("\\s+", " ", x)
   trimws(x)
 }
+
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 
 parse_optional_year_env <- function(var_name, default = NA_integer_) {
   value <- suppressWarnings(as.integer(Sys.getenv(var_name, "")))

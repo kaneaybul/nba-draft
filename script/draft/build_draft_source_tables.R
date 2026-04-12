@@ -60,19 +60,39 @@ read_draftvar_variables <- function(path) {
   unique(vars)
 }
 
-read_scv_lookup <- function(path) {
+read_single_scv_lookup <- function(path, priority = 1L) {
   if (!file.exists(path)) {
-    return(data.table(join_player = character(), scv_draft = numeric()))
+    return(data.table(join_player = character(), scv_draft = numeric(), source_priority = integer()))
   }
   scv_dt <- fread(path, na.strings = c("", "NA", "N/A", "NaN"))
-  if (!all(c("name", "sc") %in% names(scv_dt))) {
-    return(data.table(join_player = character(), scv_draft = numeric()))
+  if (!"name" %in% names(scv_dt)) {
+    return(data.table(join_player = character(), scv_draft = numeric(), source_priority = integer()))
+  }
+  score_col <- names(scv_dt)[tolower(names(scv_dt)) %in% c("sc", "scv", "shot_creation", "shot_creation_rank")][1]
+  if (is.na(score_col) || !nzchar(score_col)) {
+    return(data.table(join_player = character(), scv_draft = numeric(), source_priority = integer()))
   }
   scv_dt[, join_player := normalize_join_name(name)]
-  scv_dt[, scv_draft := suppressWarnings(as.numeric(sc))]
+  scv_dt[, scv_draft := suppressWarnings(as.numeric(get(score_col)))]
+  scv_dt[, source_priority := as.integer(priority)]
   scv_dt <- scv_dt[nzchar(join_player) & is.finite(scv_draft)]
-  setorder(scv_dt, join_player, scv_draft)
-  unique(scv_dt[, .(join_player, scv_draft)], by = "join_player")
+  scv_dt[, .(join_player, scv_draft, source_priority)]
+}
+
+read_scv_lookup <- function(path, override_path = NULL) {
+  combined_dt <- rbindlist(
+    list(
+      read_single_scv_lookup(path, priority = 1L),
+      read_single_scv_lookup(override_path, priority = 2L)
+    ),
+    use.names = TRUE,
+    fill = TRUE
+  )
+  if (!nrow(combined_dt)) {
+    return(data.table(join_player = character(), scv_draft = numeric()))
+  }
+  setorder(combined_dt, join_player, -source_priority)
+  unique(combined_dt[, .(join_player, scv_draft)], by = "join_player")
 }
 
 prepare_skill_targets <- function(skill_fp) {
@@ -109,15 +129,89 @@ prepare_skill_targets <- function(skill_fp) {
   )], by = c("join_player", "outcome_year"))
 }
 
+read_college_manual_supplement <- function(path) {
+  if (!file.exists(path)) {
+    return(data.table())
+  }
+
+  supplement_dt <- fread(path, na.strings = c("", "NA", "N/A", "NaN"))
+  if (!nrow(supplement_dt)) {
+    return(data.table())
+  }
+
+  if (!"player" %in% names(supplement_dt)) {
+    warning("Manual college supplement is missing player column: ", path)
+    return(data.table())
+  }
+
+  if (!"year" %in% names(supplement_dt) && "draft_year" %in% names(supplement_dt)) {
+    supplement_dt[, year := draft_year]
+  }
+  if (!"year" %in% names(supplement_dt)) {
+    warning("Manual college supplement is missing year/draft_year column: ", path)
+    return(data.table())
+  }
+
+  supplement_dt[, player := anglicize_text(player)]
+  supplement_dt[, join_player := normalize_join_name(player)]
+  supplement_dt[, draft_year := suppressWarnings(as.integer(year))]
+  supplement_dt <- supplement_dt[nzchar(join_player) & is.finite(draft_year)]
+
+  if (!"manual_replace_scope" %in% names(supplement_dt)) {
+    supplement_dt[, manual_replace_scope := "player"]
+  }
+  supplement_dt[, manual_replace_scope := tolower(trimws(as.character(manual_replace_scope)))]
+  supplement_dt[!manual_replace_scope %in% c("player", "player_year", "none"), manual_replace_scope := "player"]
+
+  supplement_dt
+}
+
+apply_college_manual_supplement <- function(draft_dt, supplement_dt) {
+  if (!nrow(supplement_dt)) {
+    return(draft_dt)
+  }
+
+  player_replace_keys <- unique(supplement_dt[manual_replace_scope == "player", join_player])
+  if (length(player_replace_keys)) {
+    draft_dt <- draft_dt[!join_player %in% player_replace_keys]
+  }
+
+  player_year_replace_keys <- unique(
+    supplement_dt[manual_replace_scope == "player_year", .(join_player, draft_year)]
+  )
+  if (nrow(player_year_replace_keys)) {
+    draft_dt <- merge(
+      draft_dt,
+      player_year_replace_keys[, manual_drop_row := TRUE],
+      by = c("join_player", "draft_year"),
+      all.x = TRUE,
+      sort = FALSE
+    )
+    draft_dt <- draft_dt[is.na(manual_drop_row)]
+    draft_dt[, manual_drop_row := NULL]
+  }
+
+  supplement_dt[, manual_replace_scope := NULL]
+  rbindlist(list(draft_dt, supplement_dt), use.names = TRUE, fill = TRUE, ignore.attr = TRUE)
+}
+
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 ref_dir <- file.path(base_dir, "ref")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = FALSE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 draftballr_fp <- Sys.getenv("DRAFTBALLR_INPUT", file.path(draft_dir, "draftballr.csv"))
+prediction_names_fp <- Sys.getenv("DRAFT_PREDICTION_NAMES_INPUT", file.path(ref_dir, "draftprednames.csv"))
+college_manual_supplement_fp <- Sys.getenv(
+  "DRAFT_COLLEGE_MANUAL_SUPPLEMENT_INPUT",
+  file.path(draft_dir, "draft_college_manual_supplement.csv")
+)
 draftvar_fp <- Sys.getenv("DRAFTVAR_INPUT", file.path(ref_dir, "draftvar.xlsx"))
 scv_fp <- Sys.getenv("SCV_INPUT", file.path(ref_dir, "scvardraft.csv"))
+scv_override_fp <- Sys.getenv("SCV_OVERRIDE_INPUT", file.path(ref_dir, "scvardraft_overrides.csv"))
 skill_fp <- Sys.getenv("SKILL_OUTPUT_INPUT", file.path(live_dir, "skilloutput.csv"))
 
 training_fp <- Sys.getenv("DRAFT_TRAINING_OUTPUT", file.path(draft_dir, "draft_training_data.csv"))
@@ -125,6 +219,7 @@ domestic_fp <- Sys.getenv("DRAFT_DOMESTIC_OUTPUT", file.path(draft_dir, "draft_p
 international_fp <- Sys.getenv("DRAFT_INTERNATIONAL_OUTPUT", file.path(draft_dir, "draft_prediction_international.csv"))
 review_fp <- Sys.getenv("DRAFT_TRAINING_MATCH_REVIEW_OUTPUT", file.path(draft_dir, "draft_training_match_review.csv"))
 source_fp <- Sys.getenv("DRAFT_SOURCE_BASE_OUTPUT", file.path(draft_dir, "draft_prediction_source_base.csv"))
+scv_review_fp <- Sys.getenv("SCV_REVIEW_OUTPUT", file.path(draft_dir, "scv_review_latest_class.csv"))
 
 outcome_lag <- suppressWarnings(as.integer(Sys.getenv("DRAFT_OUTCOME_LAG", "4")))
 if (!is.finite(outcome_lag) || outcome_lag < 1L) outcome_lag <- 4L
@@ -159,29 +254,56 @@ draft_dt[, player := anglicize_text(player)]
 draft_dt[, join_player := normalize_join_name(player)]
 draft_dt[, draft_year := suppressWarnings(as.integer(year))]
 
+college_manual_supplement_dt <- read_college_manual_supplement(college_manual_supplement_fp)
+manual_supplement_rows <- nrow(college_manual_supplement_dt)
+draft_dt <- apply_college_manual_supplement(draft_dt, college_manual_supplement_dt)
+
 draftvar_vars <- read_draftvar_variables(draftvar_fp)
 available_vars <- intersect(draftvar_vars, names(draft_dt))
 
 id_cols <- c(
   "player", "join_player", "year", "draft_year", "id", "player_id", "espn_id",
   "cbbd_id", "big_board_rank", "birthdate", "draft_age", "height_wo_shoes_in",
-  "wingspan_in", "weight_lbs", "pos_code", "hometown"
+  "wingspan_in", "weight_lbs", "pos_code", "hometown", "manual_source",
+  "manual_source_url", "manual_source_note"
 )
 keep_cols <- unique(c(id_cols, available_vars))
 keep_cols <- keep_cols[keep_cols %in% names(draft_dt)]
 draft_dt <- draft_dt[, ..keep_cols]
 
-scv_lookup <- read_scv_lookup(scv_fp)
+scv_lookup <- read_scv_lookup(scv_fp, scv_override_fp)
 draft_dt <- merge(draft_dt, scv_lookup, by = "join_player", all.x = TRUE, sort = FALSE)
+prediction_name_filter_dt <- read_prediction_name_filter(prediction_names_fp)
 
 prediction_year <- max(draft_dt$draft_year, na.rm = TRUE)
+prediction_filter_years <- if (!is.null(prediction_name_filter_dt) && nrow(prediction_name_filter_dt)) {
+  sort(unique(prediction_name_filter_dt[is.finite(prediction_filter_year), prediction_filter_year]))
+} else {
+  integer()
+}
+prediction_filter_all_years <- length(prediction_filter_years) > 0L && any(prediction_filter_years != prediction_year)
 
-if (prediction_all_years) {
+if (prediction_all_years || prediction_filter_all_years) {
   domestic_dt <- copy(draft_dt[!is.na(cbbd_id)])
   international_dt <- copy(draft_dt[is.na(cbbd_id)])
 } else {
   domestic_dt <- copy(draft_dt[draft_year == prediction_year & !is.na(cbbd_id)])
   international_dt <- copy(draft_dt[draft_year == prediction_year & is.na(cbbd_id)])
+}
+domestic_dt <- apply_prediction_name_filter(domestic_dt, prediction_name_filter_dt)
+international_dt <- apply_prediction_name_filter(international_dt, prediction_name_filter_dt)
+
+scv_review_dt <- copy(draft_dt[draft_year == prediction_year])
+scv_review_dt <- apply_prediction_name_filter(scv_review_dt, prediction_name_filter_dt)
+if (nrow(scv_review_dt)) {
+  scv_review_dt[, prediction_pool := fifelse(is.na(cbbd_id), "international", "domestic")]
+  scv_review_dt[, has_scv := !is.na(scv_draft)]
+  setorder(scv_review_dt, prediction_pool, player)
+  fwrite(
+    scv_review_dt[, .(player, draft_year, prediction_pool, scv_draft, has_scv)],
+    scv_review_fp,
+    na = ""
+  )
 }
 
 skill_targets_dt <- prepare_skill_targets(skill_fp)
@@ -316,8 +438,14 @@ cat("Built source base ->", source_fp, "\n")
 cat("Training rows:", nrow(training_dt), "\n")
 cat("Domestic prediction rows:", nrow(domestic_dt), "\n")
 cat("International prediction rows:", nrow(international_dt), "\n")
+cat("Manual college supplement rows:", manual_supplement_rows, "\n")
+cat("Prediction name filter:", if (is.null(prediction_name_filter_dt)) "not applied" else paste0(nrow(prediction_name_filter_dt), " name-year row(s)"), "\n")
+if (length(prediction_filter_years)) {
+  cat("Prediction name filter years:", paste(prediction_filter_years, collapse = ", "), "\n")
+}
 cat("Prediction year:", prediction_year, "\n")
 cat("Predict all years:", prediction_all_years, "\n")
+cat("Predict all filter years:", prediction_filter_all_years, "\n")
 cat("Target mode:", target_mode, "\n")
 cat("Outcome lag:", outcome_lag, "\n")
 cat("Min years after draft:", min_years_after_draft, "\n")

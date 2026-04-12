@@ -647,6 +647,7 @@ merge_target_year_rows <- function(existing_path, update_dt, target_year, key_co
 
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 cohort_file <- resolve_no_college_cohort_file(draft_dir)

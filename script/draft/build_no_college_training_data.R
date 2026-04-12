@@ -237,12 +237,75 @@ build_measurement_supplement <- function(base_dir) {
   unique(supplement_dt, by = c("player_key", "draft_year"))
 }
 
+append_manual_no_college_stats <- function(stats_dt, manual_stats_file) {
+  if (!file.exists(manual_stats_file)) {
+    return(stats_dt)
+  }
+
+  manual_dt <- fread(manual_stats_file, na.strings = c("", "NA", "N/A", "NaN"))
+  if (!nrow(manual_dt)) {
+    return(stats_dt)
+  }
+
+  if (!all(c("player", "draft_year") %in% names(manual_dt))) {
+    warning("Manual no-college stats file is missing player/draft_year columns: ", manual_stats_file)
+    return(stats_dt)
+  }
+
+  manual_dt[, player := as.character(player)]
+  manual_dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  manual_dt[, player_key___ := normalize_name(player)]
+  manual_dt <- manual_dt[nzchar(player_key___) & is.finite(draft_year)]
+
+  if (!nrow(manual_dt)) {
+    return(stats_dt)
+  }
+
+  if (!"manual_replace_scope" %in% names(manual_dt)) {
+    manual_dt[, manual_replace_scope := "player_year"]
+  }
+  manual_dt[, manual_replace_scope := tolower(trimws(as.character(manual_replace_scope)))]
+  manual_dt[!manual_replace_scope %in% c("player", "player_year", "none"), manual_replace_scope := "player_year"]
+
+  stats_dt[, player_key___ := normalize_name(player)]
+  stats_dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+
+  player_replace_keys <- unique(manual_dt[manual_replace_scope == "player", player_key___])
+  if (length(player_replace_keys)) {
+    stats_dt <- stats_dt[!player_key___ %in% player_replace_keys]
+  }
+
+  player_year_replace_keys <- unique(
+    manual_dt[manual_replace_scope == "player_year", .(player_key___, draft_year)]
+  )
+  if (nrow(player_year_replace_keys)) {
+    stats_dt <- merge(
+      stats_dt,
+      player_year_replace_keys[, manual_drop_row := TRUE],
+      by = c("player_key___", "draft_year"),
+      all.x = TRUE,
+      sort = FALSE
+    )
+    stats_dt <- stats_dt[is.na(manual_drop_row)]
+    stats_dt[, manual_drop_row := NULL]
+  }
+
+  manual_dt[, manual_replace_scope := NULL]
+  combined_dt <- rbindlist(list(stats_dt, manual_dt), use.names = TRUE, fill = TRUE)
+  combined_dt[, player_key___ := NULL]
+  combined_dt
+}
+
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = FALSE)
 target_draft_year <- parse_optional_int_env("NO_COLLEGE_TARGET_DRAFT_YEAR")
 
 stats_file <- file.path(draft_dir, "no_college_realgm_stats.csv")
+manual_stats_file <- file.path(draft_dir, "no_college_manual_stats.csv")
+prediction_names_file <- Sys.getenv("DRAFT_PREDICTION_NAMES_INPUT", file.path(base_dir, "ref", "draftprednames.csv"))
 cohort_file <- resolve_no_college_cohort_file(draft_dir)
 skill_file <- file.path(live_dir, "skilloutput.csv")
 
@@ -255,10 +318,12 @@ if (!file.exists(cohort_file)) stop("Cohort file not found: ", cohort_file)
 if (!file.exists(skill_file)) stop("Skill file not found: ", skill_file)
 
 stats_dt <- fread(stats_file, na.strings = c("", "NA", "N/A", "NaN"))
+stats_dt <- append_manual_no_college_stats(stats_dt, manual_stats_file)
 cohort_dt <- fread(cohort_file, na.strings = c("", "NA", "N/A", "NaN"))
 skill_dt <- fread(skill_file, na.strings = c("", "NA", "N/A", "NaN"))
 databallr_measure_dt <- build_databallr_measurements(base_dir)
 measurement_supplement_dt <- build_measurement_supplement(base_dir)
+prediction_name_filter_dt <- read_prediction_name_filter(prediction_names_file, key_col = "player_key")
 
 if (!all(c("player", "draft_year") %in% names(stats_dt))) {
   stop("Stats file must include player and draft_year columns.")
@@ -283,6 +348,14 @@ stats_dt <- merge(
   by = c("player_key", "draft_year"),
   all.x = TRUE
 )
+if (all(c("source_url.x", "source_url.y") %in% names(stats_dt))) {
+  stats_dt[, source_url := coalesce_character(source_url.x, source_url.y)]
+  stats_dt[, c("source_url.x", "source_url.y") := NULL]
+}
+if (all(c("br_player_url.x", "br_player_url.y") %in% names(stats_dt))) {
+  stats_dt[, br_player_url := coalesce_character(br_player_url.x, br_player_url.y)]
+  stats_dt[, c("br_player_url.x", "br_player_url.y") := NULL]
+}
 
 derive_per36_from_pairs(stats_dt, "per36_x3pm", list(
   c("adv_xx3pm", "adv_min"),
@@ -404,6 +477,7 @@ drop_cols <- intersect(c("IMPACT_OFF", "IMPACT_DEF", "IMPACT_TOTAL", "match_coun
 if (length(drop_cols)) train_dt[, (drop_cols) := NULL]
 
 prediction_dt <- copy(stats_dt)
+prediction_dt <- apply_prediction_name_filter(prediction_dt, prediction_name_filter_dt, player_key_col = "player_key")
 prediction_dt[, prediction_pool := "no_college"]
 prediction_dt[, player_key := NULL]
 
@@ -457,6 +531,7 @@ if (!is.null(measurement_supplement_dt)) {
 cat("Prediction data written ->", prediction_out, "\n")
 cat("Training data written ->", training_out, "\n")
 cat("Match review written ->", match_review_out, "\n")
+cat("Prediction name filter:", if (is.null(prediction_name_filter_dt)) "not applied" else paste0(nrow(prediction_name_filter_dt), " name-year row(s)"), "\n")
 if (is.finite(target_draft_year)) {
   cat("Target draft-year refresh applied ->", target_draft_year, "\n")
 }

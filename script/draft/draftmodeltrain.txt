@@ -160,32 +160,49 @@ add_curated_realgm_features <- function(df) {
   df
 }
 
-load_scv_draft_lookup <- function(path) {
+load_single_scv_draft_lookup <- function(path, priority = 1L) {
   if (!file.exists(path)) {
-    return(NULL)
+    return(data.table(join_player = character(), scv_draft = numeric(), source_priority = integer()))
   }
 
   scv_dt <- tryCatch(
     fread(path, na.strings = c("", "NA", "N/A", "NaN")),
-    error = function(e) NULL
+    error = function(e) data.table(join_player = character(), scv_draft = numeric(), source_priority = integer())
   )
-  if (is.null(scv_dt) || !nrow(scv_dt) || !"name" %in% names(scv_dt)) {
-    return(NULL)
+  if (!nrow(scv_dt) || !"name" %in% names(scv_dt)) {
+    return(data.table(join_player = character(), scv_draft = numeric(), source_priority = integer()))
   }
 
   score_col <- names(scv_dt)[tolower(names(scv_dt)) %in% c("sc", "scv", "shot_creation", "shot_creation_rank")][1]
   if (is.na(score_col) || !nzchar(score_col)) {
-    return(NULL)
+    return(data.table(join_player = character(), scv_draft = numeric(), source_priority = integer()))
   }
 
   scv_dt[, join_player := normalize_join_name(name)]
   scv_dt[, scv_draft := suppressWarnings(as.numeric(get(score_col)))]
+  scv_dt[, source_priority := as.integer(priority)]
   scv_dt <- scv_dt[nzchar(join_player) & is.finite(scv_draft)]
   if (!nrow(scv_dt)) {
     return(NULL)
   }
 
-  setorder(scv_dt, join_player, scv_draft)
+  scv_dt[, .(join_player, scv_draft, source_priority)]
+}
+
+load_scv_draft_lookup <- function(path, override_path = NULL) {
+  scv_dt <- rbindlist(
+    list(
+      load_single_scv_draft_lookup(path, priority = 1L),
+      load_single_scv_draft_lookup(override_path, priority = 2L)
+    ),
+    use.names = TRUE,
+    fill = TRUE
+  )
+  if (!nrow(scv_dt)) {
+    return(NULL)
+  }
+
+  setorder(scv_dt, join_player, -source_priority)
   unique(scv_dt[, .(join_player, scv_draft)], by = "join_player")
 }
 
@@ -1811,6 +1828,7 @@ draft_dir <- file.path(base_dir, "processed", "draft")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
 model_results_dir <- file.path(base_dir, "processed", "modelresults")
 ref_dir <- file.path(base_dir, "ref")
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -1831,9 +1849,10 @@ summary_history_fp <- Sys.getenv("DRAFT_SUMMARY_HISTORY_FP", default_history_pat
 skill_file <- file.path(live_dir, "skilloutput.csv")
 skillmap_fp <- file.path(ref_dir, "skillmap.csv")
 scv_draft_fp <- file.path(ref_dir, "scvardraft.csv")
+scv_draft_override_fp <- file.path(ref_dir, "scvardraft_overrides.csv")
 off_results_fp <- file.path(model_results_dir, "off_lm_1_results.csv")
 def_results_fp <- file.path(model_results_dir, "def_lm_1_results.csv")
-scv_draft_lookup <- load_scv_draft_lookup(scv_draft_fp)
+scv_draft_lookup <- load_scv_draft_lookup(scv_draft_fp, scv_draft_override_fp)
 rollup_config <- load_rollup_config(skillmap_fp, off_results_fp, def_results_fp)
 target_draft_year <- parse_optional_int_env("DRAFT_TARGET_DRAFT_YEAR")
 publish_year_min <- parse_optional_year_env("DRAFT_PUBLISH_YEAR_MIN")

@@ -158,6 +158,7 @@ extract_torvik_player_row <- function(dt, player_name = NULL, player_id = NULL, 
 
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 cache_pull_script <- file.path(base_dir, "script", "draft", "pull_torvik_player_cache.R")
@@ -166,7 +167,7 @@ target_fp <- Sys.getenv(
   "TORVIK_SUPPLEMENT_TARGETS_FILE",
   file.path(draft_dir, "torvik_supplement_targets.csv")
 )
-auto_pull <- identical(tolower(trimws(Sys.getenv("TORVIK_AUTO_PULL", "true"))), "true")
+auto_pull <- identical(tolower(trimws(Sys.getenv("TORVIK_AUTO_PULL", "false"))), "true")
 
 torvik_dt <- load_torvik_cache(draft_dir)
 if ((is.null(torvik_dt) || !nrow(torvik_dt)) && auto_pull && file.exists(cache_pull_script)) {
@@ -175,7 +176,7 @@ if ((is.null(torvik_dt) || !nrow(torvik_dt)) && auto_pull && file.exists(cache_p
 }
 
 if (is.null(torvik_dt) || !nrow(torvik_dt)) {
-  fwrite(data.table(), output_fp)
+  fwrite(data.table(player = character(), draft_year = integer(), player_id = character()), output_fp)
   message("No cached Torvik CSVs found. Wrote empty supplement -> ", output_fp)
 } else {
   supplement_specs <- load_supplement_specs(target_fp)

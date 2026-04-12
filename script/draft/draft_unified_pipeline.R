@@ -93,9 +93,22 @@ run_full_no_college_pipeline <- identical(
   tolower(trimws(Sys.getenv("DRAFT_RUN_FULL_NO_COLLEGE_PIPELINE", "false"))),
   "true"
 )
+run_torvik_cache_pull <- identical(
+  tolower(trimws(Sys.getenv("DRAFT_PULL_TORVIK_CACHE", "false"))),
+  "true"
+)
 
 run_step(base_dir, "Build Draft Source Tables", file.path("script", "draft", "build_draft_source_tables.R"))
-run_step_if_present(base_dir, "Pull Torvik Player Cache", file.path("script", "draft", "pull_torvik_player_cache.R"))
+if (run_torvik_cache_pull) {
+  run_step_if_present(base_dir, "Pull Torvik Player Cache", file.path("script", "draft", "pull_torvik_player_cache.R"))
+} else {
+  message("")
+  message("=== Pull Torvik Player Cache ===")
+  message("Skipping optional Torvik cache pull. Set DRAFT_PULL_TORVIK_CACHE=true to refresh it.")
+}
+if (!nzchar(trimws(Sys.getenv("TORVIK_AUTO_PULL", "")))) {
+  Sys.setenv(TORVIK_AUTO_PULL = "false")
+}
 run_step(base_dir, "Build Torvik College Supplements", file.path("script", "draft", "build_torvik_college_supplement.R"))
 run_step(base_dir, "Apply Main Draft Source Supplements", file.path("script", "draft", "apply_main_prediction_supplements.R"))
 run_step(base_dir, "Refresh Main Draft Predictions", file.path("script", "draft", "draftmodeltrain.txt"))

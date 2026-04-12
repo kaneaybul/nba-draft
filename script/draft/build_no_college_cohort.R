@@ -194,6 +194,7 @@ safe_fetch_draft_year <- function(year) {
 
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 all_out <- file.path(draft_dir, "draft_picks_all_classes.csv")
