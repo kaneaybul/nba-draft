@@ -1,6 +1,12 @@
-if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")
-if (!requireNamespace("jsonlite", quietly = TRUE)) install.packages("jsonlite")
-if (!requireNamespace("chromote", quietly = TRUE)) install.packages("chromote")
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  stop("Package 'data.table' is required. Install it with install.packages('data.table').")
+}
+if (!requireNamespace("jsonlite", quietly = TRUE)) {
+  stop("Package 'jsonlite' is required. Install it with install.packages('jsonlite').")
+}
+if (!requireNamespace("chromote", quietly = TRUE)) {
+  stop("Package 'chromote' is required. Install it with install.packages('chromote').")
+}
 
 library(data.table)
 library(jsonlite)

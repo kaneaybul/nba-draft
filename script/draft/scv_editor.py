@@ -541,10 +541,10 @@ class ScvEditorApp:
             )
         return rows
 
-    def reload_data(self) -> None:
+    def reload_data(self, status_message: Optional[str] = None) -> None:
         self.all_rows = self.build_rows()
         self.refresh_table()
-        self.status_var.set(f"Reloaded from disk at {self.timestamp()}")
+        self.status_var.set(status_message or f"Reloaded from disk at {self.timestamp()}")
 
     def apply_filters(self) -> List[Dict[str, object]]:
         rows = list(self.all_rows)
@@ -731,8 +731,9 @@ class ScvEditorApp:
                     self.status_var.set(f"Saved SCV {self.format_number(new_scv)} for {item['player_name']}.")
                 break
 
+        status_message = self.status_var.get()
         self.write_overrides()
-        self.reload_data()
+        self.reload_data(status_message=status_message)
 
     def clear_override(self) -> None:
         row = self.get_selected_row()
@@ -747,8 +748,9 @@ class ScvEditorApp:
                 self.status_var.set(f"Cleared override for {item['player_name']}.")
                 break
 
+        status_message = self.status_var.get()
         self.write_overrides()
-        self.reload_data()
+        self.reload_data(status_message=status_message)
 
     def get_selected_row(self) -> Optional[Dict[str, object]]:
         selection = self.tree.selection()
@@ -757,7 +759,32 @@ class ScvEditorApp:
         return self.filtered_rows[int(selection[0])]
 
     def write_overrides(self) -> None:
-        rows = [row for row in self.all_rows if row["override_scv"] is not None]
+        visible_keys = {str(row["join_player"]) for row in self.all_rows}
+        merged: Dict[str, Dict[str, object]] = {}
+
+        for row in self.load_csv_rows(self.override_path):
+            join = normalize_join_name(row.get("name", ""))
+            if not join or join in visible_keys:
+                continue
+            score = safe_float(row.get("sc", "") or row.get("scv", ""))
+            if score is None:
+                continue
+            merged[join] = {
+                "player_name": row.get("name", ""),
+                "override_scv": score,
+                "override_notes": row.get("notes", "") or "",
+            }
+
+        for row in self.all_rows:
+            if row["override_scv"] is None:
+                continue
+            merged[str(row["join_player"])] = {
+                "player_name": row["player_name"],
+                "override_scv": row["override_scv"],
+                "override_notes": row["override_notes"] or "",
+            }
+
+        rows = list(merged.values())
         rows.sort(key=lambda item: str(item["player_name"]).lower())
         os.makedirs(os.path.dirname(self.override_path), exist_ok=True)
         with open(self.override_path, "w", encoding="utf-8", newline="") as handle:

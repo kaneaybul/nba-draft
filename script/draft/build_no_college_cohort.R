@@ -1,6 +1,12 @@
-if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")
-if (!requireNamespace("rvest", quietly = TRUE)) install.packages("rvest")
-if (!requireNamespace("xml2", quietly = TRUE)) install.packages("xml2")
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  stop("Package 'data.table' is required. Install it with install.packages('data.table').")
+}
+if (!requireNamespace("rvest", quietly = TRUE)) {
+  stop("Package 'rvest' is required. Install it with install.packages('rvest').")
+}
+if (!requireNamespace("xml2", quietly = TRUE)) {
+  stop("Package 'xml2' is required. Install it with install.packages('xml2').")
+}
 
 library(data.table)
 library(rvest)

@@ -1,5 +1,43 @@
+get_script_dir <- function() {
+  cmd_args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- "--file="
+  script_arg <- cmd_args[grepl(file_arg, cmd_args)]
+  if (length(script_arg) > 0) {
+    script_path <- sub(file_arg, "", script_arg[[1]])
+    return(dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE)))
+  }
+
+  ofile <- NULL
+  frame_list <- sys.frames()
+  if (length(frame_list) > 0) {
+    for (i in rev(seq_along(frame_list))) {
+      if (!is.null(frame_list[[i]]$ofile)) {
+        ofile <- frame_list[[i]]$ofile
+        break
+      }
+    }
+  }
+
+  if (!is.null(ofile)) {
+    return(dirname(normalizePath(ofile, winslash = "/", mustWork = FALSE)))
+  }
+
+  NULL
+}
+
 resolve_base_dir <- function() {
-  candidates <- c(getwd(), file.path(getwd(), ".."))
+  script_dir <- get_script_dir()
+  env_base_dir <- trimws(Sys.getenv("CLEANNBA_BASE_DIR", ""))
+  candidates <- c(
+    getwd(),
+    if (!is.null(script_dir)) script_dir else NULL,
+    if (!is.null(script_dir)) file.path(script_dir, "..") else NULL,
+    if (!is.null(script_dir)) file.path(script_dir, "..", "..") else NULL,
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", ".."),
+    if (nzchar(env_base_dir)) env_base_dir else NULL
+  )
+  candidates <- unique(candidates[!is.na(candidates) & nzchar(candidates)])
   for (candidate in candidates) {
     candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
     if (dir.exists(file.path(candidate_norm, "processed")) &&
@@ -14,7 +52,9 @@ base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
-if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  stop("Package 'data.table' is required. Install it with install.packages('data.table').")
+}
 library(data.table)
 
 read_if_exists <- function(path) {

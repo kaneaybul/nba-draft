@@ -1,5 +1,9 @@
-if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")
-if (!requireNamespace("toRvik", quietly = TRUE)) install.packages("toRvik")
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  stop("Package 'data.table' is required. Install it with install.packages('data.table').")
+}
+if (!requireNamespace("toRvik", quietly = TRUE)) {
+  stop("Package 'toRvik' is required. Install it with install.packages('toRvik').")
+}
 
 library(data.table)
 

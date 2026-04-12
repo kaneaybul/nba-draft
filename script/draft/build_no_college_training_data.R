@@ -1,4 +1,6 @@
-if (!requireNamespace("data.table", quietly = TRUE)) install.packages("data.table")
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  stop("Package 'data.table' is required. Install it with install.packages('data.table').")
+}
 
 library(data.table)
 
