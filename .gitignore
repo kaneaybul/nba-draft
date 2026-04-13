@@ -9,3 +9,9 @@ Thumbs.db
 
 # Experiment logs
 *.log
+*backup*.csv
+
+# Frontend generated files
+frontend/node_modules/
+frontend/dist/
+frontend/package-lock.json

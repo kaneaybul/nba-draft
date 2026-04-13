@@ -110,6 +110,13 @@ safe_z <- function(x) {
   (x - m) / s
 }
 
+safe_mean <- function(...) {
+  vals <- c(...)
+  vals <- vals[!is.na(vals)]
+  if (length(vals) == 0) return(NA_real_)
+  mean(vals)
+}
+
 write_csv_with_retry <- function(df, path, attempts = 5, sleep_seconds = 2) {
   last_error <- NULL
 
@@ -448,6 +455,10 @@ impact_tbl <- impact_hist %>%
     nba_id = as.character(nba_id),
     player_name_impact = clean_display_name(player_name),
     year = as.integer(year),
+    SOURCE_O_EPM = as.numeric(o_epm),
+    SOURCE_O_DPM = as.numeric(o_dpm),
+    SOURCE_D_EPM = as.numeric(d_epm),
+    SOURCE_D_DPM = as.numeric(d_dpm),
     IMPACT_OFF = as.numeric(off_dep),
     IMPACT_DEF = as.numeric(def_dep),
     IMPACT_TOTAL = IMPACT_OFF + IMPACT_DEF
@@ -486,6 +497,49 @@ final_tbl <- final_tbl %>%
   arrange(year, desc(TOTAL), player_name)
 
 # =========================================================
+# FINAL IMPACT BLEND: 40% EPM / 40% DPM / 20% SKILL MODEL
+# =========================================================
+final_tbl <- final_tbl %>%
+  group_by(year) %>%
+  mutate(
+    z_o_epm = safe_z(SOURCE_O_EPM),
+    z_o_dpm = safe_z(SOURCE_O_DPM),
+    z_skill_off = safe_z(OFF),
+    z_d_epm = safe_z(SOURCE_D_EPM),
+    z_d_dpm = safe_z(SOURCE_D_DPM),
+    z_skill_def = safe_z(DEF),
+    final_off_z_raw = 0.40 * z_o_epm + 0.40 * z_o_dpm + 0.20 * z_skill_off,
+    final_def_z_raw = 0.40 * z_d_epm + 0.40 * z_d_dpm + 0.20 * z_skill_def,
+    final_off_z = safe_z(final_off_z_raw),
+    final_def_z = safe_z(final_def_z_raw),
+    off_target_mean = mean(IMPACT_OFF, na.rm = TRUE),
+    off_target_sd = sd(IMPACT_OFF, na.rm = TRUE),
+    def_target_mean = mean(IMPACT_DEF, na.rm = TRUE),
+    def_target_sd = sd(IMPACT_DEF, na.rm = TRUE),
+    FINAL_OFF = off_target_mean + off_target_sd * final_off_z,
+    FINAL_DEF = def_target_mean + def_target_sd * final_def_z,
+    FINAL_TOTAL = FINAL_OFF + FINAL_DEF
+  ) %>%
+  ungroup() %>%
+  select(
+    -z_o_epm,
+    -z_o_dpm,
+    -z_skill_off,
+    -z_d_epm,
+    -z_d_dpm,
+    -z_skill_def,
+    -final_off_z_raw,
+    -final_def_z_raw,
+    -final_off_z,
+    -final_def_z,
+    -off_target_mean,
+    -off_target_sd,
+    -def_target_mean,
+    -def_target_sd
+  ) %>%
+  arrange(year, desc(FINAL_TOTAL), player_name)
+
+# =========================================================
 # ADD Z-SCORED SKILL COLUMNS
 # =========================================================
 all_skill_cols <- c(sort(off_skill_cols), sort(def_skill_cols))
@@ -516,13 +570,20 @@ final_tbl <- final_tbl %>%
     IMPACT_OFF,
     IMPACT_DEF,
     IMPACT_TOTAL,
+    SOURCE_O_EPM,
+    SOURCE_O_DPM,
+    SOURCE_D_EPM,
+    SOURCE_D_DPM,
     off_intercept,
     def_intercept,
     all_of(all_skill_cols),
     all_of(raw_skill_cols),
     OFF,
     DEF,
-    TOTAL
+    TOTAL,
+    FINAL_OFF,
+    FINAL_DEF,
+    FINAL_TOTAL
   )
 
 # =========================================================

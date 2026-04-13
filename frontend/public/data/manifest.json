@@ -1,0 +1,13 @@
+{
+"generated_at":"2026-04-13T00:51:06Z",
+"source_root":"C:/Users/brend/Documents/projects/nba&draft",
+"note":"Generated from canonical processed/raw CSV outputs. Excel workbooks are not read at runtime.",
+"datasets":[
+{"dataset":"impact_players","rows":3965,"file":"impact_players.json"},
+{"dataset":"team_projections","rows":330,"file":"team_projections.json"},
+{"dataset":"pick_assets","rows":60,"file":"pick_assets.json"},
+{"dataset":"draft_prospects","rows":464,"file":"draft_prospects.json"},
+{"dataset":"draft_model_summary","rows":9,"file":"draft_model_summary.json"},
+{"dataset":"draft_model_feature_details","rows":93,"file":"draft_model_feature_details.json"}
+]
+}

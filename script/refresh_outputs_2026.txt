@@ -125,6 +125,7 @@ full_switch_history <- identical(
 )
 
 run_step(base_dir, "Pull Databallr Stats", file.path("script", "data", "pulldataballrstats.txt"))
+run_step(base_dir, "Pull Contract Salaries", file.path("script", "data", "pull_contracts_bref.R"))
 if (full_switch_history) {
   run_step(base_dir, "Pull Switch History", file.path("script", "switch", "createswitchvar.txt"))
   run_step(base_dir, "Build Switch History", file.path("script", "switch", "switchprocess.txt"))

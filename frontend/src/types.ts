@@ -1,0 +1,122 @@
+export type Manifest = {
+  generated_at: string;
+  note: string;
+  datasets: Array<{ dataset: string; rows: number; file: string }>;
+};
+
+export type PlayerImpact = {
+  nba_id: number;
+  player_name: string;
+  year: number;
+  team: string;
+  position: string;
+  age?: number | null;
+  yoe?: number | null;
+  Minutes: number;
+  p_mpg?: number | null;
+  p_usg?: number | null;
+  o_epm?: number | null;
+  o_dpm?: number | null;
+  d_epm?: number | null;
+  d_dpm?: number | null;
+  off_dep: number;
+  def_dep: number;
+  offense: number;
+  defense: number;
+  total: number;
+  score: number;
+  score_delta?: number | null;
+  tier: string;
+  timin: number;
+  value: number;
+  contract?: number | null;
+  value_add?: number | null;
+  trade_value: number;
+  fa_value: number;
+  scalability: number;
+  FTD?: number | null;
+  OREB?: number | null;
+  PASS?: number | null;
+  RIM?: number | null;
+  SHOOT?: number | null;
+  DPM?: number | null;
+  DREB?: number | null;
+  RIMPRO?: number | null;
+  SWITCH?: number | null;
+  projection_y1: number;
+  projection_y2: number;
+  projection_y3: number;
+  projection_y4: number;
+  source_note: string;
+};
+
+export type TeamProjection = {
+  year: number;
+  team: string;
+  conference: string;
+  roster_count: number;
+  minutes: number;
+  offense: number;
+  defense: number;
+  total: number;
+  win_units: number;
+  projected_wins: number;
+  rank: number;
+  conference_rank: number;
+};
+
+export type PickAsset = {
+  asset_id: string;
+  label: string;
+  pick: number;
+  round: number;
+  normalized: number;
+  value: number;
+};
+
+export type DraftProspect = {
+  player: string;
+  draft_year: number;
+  rank_in_class: number;
+  score: number;
+  prediction_pool: string;
+  scv_draft?: number | null;
+  draft_age?: number | null;
+  height_wo_shoes_in?: number | null;
+  wingspan_in?: number | null;
+  weight_lbs?: number | null;
+  pos_code?: number | null;
+  pre_draft_team?: string | null;
+  FTD_pred?: number | null;
+  OREB_pred?: number | null;
+  PASS_pred?: number | null;
+  RIM_pred?: number | null;
+  SHOOT_pred?: number | null;
+  DPM_pred?: number | null;
+  DREB_pred?: number | null;
+  RIMPRO_pred?: number | null;
+  SWITCH_pred?: number | null;
+  OFF_pred: number;
+  DEF_pred: number;
+  TOTAL_pred: number;
+};
+
+export type ModelSummary = {
+  skill: string;
+  model_type: string;
+  train_r2_pct?: number | null;
+  temporal_r2?: number | null;
+  temporal_mse?: number | null;
+  validation_quality_flag?: string | null;
+  top_variable?: string | null;
+  predictors?: string | null;
+};
+
+export type AppData = {
+  manifest: Manifest;
+  players: PlayerImpact[];
+  teams: TeamProjection[];
+  picks: PickAsset[];
+  prospects: DraftProspect[];
+  modelSummary: ModelSummary[];
+};

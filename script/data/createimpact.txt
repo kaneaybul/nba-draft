@@ -38,7 +38,7 @@ out_fp <- file.path(livedata_dir, "impactoutput.csv")
 # =========================
 MIN_MINUTES <- as.numeric(Sys.getenv("IMPACT_MIN_MINUTES", unset = "500"))
 
-exclude_years_raw <- trimws(Sys.getenv("IMPACT_EXCLUDE_YEARS", unset = "2026"))
+exclude_years_raw <- trimws(Sys.getenv("IMPACT_EXCLUDE_YEARS", unset = "none"))
 if (!nzchar(exclude_years_raw) || tolower(exclude_years_raw) %in% c("none", "null", "na")) {
   EXCLUDE_YEARS <- integer(0)
 } else {
