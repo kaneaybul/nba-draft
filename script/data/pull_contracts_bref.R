@@ -43,6 +43,29 @@ normalize_team <- function(x) {
   ifelse(out %in% names(map), unname(map[out]), out)
 }
 
+infer_contract_year <- function(base_dir) {
+  env_year <- suppressWarnings(as.integer(Sys.getenv("DATABALLR_END_YEAR", "")))
+  if (!is.na(env_year)) {
+    return(env_year)
+  }
+
+  stats_path <- file.path(base_dir, "raw", "databallr_stats.csv")
+  if (file.exists(stats_path)) {
+    stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
+    if ("year" %in% names(stats)) {
+      stats_year <- suppressWarnings(max(as.integer(stats$year), na.rm = TRUE))
+      if (is.finite(stats_year)) {
+        return(stats_year)
+      }
+    }
+  }
+
+  today <- Sys.Date()
+  calendar_year <- as.integer(format(today, "%Y"))
+  month <- as.integer(format(today, "%m"))
+  ifelse(month >= 7, calendar_year + 1L, calendar_year)
+}
+
 fetch_contracts <- function() {
   if (!requireNamespace("rvest", quietly = TRUE)) {
     stop("Package 'rvest' is required to pull Basketball-Reference contracts.")
@@ -127,7 +150,8 @@ attach_nba_ids <- function(base_dir, contracts) {
 }
 
 base_dir <- resolve_base_dir()
-out_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "contracts_2026_current.csv")
+contract_year <- infer_contract_year(base_dir)
+out_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("contracts_", contract_year, "_current.csv"))
 dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 
 contracts <- tryCatch(

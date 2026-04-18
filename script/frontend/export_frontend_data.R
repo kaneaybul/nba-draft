@@ -183,25 +183,42 @@ replacement_from_data <- function(df, side) {
   ifelse(is.na(out), fallback, out)
 }
 
-cap_for_year <- function(year) {
-  caps <- c(
-    `2021` = 146138000,
-    `2022` = 160751000,
-    `2023` = 176827000,
-    `2024` = 182794000,
-    `2025` = 188000000,
-    `2026` = 195945000
+fallback_cap_assumptions <- function() {
+  data.frame(
+    year = 2021:2031,
+    salary_cap = c(109140000, 112414000, 123655000, 136021000, 140588000, 154647000, 166000000, 174300000, 183015000, 192166000, 201774000),
+    first_apron = c(138928000, 143002000, 156983000, 172346000, 178132000, 195945000, 210321000, 220847000, 231889000, 243485000, 255659000),
+    scale_cap = c(138928000, 143002000, 156983000, 172346000, 178132000, 195945000, 210321000, 220847000, 231889000, 243485000, 255659000),
+    stringsAsFactors = FALSE
   )
-  key <- as.character(year)
-  out <- caps[key]
-  out[is.na(out)] <- 195945000
+}
+
+load_cap_assumptions <- function(base_dir) {
+  path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "salary_cap_assumptions.csv")
+  if (!file.exists(path)) return(fallback_cap_assumptions())
+  caps <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  needed <- c("year", "salary_cap", "scale_cap")
+  if (!all(needed %in% names(caps))) return(fallback_cap_assumptions())
+  caps
+}
+
+cap_for_year <- function(caps, year, col = "scale_cap") {
+  if (!(col %in% names(caps))) col <- "salary_cap"
+  out <- suppressWarnings(as.numeric(caps[[col]][match(year, caps$year)]))
+  fallback <- suppressWarnings(as.numeric(caps[[col]][which.max(caps$year)]))
+  out[is.na(out)] <- fallback
   as.numeric(out)
 }
 
 load_contract_reference <- function(base_dir) {
-  current_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "contracts_2026_current.csv")
-  reference_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "contracts_2026_reference.csv")
-  path <- if (file.exists(current_path)) current_path else reference_path
+  contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+  current_files <- list.files(contract_dir, pattern = "^contracts_[0-9]{4}_current\\.csv$", full.names = TRUE)
+  if (length(current_files) > 0) {
+    current_years <- suppressWarnings(as.integer(sub("^contracts_([0-9]{4})_current\\.csv$", "\\1", basename(current_files))))
+    current_files <- current_files[order(current_years, decreasing = TRUE)]
+  }
+  reference_path <- file.path(contract_dir, "contracts_2026_reference.csv")
+  path <- if (length(current_files) > 0 && file.exists(current_files[[1]])) current_files[[1]] else reference_path
   if (!file.exists(path)) {
     return(data.frame(nba_id = integer(), contract = numeric(), stringsAsFactors = FALSE))
   }
@@ -216,12 +233,21 @@ load_contract_reference <- function(base_dir) {
     contract = suppressWarnings(as.numeric(contracts$salary_y0)),
     stringsAsFactors = FALSE
   )
+  for (horizon in 1:5) {
+    salary_col <- paste0("salary_y", horizon)
+    out[[paste0("contract_y", horizon)]] <- if (salary_col %in% names(contracts)) {
+      suppressWarnings(as.numeric(contracts[[salary_col]]))
+    } else {
+      NA_real_
+    }
+  }
   out <- out[!is.na(out$nba_id), ]
   out <- out[!duplicated(out$nba_id), ]
   out
 }
 
 build_impact_players <- function(base_dir) {
+  cap_assumptions <- load_cap_assumptions(base_dir)
   impact_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "impactoutput.csv")
   skill_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "skilloutput.csv")
   impact <- read_csv_required(impact_path, c("nba_id", "player_name", "year", "Minutes", "off_dep", "def_dep"))
@@ -288,7 +314,8 @@ build_impact_players <- function(base_dir) {
   x <- x[order(x$year, -x$total, x$player_name), ]
   x$o_rep <- replacement_from_data(x, "offense")
   x$d_rep <- replacement_from_data(x, "defense")
-  x$timin <- round((x$total - x$o_rep - x$d_rep) * pmax(0, x$Minutes), 1)
+  x$replacement_total <- x$o_rep + x$d_rep
+  x$timin <- round((x$total - x$replacement_total) * pmax(0, x$Minutes), 1)
   x$score <- ave(seq_len(nrow(x)), x$year, FUN = function(idx) {
     timin_pct <- percent_rank(x$timin[idx])
     total_pct <- percent_rank(x$total[idx])
@@ -301,7 +328,7 @@ build_impact_players <- function(base_dir) {
   x$tier <- unlist(ave(x$score, x$year, FUN = tier_from_score))
   x$value <- ave(seq_len(nrow(x)), x$year, FUN = function(idx) {
     league_timin <- sum(x$timin[idx], na.rm = TRUE)
-    cap_proxy <- cap_for_year(x$year[idx][1])
+    cap_proxy <- cap_for_year(cap_assumptions, x$year[idx][1], "scale_cap")
     if (is.na(league_timin) || league_timin <= 0) {
       return(rep(NA_real_, length(idx)))
     }
@@ -316,7 +343,7 @@ build_impact_players <- function(base_dir) {
   }
   x$scalability <- ave(seq_len(nrow(x)), x$year, FUN = function(idx) {
     league_timin <- sum(x$timin[idx], na.rm = TRUE)
-    cap <- cap_for_year(x$year[idx][1])
+    cap <- cap_for_year(cap_assumptions, x$year[idx][1], "scale_cap")
     if (is.na(league_timin) || league_timin <= 0) {
       return(rep(NA_real_, length(idx)))
     }
@@ -330,6 +357,55 @@ build_impact_players <- function(base_dir) {
   x$projection_y2 <- round(x$total * 0.88, 2)
   x$projection_y3 <- round(x$total * 0.82, 2)
   x$projection_y4 <- round(x$total * 0.76, 2)
+  x$projection_y5 <- round(x$total * 0.70, 2)
+  for (horizon in 1:5) {
+    x[[paste0("projection_games_y", horizon)]] <- NA_real_
+    x[[paste0("projection_mpg_y", horizon)]] <- NA_real_
+    x[[paste0("projection_minutes_y", horizon)]] <- NA_real_
+    x[[paste0("projection_timin_y", horizon)]] <- NA_real_
+    x[[paste0("projection_value_y", horizon)]] <- NA_real_
+    x[[paste0("projection_fa_value_y", horizon)]] <- NA_real_
+    x[[paste0("projection_scalability_y", horizon)]] <- NA_real_
+    contract_col <- paste0("contract_y", horizon)
+    x[[paste0("projection_contract_y", horizon)]] <- if (contract_col %in% names(x)) suppressWarnings(as.numeric(x[[contract_col]])) else NA_real_
+    x[[paste0("projection_cap_y", horizon)]] <- cap_for_year(cap_assumptions, x$year + horizon, "scale_cap")
+  }
+
+  projection_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "player_career_projections.csv")
+  if (file.exists(projection_path)) {
+    projections <- read.csv(projection_path, stringsAsFactors = FALSE, check.names = FALSE)
+    needed <- c("nba_id", "base_year", "horizon", "projected_games", "projected_mpg", "projected_minutes", "projected_total")
+    if (all(needed %in% names(projections))) {
+      projections$key <- paste(projections$nba_id, projections$base_year)
+      x$key <- paste(x$nba_id, x$year)
+      for (horizon in 1:5) {
+        ph <- projections[projections$horizon == horizon, ]
+        row_match <- match(x$key, ph$key)
+        has_projection <- !is.na(row_match)
+        x[[paste0("projection_y", horizon)]][has_projection] <- round(ph$projected_total[row_match[has_projection]], 2)
+        x[[paste0("projection_games_y", horizon)]][has_projection] <- round(ph$projected_games[row_match[has_projection]], 1)
+        x[[paste0("projection_mpg_y", horizon)]][has_projection] <- round(ph$projected_mpg[row_match[has_projection]], 1)
+        x[[paste0("projection_minutes_y", horizon)]][has_projection] <- round(ph$projected_minutes[row_match[has_projection]], 0)
+        projected_timin <- (ph$projected_total[row_match[has_projection]] - x$replacement_total[has_projection]) *
+          pmax(0, ph$projected_minutes[row_match[has_projection]])
+        future_year <- x$year[has_projection] + horizon
+        future_cap <- cap_for_year(cap_assumptions, future_year, "scale_cap")
+        league_timin <- sum(x$timin[x$year == x$year[has_projection][1]], na.rm = TRUE)
+        dollar_per_timin <- ifelse(is.finite(league_timin) & league_timin > 0, future_cap * 30 / league_timin, NA_real_)
+        projected_value <- projected_timin * dollar_per_timin
+        projected_contract <- suppressWarnings(as.numeric(x[[paste0("contract_y", horizon)]][has_projection]))
+        projected_contract[is.na(projected_contract)] <- NA_real_
+        minutes_capacity <- pmin(ifelse(ph$projected_minutes[row_match[has_projection]] > 0, 48 * 82 * 5 / ph$projected_minutes[row_match[has_projection]], 15), 15)
+        contract_capacity <- ifelse(!is.na(projected_contract) & projected_contract > 0, pmin(future_cap / projected_contract, 15), 15)
+
+        x[[paste0("projection_timin_y", horizon)]][has_projection] <- round(projected_timin, 1)
+        x[[paste0("projection_value_y", horizon)]][has_projection] <- round(projected_value, 0)
+        x[[paste0("projection_fa_value_y", horizon)]][has_projection] <- round(projected_value * (0.85 + x$score[has_projection] / 350), 0)
+        x[[paste0("projection_scalability_y", horizon)]][has_projection] <- round(pmax(0, pmin(minutes_capacity, contract_capacity) * projected_value / future_cap), 3)
+      }
+      x$key <- NULL
+    }
+  }
   x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output, standardized within season and remapped to the EPM/DPM impact target scale."
 
   cols <- c(
@@ -337,7 +413,17 @@ build_impact_players <- function(base_dir) {
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "score", "score_delta", "tier", "timin", "value", "contract", "value_add", "trade_value",
     "fa_value", "scalability", "FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB",
-    "RIMPRO", "SWITCH", "FINAL_OFF", "FINAL_DEF", "FINAL_TOTAL", "projection_y1", "projection_y2", "projection_y3", "projection_y4",
+    "RIMPRO", "SWITCH", "FINAL_OFF", "FINAL_DEF", "FINAL_TOTAL",
+    "projection_y1", "projection_y2", "projection_y3", "projection_y4", "projection_y5",
+    "projection_games_y1", "projection_games_y2", "projection_games_y3", "projection_games_y4", "projection_games_y5",
+    "projection_mpg_y1", "projection_mpg_y2", "projection_mpg_y3", "projection_mpg_y4", "projection_mpg_y5",
+    "projection_minutes_y1", "projection_minutes_y2", "projection_minutes_y3", "projection_minutes_y4", "projection_minutes_y5",
+    "projection_timin_y1", "projection_timin_y2", "projection_timin_y3", "projection_timin_y4", "projection_timin_y5",
+    "projection_value_y1", "projection_value_y2", "projection_value_y3", "projection_value_y4", "projection_value_y5",
+    "projection_fa_value_y1", "projection_fa_value_y2", "projection_fa_value_y3", "projection_fa_value_y4", "projection_fa_value_y5",
+    "projection_scalability_y1", "projection_scalability_y2", "projection_scalability_y3", "projection_scalability_y4", "projection_scalability_y5",
+    "projection_contract_y1", "projection_contract_y2", "projection_contract_y3", "projection_contract_y4", "projection_contract_y5",
+    "projection_cap_y1", "projection_cap_y2", "projection_cap_y3", "projection_cap_y4", "projection_cap_y5",
     "source_note"
   )
   cols <- intersect(cols, names(x))

@@ -836,9 +836,12 @@ get_skill_feature_cap <- function(skill_name, max_features) {
 
 get_skill_anchor_predictors <- function(skill_name, candidate_cols) {
   feature_profile <- trimws(tolower(Sys.getenv("DRAFT_FEATURE_PROFILE", "all_numeric")))
-  if (!identical(feature_profile, "curated_realgm")) return(character())
 
-  anchor_map <- get_curated_realgm_feature_anchors()
+  anchor_map <- if (identical(feature_profile, "curated_realgm")) {
+    get_curated_realgm_feature_anchors()
+  } else {
+    list(FTD = c("scv_draft"))
+  }
   if (!skill_name %in% names(anchor_map)) return(character())
   intersect(anchor_map[[skill_name]], candidate_cols)
 }
@@ -911,7 +914,13 @@ get_candidate_predictors <- function(df, skill_targets, skill_name = NULL) {
     return(candidate_cols)
   }
 
-  exclude_cols <- c("nba_id", "outcome_year", "player", "draft_year", "nba_player", "years_after_draft", "match_method", "selection_score", "combined_impact", "impact_total", "max_years_after_draft", "off_dep", "def_dep", "3pa_100", skill_targets)
+  exclude_cols <- c(
+    "nba_id", "outcome_year", "player", "join_player", "draft_year", "year",
+    "nba_player", "id", "player_id", "espn_id", "cbbd_id",
+    "years_after_draft", "match_method", "selection_score", "combined_impact",
+    "impact_total", "max_years_after_draft", "eligible_target_seasons",
+    "target_aggregation", "off_dep", "def_dep", "3pa_100", skill_targets
+  )
   candidate_cols <- setdiff(names(df), exclude_cols)
   candidate_cols <- candidate_cols[vapply(df[, candidate_cols, drop = FALSE], function(x) is.numeric(x) || is.integer(x), logical(1))]
   candidate_cols
@@ -1512,7 +1521,7 @@ prune_selected_features_by_validation <- function(train_df, target_col, model_ty
 
 get_default_model_preferences <- function() {
   c(
-    FTD = "ranger",
+    FTD = "elastic_net_family",
     OREB = "elastic_net_family",
     PASS = "ranger",
     RIM = "elastic_net_family",
@@ -1557,6 +1566,15 @@ choose_skill_model_family <- function(skill_name, candidate_fits, mse_tolerance_
   }
 
   list(model_type = chosen_type, fit = candidate_fits[[chosen_type]], candidate_scores = score_dt)
+}
+
+get_enabled_model_families <- function() {
+  raw_value <- trimws(Sys.getenv("DRAFT_MODEL_FAMILIES", "elastic_net_family,ranger"))
+  families <- trimws(unlist(strsplit(raw_value, ",", fixed = TRUE), use.names = FALSE))
+  families <- families[nzchar(families)]
+  families <- intersect(families, c("elastic_net_family", "ranger"))
+  if (!length(families)) families <- c("elastic_net_family", "ranger")
+  unique(families)
 }
 
 extract_glmnet_feature_details <- function(skill_name, best_fit) {
@@ -1886,8 +1904,12 @@ train_df <- add_alias_columns(train_df)
 train_df <- add_curated_realgm_features(train_df)
 
 refresh_training_targets_enabled <- !tolower(trimws(Sys.getenv("DRAFT_REFRESH_TRAINING_TARGETS", "true"))) %in% c("0", "false", "no")
+has_aggregated_training_targets <- "target_aggregation" %in% names(train_df) &&
+  any(grepl("^best_[0-9]+yr_skill_avg", as.character(train_df$target_aggregation)))
 
-if (refresh_training_targets_enabled && file.exists(skill_file)) {
+if (refresh_training_targets_enabled && has_aggregated_training_targets) {
+  cat("Skipping single-season target refresh because training data uses aggregated skill targets.\n")
+} else if (refresh_training_targets_enabled && file.exists(skill_file)) {
   skill_dt <- fread(skill_file, na.strings = c("", "NA", "N/A", "NaN"))
   train_dt <- as.data.table(train_df)
   train_dt[, nba_id := as.character(nba_id)]
@@ -1904,7 +1926,7 @@ predictor_source_files <- pred_specs$path[file.exists(pred_specs$path)]
 if (length(predictor_source_files)) {
   predictor_source_dt <- rbindlist(lapply(predictor_source_files, function(fp) fread(fp, na.strings = c("", "NA", "N/A", "NaN"))), use.names = TRUE, fill = TRUE)
   train_dt <- as.data.table(train_df)
-  refresh_exclude_cols <- unique(c("nba_id", "outcome_year", "player", "draft_year", "nba_player", "years_after_draft", "match_method", "selection_score", "combined_impact", "impact_total", "max_years_after_draft", "off_dep", "def_dep", candidate_exclude_targets))
+  refresh_exclude_cols <- unique(c("nba_id", "outcome_year", "player", "draft_year", "nba_player", "years_after_draft", "match_method", "selection_score", "combined_impact", "impact_total", "max_years_after_draft", "eligible_target_seasons", "target_aggregation", "off_dep", "def_dep", candidate_exclude_targets))
   refresh_predictor_cols <- setdiff(intersect(names(train_dt), names(predictor_source_dt)), refresh_exclude_cols)
   train_dt <- refresh_training_predictors(train_dt, predictor_source_dt, predictor_cols = refresh_predictor_cols)
   fwrite(train_dt, training_file, na = "")
@@ -1947,10 +1969,14 @@ for (skill in skill_targets) {
 
   feature_cap <- get_skill_feature_cap(skill, length(usable_candidates))
   anchor_preds <- get_skill_anchor_predictors(skill, usable_candidates)
-  candidate_fits <- list(
-    elastic_net_family = fit_glmnet_temporal_search(model_df, skill, usable_candidates, feature_cap, anchor_preds, c(0, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 1.00), min_train_rows),
-    ranger = fit_ranger_temporal_search(model_df, skill, usable_candidates, feature_cap, anchor_preds, min_train_rows)
-  )
+  enabled_model_families <- get_enabled_model_families()
+  candidate_fits <- list()
+  if ("elastic_net_family" %in% enabled_model_families) {
+    candidate_fits$elastic_net_family <- fit_glmnet_temporal_search(model_df, skill, usable_candidates, feature_cap, anchor_preds, c(0, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 1.00), min_train_rows)
+  }
+  if ("ranger" %in% enabled_model_families) {
+    candidate_fits$ranger <- fit_ranger_temporal_search(model_df, skill, usable_candidates, feature_cap, anchor_preds, min_train_rows)
+  }
   chosen_model <- choose_skill_model_family(skill, candidate_fits)
   if (is.null(chosen_model)) {
     warning(sprintf("[%s] all model searches failed - skipped", skill))

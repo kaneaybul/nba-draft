@@ -1,0 +1,4 @@
+"target","selected_algorithm","selected_model_set","holdout_rmse","holdout_r2","features"
+"target_games","lm","gp_history",18.6928424899747,0.329797313700201,"age|age_sq|games_equiv|mpg|minutes_equiv|avg2_games_equiv|avg3_games_equiv|avg2_mpg|avg3_mpg|avg2_minutes_equiv|avg3_minutes_equiv|prev_games_equiv|prev_mpg|prev_minutes_equiv|delta_mpg|delta_games"
+"target_mpg","ranger","blended_history",4.17119885205752,0.646250668574461,"age|age_sq|yoe|games_equiv|mpg|minutes_equiv|total|avg2_total|avg3_total|avg2_games_equiv|avg3_games_equiv|avg2_mpg|avg3_mpg|avg2_minutes_equiv|avg3_minutes_equiv|has_prev|prev_total|prev_games_equiv|prev_mpg|prev_minutes_equiv|delta_total|delta_mpg|delta_games"
+"target_total","lm","total_reference_shape",0.959414348148511,0.766552156731878,"age|age_sq|yoe|total|avg2_total|avg3_total|mpg|games_equiv"

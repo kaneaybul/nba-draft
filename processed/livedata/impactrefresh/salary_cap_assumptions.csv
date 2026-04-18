@@ -1,0 +1,12 @@
+"year","salary_cap","tax_level","first_apron","second_apron","source","scale_cap"
+2021,109140000,132627000,138928000,,"historical CBA cap/apron reference",138928000
+2022,112414000,136606000,143002000,,"historical CBA cap/apron reference",143002000
+2023,123655000,150267000,156983000,,"historical CBA cap/apron reference",156983000
+2024,136021000,165294000,172346000,182794000,"historical CBA cap/apron reference",172346000
+2025,140588000,170814000,178132000,188931000,"https://pr.nba.com/2024-25-nba-season-salary-cap/",178132000
+2026,154647000,187895000,195945000,207824000,"NBA 2025-26 cap/apron announcement; current local fallback",195945000
+2027,1.66e+08,,210321000,222775000,"Spotrac 2026-27 projection; apron estimated from current cap/apron ratio",210321000
+2028,174300000,,220847000,233914000,"https://www.spotrac.com/nba/cap/_/year/2027/sort/cap_maximum_space",220847000
+2029,183015000,,231889000,245610000,"Spotrac projection, 5% cap growth assumption",231889000
+2030,192166000,,243485000,258246000,"https://www.spotrac.com/nba/cap/_/year/2029",243485000
+2031,201774000,,255659000,271158000,"Spotrac projection, 5% cap growth assumption",255659000
