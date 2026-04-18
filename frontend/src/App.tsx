@@ -4,6 +4,7 @@ import type { AppData, DraftProspect, PickAsset, PlayerImpact, TeamProjection } 
 import { clamp, cls, formatMoney, formatNumber } from "./utils";
 
 type View = "impact" | "teams" | "trade" | "draft" | "lineups" | "tracker";
+type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type SortKey =
   | "player_name"
   | "team"
@@ -17,25 +18,67 @@ type SortKey =
   | "offense"
   | "defense"
   | "value"
+  | "contract"
   | "trade_value"
   | "fa_value"
   | "scalability"
-  | "Minutes";
+  | "Minutes"
+  | SkillKey;
 type SortDirection = "asc" | "desc";
 type FilterKey = SortKey;
-
-const skillKeys = ["FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH"] as const;
-const skillLabels: Record<(typeof skillKeys)[number], string> = {
-  FTD: "Free Throws",
-  OREB: "Off. Rebounding",
-  PASS: "Passing",
-  RIM: "Rim Pressure",
-  SHOOT: "Shooting",
-  DPM: "Def. Playmaking",
-  DREB: "Def. Rebounding",
-  RIMPRO: "Rim Protection",
-  SWITCH: "Switchability"
+type FilterFieldType = "number" | "text";
+type FilterOperator = "contains" | "equals" | "gt" | "gte" | "lt" | "lte" | "between";
+type FilterRule = {
+  id: string;
+  key: FilterKey;
+  operator: FilterOperator;
+  value: string;
+  valueTo?: string;
 };
+
+const skillKeys: SkillKey[] = ["FTD", "PASS", "SHOOT", "RIM", "OREB", "DREB", "SWITCH", "DPM", "RIMPRO"];
+const skillLabels: Record<SkillKey, string> = {
+  FTD: "Free Throws",
+  PASS: "Passing",
+  SHOOT: "Shooting",
+  RIM: "Rim Pressure",
+  OREB: "Off. Rebounding",
+  DREB: "Def. Rebounding",
+  SWITCH: "Switchability",
+  DPM: "Def. Playmaking",
+  RIMPRO: "Rim Protection"
+};
+const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType }> = [
+  { key: "player_name", label: "Player", type: "text" },
+  { key: "team", label: "Team", type: "text" },
+  { key: "position", label: "Position", type: "text" },
+  { key: "tier", label: "Tier", type: "text" },
+  { key: "age", label: "Age", type: "number" },
+  { key: "yoe", label: "YOE", type: "number" },
+  { key: "Minutes", label: "Minutes", type: "number" },
+  { key: "offense", label: "Offense", type: "number" },
+  { key: "defense", label: "Defense", type: "number" },
+  { key: "total", label: "Total", type: "number" },
+  { key: "score", label: "Score", type: "number" },
+  { key: "score_delta", label: "Delta", type: "number" },
+  { key: "value", label: "Value", type: "number" },
+  { key: "contract", label: "Salary", type: "number" },
+  { key: "fa_value", label: "FA", type: "number" },
+  { key: "scalability", label: "Scale", type: "number" },
+  ...skillKeys.map((key) => ({ key, label: key, type: "number" as const }))
+];
+const numericOperators: Array<{ value: FilterOperator; label: string }> = [
+  { value: "gte", label: "at least" },
+  { value: "lte", label: "at most" },
+  { value: "gt", label: "greater than" },
+  { value: "lt", label: "less than" },
+  { value: "between", label: "between" },
+  { value: "equals", label: "equals" }
+];
+const textOperators: Array<{ value: FilterOperator; label: string }> = [
+  { value: "contains", label: "contains" },
+  { value: "equals", label: "is exactly" }
+];
 
 function App() {
   const [data, setData] = useState<AppData | null>(null);
@@ -175,14 +218,21 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [tier, setTier] = useState("All");
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [columnFilters, setColumnFilters] = useState<Partial<Record<FilterKey, string>>>({});
-  const activeFilterCount = Object.values(columnFilters).filter((value) => value?.trim()).length;
+  const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
+  const [filterKey, setFilterKey] = useState<FilterKey>("score");
+  const [filterOperator, setFilterOperator] = useState<FilterOperator>("gte");
+  const [filterValue, setFilterValue] = useState("");
+  const [filterValueTo, setFilterValueTo] = useState("");
   const [detailPlayer, setDetailPlayer] = useState<PlayerImpact | null>(null);
   const [detailPosition, setDetailPosition] = useState({ left: 28, top: 138 });
 
   const teams = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.team))).sort()], [seasonPlayers]);
   const positions = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.position))).sort()], [seasonPlayers]);
   const tiers = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.tier))).sort()], [seasonPlayers]);
+  const selectedFilterField = filterFields.find((field) => field.key === filterKey) ?? filterFields[0];
+  const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
+  const quickFilterCount = [query.trim(), team !== "All", position !== "All", tier !== "All"].filter(Boolean).length;
+  const activeFilterCount = quickFilterCount + filterRules.length;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -191,9 +241,9 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       .filter((player) => team === "All" || player.team === team)
       .filter((player) => position === "All" || player.position === position)
       .filter((player) => tier === "All" || player.tier === tier)
-      .filter((player) => passesColumnFilters(player, columnFilters))
+      .filter((player) => passesFilterRules(player, filterRules))
       .sort((a, b) => comparePlayers(a, b, sortKey, sortDirection));
-  }, [columnFilters, position, query, seasonPlayers, sortDirection, sortKey, team, tier]);
+  }, [filterRules, position, query, seasonPlayers, sortDirection, sortKey, team, tier]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -203,8 +253,36 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     setSortKey(key);
     setSortDirection(["player_name", "team", "position", "tier"].includes(key) ? "asc" : "desc");
   };
-  const handleFilter = (key: FilterKey, value: string) => {
-    setColumnFilters((current) => ({ ...current, [key]: value }));
+  const handleFilterKeyChange = (key: FilterKey) => {
+    const nextField = filterFields.find((field) => field.key === key) ?? filterFields[0];
+    setFilterKey(key);
+    setFilterOperator(nextField.type === "number" ? "gte" : "contains");
+    setFilterValue("");
+    setFilterValueTo("");
+  };
+  const addFilterRule = () => {
+    const value = filterValue.trim();
+    const valueTo = filterValueTo.trim();
+    if (!value || (filterOperator === "between" && !valueTo)) return;
+    setFilterRules((current) => [
+      ...current,
+      {
+        id: `${filterKey}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        key: filterKey,
+        operator: filterOperator,
+        value,
+        valueTo: filterOperator === "between" ? valueTo : undefined
+      }
+    ]);
+    setFilterValue("");
+    setFilterValueTo("");
+  };
+  const clearAllFilters = () => {
+    setQuery("");
+    setTeam("All");
+    setPosition("All");
+    setTier("All");
+    setFilterRules([]);
   };
   const showDetail = (player: PlayerImpact, event: MouseEvent<HTMLButtonElement>) => {
     setDetailPlayer(player);
@@ -216,55 +294,116 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
 
   return (
     <main className="workspace impact-grid">
-      <section className="control-strip">
-        <div className="search">
-          <span>Find</span>
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Player name" />
-        </div>
-        <label>
-          Team
-          <select value={team} onChange={(event) => setTeam(event.target.value)}>
-            {teams.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Position
-          <select value={position} onChange={(event) => setPosition(event.target.value)}>
-            {positions.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Tier
-          <select value={tier} onChange={(event) => setTier(event.target.value)}>
-            {tiers.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
-        <button className="clear-filters" onClick={() => setColumnFilters({})} disabled={activeFilterCount === 0}>
-          Clear column filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
-        </button>
-      </section>
-
-      <section className="table-panel">
-        <div className="panel-heading compact-heading">
+      <div className="impact-sticky-header">
+        <section className="control-strip">
+          <div className="quick-filters">
+            <div className="search">
+              <span>Find</span>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Player name" />
+            </div>
+            <label>
+              Team
+              <select value={team} onChange={(event) => setTeam(event.target.value)}>
+                {teams.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Position
+              <select value={position} onChange={(event) => setPosition(event.target.value)}>
+                {positions.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Tier
+              <select value={tier} onChange={(event) => setTier(event.target.value)}>
+                {tiers.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="rule-builder" aria-label="Add filter rule">
+            <label>
+              Add Rule
+              <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
+                {filterFields.map((field) => (
+                  <option key={field.key} value={field.key}>
+                    {field.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Match
+              <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                {availableOperators.map((operator) => (
+                  <option key={operator.value} value={operator.value}>
+                    {operator.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="rule-value">
+              Value
+              <input
+                value={filterValue}
+                onChange={(event) => setFilterValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") addFilterRule();
+                }}
+                placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
+              />
+            </label>
+            {filterOperator === "between" && (
+              <label className="rule-value">
+                To
+                <input
+                  value={filterValueTo}
+                  onChange={(event) => setFilterValueTo(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") addFilterRule();
+                  }}
+                  placeholder="100"
+                />
+              </label>
+            )}
+            <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+              Add
+            </button>
+            <button className="clear-filters" onClick={clearAllFilters} disabled={activeFilterCount === 0}>
+              Clear filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </button>
+          </div>
+          {filterRules.length > 0 && (
+            <div className="filter-chips" aria-label="Active filter rules">
+              {filterRules.map((rule) => (
+                <button key={rule.id} onClick={() => setFilterRules((current) => current.filter((item) => item.id !== rule.id))}>
+                  {describeFilterRule(rule)}
+                  <span>Remove</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+        <section className="panel-heading compact-heading impact-board-title">
           <div>
             <h2>Player Board</h2>
             <p>{filtered.length.toLocaleString()} players</p>
           </div>
-        </div>
+        </section>
+      </div>
+
+      <section className="table-panel impact-table-panel">
         <PlayerTable
           players={filtered}
           sortKey={sortKey}
           sortDirection={sortDirection}
-          filters={columnFilters}
           onSort={handleSort}
-          onFilter={handleFilter}
-          onShowDetail={setDetailPlayer}
+          onShowDetail={showDetail}
         />
       </section>
 
@@ -283,17 +422,13 @@ function PlayerTable({
   players,
   sortKey,
   sortDirection,
-  filters,
   onSort,
-  onFilter,
   onShowDetail
 }: {
   players: PlayerImpact[];
   sortKey: SortKey;
   sortDirection: SortDirection;
-  filters: Partial<Record<FilterKey, string>>;
   onSort: (key: SortKey) => void;
-  onFilter: (key: FilterKey, value: string) => void;
   onShowDetail: (player: PlayerImpact, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const sortableHeader = (key: SortKey, label: string) => (
@@ -301,15 +436,6 @@ function PlayerTable({
       {label}
       {sortKey === key && <span>{sortDirection === "desc" ? "v" : "^"}</span>}
     </button>
-  );
-  const filterInput = (key: FilterKey, placeholder = "Filter") => (
-    <input
-      className="column-filter"
-      value={filters[key] ?? ""}
-      onChange={(event) => onFilter(key, event.target.value)}
-      placeholder={placeholder}
-      aria-label={`Filter ${key}`}
-    />
   );
 
   return (
@@ -331,26 +457,12 @@ function PlayerTable({
             <th className="col-rate align-right">{sortableHeader("score_delta", "Delta")}</th>
             <th className="col-tier">{sortableHeader("tier", "Tier")}</th>
             <th className="col-money align-right">{sortableHeader("value", "Value")}</th>
+            <th className="col-money align-right">{sortableHeader("contract", "Salary")}</th>
             <th className="col-money align-right">{sortableHeader("fa_value", "FA")}</th>
             <th className="col-scale align-center">{sortableHeader("scalability", "Scale")}</th>
-          </tr>
-          <tr className="filter-row">
-            <th />
-            <th>{filterInput("player_name", "Name")}</th>
-            <th>{filterInput("team", "Team")}</th>
-            <th>{filterInput("position", "Pos")}</th>
-            <th>{filterInput("age", ">24")}</th>
-            <th>{filterInput("yoe", "<4")}</th>
-            <th>{filterInput("Minutes", ">1000")}</th>
-            <th>{filterInput("offense", ">1")}</th>
-            <th>{filterInput("defense", ">1")}</th>
-            <th>{filterInput("total", ">2")}</th>
-            <th>{filterInput("score", ">80")}</th>
-            <th>{filterInput("score_delta", ">0")}</th>
-            <th>{filterInput("tier", "Tier")}</th>
-            <th>{filterInput("value", ">20m")}</th>
-            <th>{filterInput("fa_value", ">20m")}</th>
-            <th>{filterInput("scalability", ">1")}</th>
+            {skillKeys.map((key) => (
+              <th key={key} className="col-skill align-center">{sortableHeader(key, key)}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -376,12 +488,21 @@ function PlayerTable({
                 <span className="tier">{player.tier}</span>
               </td>
               <td className="align-right">{formatMoney(player.value)}</td>
+              <td className="align-right">{formatMoney(player.contract)}</td>
               <td className="align-right">{formatMoney(player.fa_value)}</td>
               <td className="align-center">
                 <span className="scale-pill" style={scaleStyle(player.scalability)}>
                   {formatNumber(player.scalability, 1)}
                 </span>
               </td>
+              {skillKeys.map((key) => {
+                const value = Number(player[key] ?? 0);
+                return (
+                  <td key={key} className="align-center">
+                    <span className="rate-value" style={rateStyle(value)}>{formatSigned(value, 1)}</span>
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
@@ -396,8 +517,20 @@ function PlayerDetail({ player }: { player: PlayerImpact }) {
     { label: "+1", value: player.projection_y1 },
     { label: "+2", value: player.projection_y2 },
     { label: "+3", value: player.projection_y3 },
-    { label: "+4", value: player.projection_y4 }
+    { label: "+4", value: player.projection_y4 },
+    { label: "+5", value: player.projection_y5 ?? player.projection_y4 }
   ];
+  const projectionRows = [1, 2, 3, 4, 5].map((horizon) => ({
+    label: `Y${horizon}`,
+    impact: Number(player[`projection_y${horizon}` as keyof PlayerImpact] ?? 0),
+    games: player[`projection_games_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
+    mpg: player[`projection_mpg_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
+    timin: player[`projection_timin_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
+    value: player[`projection_value_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
+    faValue: player[`projection_fa_value_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
+    contract: player[`projection_contract_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
+    scale: player[`projection_scalability_y${horizon}` as keyof PlayerImpact] as number | null | undefined
+  }));
 
   return (
     <aside className="detail-panel">
@@ -416,6 +549,45 @@ function PlayerDetail({ player }: { player: PlayerImpact }) {
       </div>
       <ProjectionChart points={projection} />
       <section>
+        <h3>Projected Market Arc</h3>
+        <div className="projection-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Yr</th>
+                <th>Tot</th>
+                <th>G</th>
+                <th>MPG</th>
+                <th>TIMIN</th>
+                <th>Value</th>
+                <th>FA</th>
+                <th>Sal</th>
+                <th>Scale</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projectionRows.map((row) => (
+                <tr key={row.label}>
+                  <td>{row.label}</td>
+                  <td>{formatSigned(row.impact, 1)}</td>
+                  <td>{formatNumber(row.games, 0)}</td>
+                  <td>{formatNumber(row.mpg, 1)}</td>
+                  <td>{formatNumber(row.timin, 0)}</td>
+                  <td>{formatMoney(row.value)}</td>
+                  <td>{formatMoney(row.faValue)}</td>
+                  <td>{formatMoney(row.contract)}</td>
+                  <td>
+                    <span className="scale-pill compact" style={scaleStyle(Number(row.scale ?? 0))}>
+                      {formatNumber(row.scale, 1)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section>
         <h3>Skill Shape</h3>
         <div className="skill-list">
           {skillKeys.map((key) => (
@@ -429,6 +601,10 @@ function PlayerDetail({ player }: { player: PlayerImpact }) {
           <div>
             <span>Impact value</span>
             <strong>{formatMoney(player.value)}</strong>
+          </div>
+          <div>
+            <span>Active salary</span>
+            <strong>{formatMoney(player.contract)}</strong>
           </div>
           <div>
             <span>Trade value</span>
@@ -798,8 +974,8 @@ function TrackerWorkspace({ data }: { data: AppData }) {
 function ScoreBar({ value }: { value: number }) {
   return (
     <span className="scorebar" style={scoreStyle(value)}>
-      <span style={{ width: `${clamp(value, 0, 100)}%` }} />
-      <strong>{formatNumber(value, 0)}</strong>
+      <span aria-hidden="true" />
+      <strong>{formatNumber(value, 1)}</strong>
     </span>
   );
 }
@@ -961,53 +1137,51 @@ function assetTotal(assets: Array<PlayerImpact | PickAsset>): number {
   return assets.reduce((sum, asset) => sum + assetValue(asset), 0);
 }
 
-function passesColumnFilters(player: PlayerImpact, filters: Partial<Record<FilterKey, string>>): boolean {
-  return (Object.entries(filters) as Array<[FilterKey, string]>).every(([key, raw]) => {
-    const filter = raw.trim();
-    if (!filter) return true;
-    const value = player[key];
-    if (typeof value === "number") return passesNumericFilter(value, filter);
-    return passesTextFilter(String(value ?? ""), filter);
+function describeFilterRule(rule: FilterRule): string {
+  const fieldLabel = filterFields.find((field) => field.key === rule.key)?.label ?? rule.key;
+  const operatorLabel = [...numericOperators, ...textOperators].find((operator) => operator.value === rule.operator)?.label ?? rule.operator;
+  if (rule.operator === "between") return `${fieldLabel} between ${rule.value} and ${rule.valueTo}`;
+  return `${fieldLabel} ${operatorLabel} ${rule.value}`;
+}
+
+function passesFilterRules(player: PlayerImpact, rules: FilterRule[]): boolean {
+  return rules.every((rule) => {
+    const value = player[rule.key];
+    const field = filterFields.find((item) => item.key === rule.key);
+    if (field?.type === "number") return passesNumericRule(Number(value), rule);
+    return passesTextRule(String(value ?? ""), rule);
   });
 }
 
-function passesTextFilter(value: string, filter: string): boolean {
-  const trimmed = filter.trim();
-  const exact = trimmed.match(/^=(.*)$/);
-  if (exact) return value.toLowerCase() === exact[1].trim().toLowerCase();
-  return value.toLowerCase().includes(trimmed.toLowerCase());
+function passesTextRule(value: string, rule: FilterRule): boolean {
+  const source = value.trim().toLowerCase();
+  const target = rule.value.trim().toLowerCase();
+  if (rule.operator === "equals") return source === target;
+  return source.includes(target);
 }
 
-function passesNumericFilter(value: number, filter: string): boolean {
+function passesNumericRule(value: number, rule: FilterRule): boolean {
   if (!Number.isFinite(value)) return false;
-  const range = filter.match(/^\s*(-?\$?[\d,.]+)\s*([mk])?\s*(?:\.\.|-)\s*(-?\$?[\d,.]+)\s*([mk])?\s*$/i);
-  if (range) {
-    const low = parseNumericToken(range[1], range[2]);
-    const high = parseNumericToken(range[3], range[4]);
-    return value >= Math.min(low, high) && value <= Math.max(low, high);
+  const target = parseNumericToken(rule.value);
+  if (!Number.isFinite(target)) return false;
+  if (rule.operator === "gt") return value > target;
+  if (rule.operator === "gte") return value >= target;
+  if (rule.operator === "lt") return value < target;
+  if (rule.operator === "lte") return value <= target;
+  if (rule.operator === "between") {
+    const high = parseNumericToken(rule.valueTo ?? "");
+    if (!Number.isFinite(high)) return false;
+    return value >= Math.min(target, high) && value <= Math.max(target, high);
   }
-
-  const clauses = filter.match(/(>=|<=|>|<|=)?\s*-?\$?[\d,.]+\s*[mk]?/gi);
-  if (!clauses) return String(value).includes(filter);
-  return clauses.every((clause) => passesNumericClause(value, clause));
-}
-
-function passesNumericClause(value: number, filter: string): boolean {
-  const match = filter.trim().match(/^(>=|<=|>|<|=)?\s*(-?\$?[\d,.]+)\s*([mk])?$/i);
-  if (!match) return false;
-  const op = match[1] ?? "=";
-  const target = parseNumericToken(match[2], match[3]);
-  if (op === ">") return value > target;
-  if (op === ">=") return value >= target;
-  if (op === "<") return value < target;
-  if (op === "<=") return value <= target;
   return Math.abs(value - target) < 0.0001;
 }
 
-function parseNumericToken(token: string, suffix?: string): number {
-  const base = Number(token.replace(/[$,]/g, ""));
-  if (suffix?.toLowerCase() === "m") return base * 1_000_000;
-  if (suffix?.toLowerCase() === "k") return base * 1_000;
+function parseNumericToken(token: string): number {
+  const match = token.trim().match(/^(-?\$?[\d,.]+)\s*([mk])?$/i);
+  if (!match) return Number.NaN;
+  const base = Number(match[1].replace(/[$,]/g, ""));
+  if (match[2]?.toLowerCase() === "m") return base * 1_000_000;
+  if (match[2]?.toLowerCase() === "k") return base * 1_000;
   return base;
 }
 
