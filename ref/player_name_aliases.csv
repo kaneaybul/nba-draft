@@ -22,7 +22,12 @@ Sviatoslav Mykhailiuk,Svi Mykhailiuk,Common shortened NBA display name
 Edrice Adebayo,Bam Adebayo,College/Torvik legal-name source mismatch
 Nicolas Claxton,Nic Claxton,Legal first-name source mismatch
 Wesley Iwundu,Wes Iwundu,Common shortened first-name source mismatch
-Kasparas Jakucionis,Kasparas Jokucionis,Watchlist/source spelling mismatch
+Kasparas Jokucionis,Kasparas Jakucionis,Watchlist/source spelling mismatch
+Kasparas Jakučionis,Kasparas Jakucionis,Accented draft source spelling
+V.J. Edgecombe,VJ Edgecombe,Initialed display-name source mismatch
+Egor D?min,Egor Demin,Corrupted accented character in draft/NBA source
+Egor Dёmin,Egor Demin,Accented Basketball Reference draft source spelling
+Egor Dëmin,Egor Demin,Accented NBA source spelling
 Cameron Thomas,Cam Thomas,Common shortened first-name source mismatch
 G.G. Jackson,Gregory Jackson,Initialed display-name source mismatch
 GG Jackson,Gregory Jackson,Initialed display-name source mismatch

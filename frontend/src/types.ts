@@ -12,6 +12,7 @@ export type PlayerImpact = {
   position: string;
   age?: number | null;
   yoe?: number | null;
+  games?: number | null;
   Minutes: number;
   p_mpg?: number | null;
   p_usg?: number | null;
@@ -24,16 +25,38 @@ export type PlayerImpact = {
   offense: number;
   defense: number;
   total: number;
+  replacement_total?: number | null;
   score: number;
+  score_label?: string | null;
   score_delta?: number | null;
   tier: string;
+  availability_status?: string | null;
+  availability_reason?: string | null;
+  skill_source?: string | null;
+  skill_source_year?: number | null;
   timin: number;
+  season_value?: number | null;
+  raw_minutes?: number | null;
+  raw_timin?: number | null;
   value: number;
   contract?: number | null;
   value_add?: number | null;
   trade_value: number;
   fa_value: number;
+  fa_raw_value?: number | null;
+  fa_uncapped_value?: number | null;
+  fa_min_salary?: number | null;
+  fa_max_salary?: number | null;
+  fa_market_adjustment?: number | null;
+  fa_projected_timin?: number | null;
+  fa_missing_roster_slots?: number | null;
+  fa_is_max?: boolean | null;
+  fa_max_tier?: string | null;
   scalability: number;
+  skill_model_off?: number | null;
+  skill_model_def?: number | null;
+  skill_off_total?: number | null;
+  skill_def_total?: number | null;
   FTD?: number | null;
   OREB?: number | null;
   PASS?: number | null;
@@ -124,6 +147,7 @@ export type DraftProspect = {
   player: string;
   draft_year: number;
   rank_in_class: number;
+  base_rank_in_class?: number | null;
   score: number;
   prediction_pool: string;
   scv_draft?: number | null;
@@ -132,6 +156,10 @@ export type DraftProspect = {
   wingspan_in?: number | null;
   weight_lbs?: number | null;
   pos_code?: number | null;
+  position?: string | null;
+  replacement_total?: number | null;
+  timin?: number | null;
+  college?: string | null;
   pre_draft_team?: string | null;
   FTD_pred?: number | null;
   OREB_pred?: number | null;
@@ -145,6 +173,27 @@ export type DraftProspect = {
   OFF_pred: number;
   DEF_pred: number;
   TOTAL_pred: number;
+  actual_pick?: number | null;
+  drafted_team?: string | null;
+  pick_proxy?: number | null;
+  pick_proxy_available?: boolean | null;
+  age_feature?: number | null;
+  pick_feature?: number | null;
+  adjustment_age_component?: number | null;
+  adjustment_pick_component?: number | null;
+  adjustment_total_component?: number | null;
+  adjustment_off_component?: number | null;
+  adjustment_def_component?: number | null;
+  adjustment_FTD_component?: number | null;
+  adjustment_OREB_component?: number | null;
+  adjustment_PASS_component?: number | null;
+  adjustment_RIM_component?: number | null;
+  adjustment_SHOOT_component?: number | null;
+  adjustment_DPM_component?: number | null;
+  adjustment_DREB_component?: number | null;
+  adjustment_RIMPRO_component?: number | null;
+  adjustment_SWITCH_component?: number | null;
+  tracker_adjustment_version?: string | null;
 };
 
 export type ModelSummary = {
@@ -158,11 +207,52 @@ export type ModelSummary = {
   predictors?: string | null;
 };
 
+export type DraftTrackerBoardSummary = {
+  board: string;
+  weighted_score?: number | null;
+  weighted_z?: number | null;
+  years?: number | null;
+};
+
+export type DraftTrackerBoardScore = {
+  draft_year: number;
+  board: string;
+  score?: number | null;
+  year_weight?: number | null;
+  z_score?: number | null;
+};
+
+export type DraftTrackerProspectScore = {
+  draft_year: number;
+  board: string;
+  display_board?: string | null;
+  model_group?: "current" | "base" | "legacy" | "external" | string | null;
+  player: string;
+  nba_id?: number | null;
+  actual_pick?: number | null;
+  college?: string | null;
+  actual_rank?: number | null;
+  actual_weight?: number | null;
+  career_minutes?: number | null;
+  actual_impact?: number | null;
+  actual_score?: number | null;
+  board_rank?: number | null;
+  eval_rank?: number | null;
+  rank_error?: number | null;
+  correct_pct?: number | null;
+  weighted_score_contribution?: number | null;
+  board_year_score?: number | null;
+  board_year_z?: number | null;
+};
+
 export type AppData = {
   manifest: Manifest;
   players: PlayerImpact[];
   teams: TeamProjection[];
   picks: PickAsset[];
   prospects: DraftProspect[];
+  trackerBoardSummary: DraftTrackerBoardSummary[];
+  trackerBoardScores: DraftTrackerBoardScore[];
+  trackerProspectScores: DraftTrackerProspectScore[];
   modelSummary: ModelSummary[];
 };

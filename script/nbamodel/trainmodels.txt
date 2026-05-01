@@ -48,16 +48,26 @@ parse_exclude_years <- function(var_name, default_value = "") {
   years[is.finite(years)]
 }
 
+format_formula_term <- function(term) {
+  term <- as.character(term)
+  if (grepl("^`.*`$", term) || grepl("^I\\(", term) || grepl("^[A-Za-z.][A-Za-z0-9._]*$", term)) {
+    term
+  } else {
+    paste0("`", term, "`")
+  }
+}
+
 extract_model_terms <- function(skillmap, model_flag) {
   skills <- setdiff(names(skillmap), "VAR")
 
-  term1_row <- skillmap %>% filter(VAR == "Term1")
-  term2_row <- skillmap %>% filter(VAR == "Term2")
-  term3_row <- skillmap %>% filter(VAR == "Term3")
+  term_rows <- skillmap %>%
+    filter(grepl("^Term[0-9]+$", VAR)) %>%
+    mutate(term_order = as.integer(sub("^Term", "", VAR))) %>%
+    arrange(term_order)
   flag_row  <- skillmap %>% filter(VAR == model_flag)
 
-  if (nrow(term1_row) != 1 || nrow(term2_row) != 1 || nrow(term3_row) != 1 || nrow(flag_row) != 1) {
-    stop("skillmap.csv must contain exactly one Term1, Term2, Term3, and ", model_flag, " row.")
+  if (nrow(term_rows) == 0 || nrow(flag_row) != 1) {
+    stop("skillmap.csv must contain at least one Term# row and exactly one ", model_flag, " row.")
   }
 
   terms <- map(skills, function(skill_name) {
@@ -66,11 +76,7 @@ extract_model_terms <- function(skillmap, model_flag) {
       return(character(0))
     }
 
-    these_terms <- c(
-      term1_row[[skill_name]][1],
-      term2_row[[skill_name]][1],
-      term3_row[[skill_name]][1]
-    )
+    these_terms <- term_rows[[skill_name]]
 
     these_terms[!is.na(these_terms) & these_terms != ""]
   }) %>%
@@ -180,8 +186,8 @@ def_terms <- extract_model_terms(skillmap, "Defense?")
 if (length(off_terms) == 0) stop("No offense model terms were found in skillmap.csv.")
 if (length(def_terms) == 0) stop("No defense model terms were found in skillmap.csv.")
 
-off_formula <- as.formula(paste("off_dep ~", paste(off_terms, collapse = " + ")))
-def_formula <- as.formula(paste("def_dep ~", paste(def_terms, collapse = " + ")))
+off_formula <- as.formula(paste("off_dep ~", paste(vapply(off_terms, format_formula_term, character(1)), collapse = " + ")))
+def_formula <- as.formula(paste("def_dep ~", paste(vapply(def_terms, format_formula_term, character(1)), collapse = " + ")))
 
 def_exclude_years <- parse_exclude_years("DEF_MODEL_EXCLUDE_YEARS", "2016,2017")
 def_fit_hist <- def_hist

@@ -64,7 +64,7 @@ Sys.setenv(
   DRAFT_SUMMARY_HISTORY_FP = file.path(draft_dir, "no_college_model_summary_history.csv"),
   DRAFT_MIN_TRAIN_ROWS = "20",
   DRAFT_FEATURE_PROFILE = "curated_realgm",
-  DRAFT_MODEL_FAMILIES = "elastic_net_family",
+  DRAFT_MODEL_FAMILIES = "elastic_net_family,ranger",
   DRAFT_GLOBAL_FEATURE_CAP = "4",
   DRAFT_MAX_FEATURE_MISSING_PCT = "0.30",
   DRAFT_FEATURE_MISSING_ALLOWLIST = "FTD=scv_draft;PASS=scv_draft"

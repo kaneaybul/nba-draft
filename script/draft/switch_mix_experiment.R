@@ -41,19 +41,29 @@ add_alias_columns <- function(df) {
 
 extract_model_terms <- function(skillmap, model_flag) {
   skills <- setdiff(names(skillmap), "VAR")
-  term1_row <- skillmap %>% filter(VAR == "Term1")
-  term2_row <- skillmap %>% filter(VAR == "Term2")
-  term3_row <- skillmap %>% filter(VAR == "Term3")
+  term_rows <- skillmap %>%
+    filter(grepl("^Term[0-9]+$", VAR)) %>%
+    mutate(term_order = as.integer(sub("^Term", "", VAR))) %>%
+    arrange(term_order)
   flag_row <- skillmap %>% filter(VAR == model_flag)
 
   map(skills, function(skill_name) {
     use_flag <- suppressWarnings(as.numeric(flag_row[[skill_name]][1]))
     if (!identical(use_flag, 1)) return(character(0))
-    these_terms <- c(term1_row[[skill_name]][1], term2_row[[skill_name]][1], term3_row[[skill_name]][1])
+    these_terms <- term_rows[[skill_name]]
     these_terms[!is.na(these_terms) & these_terms != ""]
   }) %>%
     unlist(use.names = FALSE) %>%
     unique()
+}
+
+format_formula_term <- function(term) {
+  term <- as.character(term)
+  if (grepl("^`.*`$", term) || grepl("^I\\(", term) || grepl("^[A-Za-z.][A-Za-z0-9._]*$", term)) {
+    term
+  } else {
+    paste0("`", term, "`")
+  }
 }
 
 process_one_switch_season <- function(raw_dir, season, assignment_weight, versatility_weight) {
@@ -142,7 +152,7 @@ fit_def_model <- function(def_hist, impact_hist, skillmap, switch_dt, drop_2016 
     filter(!is.na(def_dep))
 
   if (drop_2016) model_df <- model_df %>% filter(year != 2016)
-  fit <- lm(as.formula(paste("def_dep ~", paste(def_terms, collapse = " + "))), data = model_df)
+  fit <- lm(as.formula(paste("def_dep ~", paste(vapply(def_terms, format_formula_term, character(1)), collapse = " + "))), data = model_df)
   list(
     fit = fit,
     rows = nobs(fit),

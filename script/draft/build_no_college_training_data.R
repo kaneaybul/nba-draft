@@ -234,6 +234,44 @@ aggregate_best_two_year_skill_targets <- function(train_candidates, skill_cols, 
   out[finite_skill_counts > 0]
 }
 
+select_best_impact_target_season <- function(train_candidates, skill_cols, window_min = 3L, window_max = 4L, min_window_year = 4L) {
+  if (!nrow(train_candidates)) return(train_candidates)
+
+  dt <- copy(train_candidates)
+  dt[, years_after_draft := year - draft_year]
+  dt[, max_years_after_draft := suppressWarnings(max(years_after_draft, na.rm = TRUE)), by = .(nba_id, player, draft_year)]
+  dt <- dt[
+    is.finite(years_after_draft) &
+      is.finite(max_years_after_draft) &
+      max_years_after_draft >= min_window_year &
+      years_after_draft >= window_min &
+      years_after_draft <= window_max &
+      is.finite(IMPACT_TOTAL)
+  ]
+
+  if (!nrow(dt)) return(dt)
+
+  target_counts <- dt[
+    ,
+    .(eligible_target_seasons = uniqueN(year[is.finite(year)])),
+    by = .(nba_id, player, draft_year)
+  ]
+
+  setorder(dt, nba_id, player, draft_year, -IMPACT_TOTAL, -year)
+  out <- dt[, .SD[1], by = .(nba_id, player, draft_year)]
+  out <- merge(out, target_counts, by = c("nba_id", "player", "draft_year"), all.x = TRUE, sort = FALSE)
+  out[, years_after_draft := year - draft_year]
+  out[, target_aggregation := sprintf(
+    "best_impact_total_season_y%d_y%d",
+    as.integer(window_min),
+    as.integer(window_max)
+  )]
+
+  available_skills <- intersect(skill_cols, names(out))
+  finite_skill_counts <- rowSums(as.data.frame(lapply(out[, ..available_skills], function(x) is.finite(suppressWarnings(as.numeric(x))))))
+  out[finite_skill_counts > 0]
+}
+
 build_databallr_measurements <- function(base_dir) {
   databallr_file <- file.path(base_dir, "raw", "databallr_stats.csv")
   if (!file.exists(databallr_file)) return(NULL)
@@ -369,10 +407,18 @@ live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
 source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = FALSE)
 target_draft_year <- parse_optional_int_env("NO_COLLEGE_TARGET_DRAFT_YEAR")
+target_mode <- trimws(tolower(Sys.getenv("NO_COLLEGE_TARGET_MODE", "best_two_year_skill_avg")))
+if (!target_mode %in% c("best_two_year_skill_avg", "best_impact_total_y3_y4")) {
+  target_mode <- "best_two_year_skill_avg"
+}
 target_window_min <- parse_optional_int_env("NO_COLLEGE_TARGET_WINDOW_MIN")
 if (!is.finite(target_window_min) || target_window_min < 1L) target_window_min <- 2L
 target_window_max <- parse_optional_int_env("NO_COLLEGE_TARGET_WINDOW_MAX")
 if (!is.finite(target_window_max) || target_window_max < target_window_min) target_window_max <- 4L
+if (identical(target_mode, "best_impact_total_y3_y4")) {
+  target_window_min <- 3L
+  target_window_max <- 4L
+}
 min_window_year <- parse_optional_int_env("NO_COLLEGE_MIN_TARGET_WINDOW_YEAR")
 if (!is.finite(min_window_year) || min_window_year < target_window_max) min_window_year <- target_window_max
 min_eligible_target_seasons <- parse_optional_int_env("NO_COLLEGE_MIN_ELIGIBLE_TARGET_SEASONS")
@@ -542,14 +588,24 @@ train_candidates <- merge(
 )
 
 train_candidates[, years_after_draft := year - draft_year]
-train_dt <- aggregate_best_two_year_skill_targets(
-  train_candidates,
-  skill_cols = skill_targets,
-  window_min = target_window_min,
-  window_max = target_window_max,
-  min_window_year = min_window_year,
-  min_eligible_seasons = min_eligible_target_seasons
-)
+if (identical(target_mode, "best_impact_total_y3_y4")) {
+  train_dt <- select_best_impact_target_season(
+    train_candidates,
+    skill_cols = skill_targets,
+    window_min = target_window_min,
+    window_max = target_window_max,
+    min_window_year = min_window_year
+  )
+} else {
+  train_dt <- aggregate_best_two_year_skill_targets(
+    train_candidates,
+    skill_cols = skill_targets,
+    window_min = target_window_min,
+    window_max = target_window_max,
+    min_window_year = min_window_year,
+    min_eligible_seasons = min_eligible_target_seasons
+  )
+}
 
 setnames(train_dt, "year", "outcome_year")
 train_dt[, combined_impact := IMPACT_TOTAL]
@@ -559,16 +615,30 @@ train_dt[, def_dep := IMPACT_DEF]
 drop_cols <- intersect(c("IMPACT_OFF", "IMPACT_DEF", "IMPACT_TOTAL", "match_count", "player_key"), names(train_dt))
 if (length(drop_cols)) train_dt[, (drop_cols) := NULL]
 
-invalid_target_rows <- train_dt[
-  !is.finite(years_after_draft) |
-    years_after_draft != target_window_max |
-    !is.finite(max_years_after_draft) |
-    max_years_after_draft < min_window_year |
-    !is.finite(eligible_target_seasons) |
-    eligible_target_seasons < min_eligible_target_seasons
-]
-if (nrow(invalid_target_rows)) {
-  stop("No-college target selection invariant failed: expected best two-year skill averages from the configured full target window.")
+if (identical(target_mode, "best_impact_total_y3_y4")) {
+  invalid_target_rows <- train_dt[
+    !is.finite(years_after_draft) |
+      years_after_draft < target_window_min |
+      years_after_draft > target_window_max |
+      !is.finite(max_years_after_draft) |
+      max_years_after_draft < min_window_year |
+      !is.finite(combined_impact)
+  ]
+  if (nrow(invalid_target_rows)) {
+    stop("No-college target selection invariant failed: expected best IMPACT_TOTAL season from years 3-4.")
+  }
+} else {
+  invalid_target_rows <- train_dt[
+    !is.finite(years_after_draft) |
+      years_after_draft != target_window_max |
+      !is.finite(max_years_after_draft) |
+      max_years_after_draft < min_window_year |
+      !is.finite(eligible_target_seasons) |
+      eligible_target_seasons < min_eligible_target_seasons
+  ]
+  if (nrow(invalid_target_rows)) {
+    stop("No-college target selection invariant failed: expected best two-year skill averages from the configured full target window.")
+  }
 }
 
 prediction_dt <- copy(stats_dt)

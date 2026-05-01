@@ -78,6 +78,14 @@ clean_display_name <- function(x) {
   trimws(x)
 }
 
+normalize_player_key <- function(x) {
+  x <- clean_display_name(x)
+  x <- tolower(x)
+  x <- gsub("\\b(jr|sr|ii|iii|iv|v)\\b", "", x)
+  x <- gsub("[^a-z0-9]+", "", x)
+  x
+}
+
 eval_term <- function(data, term_string) {
   if (term_string %in% names(data)) {
     out <- suppressWarnings(as.numeric(data[[term_string]]))
@@ -268,23 +276,19 @@ def_intercept <- def_intercept[[1]]
 # =========================================================
 skills <- setdiff(names(skillmap), "VAR")
 
-term1_row <- skillmap %>% filter(VAR == "Term1")
-term2_row <- skillmap %>% filter(VAR == "Term2")
-term3_row <- skillmap %>% filter(VAR == "Term3")
+term_rows <- skillmap %>%
+  filter(grepl("^Term[0-9]+$", VAR)) %>%
+  mutate(term_order = as.integer(sub("^Term", "", VAR))) %>%
+  arrange(term_order)
 off_row   <- skillmap %>% filter(VAR == "Offense?")
 def_row   <- skillmap %>% filter(VAR == "Defense?")
 
-if (nrow(term1_row) != 1 || nrow(term2_row) != 1 || nrow(term3_row) != 1 ||
-    nrow(off_row) != 1 || nrow(def_row) != 1) {
-  stop("skillmap.csv must have exactly one row each for Term1, Term2, Term3, Offense?, Defense?.")
+if (nrow(term_rows) == 0 || nrow(off_row) != 1 || nrow(def_row) != 1) {
+  stop("skillmap.csv must have at least one Term# row and exactly one row each for Offense? and Defense?.")
 }
 
 skillmap_long <- map_dfr(skills, function(skill_name) {
-  these_terms <- c(
-    term1_row[[skill_name]][1],
-    term2_row[[skill_name]][1],
-    term3_row[[skill_name]][1]
-  )
+  these_terms <- term_rows[[skill_name]]
 
   these_terms <- these_terms[!is.na(these_terms) & these_terms != ""]
 
@@ -409,6 +413,243 @@ build_model_skill_table <- function(hist_df, skill_terms) {
     )
 }
 
+load_draft_skill_priors <- function(base_dir, skill_cols) {
+  pred_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_output.csv")
+  empty <- tibble(nba_id = character(), draft_year = integer())
+  for (skill_col in skill_cols) {
+    empty[[skill_col]] <- numeric()
+  }
+
+  if (!file.exists(pred_path)) {
+    return(empty)
+  }
+
+  pred <- read_csv(pred_path, show_col_types = FALSE)
+  if (!all(c("player", "draft_year") %in% names(pred))) {
+    return(empty)
+  }
+
+  raw_pred_cols <- paste0(skill_cols, "_raw_pred")
+  if (!any(raw_pred_cols %in% names(pred))) {
+    return(empty)
+  }
+
+  prior <- tibble(
+    player_key = normalize_player_key(pred$player),
+    draft_year = suppressWarnings(as.integer(pred$draft_year))
+  )
+
+  for (skill_col in skill_cols) {
+    raw_col <- paste0(skill_col, "_raw_pred")
+    prior[[skill_col]] <- if (raw_col %in% names(pred)) {
+      suppressWarnings(as.numeric(pred[[raw_col]]))
+    } else {
+      NA_real_
+    }
+  }
+
+  id_maps <- list()
+
+  stats_path <- file.path(base_dir, "raw", "databallr_stats.csv")
+  if (file.exists(stats_path)) {
+    stats <- read_csv(stats_path, show_col_types = FALSE)
+    name_col <- names(stats)[names(stats) %in% c("player_name", "player", "PLAYER_NAME", "name", "Name")][1]
+    if (!is.na(name_col) && all(c("nba_id", "draft_year") %in% names(stats))) {
+      id_maps[[length(id_maps) + 1]] <- stats %>%
+        transmute(
+          player_key = normalize_player_key(.data[[name_col]]),
+          draft_year = suppressWarnings(as.integer(draft_year)),
+          nba_id = as.character(nba_id)
+        )
+    }
+  }
+
+  training_path <- file.path(base_dir, "processed", "draft", "draft_training_data.csv")
+  if (file.exists(training_path)) {
+    training <- read_csv(training_path, show_col_types = FALSE)
+    if (all(c("player", "draft_year", "nba_id") %in% names(training))) {
+      id_maps[[length(id_maps) + 1]] <- training %>%
+        transmute(
+          player_key = normalize_player_key(player),
+          draft_year = suppressWarnings(as.integer(draft_year)),
+          nba_id = as.character(nba_id)
+        )
+    }
+    if (all(c("nba_player", "draft_year", "nba_id") %in% names(training))) {
+      id_maps[[length(id_maps) + 1]] <- training %>%
+        transmute(
+          player_key = normalize_player_key(nba_player),
+          draft_year = suppressWarnings(as.integer(draft_year)),
+          nba_id = as.character(nba_id)
+        )
+    }
+  }
+
+  if (length(id_maps) == 0) {
+    return(empty)
+  }
+
+  id_map <- bind_rows(id_maps) %>%
+    filter(!is.na(nba_id), nba_id != "", !is.na(draft_year), player_key != "") %>%
+    distinct(player_key, draft_year, nba_id) %>%
+    group_by(player_key, draft_year) %>%
+    mutate(id_count = n_distinct(nba_id)) %>%
+    ungroup() %>%
+    filter(id_count == 1) %>%
+    select(-id_count) %>%
+    distinct(player_key, draft_year, .keep_all = TRUE)
+
+  prior %>%
+    filter(!is.na(draft_year), player_key != "") %>%
+    left_join(id_map, by = c("player_key", "draft_year")) %>%
+    filter(!is.na(nba_id), nba_id != "") %>%
+    arrange(nba_id, draft_year) %>%
+    distinct(nba_id, draft_year, .keep_all = TRUE) %>%
+    select(nba_id, draft_year, all_of(skill_cols))
+}
+
+stabilize_skill_columns <- function(df,
+                                    skill_cols,
+                                    draft_priors = NULL,
+                                    window_minutes = 4000,
+                                    season_decay = 0.75,
+                                    draft_prior_minutes = 650,
+                                    low_sample_full_weight_minutes = 2000) {
+  if (length(skill_cols) == 0 || !("SOURCE_MINUTES" %in% names(df))) {
+    return(df)
+  }
+
+  window_minutes <- suppressWarnings(as.numeric(window_minutes))
+  season_decay <- suppressWarnings(as.numeric(season_decay))
+  draft_prior_minutes <- suppressWarnings(as.numeric(draft_prior_minutes))
+  low_sample_full_weight_minutes <- suppressWarnings(as.numeric(low_sample_full_weight_minutes))
+
+  if (is.na(window_minutes) || window_minutes <= 0) window_minutes <- 4000
+  if (is.na(season_decay) || season_decay <= 0 || season_decay > 1) season_decay <- 0.75
+  if (is.na(draft_prior_minutes) || draft_prior_minutes < 0) draft_prior_minutes <- 650
+  if (is.na(low_sample_full_weight_minutes) || low_sample_full_weight_minutes <= 0) {
+    low_sample_full_weight_minutes <- 2000
+  }
+
+  df <- df %>%
+    mutate(
+      nba_id = as.character(nba_id),
+      year = suppressWarnings(as.integer(year)),
+      SOURCE_MINUTES = suppressWarnings(as.numeric(SOURCE_MINUTES))
+    ) %>%
+    arrange(nba_id, year)
+
+  for (skill_col in skill_cols) {
+    df[[skill_col]] <- suppressWarnings(as.numeric(df[[skill_col]]))
+  }
+
+  original_skills <- df[, skill_cols, drop = FALSE]
+  out_skills <- lapply(skill_cols, function(skill_col) rep(NA_real_, nrow(df)))
+  names(out_skills) <- skill_cols
+  window_actual <- rep(NA_real_, nrow(df))
+  window_effective <- rep(NA_real_, nrow(df))
+  reliability <- rep(NA_real_, nrow(df))
+  draft_prior_effective <- rep(0, nrow(df))
+
+  draft_lookup <- list()
+  if (!is.null(draft_priors) && nrow(draft_priors) > 0) {
+    draft_priors <- draft_priors %>%
+      mutate(
+        nba_id = as.character(nba_id),
+        draft_year = suppressWarnings(as.integer(draft_year))
+      )
+    draft_lookup <- split(draft_priors, draft_priors$nba_id)
+  }
+
+  player_rows <- split(seq_len(nrow(df)), df$nba_id)
+
+  for (rows in player_rows) {
+    rows <- rows[order(df$year[rows])]
+
+    for (row_i in rows) {
+      season <- df$year[row_i]
+      remaining <- window_minutes
+      hist_rows <- rows[df$year[rows] <= season & df$year[rows] >= season - 3]
+      hist_rows <- hist_rows[order(df$year[hist_rows], decreasing = TRUE)]
+      has_prior_nba <- any(df$year[rows] < season & !is.na(df$SOURCE_MINUTES[rows]) & df$SOURCE_MINUTES[rows] > 0)
+
+      numerator <- setNames(rep(0, length(skill_cols)), skill_cols)
+      denominator <- setNames(rep(0, length(skill_cols)), skill_cols)
+      actual_used <- 0
+      effective_used <- 0
+      draft_effective_used <- 0
+
+      for (hist_i in hist_rows) {
+        minutes <- df$SOURCE_MINUTES[hist_i]
+        if (is.na(minutes) || minutes <= 0 || remaining <= 0) next
+
+        used_minutes <- min(remaining, minutes)
+        lag <- max(0, season - df$year[hist_i])
+        weight <- used_minutes * season_decay^lag
+
+        for (skill_col in skill_cols) {
+          value <- original_skills[[skill_col]][hist_i]
+          if (!is.na(value) && is.finite(value)) {
+            numerator[[skill_col]] <- numerator[[skill_col]] + value * weight
+            denominator[[skill_col]] <- denominator[[skill_col]] + weight
+          }
+        }
+
+        actual_used <- actual_used + used_minutes
+        effective_used <- effective_used + weight
+        remaining <- remaining - used_minutes
+      }
+
+      if (!has_prior_nba && remaining > 0 && length(draft_lookup) > 0 && df$nba_id[row_i] %in% names(draft_lookup)) {
+        prior_rows <- draft_lookup[[df$nba_id[row_i]]]
+        prior_rows <- prior_rows[!is.na(prior_rows$draft_year) & prior_rows$draft_year <= season, , drop = FALSE]
+
+        if (nrow(prior_rows) > 0) {
+          prior_row <- prior_rows[which.max(prior_rows$draft_year), , drop = FALSE]
+          used_minutes <- min(remaining, draft_prior_minutes)
+          draft_lag <- max(0, season - prior_row$draft_year[[1]] - 1)
+          weight <- used_minutes * season_decay^draft_lag
+
+          for (skill_col in skill_cols) {
+            value <- prior_row[[skill_col]][[1]]
+            if (!is.na(value) && is.finite(value)) {
+              numerator[[skill_col]] <- numerator[[skill_col]] + value * weight
+              denominator[[skill_col]] <- denominator[[skill_col]] + weight
+            }
+          }
+
+          effective_used <- effective_used + weight
+          draft_effective_used <- draft_effective_used + weight
+        }
+      }
+
+      row_reliability <- min(1, effective_used / low_sample_full_weight_minutes)
+
+      for (skill_col in skill_cols) {
+        if (denominator[[skill_col]] > 0) {
+          out_skills[[skill_col]][row_i] <- (numerator[[skill_col]] / denominator[[skill_col]]) * row_reliability
+        }
+      }
+
+      window_actual[row_i] <- actual_used
+      window_effective[row_i] <- effective_used
+      reliability[row_i] <- row_reliability
+      draft_prior_effective[row_i] <- draft_effective_used
+    }
+  }
+
+  for (skill_col in skill_cols) {
+    df[[skill_col]] <- out_skills[[skill_col]]
+  }
+
+  df$skill_window_minutes <- round(window_actual, 1)
+  df$skill_effective_minutes <- round(window_effective, 1)
+  df$skill_reliability <- round(reliability, 3)
+  df$skill_draft_prior_minutes <- round(draft_prior_effective, 1)
+
+  df
+}
+
 # =========================================================
 # BUILD OFFENSE / DEFENSE TABLES
 # =========================================================
@@ -455,6 +696,7 @@ impact_tbl <- impact_hist %>%
     nba_id = as.character(nba_id),
     player_name_impact = clean_display_name(player_name),
     year = as.integer(year),
+    SOURCE_MINUTES = suppressWarnings(as.numeric(Minutes)),
     SOURCE_O_EPM = as.numeric(o_epm),
     SOURCE_O_DPM = as.numeric(o_dpm),
     SOURCE_D_EPM = as.numeric(d_epm),
@@ -476,6 +718,21 @@ final_tbl <- final_tbl %>%
   ) %>%
   select(-player_name_impact)
 
+off_skill_cols <- off_skill_names
+def_skill_cols <- def_skill_names
+all_skill_cols <- c(sort(off_skill_cols), sort(def_skill_cols))
+draft_skill_priors <- load_draft_skill_priors(base_dir, all_skill_cols)
+
+final_tbl <- stabilize_skill_columns(
+  final_tbl,
+  skill_cols = all_skill_cols,
+  draft_priors = draft_skill_priors,
+  window_minutes = Sys.getenv("SKILL_STABILIZATION_MINUTES", unset = "4000"),
+  season_decay = Sys.getenv("SKILL_STABILIZATION_DECAY", unset = "0.75"),
+  draft_prior_minutes = Sys.getenv("SKILL_DRAFT_PRIOR_MINUTES", unset = "650"),
+  low_sample_full_weight_minutes = Sys.getenv("SKILL_LOW_SAMPLE_FULL_WEIGHT_MINUTES", unset = "2000")
+)
+
 # =========================================================
 # ADD INTERCEPTS AND TOTALS
 # =========================================================
@@ -484,9 +741,6 @@ final_tbl <- final_tbl %>%
     off_intercept = off_intercept,
     def_intercept = def_intercept
   )
-
-off_skill_cols <- off_skill_names
-def_skill_cols <- def_skill_names
 
 final_tbl <- final_tbl %>%
   mutate(
@@ -542,7 +796,6 @@ final_tbl <- final_tbl %>%
 # =========================================================
 # ADD Z-SCORED SKILL COLUMNS
 # =========================================================
-all_skill_cols <- c(sort(off_skill_cols), sort(def_skill_cols))
 raw_skill_cols <- paste0(all_skill_cols, "_raw")
 
 for (i in seq_along(all_skill_cols)) {
@@ -574,6 +827,10 @@ final_tbl <- final_tbl %>%
     SOURCE_O_DPM,
     SOURCE_D_EPM,
     SOURCE_D_DPM,
+    skill_window_minutes,
+    skill_effective_minutes,
+    skill_reliability,
+    skill_draft_prior_minutes,
     off_intercept,
     def_intercept,
     all_of(all_skill_cols),

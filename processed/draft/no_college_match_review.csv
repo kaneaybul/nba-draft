@@ -13,7 +13,7 @@ Ariel Hukporti,2024,ariel hukporti,,,unmatched,,https://www.basketball-reference
 Arnoldas Kulboka,2018,arnoldas kulboka,,,unmatched,,https://www.basketball-reference.com/players/k/kulboar01.html,https://www.basketball-reference.com/draft/NBA_2018.html
 Artūras Gudaitis,2015,arturas gudaitis,,,unmatched,,https://www.basketball-reference.com/players/g/gudaiar01.html,https://www.basketball-reference.com/draft/NBA_2015.html
 Ausar Thompson,2023,ausar thompson,1641709,Ausar Thompson,normalized_exact,1,https://www.basketball-reference.com/players/t/thompau01.html,https://www.basketball-reference.com/draft/NBA_2023.html
-Ben Saraf,2025,ben saraf,,,unmatched,,https://www.basketball-reference.com/players/s/sarafbe01.html,https://www.basketball-reference.com/draft/NBA_2025.html
+Ben Saraf,2025,ben saraf,1642879,Ben Saraf,normalized_exact,1,https://www.basketball-reference.com/players/s/sarafbe01.html,https://www.basketball-reference.com/draft/NBA_2025.html
 Bilal Coulibaly,2023,bilal coulibaly,1641731,Bilal Coulibaly,normalized_exact,1,https://www.basketball-reference.com/players/c/coulibi01.html,https://www.basketball-reference.com/draft/NBA_2023.html
 Bobi Klintman,2024,bobi klintman,,,unmatched,,https://www.basketball-reference.com/players/k/klintbo01.html,https://www.basketball-reference.com/draft/NBA_2024.html
 Bogdan Bogdanović,2014,bogdan bogdanovic,203992,Bogdan Bogdanovic,normalized_exact,1,https://www.basketball-reference.com/players/b/bogdabo01.html,https://www.basketball-reference.com/draft/NBA_2014.html
@@ -42,7 +42,7 @@ Goga Bitadze,2019,goga bitadze,1629048,Goga Bitadze,normalized_exact,1,https://w
 Guerschon Yabusele,2016,guerschon yabusele,1627824,Guerschon Yabusele,normalized_exact,1,https://www.basketball-reference.com/players/y/yabusgu01.html,https://www.basketball-reference.com/draft/NBA_2016.html
 Gui Santos,2022,gui santos,1630611,Gui Santos,normalized_exact,1,https://www.basketball-reference.com/players/s/santogu01.html,https://www.basketball-reference.com/draft/NBA_2022.html
 Hugo Besson,2022,hugo besson,,,unmatched,,https://www.basketball-reference.com/players/b/bessohu01.html,https://www.basketball-reference.com/draft/NBA_2022.html
-Hugo González,2025,hugo gonzalez,,,unmatched,,https://www.basketball-reference.com/players/g/gonzahu01.html,https://www.basketball-reference.com/draft/NBA_2025.html
+Hugo González,2025,hugo gonzalez,1642864,Hugo Gonzalez,normalized_exact,1,https://www.basketball-reference.com/players/g/gonzahu01.html,https://www.basketball-reference.com/draft/NBA_2025.html
 Isaac Bonga,2018,isaac bonga,1629067,Isaac Bonga,normalized_exact,1,https://www.basketball-reference.com/players/b/bongais01.html,https://www.basketball-reference.com/draft/NBA_2018.html
 Isaïa Cordinier,2016,isaia cordinier,,,unmatched,,https://www.basketball-reference.com/players/c/cordiis01.html,https://www.basketball-reference.com/draft/NBA_2016.html
 Isaiah Hartenstein,2017,isaiah hartenstein,1628392,Isaiah Hartenstein,normalized_exact,1,https://www.basketball-reference.com/players/h/harteis01.html,https://www.basketball-reference.com/draft/NBA_2017.html
@@ -57,8 +57,7 @@ Jonah Bolden,2017,jonah bolden,1628413,Jonah Bolden,normalized_exact,1,https://w
 Jonathan Kuminga,2021,jonathan kuminga,1630228,Jonathan Kuminga,normalized_exact,1,https://www.basketball-reference.com/players/k/kuminjo01.html,https://www.basketball-reference.com/draft/NBA_2021.html
 Josh Giddey,2021,josh giddey,1630581,Josh Giddey,normalized_exact,1,https://www.basketball-reference.com/players/g/giddejo01.html,https://www.basketball-reference.com/draft/NBA_2021.html
 Juan Nunez,2024,juan nunez,,,unmatched,,https://www.basketball-reference.com/players/n/nunezju01.html,https://www.basketball-reference.com/draft/NBA_2024.html
-Juancho Hernangómez,2016,juancho hernangomez,1627823,Juan Hernangomez,ambiguous_name,0.5,https://www.basketball-reference.com/players/h/hernaju01.html,https://www.basketball-reference.com/draft/NBA_2016.html
-Juancho Hernangómez,2016,juancho hernangomez,1627823,Juancho Hernangomez,ambiguous_name,0.5,https://www.basketball-reference.com/players/h/hernaju01.html,https://www.basketball-reference.com/draft/NBA_2016.html
+Juancho Hernangómez,2016,juancho hernangomez,1627823,Juancho Hernangomez,normalized_exact,1,https://www.basketball-reference.com/players/h/hernaju01.html,https://www.basketball-reference.com/draft/NBA_2016.html
 Juhann Begarin,2021,juhann begarin,,,unmatched,,https://www.basketball-reference.com/players/b/begarju01.html,https://www.basketball-reference.com/draft/NBA_2021.html
 Jusuf Nurkić,2014,jusuf nurkic,203994,Jusuf Nurkic,normalized_exact,1,https://www.basketball-reference.com/players/n/nurkiju01.html,https://www.basketball-reference.com/draft/NBA_2014.html
 Karlo Matković,2022,karlo matkovic,1631255,Karlo Matkovic,normalized_exact,1,https://www.basketball-reference.com/players/m/matkoka01.html,https://www.basketball-reference.com/draft/NBA_2022.html
@@ -68,7 +67,7 @@ Kristaps Porziņģis,2015,kristaps porzingis,204001,Kristaps Porzingis,normalize
 Lachlan Olbrich,2025,lachlan olbrich,,,unmatched,,https://www.basketball-reference.com/players/o/olbrila01.html,https://www.basketball-reference.com/draft/NBA_2025.html
 LaMelo Ball,2020,lamelo ball,1630163,LaMelo Ball,normalized_exact,1,https://www.basketball-reference.com/players/b/ballla01.html,https://www.basketball-reference.com/draft/NBA_2020.html
 Leandro Bolmaro,2020,leandro bolmaro,,,unmatched,,https://www.basketball-reference.com/players/b/bolmale01.html,https://www.basketball-reference.com/draft/NBA_2020.html
-Leonard Miller,2023,leonard miller,,,unmatched,,https://www.basketball-reference.com/players/m/millele01.html,https://basketball.realgm.com/player/Leonard-Miller/D-League/150556/Career/By_Split
+Leonard Miller,2023,leonard miller,1631159,Leonard Miller,normalized_exact,1,https://www.basketball-reference.com/players/m/millele01.html,https://basketball.realgm.com/player/Leonard-Miller/D-League/150556/Career/By_Split
 Louis Labeyrie,2014,louis labeyrie,,,unmatched,,https://www.basketball-reference.com/players/l/labeylo01.html,https://www.basketball-reference.com/draft/NBA_2014.html
 Luka Dončić,2018,luka doncic,1629029,Luka Doncic,normalized_exact,1,https://www.basketball-reference.com/players/d/doncilu01.html,https://www.basketball-reference.com/draft/NBA_2018.html
 Luka Mitrović,2015,luka mitrovic,,,unmatched,,https://www.basketball-reference.com/players/m/mitrolu01.html,https://www.basketball-reference.com/draft/NBA_2015.html
@@ -82,7 +81,7 @@ Matas Buzelis,2024,matas buzelis,1641824,Matas Buzelis,normalized_exact,1,https:
 Mathias Lessort,2017,mathias lessort,,,unmatched,,https://www.basketball-reference.com/players/l/lessoma01.html,https://www.basketball-reference.com/draft/NBA_2017.html
 Matteo Spagnolo,2022,matteo spagnolo,,,unmatched,,https://www.basketball-reference.com/players/s/spagnma01.html,https://www.basketball-reference.com/draft/NBA_2022.html
 Melvin Ajinça,2024,melvin ajinca,,,unmatched,,https://www.basketball-reference.com/players/a/ajincme01.html,https://www.basketball-reference.com/draft/NBA_2024.html
-Mohamed Diawara,2025,mohamed diawara,,,unmatched,,https://www.basketball-reference.com/players/d/diawamo01.html,https://www.basketball-reference.com/draft/NBA_2025.html
+Mohamed Diawara,2025,mohamed diawara,1642885,Mohamed Diawara,normalized_exact,1,https://www.basketball-reference.com/players/d/diawamo01.html,https://www.basketball-reference.com/draft/NBA_2025.html
 Mojave King,2023,mojave king,,,unmatched,,https://www.basketball-reference.com/players/k/kingmo01.html,https://www.basketball-reference.com/draft/NBA_2023.html
 Nemanja Dangubić,2014,nemanja dangubic,,,unmatched,,https://www.basketball-reference.com/players/d/dangune01.html,https://www.basketball-reference.com/draft/NBA_2014.html
 Nikola Djurisic,2024,nikola djurisic,,,unmatched,,https://www.basketball-reference.com/players/d/djurini01.html,https://www.basketball-reference.com/draft/NBA_2024.html
@@ -92,16 +91,16 @@ Nikola Milutinov,2015,nikola milutinov,,,unmatched,,https://www.basketball-refer
 Nikola Radičević,2015,nikola radicevic,,,unmatched,,https://www.basketball-reference.com/players/r/radicni01.html,https://www.basketball-reference.com/draft/NBA_2015.html
 Nikola Topić,2024,nikola topic,,,unmatched,,https://www.basketball-reference.com/players/t/topicni01.html,https://www.basketball-reference.com/draft/NBA_2024.html
 Noa Essengue,2025,noa essengue,,,unmatched,,https://www.basketball-reference.com/players/e/essenno01.html,https://www.basketball-reference.com/draft/NBA_2025.html
-Noah Penda,2025,noah penda,,,unmatched,,https://www.basketball-reference.com/players/p/pendano01.html,https://www.basketball-reference.com/draft/NBA_2025.html
-Nolan Traoré,2025,nolan traore,,,unmatched,,https://www.basketball-reference.com/players/t/traorno01.html,https://www.basketball-reference.com/draft/NBA_2025.html
+Noah Penda,2025,noah penda,1642869,Noah Penda,normalized_exact,1,https://www.basketball-reference.com/players/p/pendano01.html,https://www.basketball-reference.com/draft/NBA_2025.html
+Nolan Traoré,2025,nolan traore,1642849,Nolan Traore,normalized_exact,1,https://www.basketball-reference.com/players/t/traorno01.html,https://www.basketball-reference.com/draft/NBA_2025.html
 Ognjen Jaramaz,2017,ognjen jaramaz,,,unmatched,,https://www.basketball-reference.com/players/j/jaramog01.html,https://www.basketball-reference.com/draft/NBA_2017.html
 Ousmane Dieng,2022,ousmane dieng,1631172,Ousmane Dieng,normalized_exact,1,https://www.basketball-reference.com/players/d/diengou01.html,https://www.basketball-reference.com/draft/NBA_2022.html
 Pacôme Dadiet,2024,pacome dadiet,,,unmatched,,https://www.basketball-reference.com/players/d/dadiepa01.html,https://www.basketball-reference.com/draft/NBA_2024.html
 Paul Zipser,2016,paul zipser,1627835,Paul Zipser,normalized_exact,1,https://www.basketball-reference.com/players/z/zipsepa01.html,https://www.basketball-reference.com/draft/NBA_2016.html
 Petr Cornelie,2016,petr cornelie,,,unmatched,,https://www.basketball-reference.com/players/c/cornepe01.html,https://www.basketball-reference.com/draft/NBA_2016.html
+R.J. Hampton,2020,r j hampton,1630181,R.J. Hampton,normalized_exact,1,https://www.basketball-reference.com/players/h/hamptrj01.html,https://www.basketball-reference.com/draft/NBA_2020.html
 Rade Zagorac,2016,rade zagorac,,,unmatched,,https://www.basketball-reference.com/players/z/zagorra01.html,https://www.basketball-reference.com/draft/NBA_2016.html
 Rayan Rupert,2023,rayan rupert,1641712,Rayan Rupert,normalized_exact,1,https://www.basketball-reference.com/players/r/ruperra01.html,https://www.basketball-reference.com/draft/NBA_2023.html
-R.J. Hampton,2020,rj hampton,1630181,R.J. Hampton,normalized_exact,1,https://www.basketball-reference.com/players/h/hamptrj01.html,https://www.basketball-reference.com/draft/NBA_2020.html
 Rocco Zikarsky,2025,rocco zikarsky,,,unmatched,,https://www.basketball-reference.com/players/z/zikarro01.html,https://www.basketball-reference.com/draft/NBA_2025.html
 Rodions Kurucs,2018,rodions kurucs,1629066,Rodions Kurucs,normalized_exact,1,https://www.basketball-reference.com/players/k/kurucro01.html,https://www.basketball-reference.com/draft/NBA_2018.html
 Rokas Jokubaitis,2021,rokas jokubaitis,,,unmatched,,https://www.basketball-reference.com/players/j/jokubro01.html,https://www.basketball-reference.com/draft/NBA_2021.html
@@ -111,7 +110,7 @@ Sasha Vezenkov,2017,sasha vezenkov,1628426,Sasha Vezenkov,normalized_exact,1,htt
 Scoot Henderson,2023,scoot henderson,1630703,Scoot Henderson,normalized_exact,1,https://www.basketball-reference.com/players/h/hendesc01.html,https://www.basketball-reference.com/draft/NBA_2023.html
 Sekou Doumbouya,2019,sekou doumbouya,1629635,Sekou Doumbouya,normalized_exact,1,https://www.basketball-reference.com/players/d/doumbse01.html,https://www.basketball-reference.com/draft/NBA_2019.html
 Shaedon Sharpe,2022,shaedon sharpe,1631101,Shaedon Sharpe,normalized_exact,1,,
-Sidy Cissoko,2023,sidy cissoko,,,unmatched,,https://www.basketball-reference.com/players/c/cissosi01.html,https://www.basketball-reference.com/draft/NBA_2023.html
+Sidy Cissoko,2023,sidy cissoko,1631321,Sidy Cissoko,normalized_exact,1,https://www.basketball-reference.com/players/c/cissosi01.html,https://www.basketball-reference.com/draft/NBA_2023.html
 Tarik Biberovic,2023,tarik biberovic,,,unmatched,,https://www.basketball-reference.com/players/b/biberta01.html,https://www.basketball-reference.com/draft/NBA_2023.html
 Terrance Ferguson,2017,terrance ferguson,1628390,Terrance Ferguson,normalized_exact,1,https://www.basketball-reference.com/players/f/fergute01.html,https://www.basketball-reference.com/draft/NBA_2017.html
 Thanasis Antetokounmpo,2014,thanasis antetokounmpo,203648,Thanasis Antetokounmpo,normalized_exact,1,https://www.basketball-reference.com/players/a/antetth01.html,https://www.basketball-reference.com/draft/NBA_2014.html

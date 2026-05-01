@@ -41,9 +41,10 @@ add_alias_columns <- function(df) {
 extract_model_terms <- function(skillmap, model_flag) {
   skills <- setdiff(names(skillmap), "VAR")
 
-  term1_row <- skillmap %>% filter(VAR == "Term1")
-  term2_row <- skillmap %>% filter(VAR == "Term2")
-  term3_row <- skillmap %>% filter(VAR == "Term3")
+  term_rows <- skillmap %>%
+    filter(grepl("^Term[0-9]+$", VAR)) %>%
+    mutate(term_order = as.integer(sub("^Term", "", VAR))) %>%
+    arrange(term_order)
   flag_row  <- skillmap %>% filter(VAR == model_flag)
 
   map(skills, function(skill_name) {
@@ -52,11 +53,7 @@ extract_model_terms <- function(skillmap, model_flag) {
       return(character(0))
     }
 
-    these_terms <- c(
-      term1_row[[skill_name]][1],
-      term2_row[[skill_name]][1],
-      term3_row[[skill_name]][1]
-    )
+    these_terms <- term_rows[[skill_name]]
 
     these_terms[!is.na(these_terms) & these_terms != ""]
   }) %>%
@@ -86,11 +83,12 @@ score_variant <- function(skillmap, def_hist, label) {
     sigma = summary(fit)$sigma,
     aic = AIC(fit),
     rimpro_terms = paste(
-      na.omit(c(
-        skillmap[skillmap$VAR == "Term1", "RIMPRO"][1, 1],
-        skillmap[skillmap$VAR == "Term2", "RIMPRO"][1, 1],
-        skillmap[skillmap$VAR == "Term3", "RIMPRO"][1, 1]
-      )),
+      skillmap %>%
+        filter(grepl("^Term[0-9]+$", VAR)) %>%
+        mutate(term_order = as.integer(sub("^Term", "", VAR))) %>%
+        arrange(term_order) %>%
+        pull(RIMPRO) %>%
+        discard(~ is.na(.x) || .x == ""),
       collapse = " | "
     )
   )
@@ -112,14 +110,16 @@ skillmap <- read_csv(file.path(base_dir, "ref", "skillmap.csv"), show_col_types 
 
 variants <- list(
   current = skillmap,
-  replace_with_rim_dif = {
+  split_no_interaction = {
     sm <- skillmap
-    sm[sm$VAR == "Term3", "RIMPRO"] <- "rim_dif%"
+    sm[sm$VAR == "Term4", "RIMPRO"] <- ""
     sm
   },
-  drop_rimdfga = {
+  old_rim_points_saved = {
     sm <- skillmap
+    sm[sm$VAR == "Term2", "RIMPRO"] <- "rim_points_saved_100"
     sm[sm$VAR == "Term3", "RIMPRO"] <- ""
+    sm[sm$VAR == "Term4", "RIMPRO"] <- ""
     sm
   }
 )

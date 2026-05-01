@@ -20,6 +20,124 @@ resolve_base_dir <- function() {
 clamp <- function(x, lo, hi) pmax(lo, pmin(hi, x))
 coalesce_num <- function(primary, fallback) ifelse(!is.na(primary), primary, fallback)
 
+normalize_name <- function(x) {
+  x <- iconv(as.character(x), from = "", to = "ASCII//TRANSLIT")
+  x <- tolower(x)
+  x <- gsub("\\b(jr|sr|ii|iii|iv|v)\\b", "", x)
+  x <- gsub("[^a-z0-9]+", "", x)
+  x
+}
+
+attach_contract_ids_from_history <- function(base_dir, contracts) {
+  if (!("nba_id" %in% names(contracts)) || !("player_name" %in% names(contracts))) {
+    return(contracts)
+  }
+
+  missing_id <- is.na(suppressWarnings(as.integer(contracts$nba_id)))
+  if (!any(missing_id)) {
+    return(contracts)
+  }
+
+  stats_path <- file.path(base_dir, "raw", "databallr_stats.csv")
+  if (!file.exists(stats_path)) {
+    return(contracts)
+  }
+
+  stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
+  name_col <- names(stats)[names(stats) %in% c("player_name", "player", "PLAYER_NAME", "name", "Name")][1]
+  if (!all(c("nba_id") %in% names(stats)) || is.na(name_col)) {
+    return(contracts)
+  }
+
+  players <- data.frame(
+    nba_id = suppressWarnings(as.integer(stats$nba_id)),
+    name_key = normalize_name(stats[[name_col]]),
+    stringsAsFactors = FALSE
+  )
+  players <- players[!is.na(players$nba_id) & players$name_key != "", ]
+  counts <- aggregate(players$nba_id, by = list(name_key = players$name_key), FUN = function(v) length(unique(v)))
+  names(counts)[2] <- "id_count"
+  players <- merge(players, counts, by = "name_key", all.x = TRUE)
+  players <- players[players$id_count == 1, c("name_key", "nba_id"), drop = FALSE]
+  players <- players[!duplicated(players$name_key), ]
+
+  key <- normalize_name(contracts$player_name)
+  matched <- players$nba_id[match(key, players$name_key)]
+  contracts$nba_id[missing_id & !is.na(matched)] <- matched[missing_id & !is.na(matched)]
+  contracts
+}
+
+load_current_contracts <- function(base_dir) {
+  contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+  current_files <- list.files(contract_dir, pattern = "^contracts_[0-9]{4}_current\\.csv$", full.names = TRUE)
+  if (length(current_files) == 0) {
+    return(data.frame(nba_id = integer(), contract_player_name = character(), contract_team = character(), contract = numeric()))
+  }
+
+  current_years <- suppressWarnings(as.integer(sub("^contracts_([0-9]{4})_current\\.csv$", "\\1", basename(current_files))))
+  path <- current_files[order(current_years, decreasing = TRUE)][1]
+  contracts <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!all(c("nba_id", "player_name", "team", "salary_y0") %in% names(contracts))) {
+    return(data.frame(nba_id = integer(), contract_player_name = character(), contract_team = character(), contract = numeric()))
+  }
+
+  contracts <- attach_contract_ids_from_history(base_dir, contracts)
+  out <- data.frame(
+    nba_id = suppressWarnings(as.integer(contracts$nba_id)),
+    contract_player_name = as.character(contracts$player_name),
+    contract_team = as.character(contracts$team),
+    contract = suppressWarnings(as.numeric(contracts$salary_y0)),
+    rank = if ("rank" %in% names(contracts)) suppressWarnings(as.numeric(contracts$rank)) else seq_len(nrow(contracts)),
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$nba_id) & !is.na(out$contract) & out$contract > 0, ]
+  out <- out[order(out$nba_id, out$rank, -out$contract), ]
+  out <- out[!duplicated(out$nba_id), ]
+  out[, c("nba_id", "contract_player_name", "contract_team", "contract"), drop = FALSE]
+}
+
+append_latest_contract_inactive_rows <- function(panel, base_dir) {
+  latest_year <- max(panel$year, na.rm = TRUE)
+  contracts <- load_current_contracts(base_dir)
+  if (nrow(contracts) == 0) {
+    return(panel)
+  }
+
+  current_ids <- unique(panel$nba_id[panel$year == latest_year])
+  missing_contracts <- contracts[!(contracts$nba_id %in% current_ids), , drop = FALSE]
+  if (nrow(missing_contracts) == 0) {
+    return(panel)
+  }
+
+  prior <- panel[panel$year < latest_year & panel$nba_id %in% missing_contracts$nba_id, , drop = FALSE]
+  if (nrow(prior) == 0) {
+    return(panel)
+  }
+
+  prior <- prior[order(prior$nba_id, -prior$year), ]
+  prior <- prior[!duplicated(prior$nba_id), , drop = FALSE]
+  contract_match <- match(prior$nba_id, missing_contracts$nba_id)
+  year_delta <- latest_year - prior$year
+
+  prior$player_name <- ifelse(
+    !is.na(missing_contracts$contract_player_name[contract_match]) & missing_contracts$contract_player_name[contract_match] != "",
+    missing_contracts$contract_player_name[contract_match],
+    prior$player_name
+  )
+  prior$year <- latest_year
+  prior$age <- suppressWarnings(as.numeric(prior$age)) + year_delta
+  prior$yoe <- suppressWarnings(as.numeric(prior$yoe)) + year_delta
+  prior$games <- 0
+  prior$stat_minutes <- 0
+  prior$minutes <- 0
+  prior$games_equiv <- 0
+  prior$minutes_equiv <- 0
+  prior$season_max_games <- max(panel$games[panel$year == latest_year], na.rm = TRUE)
+  prior$season_games_factor <- ifelse(is.finite(prior$season_max_games) & prior$season_max_games > 0, 82 / prior$season_max_games, 1)
+
+  rbind(panel, prior[, names(panel), drop = FALSE])
+}
+
 metrics <- function(actual, predicted) {
   ok <- is.finite(actual) & is.finite(predicted)
   actual <- actual[ok]
@@ -129,6 +247,7 @@ build_panel <- function(base_dir) {
   panel$season_games_factor <- ifelse(is.finite(panel$season_max_games) & panel$season_max_games > 0, 82 / panel$season_max_games, 1)
   panel$games_equiv <- clamp(panel$games * panel$season_games_factor, 0, 82)
   panel$minutes_equiv <- clamp(panel$minutes * panel$season_games_factor, 0, 3300)
+  panel <- append_latest_contract_inactive_rows(panel, base_dir)
 
   panel <- panel[order(panel$nba_id, panel$year), ]
   panel$age_sq <- panel$age^2

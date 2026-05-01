@@ -795,7 +795,7 @@ get_curated_realgm_feature_map <- function() {
 }
 
 get_curated_realgm_feature_caps <- function() {
-  c(FTD = 5L, OREB = 4L, PASS = 5L, RIM = 5L, SHOOT = 4L, DPM = 5L, DREB = 5L, RIMPRO = 3L, SWITCH = 5L)
+  c(FTD = 3L, OREB = 3L, PASS = 3L, RIM = 4L, SHOOT = 3L, DPM = 3L, DREB = 3L, RIMPRO = 3L, SWITCH = 4L)
 }
 
 get_curated_realgm_feature_anchors <- function() {
@@ -823,8 +823,8 @@ get_skill_feature_cap <- function(skill_name, max_features) {
   max_features <- suppressWarnings(as.integer(max_features))
   if (!is.finite(max_features) || max_features < 2L) return(0L)
 
-  global_cap <- suppressWarnings(as.integer(Sys.getenv("DRAFT_GLOBAL_FEATURE_CAP", "5")))
-  if (!is.finite(global_cap) || global_cap < 2L) global_cap <- 5L
+  global_cap <- suppressWarnings(as.integer(Sys.getenv("DRAFT_GLOBAL_FEATURE_CAP", "4")))
+  if (!is.finite(global_cap) || global_cap < 2L) global_cap <- 4L
 
   cap_map <- get_curated_realgm_feature_caps()
   if (!skill_name %in% names(cap_map)) {
@@ -924,6 +924,53 @@ get_candidate_predictors <- function(df, skill_targets, skill_name = NULL) {
   candidate_cols <- setdiff(names(df), exclude_cols)
   candidate_cols <- candidate_cols[vapply(df[, candidate_cols, drop = FALSE], function(x) is.numeric(x) || is.integer(x), logical(1))]
   candidate_cols
+}
+
+apply_skill_feature_policy <- function(candidate_cols, skill_name = NULL) {
+  if (is.null(skill_name) || !nzchar(skill_name)) {
+    return(candidate_cols)
+  }
+
+  skill_name <- toupper(skill_name)
+
+  exclude_map <- list(
+    DPM = c("ast_to_usg"),
+    RIM = c("dr_pct"),
+    SHOOT = c("or_pct", "dr_pct")
+  )
+
+  include_map <- list(
+    SHOOT = c("X3PA_100"),
+    RIMPRO = c("height_wo_shoes_in")
+  )
+
+  excludes <- if (skill_name %in% names(exclude_map)) exclude_map[[skill_name]] else character()
+  includes <- if (skill_name %in% names(include_map)) include_map[[skill_name]] else character()
+
+  if (!identical(skill_name, "SHOOT")) {
+    excludes <- unique(c(excludes, "3pa_100", "X3PA_100"))
+  }
+
+  candidate_cols <- setdiff(candidate_cols, excludes)
+  unique(c(includes[includes %in% candidate_cols], candidate_cols))
+}
+
+get_skill_forced_predictors <- function(skill_name, candidate_cols) {
+  if (is.null(skill_name) || !nzchar(skill_name)) {
+    return(character())
+  }
+
+  include_map <- list(
+    SHOOT = c("X3PA_100"),
+    RIMPRO = c("height_wo_shoes_in")
+  )
+
+  skill_name <- toupper(skill_name)
+  if (!skill_name %in% names(include_map)) {
+    return(character())
+  }
+
+  intersect(include_map[[skill_name]], candidate_cols)
 }
 
 rank_predictors_corr <- function(train_df, target_col, candidate_cols) {
@@ -1453,7 +1500,7 @@ refit_selected_feature_set <- function(train_df, target_col, preds, model_type, 
   NULL
 }
 
-prune_selected_features_by_validation <- function(train_df, target_col, model_type, best_fit, min_train_rows = 20L) {
+prune_selected_features_by_validation <- function(train_df, target_col, model_type, best_fit, min_train_rows = 20L, protected_preds = character()) {
   if (is.null(best_fit) || !identical(best_fit$validation_scheme, "rolling_draft_year")) return(best_fit)
   if (length(best_fit$preds) <= 2L) return(best_fit)
 
@@ -1470,7 +1517,10 @@ prune_selected_features_by_validation <- function(train_df, target_col, model_ty
   improved <- TRUE
   while (improved && length(best_fit$preds) > 2L) {
     improved <- FALSE
-    candidates <- lapply(best_fit$preds, function(drop_pred) {
+    drop_options <- setdiff(best_fit$preds, protected_preds)
+    if (!length(drop_options)) break
+
+    candidates <- lapply(drop_options, function(drop_pred) {
       candidate_preds <- setdiff(best_fit$preds, drop_pred)
       if (length(candidate_preds) < 2L) return(NULL)
       score <- evaluate_exact_feature_set(train_df, target_col, candidate_preds, model_type, fit_params, min_train_rows)
@@ -1569,7 +1619,7 @@ choose_skill_model_family <- function(skill_name, candidate_fits, mse_tolerance_
 }
 
 get_enabled_model_families <- function() {
-  raw_value <- trimws(Sys.getenv("DRAFT_MODEL_FAMILIES", "elastic_net_family,ranger"))
+  raw_value <- trimws(Sys.getenv("DRAFT_MODEL_FAMILIES", "ranger"))
   families <- trimws(unlist(strsplit(raw_value, ",", fixed = TRUE), use.names = FALSE))
   families <- families[nzchar(families)]
   families <- intersect(families, c("elastic_net_family", "ranger"))
@@ -1949,6 +1999,7 @@ for (skill in skill_targets) {
   }
 
   skill_candidate_cols <- get_candidate_predictors(train_df, candidate_exclude_targets, skill_name = skill)
+  skill_candidate_cols <- apply_skill_feature_policy(skill_candidate_cols, skill)
   model_df <- train_df[, c("player", "draft_year", skill, skill_candidate_cols), drop = FALSE]
   model_df[[skill]] <- suppressWarnings(as.numeric(model_df[[skill]]))
   model_df <- model_df[is.finite(model_df[[skill]]), , drop = FALSE]
@@ -1968,7 +2019,10 @@ for (skill in skill_targets) {
   }
 
   feature_cap <- get_skill_feature_cap(skill, length(usable_candidates))
-  anchor_preds <- get_skill_anchor_predictors(skill, usable_candidates)
+  anchor_preds <- unique(c(
+    get_skill_forced_predictors(skill, usable_candidates),
+    get_skill_anchor_predictors(skill, usable_candidates)
+  ))
   enabled_model_families <- get_enabled_model_families()
   candidate_fits <- list()
   if ("elastic_net_family" %in% enabled_model_families) {
@@ -1985,7 +2039,8 @@ for (skill in skill_targets) {
 
   model_type <- chosen_model$model_type
   best_fit <- chosen_model$fit
-  best_fit <- prune_selected_features_by_validation(model_df, skill, model_type, best_fit, min_train_rows)
+  protected_preds <- get_skill_forced_predictors(skill, usable_candidates)
+  best_fit <- prune_selected_features_by_validation(model_df, skill, model_type, best_fit, min_train_rows, protected_preds)
   scoring_df <- apply_preprocess_recipe(model_df, best_fit$preprocess_recipe)
 
   if (model_type == "elastic_net_family") {
@@ -2104,7 +2159,9 @@ saveRDS(
   list(
     models = trained_models,
     production_model_map = setNames(vapply(trained_models, function(x) x$model_type, character(1)), names(trained_models)),
-    candidate_predictors = setNames(lapply(skill_targets, function(skill) get_candidate_predictors(train_df, candidate_exclude_targets, skill_name = skill)), skill_targets)
+    candidate_predictors = setNames(lapply(skill_targets, function(skill) {
+      apply_skill_feature_policy(get_candidate_predictors(train_df, candidate_exclude_targets, skill_name = skill), skill)
+    }), skill_targets)
   ),
   models_rds
 )

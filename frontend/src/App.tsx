@@ -1,7 +1,7 @@
 import { type CSSProperties, type MouseEvent, useEffect, useMemo, useState } from "react";
 import { loadAppData } from "./data";
-import type { AppData, DraftProspect, PickAsset, PlayerImpact, TeamProjection } from "./types";
-import { clamp, cls, formatMoney, formatNumber } from "./utils";
+import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact } from "./types";
+import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
 type View = "impact" | "teams" | "trade" | "draft" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
@@ -18,6 +18,7 @@ type SortKey =
   | "offense"
   | "defense"
   | "value"
+  | "value_add"
   | "contract"
   | "trade_value"
   | "fa_value"
@@ -26,6 +27,19 @@ type SortKey =
   | SkillKey;
 type SortDirection = "asc" | "desc";
 type FilterKey = SortKey;
+type DraftSortKey =
+  | "rank_in_class"
+  | "player"
+  | "position"
+  | "college"
+  | "score"
+  | "OFF_pred"
+  | "DEF_pred"
+  | "TOTAL_pred"
+  | "timin"
+  | "draft_age"
+  | "scv_draft"
+  | `${SkillKey}_pred`;
 type FilterFieldType = "number" | "text";
 type FilterOperator = "contains" | "equals" | "gt" | "gte" | "lt" | "lte" | "between";
 type FilterRule = {
@@ -35,8 +49,52 @@ type FilterRule = {
   value: string;
   valueTo?: string;
 };
+type LineupSide = "a" | "b";
+type LineupSlot = PlayerImpact | null;
+type LineupSkill = {
+  key: SkillKey | "ID";
+  label: string;
+  source: SkillKey | SkillKey[];
+};
+type LineupSummary = {
+  slots: LineupSlot[];
+  players: PlayerImpact[];
+  offense: number;
+  defense: number;
+  net: number;
+  score: number;
+  gaps: number;
+  spikes: number;
+  skillAverages: Record<string, number>;
+};
+type LineupSuggestion = {
+  player: PlayerImpact;
+  summary: LineupSummary;
+  score: number;
+  netDelta: number;
+  scoreDelta: number;
+  gapDelta: number;
+  newGaps: LineupSkill[];
+  improvedGaps: LineupSkill[];
+  reasons: string[];
+};
 
 const skillKeys: SkillKey[] = ["FTD", "PASS", "SHOOT", "RIM", "OREB", "DREB", "SWITCH", "DPM", "RIMPRO"];
+const emptyLineup = () => Array.from({ length: 5 }, () => "");
+const lineupSkills: LineupSkill[] = [
+  { key: "FTD", label: "FTD", source: "FTD" },
+  { key: "SHOOT", label: "SHOOT", source: "SHOOT" },
+  { key: "PASS", label: "PASS", source: "PASS" },
+  { key: "RIM", label: "RIM", source: "RIM" },
+  { key: "OREB", label: "OREB", source: "OREB" },
+  { key: "SWITCH", label: "SWITCH", source: "SWITCH" },
+  { key: "DPM", label: "DPM", source: "DPM" },
+  { key: "DREB", label: "DREB", source: "DREB" },
+  { key: "RIMPRO", label: "RIMPRO", source: "RIMPRO" }
+];
+const LINEUP_SUGGESTIONS_PER_PAGE = 8;
+const LINEUP_SUGGESTION_PAGE_COUNT = 3;
+const LINEUP_MAX_SUGGESTIONS = LINEUP_SUGGESTIONS_PER_PAGE * LINEUP_SUGGESTION_PAGE_COUNT;
 const skillLabels: Record<SkillKey, string> = {
   FTD: "Free Throws",
   PASS: "Passing",
@@ -48,6 +106,9 @@ const skillLabels: Record<SkillKey, string> = {
   DPM: "Def. Playmaking",
   RIMPRO: "Rim Protection"
 };
+const NBA_HEADSHOT_URL = "https://cdn.nba.com/headshots/nba/latest/260x190";
+const BRENDAN_MODEL_BOARD = "Brendan Model";
+const BRENDAN_BASE_BOARD = "Brendan Base";
 const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType }> = [
   { key: "player_name", label: "Player", type: "text" },
   { key: "team", label: "Team", type: "text" },
@@ -61,9 +122,10 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "total", label: "Total", type: "number" },
   { key: "score", label: "Score", type: "number" },
   { key: "score_delta", label: "Delta", type: "number" },
-  { key: "value", label: "Value", type: "number" },
+  { key: "value", label: "Raw Value", type: "number" },
   { key: "contract", label: "Salary", type: "number" },
-  { key: "fa_value", label: "FA", type: "number" },
+  { key: "value_add", label: "Szn VA", type: "number" },
+  { key: "fa_value", label: "FA Value", type: "number" },
   { key: "scalability", label: "Scale", type: "number" },
   ...skillKeys.map((key) => ({ key, label: key, type: "number" as const }))
 ];
@@ -80,6 +142,11 @@ const textOperators: Array<{ value: FilterOperator; label: string }> = [
   { value: "equals", label: "is exactly" }
 ];
 
+function latestPlayerSeason(players: PlayerImpact[]): number | null {
+  const years = players.map((player) => player.year).filter(Number.isFinite);
+  return years.length > 0 ? Math.max(...years) : null;
+}
+
 function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +159,7 @@ function App() {
     loadAppData()
       .then((loaded) => {
         setData(loaded);
-        const latest = Math.max(...loaded.players.map((player) => player.year));
-        setSeason(latest);
+        setSeason(latestPlayerSeason(loaded.players));
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, []);
@@ -105,8 +171,8 @@ function App() {
       const loaded = await loadAppData(String(Date.now()));
       setData(loaded);
       setError(null);
-      const latest = Math.max(...loaded.players.map((player) => player.year));
-      setSeason((current) => current ?? latest);
+      const latest = latestPlayerSeason(loaded.players);
+      setSeason((current) => (current !== null && loaded.players.some((player) => player.year === current) ? current : latest));
       setRefreshNote("Data reloaded");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
@@ -142,7 +208,7 @@ function App() {
     );
   }
 
-  if (!data || season === null) {
+  if (!data) {
     return (
       <main className="loading">
         <div className="mark">NBA</div>
@@ -153,16 +219,28 @@ function App() {
 
   const seasons = Array.from(new Set(data.players.map((player) => player.year))).sort((a, b) => b - a);
 
+  if (season === null) {
+    return (
+      <main className="fatal">
+        <h1>No player seasons</h1>
+        <p>The frontend data loaded, but `impact_players.json` has no season rows.</p>
+        <code>Rscript script/frontend/export_frontend_data.R</code>
+      </main>
+    );
+  }
+
   return (
-    <div className="app">
+    <div className="app" data-variant="editorial">
       <header className="topbar">
-        <div>
-          <div className="eyebrow">SCV Analytics</div>
-          <h1>NBA Impact Lab</h1>
+        <div className="brand">
+          <div className="brand-eye">SCV Analytics</div>
+          <h1 className="brand-name">
+            <span className="brand-accent">NBA</span> Impact Lab
+          </h1>
         </div>
-        <div className="topbar-actions">
-          <label>
-            Season
+        <div className="topbar-actions topbar-right">
+          <label className="season-chip">
+            <span>Season</span>
             <select value={season} onChange={(event) => setSeason(Number(event.target.value))}>
               {seasons.map((year) => (
                 <option key={year} value={year}>
@@ -171,14 +249,14 @@ function App() {
               ))}
             </select>
           </label>
-          <div className="manifest">
+          <div className="manifest data-stamp">
             <span>Data</span>
             <strong>{new Date(data.manifest.generated_at).toLocaleString()}</strong>
           </div>
-          <button className="refresh-button" onClick={reloadData} disabled={refreshing}>
+          <button className="refresh-button hdr-btn" onClick={reloadData} disabled={refreshing}>
             {refreshing ? "Reloading" : "Reload data"}
           </button>
-          <button className="refresh-button" onClick={refreshBackend} disabled={refreshing}>
+          <button className="refresh-button hdr-btn primary" onClick={refreshBackend} disabled={refreshing}>
             Refresh latest
           </button>
           {refreshNote && <div className="refresh-note">{refreshNote}</div>}
@@ -194,8 +272,9 @@ function App() {
           ["lineups", "Lineup Synergy"],
           ["tracker", "Draft Tracker"]
         ].map(([key, label]) => (
-          <button key={key} className={cls(view === key && "active")} onClick={() => setView(key as View)}>
+          <button key={key} className={cls("modebar-btn", view === key && "active")} onClick={() => setView(key as View)}>
             {label}
+            {key === "impact" && <span className="nav-pill">{data.players.filter((player) => player.year === season).length}</span>}
           </button>
         ))}
       </nav>
@@ -291,12 +370,22 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       top: Math.max(16, Math.min(event.clientY - 18, window.innerHeight - 520))
     });
   };
+  const closeDetail = () => setDetailPlayer(null);
+
+  useEffect(() => {
+    if (!detailPlayer) return undefined;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeDetail();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [detailPlayer]);
 
   return (
     <main className="workspace impact-grid">
       <div className="impact-sticky-header">
-        <section className="control-strip">
-          <div className="quick-filters">
+        <section className="control-strip board-controls">
+          <div className="quick-filters board-control-row">
             <div className="search">
               <span>Find</span>
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Player name" />
@@ -325,10 +414,17 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
                 ))}
               </select>
             </label>
+            <div className="board-count" aria-live="polite">
+              <span>Players</span>
+              <strong>{filtered.length.toLocaleString()}</strong>
+            </div>
+            <button className="clear-filters" onClick={clearAllFilters} disabled={activeFilterCount === 0}>
+              Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </button>
           </div>
-          <div className="rule-builder" aria-label="Add filter rule">
+          <div className="rule-builder board-control-row" aria-label="Add filter rule">
             <label>
-              Add Rule
+              Filter
               <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
                 {filterFields.map((field) => (
                   <option key={field.key} value={field.key}>
@@ -374,9 +470,6 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
             <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
               Add
             </button>
-            <button className="clear-filters" onClick={clearAllFilters} disabled={activeFilterCount === 0}>
-              Clear filters{activeFilterCount ? ` (${activeFilterCount})` : ""}
-            </button>
           </div>
           {filterRules.length > 0 && (
             <div className="filter-chips" aria-label="Active filter rules">
@@ -388,12 +481,6 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               ))}
             </div>
           )}
-        </section>
-        <section className="panel-heading compact-heading impact-board-title">
-          <div>
-            <h2>Player Board</h2>
-            <p>{filtered.length.toLocaleString()} players</p>
-          </div>
         </section>
       </div>
 
@@ -408,8 +495,8 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       </section>
 
       {detailPlayer && (
-        <div className="detail-overlay" role="dialog" aria-label={`${detailPlayer.player_name} detail`}>
-          <div className="detail-popover" style={detailPosition} onMouseLeave={() => setDetailPlayer(null)}>
+        <div className="detail-overlay active" role="presentation" onClick={closeDetail}>
+          <div className="detail-popover" role="dialog" aria-label={`${detailPlayer.player_name} detail`} style={detailPosition} onClick={(event) => event.stopPropagation()}>
             <PlayerDetail player={detailPlayer} />
           </div>
         </div>
@@ -432,77 +519,125 @@ function PlayerTable({
   onShowDetail: (player: PlayerImpact, event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const sortableHeader = (key: SortKey, label: string) => (
-    <button className={cls("sort-header", sortKey === key && "active")} onClick={() => onSort(key)}>
+    <button className={cls("sort-header sort-btn", sortKey === key && "active on")} onClick={() => onSort(key)}>
       {label}
-      {sortKey === key && <span>{sortDirection === "desc" ? "v" : "^"}</span>}
+      {sortKey === key && <span className="sort-arr">{sortDirection === "desc" ? "v" : "^"}</span>}
     </button>
   );
+  const activeSkill = skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null;
 
   return (
     <div className="table-wrap">
-      <table className="data-table player-table">
+      <table className="data-table player-table editorial-player-table">
+        <colgroup>
+          <col className="cg-rank" />
+          <col className="cg-player" />
+          <col className="cg-age" />
+          <col className="cg-min" />
+          <col className="cg-rate" />
+          <col className="cg-rate" />
+          <col className="cg-rate" />
+          <col className="cg-score" />
+          <col className="cg-delta" />
+          <col className="cg-tier" />
+          <col className="cg-money" />
+          <col className="cg-money" />
+          <col className="cg-va" />
+          <col className="cg-scale" />
+          <col className="cg-skills" />
+        </colgroup>
         <thead>
+          <tr className="group-row">
+            <th></th>
+            <th colSpan={3}>Identity</th>
+            <th colSpan={6}>Impact</th>
+            <th colSpan={4}>Market</th>
+            <th>Skills</th>
+          </tr>
           <tr>
-            <th className="col-rank">Rank</th>
-            <th className="col-player">{sortableHeader("player_name", "Player")}</th>
-            <th className="col-team align-center">{sortableHeader("team", "Team")}</th>
-            <th className="col-pos align-center">{sortableHeader("position", "Pos")}</th>
-            <th className="col-compact align-right">{sortableHeader("age", "Age")}</th>
-            <th className="col-compact align-right">{sortableHeader("yoe", "YOE")}</th>
-            <th className="col-min align-right">{sortableHeader("Minutes", "Min")}</th>
-            <th className="col-rate align-right">{sortableHeader("offense", "Off")}</th>
-            <th className="col-rate align-right">{sortableHeader("defense", "Def")}</th>
-            <th className="col-rate align-right">{sortableHeader("total", "Total")}</th>
-            <th className="col-score align-center">{sortableHeader("score", "Score")}</th>
-            <th className="col-rate align-right">{sortableHeader("score_delta", "Delta")}</th>
-            <th className="col-tier">{sortableHeader("tier", "Tier")}</th>
-            <th className="col-money align-right">{sortableHeader("value", "Value")}</th>
-            <th className="col-money align-right">{sortableHeader("contract", "Salary")}</th>
-            <th className="col-money align-right">{sortableHeader("fa_value", "FA")}</th>
-            <th className="col-scale align-center">{sortableHeader("scalability", "Scale")}</th>
-            {skillKeys.map((key) => (
-              <th key={key} className="col-skill align-center">{sortableHeader(key, key)}</th>
-            ))}
+            <th className="col-rank c-rank">
+              <span className="sort-header sort-btn">#</span>
+            </th>
+            <th className="col-player c-player sticky-player">{sortableHeader("player_name", "Player")}</th>
+            <th className="col-compact c-age align-right">{sortableHeader("age", "Age")}</th>
+            <th className="col-min c-min align-center group-end">{sortableHeader("Minutes", "Min")}</th>
+            <th className="col-rate c-rate align-center">{sortableHeader("offense", "Off")}</th>
+            <th className="col-rate c-rate align-center">{sortableHeader("defense", "Def")}</th>
+            <th className="col-rate c-rate impact-total-head align-center">{sortableHeader("total", "Total")}</th>
+            <th className="col-score c-score align-center">{sortableHeader("score", "Score")}</th>
+            <th className="col-rate c-delta align-center">{sortableHeader("score_delta", "Delta")}</th>
+            <th className="col-tier c-tier align-center group-end">{sortableHeader("tier", "Tier")}</th>
+            <th className="col-money c-money align-right">{sortableHeader("value", "Value")}</th>
+            <th className="col-money c-money align-right">{sortableHeader("contract", "Salary")}</th>
+            <th className="col-money c-va align-right">{sortableHeader("value_add", "Szn VA")}</th>
+            <th className="col-scale c-scale align-center">{sortableHeader("scalability", "Scale")}</th>
+            <th className="col-skills c-skills align-center">
+              <div className="skills-head">
+                <button className={cls("skills-main-sort", activeSkill && "active")} onClick={() => onSort(activeSkill ?? "SHOOT")}>
+                  Skills{activeSkill && <small>{activeSkill} {sortDirection === "desc" ? "v" : "^"}</small>}
+                </button>
+                <div className="skills-sort-strip" aria-label="Sort by skill">
+                  {skillKeys.map((key) => (
+                    <button
+                      key={key}
+                      className={cls("skills-sort-btn", activeSkill === key && "active")}
+                      onClick={() => onSort(key)}
+                      title={`Sort by ${skillLabels[key]}`}
+                    >
+                      {key}
+                      {activeSkill === key && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
           {players.map((player, index) => (
-            <tr key={`${player.year}-${player.nba_id}`}>
+            <tr key={`${player.year}-${player.nba_id}`} style={rowAccentStyle(player)}>
               <td className="rank-cell">{index + 1}</td>
-              <td>
-                <button className="row-button" onClick={(event) => onShowDetail(player, event)}>{player.player_name}</button>
+              <td className="sticky-player">
+                <div className="player-cell with-headshot">
+                  <PlayerHeadshot player={player} />
+                  <div className="player-copy">
+                    <button
+                      className="row-button row-link"
+                      onClick={(event) => onShowDetail(player, event)}
+                    >
+                      {player.player_name}
+                    </button>
+                    <div className="player-sub">{player.team} / {player.position}</div>
+                  </div>
+                </div>
               </td>
-              <td className="align-center">{player.team}</td>
-              <td className="align-center">{player.position}</td>
-              <td className="align-right">{formatNumber(player.age, 1)}</td>
-              <td className="align-right">{formatNumber(player.yoe, 0)}</td>
-              <td className="align-right">{formatNumber(player.Minutes, 0)}</td>
-              <td className="align-right"><span className="rate-value" style={rateStyle(player.offense)}>{formatSigned(player.offense, 1)}</span></td>
-              <td className="align-right"><span className="rate-value" style={rateStyle(player.defense)}>{formatSigned(player.defense, 1)}</span></td>
-              <td className="align-right"><span className="rate-value" style={rateStyle(player.total)}>{formatSigned(player.total, 1)}</span></td>
+              <td className="pad-r muted-num">{formatNumber(player.age, 1)}</td>
+              <td className="muted-num min-cell group-end-cell">{formatNumber(player.Minutes, 0)}</td>
+              <td className="stat-cell"><div className="cell-stage"><StatValue value={player.offense} tone="secondary" /></div></td>
+              <td className="stat-cell"><div className="cell-stage"><StatValue value={player.defense} tone="secondary" /></div></td>
+              <td className="stat-cell impact-total-cell"><div className="cell-stage"><StatValue value={player.total} /></div></td>
+              <td className="align-center score-cell">
+                <ScoreValue value={player.score} label={player.score_label} />
+              </td>
               <td className="align-center">
-                <ScoreBar value={player.score} />
+                <span className="delta-value" style={deltaStyle(player.score_delta ?? 0)}>{formatSigned(player.score_delta, 0)}</span>
               </td>
-              <td className={cls("align-right", (player.score_delta ?? 0) >= 0 ? "positive" : "negative")}>{formatSigned(player.score_delta, 0)}</td>
-              <td>
-                <span className="tier">{player.tier}</span>
+              <td className="align-center group-end-cell">
+                <span className="tier-text">{player.tier}</span>
               </td>
-              <td className="align-right">{formatMoney(player.value)}</td>
-              <td className="align-right">{formatMoney(player.contract)}</td>
-              <td className="align-right">{formatMoney(player.fa_value)}</td>
+              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.value)}</div></td>
+              <td className="money-text muted-num"><div className="cell-stage money-stage">{formatMoney(player.contract)}</div></td>
+              <td className="va-cell" style={netMoneyStyle(player.value_add)}><div className="cell-stage money-stage">{formatSeasonValueAdd(player)}</div></td>
               <td className="align-center">
-                <span className="scale-pill" style={scaleStyle(player.scalability)}>
-                  {formatNumber(player.scalability, 1)}
-                </span>
+                <div className="cell-stage">
+                  <span className="scale-value" style={scaleStyle(player.scalability)}>
+                    {formatNumber(player.scalability, 1)}
+                  </span>
+                </div>
               </td>
-              {skillKeys.map((key) => {
-                const value = Number(player[key] ?? 0);
-                return (
-                  <td key={key} className="align-center">
-                    <span className="rate-value" style={rateStyle(value)}>{formatSigned(value, 1)}</span>
-                  </td>
-                );
-              })}
+              <td className="skill-fingerprint-cell">
+                <SkillFingerprint player={player} activeSkill={activeSkill} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -511,116 +646,119 @@ function PlayerTable({
   );
 }
 
+function EmptyState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="empty-state">
+      <h2>{title}</h2>
+      <p>{detail}</p>
+    </div>
+  );
+}
+
 function PlayerDetail({ player }: { player: PlayerImpact }) {
   const projection = [
-    { label: `${player.year}`, value: player.total },
+    { label: "Now", value: player.total },
     { label: "+1", value: player.projection_y1 },
     { label: "+2", value: player.projection_y2 },
     { label: "+3", value: player.projection_y3 },
     { label: "+4", value: player.projection_y4 },
     { label: "+5", value: player.projection_y5 ?? player.projection_y4 }
-  ];
-  const projectionRows = [1, 2, 3, 4, 5].map((horizon) => ({
-    label: `Y${horizon}`,
-    impact: Number(player[`projection_y${horizon}` as keyof PlayerImpact] ?? 0),
-    games: player[`projection_games_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
-    mpg: player[`projection_mpg_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
-    timin: player[`projection_timin_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
-    value: player[`projection_value_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
-    faValue: player[`projection_fa_value_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
-    contract: player[`projection_contract_y${horizon}` as keyof PlayerImpact] as number | null | undefined,
-    scale: player[`projection_scalability_y${horizon}` as keyof PlayerImpact] as number | null | undefined
-  }));
+  ].filter((point) => point.value !== null && point.value !== undefined && Number.isFinite(point.value));
+  const scoreVars = scoreStyle(player.score) as CSSProperties & { "--score-fill"?: string };
+  const scoreColor = player.score_label === "DNQ" ? "var(--muted)" : scoreVars["--score-fill"] ?? "var(--teal)";
+  const detailStyle = {
+    ...scoreVars,
+    "--detail-score": scoreColor,
+    "--tc": scoreColor
+  } as CSSProperties;
 
   return (
-    <aside className="detail-panel">
-      <div className="player-head">
-        <div>
-          <p>{player.team} / {player.position}</p>
-          <h2>{player.player_name}</h2>
+    <aside className="detail-panel player-detail-card" style={detailStyle}>
+      <div className="dp-header">
+        <div className="dp-watermark" aria-hidden="true">
+          {player.score_label === "DNQ" ? "-" : Math.round(player.score)}
         </div>
-        <strong>{formatNumber(player.score, 1)}</strong>
+        <div className="dp-top">
+          <div className="dp-identity">
+            <PlayerHeadshot player={player} size="detail" />
+            <div className="dp-title-block">
+              <div className="dp-meta">{player.team} / {player.position}</div>
+              <div className="dp-name">{player.player_name}</div>
+              <div className="dp-tags">
+                <span className="tier-text">{player.tier}</span>
+                {player.score_delta !== null && player.score_delta !== undefined && (
+                  <span>{formatSigned(player.score_delta, 0)} pts this season</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <ScoreRing value={player.score} label={player.score_label} size={66} />
+        </div>
       </div>
-      <div className="metric-grid">
-        <MetricPill label="Offense" value={formatNumber(player.offense, 1)} tone="green" />
-        <MetricPill label="Defense" value={formatNumber(player.defense, 1)} tone="teal" />
-        <MetricPill label="Total" value={formatNumber(player.total, 1)} tone="gold" />
-        <MetricPill label="Minutes" value={formatNumber(player.Minutes, 0)} />
+
+      <div className="dp-body">
+        {player.availability_status === "DNQ" && (
+          <p className="availability-note">
+            {player.availability_reason || "DNQ"} / skills from {player.skill_source_year ?? "-"}
+          </p>
+        )}
+
+        <div className="dp-metrics">
+          <MetricPill label="Offense" value={formatSigned(player.offense, 1)} tone="green" />
+          <MetricPill label="Defense" value={formatSigned(player.defense, 1)} tone="teal" />
+          <MetricPill label="Total" value={formatSigned(player.total, 1)} tone="gold" />
+        </div>
+
+        <section>
+          <h3 className="dp-section-head">Projection Arc</h3>
+          <ProjectionChart points={projection} />
+        </section>
+
+        <section>
+          <h3 className="dp-section-head">Skill Shape</h3>
+          <div className="skill-list">
+            {skillKeys.map((key) => (
+              <SkillRow key={key} label={skillLabels[key]} value={Number(player[key] ?? 0)} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="dp-section-head">Market Read</h3>
+          <div className="market-grid">
+            <div className="mc">
+              <span>Raw Value</span>
+              <strong>{formatMoney(player.value)}</strong>
+            </div>
+            <div className="mc">
+              <span>Salary</span>
+              <strong className="muted-num">{formatMoney(player.contract)}</strong>
+            </div>
+            <div className="mc">
+              <span>Season VA</span>
+              <strong style={netMoneyStyle(player.value_add)}>{formatSeasonValueAdd(player)}</strong>
+            </div>
+            <div className="mc">
+              <span>FA Value</span>
+              <strong>{formatMoney(player.fa_value)}</strong>
+            </div>
+            <div className="mc">
+              <span>Trade Val</span>
+              <strong>{formatMoney(player.trade_value)}</strong>
+            </div>
+            <div className="mc">
+              <span>Scalability</span>
+              <strong style={scaleStyle(player.scalability)}>{formatNumber(player.scalability, 1)}</strong>
+            </div>
+          </div>
+          <p className="note note-text">
+            {formatNumber(player.Minutes, 0)} min / {formatNumber(player.yoe, 0)} yrs experience
+          </p>
+          <p className="note note-text">
+            FA uses projected TIMIN, max salary tier {player.fa_max_tier ?? "-"}, and {formatNumber(player.fa_missing_roster_slots, 0)} reserved roster slots.
+          </p>
+        </section>
       </div>
-      <ProjectionChart points={projection} />
-      <section>
-        <h3>Projected Market Arc</h3>
-        <div className="projection-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Yr</th>
-                <th>Tot</th>
-                <th>G</th>
-                <th>MPG</th>
-                <th>TIMIN</th>
-                <th>Value</th>
-                <th>FA</th>
-                <th>Sal</th>
-                <th>Scale</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projectionRows.map((row) => (
-                <tr key={row.label}>
-                  <td>{row.label}</td>
-                  <td>{formatSigned(row.impact, 1)}</td>
-                  <td>{formatNumber(row.games, 0)}</td>
-                  <td>{formatNumber(row.mpg, 1)}</td>
-                  <td>{formatNumber(row.timin, 0)}</td>
-                  <td>{formatMoney(row.value)}</td>
-                  <td>{formatMoney(row.faValue)}</td>
-                  <td>{formatMoney(row.contract)}</td>
-                  <td>
-                    <span className="scale-pill compact" style={scaleStyle(Number(row.scale ?? 0))}>
-                      {formatNumber(row.scale, 1)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <section>
-        <h3>Skill Shape</h3>
-        <div className="skill-list">
-          {skillKeys.map((key) => (
-            <SkillRow key={key} label={skillLabels[key]} value={Number(player[key] ?? 0)} />
-          ))}
-        </div>
-      </section>
-      <section>
-        <h3>Market Read</h3>
-        <div className="market-grid">
-          <div>
-            <span>Impact value</span>
-            <strong>{formatMoney(player.value)}</strong>
-          </div>
-          <div>
-            <span>Active salary</span>
-            <strong>{formatMoney(player.contract)}</strong>
-          </div>
-          <div>
-            <span>Trade value</span>
-            <strong>{formatMoney(player.trade_value)}</strong>
-          </div>
-          <div>
-            <span>FA value</span>
-            <strong>{formatMoney(player.fa_value)}</strong>
-          </div>
-          <div>
-            <span>Scalability</span>
-            <strong>{formatNumber(player.scalability, 1)}</strong>
-          </div>
-        </div>
-        <p className="note">{player.source_note}</p>
-      </section>
     </aside>
   );
 }
@@ -632,6 +770,16 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   );
   const [selectedTeam, setSelectedTeam] = useState<string>("");
   const currentTeam = teams.find((team) => team.team === selectedTeam) ?? teams[0];
+  if (!currentTeam) {
+    return (
+      <main className="workspace team-grid">
+        <section className="table-panel">
+          <EmptyState title="No team projections" detail={`No team projection rows are available for ${season}.`} />
+        </section>
+      </main>
+    );
+  }
+
   const contributors = data.players
     .filter((player) => player.year === season && player.team === currentTeam.team)
     .sort((a, b) => b.timin - a.timin)
@@ -675,7 +823,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
           <MetricPill label="Minutes" value={formatNumber(currentTeam.minutes, 0)} />
         </div>
         <h3>Roster Drivers</h3>
-        <div className="table-wrap compact">
+        {contributors.length > 0 ? <div className="table-wrap compact">
           <table className="data-table">
             <thead>
               <tr>
@@ -698,7 +846,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </div> : <EmptyState title="No roster drivers" detail={`No player rows are available for ${currentTeam.team} in ${season}.`} />}
       </section>
     </main>
   );
@@ -716,6 +864,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
 
   const selectedPlayer = players.find((player) => player.nba_id === Number(playerId)) ?? players[0] ?? null;
   const selectedPick = data.picks.find((pick) => pick.asset_id === pickId) ?? data.picks[0] ?? null;
+  const hasAssets = players.length > 0 || data.picks.length > 0;
   const leftTotal = assetTotal(left);
   const rightTotal = assetTotal(right);
   const diff = Math.abs(leftTotal - rightTotal);
@@ -732,10 +881,10 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
             <p>Player and pick value balance</p>
           </div>
         </div>
-        <div className="trade-controls">
+        {hasAssets ? <div className="trade-controls">
           <label>
             Player asset
-            <select value={playerId} onChange={(event) => setPlayerId(Number(event.target.value))}>
+            <select value={playerId} onChange={(event) => setPlayerId(Number(event.target.value))} disabled={players.length === 0}>
               {players.slice(0, 250).map((player) => (
                 <option key={player.nba_id} value={player.nba_id}>
                   {player.player_name} / {formatMoney(player.trade_value)}
@@ -749,7 +898,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
           </div>
           <label>
             Pick asset
-            <select value={pickId} onChange={(event) => setPickId(event.target.value)}>
+            <select value={pickId} onChange={(event) => setPickId(event.target.value)} disabled={data.picks.length === 0}>
               {data.picks.map((pick) => (
                 <option key={pick.asset_id} value={pick.asset_id}>
                   {pick.label} / {formatMoney(pick.value)}
@@ -761,7 +910,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
             <button disabled={!selectedPick} onClick={() => selectedPick && setLeft([...left, selectedPick])}>Add left</button>
             <button disabled={!selectedPick} onClick={() => selectedPick && setRight([...right, selectedPick])}>Add right</button>
           </div>
-        </div>
+        </div> : <EmptyState title="No trade assets" detail={`No players or picks are available for ${season}.`} />}
       </section>
 
       <TradeSide title="Left Side" assets={left} setAssets={setLeft} total={leftTotal} />
@@ -812,76 +961,207 @@ function TradeSide({
 
 function DraftWorkspace({ data }: { data: AppData }) {
   const years = Array.from(new Set(data.prospects.map((prospect) => prospect.draft_year))).sort((a, b) => b - a);
-  const [year, setYear] = useState(years[0]);
-  const prospects = data.prospects.filter((prospect) => prospect.draft_year === year).slice(0, 80);
+  const [year, setYear] = useState<number | undefined>(years[0]);
+  const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<DraftSortKey>("rank_in_class");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  const yearProspects = useMemo(() => data.prospects.filter((prospect) => prospect.draft_year === year), [data.prospects, year]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return yearProspects
+      .filter((prospect) => !q || prospect.player.toLowerCase().includes(q) || String(prospect.college ?? "").toLowerCase().includes(q))
+      .sort((a, b) => compareDraftProspects(a, b, sortKey, sortDirection));
+  }, [query, sortDirection, sortKey, yearProspects]);
+  const summary = useMemo(() => {
+    const avg = (values: Array<number | null | undefined>) => {
+      const nums = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+      return nums.length > 0 ? nums.reduce((sum, value) => sum + value, 0) / nums.length : null;
+    };
+    return {
+      count: filtered.length,
+      avgTotal: avg(filtered.map((prospect) => prospect.TOTAL_pred)),
+      avgTimin: avg(filtered.map((prospect) => prospect.timin)),
+      top: filtered[0]
+    };
+  }, [filtered]);
+
+  const handleSort = (key: DraftSortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === "desc" ? "asc" : "desc");
+      return;
+    }
+    setSortKey(key);
+    setSortDirection(["rank_in_class", "player", "position", "college"].includes(key) ? "asc" : "desc");
+  };
+  const clearFilters = () => {
+    setQuery("");
+  };
 
   return (
-    <main className="workspace draft-grid">
-      <section className="table-panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Draft Board</h2>
-            <p>Model score and skill shape</p>
-          </div>
-          <label>
-            Class
-            <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
-              {years.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <ProspectTable prospects={prospects} />
-      </section>
-      <section className="detail-panel wide">
-        <h2>Model Diagnostics</h2>
-        <div className="diagnostic-list">
-          {data.modelSummary.slice(0, 10).map((row) => (
-            <div key={row.skill} className="diagnostic-row">
-              <strong>{row.skill}</strong>
-              <span>{row.model_type}</span>
-              <span>Temporal R2 {formatNumber(row.temporal_r2 ?? null, 2)}</span>
-              <small>{row.top_variable ?? "No top variable"}</small>
+    <main className="workspace draft-model-grid">
+      <section className="draft-board-main">
+        <div className="impact-sticky-header">
+          <section className="control-strip board-controls draft-controls">
+            <div className="quick-filters board-control-row">
+              <div className="search">
+                <span>Find</span>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Prospect name" />
+              </div>
+              {years.length > 0 && <label>
+                Class
+                <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+                  {years.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>}
+              <div className="board-count" aria-live="polite">
+                <span>Prospects</span>
+                <strong>{summary.count.toLocaleString()}</strong>
+              </div>
+              <button className="clear-filters" onClick={clearFilters} disabled={!query.trim()}>
+                Clear
+              </button>
             </div>
-          ))}
+          </section>
         </div>
+
+        <section className="table-panel draft-table-panel">
+          <div className="panel-heading compact-heading draft-heading">
+            <div>
+              <h2>Draft Model</h2>
+              <p>Names, skills, impact, and TIMIN</p>
+            </div>
+            <div className="draft-summary-strip">
+              <MetricPill label="Top" value={summary.top?.player ?? "-"} tone="green" />
+              <MetricPill label="Avg Total" value={formatSigned(summary.avgTotal, 2)} tone="teal" />
+              <MetricPill label="Avg TIMIN" value={formatNumber(summary.avgTimin, 0)} tone="gold" />
+            </div>
+          </div>
+          {years.length > 0 ? (
+            <ProspectTable
+              prospects={filtered}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+            />
+          ) : (
+            <EmptyState title="No draft prospects" detail="No draft prospect rows are available." />
+          )}
+        </section>
       </section>
+
     </main>
   );
 }
 
-function ProspectTable({ prospects }: { prospects: DraftProspect[] }) {
+function ProspectTable({
+  prospects,
+  sortKey,
+  sortDirection,
+  onSort
+}: {
+  prospects: DraftProspect[];
+  sortKey: DraftSortKey;
+  sortDirection: SortDirection;
+  onSort: (key: DraftSortKey) => void;
+}) {
+  if (prospects.length === 0) {
+    return <EmptyState title="No prospects in class" detail="This draft class has no exported prospect rows." />;
+  }
+
+  const sortableHeader = (key: DraftSortKey, label: string) => (
+    <button className={cls("sort-header sort-btn", sortKey === key && "active on")} onClick={() => onSort(key)}>
+      {label}
+      {sortKey === key && <span className="sort-arr">{sortDirection === "desc" ? "v" : "^"}</span>}
+    </button>
+  );
+  const activeSkill = draftSortSkill(sortKey);
+
   return (
     <div className="table-wrap">
-      <table className="data-table">
+      <table className="data-table draft-model-table">
+        <colgroup>
+          <col className="cg-draft-rank" />
+          <col className="cg-draft-player" />
+          <col className="cg-draft-meta" />
+          <col className="cg-draft-score" />
+          <col className="cg-draft-rate" />
+          <col className="cg-draft-rate" />
+          <col className="cg-draft-rate" />
+          <col className="cg-draft-timin" />
+          <col className="cg-draft-skills" />
+        </colgroup>
         <thead>
+          <tr className="group-row">
+            <th></th>
+            <th colSpan={2}>Identity</th>
+            <th colSpan={5}>Impact</th>
+            <th>Skills</th>
+          </tr>
           <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Pool</th>
-            <th>Score</th>
-            <th>Off</th>
-            <th>Def</th>
-            <th>Total</th>
-            <th>Age</th>
-            <th>SCV</th>
-            <th>Team</th>
+            <th className="align-center">{sortableHeader("rank_in_class", "#")}</th>
+            <th className="sticky-player">{sortableHeader("player", "Player")}</th>
+            <th className="align-center">{sortableHeader("position", "Pos")}</th>
+            <th className="align-center">{sortableHeader("score", "Score")}</th>
+            <th className="align-right">{sortableHeader("OFF_pred", "Off")}</th>
+            <th className="align-right">{sortableHeader("DEF_pred", "Def")}</th>
+            <th className="align-right">{sortableHeader("TOTAL_pred", "Total")}</th>
+            <th className="align-right group-end">{sortableHeader("timin", "TIMIN")}</th>
+            <th className="align-center">
+              <div className="skills-head">
+                <button className={cls("skills-main-sort", activeSkill && "active")} onClick={() => onSort("TOTAL_pred")}>
+                  Skills
+                  {activeSkill && <small>{activeSkill}</small>}
+                </button>
+                <div className="skills-sort-strip">
+                  {skillKeys.map((key) => (
+                    <button
+                      key={key}
+                      className={cls("skills-sort-btn", sortKey === `${key}_pred` && "active")}
+                      onClick={() => onSort(`${key}_pred`)}
+                    >
+                      {key}
+                      {sortKey === `${key}_pred` && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
           {prospects.map((prospect) => (
-            <tr key={`${prospect.draft_year}-${prospect.player}`}>
-              <td>{prospect.rank_in_class}</td>
-              <td>{prospect.player}</td>
-              <td>{prospect.prediction_pool}</td>
-              <td><ScoreBar value={prospect.score} /></td>
-              <td>{formatNumber(prospect.OFF_pred, 1)}</td>
-              <td>{formatNumber(prospect.DEF_pred, 1)}</td>
-              <td>{formatNumber(prospect.TOTAL_pred, 1)}</td>
-              <td>{formatNumber(prospect.draft_age, 1)}</td>
-              <td>{formatNumber(prospect.scv_draft, 0)}</td>
-              <td>{prospect.pre_draft_team || "-"}</td>
+            <tr key={`${prospect.draft_year}-${prospect.player}`} style={draftRowAccentStyle(prospect)}>
+              <td className="rank-cell align-center">{prospect.rank_in_class}</td>
+              <td className="sticky-player">
+                <div className="draft-player-cell">
+                  <strong>{prospect.player}</strong>
+                  <span>{prospect.college || "-"}</span>
+                </div>
+              </td>
+              <td className="align-center">
+                <span className="tier-text">{prospect.position || "UNK"}</span>
+              </td>
+              <td className="align-center">
+                <ScoreRing value={prospect.score} size={38} />
+              </td>
+              <td className="align-right">
+                <StatValue value={prospect.OFF_pred} />
+              </td>
+              <td className="align-right">
+                <StatValue value={prospect.DEF_pred} />
+              </td>
+              <td className="align-right">
+                <StatValue value={prospect.TOTAL_pred} />
+              </td>
+              <td className="align-right group-end-cell">
+                <span className="timin-value">{formatNumber(prospect.timin, 0)}</span>
+              </td>
+              <td className="skill-fingerprint-cell">
+                <ProspectSkillFingerprint prospect={prospect} activeSkill={activeSkill} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -890,173 +1170,1280 @@ function ProspectTable({ prospects }: { prospects: DraftProspect[] }) {
   );
 }
 
+function draftSortSkill(key: DraftSortKey): SkillKey | null {
+  if (!key.endsWith("_pred")) return null;
+  const skill = key.replace("_pred", "") as SkillKey;
+  return skillKeys.includes(skill) ? skill : null;
+}
+
 function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
-  const players = data.players.filter((player) => player.year === season).sort((a, b) => b.scalability - a.scalability);
+  const players = useMemo(
+    () =>
+      data.players
+        .filter((player) => player.year === season)
+        .sort((a, b) => b.total - a.total || b.scalability - a.scalability || a.player_name.localeCompare(b.player_name)),
+    [data.players, season]
+  );
+  const playerMap = useMemo(() => new Map(players.map((player) => [lineupPlayerId(player), player])), [players]);
+  const percentileMap = useMemo(() => buildLineupPercentiles(players), [players]);
+  const [lineupA, setLineupA] = useState<string[]>(emptyLineup);
+  const [lineupB, setLineupB] = useState<string[]>(emptyLineup);
+  const [suggestionSlot, setSuggestionSlot] = useState<number | null>(null);
+  const [suggestionPage, setSuggestionPage] = useState(0);
+
+  useEffect(() => {
+    setLineupA(emptyLineup());
+    setLineupB(emptyLineup());
+    setSuggestionSlot(null);
+    setSuggestionPage(0);
+  }, [season]);
+
+  const summaryA = useMemo(() => summarizeLineup(lineupA, playerMap, percentileMap), [lineupA, playerMap, percentileMap]);
+  const summaryB = useMemo(() => summarizeLineup(lineupB, playerMap, percentileMap), [lineupB, playerMap, percentileMap]);
+  const availablePlayers = useMemo(
+    () => [...players].sort((a, b) => a.player_name.localeCompare(b.player_name)),
+    [players]
+  );
+  const setSlot = (side: LineupSide, index: number, value: string) => {
+    const setter = side === "a" ? setLineupA : setLineupB;
+    setter((current) => current.map((slot, slotIndex) => (slotIndex === index ? value : slot)));
+    if (side === "a") {
+      setSuggestionSlot(null);
+      setSuggestionPage(0);
+    }
+  };
+  const clearSide = (side: LineupSide) => {
+    if (side === "a") {
+      setLineupA(emptyLineup());
+      setSuggestionSlot(null);
+      setSuggestionPage(0);
+    }
+    else setLineupB(emptyLineup());
+  };
+  const suggestions = useMemo(
+    () =>
+      suggestionSlot === null
+        ? []
+        : buildLineupSuggestions({
+            slotIndex: suggestionSlot,
+            selectedIds: lineupA,
+            players,
+            playerMap,
+            percentileMap,
+            baseline: summaryA
+          }),
+    [lineupA, playerMap, percentileMap, players, suggestionSlot, summaryA]
+  );
+  const suggestedSlotPlayer = suggestionSlot === null ? null : summaryA.slots[suggestionSlot];
+
   return (
-    <main className="workspace split-preview">
-      <section className="table-panel">
+    <main className="workspace lineup-workspace">
+      <section className="table-panel lineup-board">
         <div className="panel-heading">
           <div>
             <h2>Lineup Synergy</h2>
-            <p>Best scalable skill blends</p>
+            <p>Primary lineup skill mesh, gaps, spikes, and fit texture</p>
           </div>
         </div>
-        <div className="skill-leaders">
-          {players.slice(0, 12).map((player) => (
-            <div key={player.nba_id} className="leader-row">
-              <strong>{player.player_name}</strong>
-              <span>{player.team}</span>
-              <ScoreBar value={player.scalability} />
+        {players.length > 0 ? (
+          <div className="lineup-content">
+            <LineupSheet
+              side="a"
+              slots={summaryA.slots}
+              selectedIds={lineupA}
+              players={availablePlayers}
+              summary={summaryA}
+              percentileMap={percentileMap}
+              suggestionSlot={suggestionSlot}
+              suggestionPage={suggestionPage}
+              suggestions={suggestions}
+              suggestedSlotPlayer={suggestedSlotPlayer}
+              onChange={setSlot}
+              onClear={clearSide}
+              onToggleSuggestions={(index) => {
+                setSuggestionSlot((current) => (current === index ? null : index));
+                setSuggestionPage(0);
+              }}
+              onSuggestionPageChange={setSuggestionPage}
+            />
+            <div className="lineup-matchup-secondary">
+              <div className="lineup-section-title">
+                <h3>Matchup Edge</h3>
+                <span>Optional A/B context</span>
+              </div>
+              <div className="lineup-matchup">
+                <LineupVersus summaryA={summaryA} summaryB={summaryB} />
+                <div className="lineup-skill-matrix compact">
+                  {lineupSkills.map((skill) => {
+                    const aValue = summaryA.skillAverages[skill.key] ?? 0;
+                    const bValue = summaryB.skillAverages[skill.key] ?? 0;
+                    return <LineupSkillRow key={skill.key} skill={skill} aValue={aValue} bValue={bValue} />;
+                  })}
+                </div>
+                <LineupCard
+                  title="Comparison Lineup"
+                  side="b"
+                  slots={summaryB.slots}
+                  selectedIds={lineupB}
+                  players={availablePlayers}
+                  summary={summaryB}
+                  onChange={setSlot}
+                  onClear={clearSide}
+                />
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
-      <section className="detail-panel wide">
-        <h2>Next Build Slice</h2>
-        <p className="note">Five-player lineup averages, team-vs-team advantages, team needs, draft fit, and replacement baselines will reuse this skill data.</p>
-      </section>
-    </main>
-  );
-}
-
-function TrackerWorkspace({ data }: { data: AppData }) {
-  const classes = Array.from(new Set(data.prospects.map((prospect) => prospect.draft_year))).sort((a, b) => b - a);
-  const classRows = classes.map((year) => {
-    const rows = data.prospects.filter((prospect) => prospect.draft_year === year);
-    return {
-      year,
-      rows: rows.length,
-      top: rows.sort((a, b) => a.rank_in_class - b.rank_in_class)[0]?.player ?? "-",
-      avgTotal: rows.reduce((sum, row) => sum + row.TOTAL_pred, 0) / Math.max(1, rows.length)
-    };
-  });
-
-  return (
-    <main className="workspace split-preview">
-      <section className="table-panel">
-        <div className="panel-heading">
-          <div>
-            <h2>Draft Tracker</h2>
-            <p>Model accountability staging</p>
           </div>
-        </div>
-        <div className="table-wrap compact">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Class</th>
-                <th>Prospects</th>
-                <th>Model #1</th>
-                <th>Avg Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {classRows.map((row) => (
-                <tr key={row.year}>
-                  <td>{row.year}</td>
-                  <td>{row.rows}</td>
-                  <td>{row.top}</td>
-                  <td>{formatNumber(row.avgTotal, 2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      <section className="detail-panel wide">
-        <h2>Next Build Slice</h2>
-        <p className="note">Analyst boards, actual draft order, weighted realized value, and year-by-year accuracy scoring need one normalized tracker export.</p>
+        ) : <EmptyState title="No lineup players" detail={`No player rows are available for ${season}.`} />}
       </section>
     </main>
   );
 }
 
-function ScoreBar({ value }: { value: number }) {
+function LineupSheet({
+  side,
+  slots,
+  selectedIds,
+  players,
+  summary,
+  percentileMap,
+  suggestionSlot,
+  suggestionPage,
+  suggestions,
+  suggestedSlotPlayer,
+  onChange,
+  onClear,
+  onToggleSuggestions,
+  onSuggestionPageChange
+}: {
+  side: LineupSide;
+  slots: LineupSlot[];
+  selectedIds: string[];
+  players: PlayerImpact[];
+  summary: LineupSummary;
+  percentileMap: Map<string, Record<string, number>>;
+  suggestionSlot: number | null;
+  suggestionPage: number;
+  suggestions: LineupSuggestion[];
+  suggestedSlotPlayer: LineupSlot;
+  onChange: (side: LineupSide, index: number, value: string) => void;
+  onClear: (side: LineupSide) => void;
+  onToggleSuggestions: (index: number) => void;
+  onSuggestionPageChange: (page: number) => void;
+}) {
   return (
-    <span className="scorebar" style={scoreStyle(value)}>
-      <span aria-hidden="true" />
-      <strong>{formatNumber(value, 1)}</strong>
+    <div className="lineup-sheet">
+      <div className="lineup-sheet-top">
+        <div>
+          <h3>Primary Lineup</h3>
+          <strong>{formatSigned(summary.net, 1)}</strong>
+        </div>
+        <button onClick={() => onClear(side)}>Clear</button>
+      </div>
+      <div className="lineup-sheet-scroll">
+        <table className="lineup-sheet-table">
+          <thead>
+            <tr>
+              <th className="sheet-name-col">Name</th>
+              <th>Pos</th>
+              <th>Off</th>
+              <th>Def</th>
+              <th>Total</th>
+              <th>Score</th>
+              <th>Fit</th>
+              <th>Tier</th>
+              {lineupSkills.map((skill) => (
+                <th key={skill.key}>{skill.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {selectedIds.map((selectedId, index) => {
+              const player = slots[index];
+              const ranks = player ? percentileMap.get(lineupPlayerId(player)) ?? {} : {};
+              return (
+                <tr key={`${side}-${index}`} className={cls(!player && "empty")}>
+                  <td className="sheet-name-cell">
+                    <div className="sheet-name-pick" style={player ? rowAccentStyle(player) : undefined}>
+                      {player && <PlayerHeadshot player={player} />}
+                      <select value={selectedId} onChange={(event) => onChange(side, index, event.target.value)}>
+                        <option value="">Open slot</option>
+                        {players.map((option) => {
+                          const id = lineupPlayerId(option);
+                          return (
+                            <option key={id} value={id}>
+                              {option.player_name}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </td>
+                  <td>{player?.position ?? "-"}</td>
+                  <td><SheetRate value={player?.offense} /></td>
+                  <td><SheetRate value={player?.defense} /></td>
+                  <td><SheetRate value={player?.total} strong /></td>
+                  <td>{formatLineupScore(player)}</td>
+                  <td>
+                    <button
+                      className={cls("lineup-fit-button", suggestionSlot === index && "active")}
+                      onClick={() => onToggleSuggestions(index)}
+                      title={player ? `Find lineup fits for ${player.player_name}` : "Find lineup fits for this open slot"}
+                      aria-label={player ? `Find lineup fits for ${player.player_name}` : "Find lineup fits for this open slot"}
+                    >
+                      +
+                    </button>
+                  </td>
+                  <td className="sheet-tier">{player?.tier ?? "-"}</td>
+                  {lineupSkills.map((skill) => (
+                    <td key={skill.key}>
+                      <SheetPercent value={player ? ranks[skill.key] ?? 0.5 : null} />
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+            <tr className="lineup-sheet-total">
+              <td>Total / Avg</td>
+              <td>{summary.players.length}/5</td>
+              <td><SheetRate value={summary.offense} /></td>
+              <td><SheetRate value={summary.defense} /></td>
+              <td><SheetRate value={summary.net} strong /></td>
+              <td>{formatNumber(summary.score, 0)}</td>
+              <td>-</td>
+              <td>{summary.gaps} gaps</td>
+              {lineupSkills.map((skill) => (
+                <td key={skill.key}>
+                  <SheetPercent value={summary.skillAverages[skill.key] ?? 0} featured />
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      {suggestionSlot !== null && (
+        <LineupSuggestionPanel
+          slotIndex={suggestionSlot}
+          currentPlayer={suggestedSlotPlayer}
+          suggestions={suggestions}
+          page={suggestionPage}
+          onPageChange={onSuggestionPageChange}
+          onPick={(player) => onChange(side, suggestionSlot, lineupPlayerId(player))}
+        />
+      )}
+    </div>
+  );
+}
+
+function LineupSuggestionPanel({
+  slotIndex,
+  currentPlayer,
+  suggestions,
+  page,
+  onPageChange,
+  onPick
+}: {
+  slotIndex: number;
+  currentPlayer: LineupSlot;
+  suggestions: LineupSuggestion[];
+  page: number;
+  onPageChange: (page: number) => void;
+  onPick: (player: PlayerImpact) => void;
+}) {
+  const context = currentPlayer ? `Replace ${currentPlayer.player_name}` : `Fill Player ${slotIndex + 1}`;
+  const totalPages = Math.max(1, Math.ceil(suggestions.length / LINEUP_SUGGESTIONS_PER_PAGE));
+  const activePage = clamp(page, 0, totalPages - 1);
+  const pageSuggestions = suggestions.slice(
+    activePage * LINEUP_SUGGESTIONS_PER_PAGE,
+    activePage * LINEUP_SUGGESTIONS_PER_PAGE + LINEUP_SUGGESTIONS_PER_PAGE
+  );
+  return (
+    <div className="lineup-suggestion-panel">
+      <div className="lineup-section-title">
+        <h3>{context}</h3>
+        <span>{suggestions.length > 0 ? `${suggestions.length} targeted fits` : "No targeted fits found"}</span>
+      </div>
+      {suggestions.length > 0 ? (
+        <>
+          <div className="lineup-suggestion-list">
+            {pageSuggestions.map((suggestion) => (
+              <button
+                key={lineupPlayerId(suggestion.player)}
+                className="lineup-suggestion-row"
+                style={rowAccentStyle(suggestion.player)}
+                onClick={() => onPick(suggestion.player)}
+              >
+                <PlayerHeadshot player={suggestion.player} />
+                <div>
+                  <strong>{suggestion.player.player_name}</strong>
+                  <span>
+                    {suggestion.player.team} / {suggestion.player.position} / {suggestion.player.tier}
+                  </span>
+                  <em>{suggestion.reasons.join(" / ")}</em>
+                </div>
+                <div className="lineup-suggestion-metrics">
+                  <small>Fit {formatNumber(suggestion.score, 1)}</small>
+                  <small>Net {formatSigned(suggestion.netDelta, 1)}</small>
+                  <small>{formatGapDelta(suggestion.gapDelta)}</small>
+                </div>
+              </button>
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div className="lineup-suggestion-pager">
+              <button onClick={() => onPageChange(activePage - 1)} disabled={activePage === 0}>
+                Previous
+              </button>
+              <span>{`Page ${activePage + 1} of ${totalPages}`}</span>
+              <button onClick={() => onPageChange(activePage + 1)} disabled={activePage >= totalPages - 1}>
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="lineup-suggestion-empty">No one in the compatible role pool repairs a real lineup need without giving too much back.</p>
+      )}
+    </div>
+  );
+}
+
+function SheetRate({ value, strong }: { value: number | null | undefined; strong?: boolean }) {
+  if (value === null || value === undefined || Number.isNaN(value)) return <span className="sheet-rate empty">-</span>;
+  return (
+    <span className={cls("sheet-rate", strong && "strong")} style={rateStyle(value)}>
+      {formatSigned(value, 1)}
     </span>
   );
 }
 
+function SheetPercent({ value, featured }: { value: number | null; featured?: boolean }) {
+  if (value === null) return <span className="sheet-percent empty">-</span>;
+  const tone = featured ? lineupAverageTone(value) : value >= 0.6 ? "good" : value < 0.4 ? "bad" : "mid";
+  return (
+    <span className={cls("sheet-percent", tone, featured && "featured")} style={percentileCellStyle(value, featured)}>
+      {Math.round(value * 100)}
+    </span>
+  );
+}
+
+function formatLineupScore(player: PlayerImpact | null): string {
+  if (!player) return "-";
+  if (player.score_label === "DNQ") return "DNQ";
+  return String(Math.round(player.score));
+}
+
+function LineupCard({
+  title,
+  side,
+  slots,
+  selectedIds,
+  players,
+  summary,
+  onChange,
+  onClear
+}: {
+  title: string;
+  side: LineupSide;
+  slots: LineupSlot[];
+  selectedIds: string[];
+  players: PlayerImpact[];
+  summary: LineupSummary;
+  onChange: (side: LineupSide, index: number, value: string) => void;
+  onClear: (side: LineupSide) => void;
+}) {
+  return (
+    <div className="lineup-card">
+      <div className="lineup-card-head">
+        <div>
+          <h3>{title}</h3>
+          <strong>{formatSigned(summary.net, 1)}</strong>
+        </div>
+        <button onClick={() => onClear(side)}>Clear</button>
+      </div>
+      <div className="lineup-slots">
+        {selectedIds.map((selectedId, index) => {
+          const player = slots[index];
+          return (
+            <label key={`${side}-${index}`} className="lineup-slot">
+              <span>{`Player ${index + 1}`}</span>
+              <select value={selectedId} onChange={(event) => onChange(side, index, event.target.value)}>
+                <option value="">Open slot</option>
+                {players.map((option) => {
+                  const id = lineupPlayerId(option);
+                  return (
+                    <option key={id} value={id}>
+                      {option.player_name} / {option.team} / {option.position}
+                    </option>
+                  );
+                })}
+              </select>
+              {player && (
+                <div className="lineup-player-mini" style={rowAccentStyle(player)}>
+                  <PlayerHeadshot player={player} />
+                  <div>
+                    <strong>{player.player_name}</strong>
+                    <span>{player.position} / {player.tier}</span>
+                  </div>
+                  <StatValue value={player.total} />
+                </div>
+              )}
+            </label>
+          );
+        })}
+      </div>
+      <div className="lineup-metrics">
+        <MetricPill label="Offense" value={formatSigned(summary.offense, 1)} tone="green" />
+        <MetricPill label="Defense" value={formatSigned(summary.defense, 1)} tone="teal" />
+        <MetricPill label="Score" value={formatNumber(summary.score, 1)} tone="gold" />
+        <MetricPill label="Gaps / Spikes" value={`${summary.gaps} / ${summary.spikes}`} />
+      </div>
+    </div>
+  );
+}
+
+function LineupVersus({ summaryA, summaryB }: { summaryA: LineupSummary; summaryB: LineupSummary }) {
+  const edge = summaryA.net - summaryB.net;
+  const label = Math.abs(edge) < 0.05 ? "Even" : edge > 0 ? "A Edge" : "B Edge";
+  return (
+    <div className="lineup-versus">
+      <span>Projected NRTG</span>
+      <strong style={rateStyle(edge)}>{formatSigned(edge, 1)}</strong>
+      <em>{label}</em>
+      <div>
+        <small>A {formatSigned(summaryA.net, 1)}</small>
+        <small>B {formatSigned(summaryB.net, 1)}</small>
+      </div>
+    </div>
+  );
+}
+
+function LineupSkillRow({ skill, aValue, bValue }: { skill: LineupSkill; aValue: number; bValue: number }) {
+  const edge = aValue - bValue;
+  const aPct = clamp(aValue * 50, 0, 50);
+  const bPct = clamp(bValue * 50, 0, 50);
+  return (
+    <div className="lineup-skill-row">
+      <span>{skill.label}</span>
+      <div className="lineup-skill-track">
+        <i className="side-a" style={{ width: `${aPct}%` }} />
+        <i className="side-b" style={{ width: `${bPct}%` }} />
+        <em className="side-a-label">{Math.round(aValue * 100)}</em>
+        <em className="side-b-label">{Math.round(bValue * 100)}</em>
+      </div>
+      <strong style={rateStyle(edge * 4)}>{formatSigned(edge, 2)}</strong>
+    </div>
+  );
+}
+
+function lineupPlayerId(player: PlayerImpact): string {
+  return `${player.nba_id}-${player.year}`;
+}
+
+function buildLineupSuggestions({
+  slotIndex,
+  selectedIds,
+  players,
+  playerMap,
+  percentileMap,
+  baseline
+}: {
+  slotIndex: number;
+  selectedIds: string[];
+  players: PlayerImpact[];
+  playerMap: Map<string, PlayerImpact>;
+  percentileMap: Map<string, Record<string, number>>;
+  baseline: LineupSummary;
+}): LineupSuggestion[] {
+  const currentPlayer = baseline.slots[slotIndex];
+  const selectedElsewhere = new Set(selectedIds.filter((id, index) => id && index !== slotIndex));
+  const needProfile = lineupSkills
+    .map((skill) => ({ skill, weight: lineupNeedWeight(baseline.skillAverages[skill.key] ?? 0) }))
+    .filter((need) => need.weight > 0);
+  const baselineGaps = needProfile.map((need) => need.skill);
+  const candidateSuggestions = players
+    .filter((player) => !selectedElsewhere.has(lineupPlayerId(player)) && lineupPositionsCompatible(currentPlayer, player))
+    .map((player) => {
+      const playerId = lineupPlayerId(player);
+      const nextIds = selectedIds.map((id, index) => (index === slotIndex ? playerId : id));
+      const summary = summarizeLineup(nextIds, playerMap, percentileMap);
+      const playerRanks = percentileMap.get(playerId) ?? {};
+      const currentRanks = currentPlayer ? percentileMap.get(lineupPlayerId(currentPlayer)) ?? {} : {};
+      const netDelta = summary.net - baseline.net;
+      const scoreDelta = summary.score - baseline.score;
+      const gapDelta = summary.gaps - baseline.gaps;
+      const newGaps = lineupSkills.filter((skill) => {
+        const before = baseline.skillAverages[skill.key] ?? 0;
+        const after = summary.skillAverages[skill.key] ?? 0;
+        return before >= 0.4 && after < 0.4;
+      });
+      const improvedGaps = baselineGaps
+        .filter((skill) => {
+          const before = baseline.skillAverages[skill.key] ?? 0;
+          const after = summary.skillAverages[skill.key] ?? 0;
+          return after >= 0.4 || after - before >= 0.06;
+        })
+        .sort((a, b) => (summary.skillAverages[b.key] ?? 0) - (baseline.skillAverages[b.key] ?? 0) - ((summary.skillAverages[a.key] ?? 0) - (baseline.skillAverages[a.key] ?? 0)));
+      const needLift = needProfile.reduce((sum, need) => {
+        const before = baseline.skillAverages[need.skill.key] ?? 0;
+        const after = summary.skillAverages[need.skill.key] ?? 0;
+        const currentRank = currentPlayer ? currentRanks[need.skill.key] ?? 0.5 : Math.min(0.5, before);
+        const playerRank = playerRanks[need.skill.key] ?? 0.5;
+        const lineupLift = Math.max(0, after - before) * (before < 0.4 ? 56 : 34);
+        const directFit = Math.max(0, playerRank - currentRank) * need.weight * (before < 0.4 ? 2.6 : 1.5);
+        return sum + need.weight * lineupLift + directFit;
+      }, 0);
+      const solvedHardGaps = lineupSkills.filter((skill) => {
+        const before = baseline.skillAverages[skill.key] ?? 0;
+        const after = summary.skillAverages[skill.key] ?? 0;
+        return before < 0.4 && after >= 0.4;
+      }).length;
+      const stabilizesSoftNeeds = lineupSkills.filter((skill) => {
+        const before = baseline.skillAverages[skill.key] ?? 0;
+        const after = summary.skillAverages[skill.key] ?? 0;
+        return before >= 0.4 && before < 0.52 && after >= 0.52;
+      }).length;
+      const regressionPenalty = lineupSkills.reduce((sum, skill) => {
+        const before = baseline.skillAverages[skill.key] ?? 0;
+        const after = summary.skillAverages[skill.key] ?? 0;
+        return sum + Math.max(0, before - after - 0.025) * (before >= 0.56 ? 22 : 8);
+      }, 0);
+      const creationPenalty = newGaps.length * 5.5 + Math.max(0, gapDelta) * 4.5;
+      const rawTalentBonus = clamp(netDelta, -0.9, 1.1) * 0.55 + clamp(scoreDelta, -8, 8) * 0.06;
+      const rolePenalty = lineupRolePenalty(player, currentPlayer, needLift + solvedHardGaps * 3 + stabilizesSoftNeeds);
+      const score =
+        needLift +
+        solvedHardGaps * 4.2 +
+        stabilizesSoftNeeds * 1.6 +
+        Math.max(0, -gapDelta) * 2.8 +
+        (newGaps.length === 0 ? 1.1 : 0) +
+        rawTalentBonus -
+        creationPenalty -
+        regressionPenalty -
+        rolePenalty;
+      const reasons = lineupSuggestionReasons(player, summary, baseline, improvedGaps, newGaps, netDelta, scoreDelta);
+
+      return {
+        player,
+        summary,
+        score,
+        netDelta,
+        scoreDelta,
+        gapDelta,
+        newGaps,
+        improvedGaps,
+        reasons
+      };
+    })
+    .filter((suggestion) => {
+      const currentId = selectedIds[slotIndex];
+      const isCurrent = currentId && lineupPlayerId(suggestion.player) === currentId;
+      if (isCurrent) return false;
+      const meaningfulFit = suggestion.improvedGaps.length > 0 || suggestion.gapDelta < 0;
+      const notJustTalent = suggestion.score > 1.25 && meaningfulFit;
+      return notJustTalent && suggestion.newGaps.length <= 1 && suggestion.netDelta > -1.25;
+    })
+    .sort((a, b) => b.score - a.score || b.netDelta - a.netDelta || a.player.player_name.localeCompare(b.player.player_name));
+  const cleanFits = candidateSuggestions.filter((suggestion) => suggestion.newGaps.length === 0);
+  return curateLineupSuggestions(cleanFits.length >= LINEUP_SUGGESTIONS_PER_PAGE ? cleanFits : candidateSuggestions, currentPlayer, LINEUP_MAX_SUGGESTIONS);
+}
+
+function lineupNeedWeight(value: number): number {
+  if (value >= 0.56) return 0;
+  return Math.pow(clamp((0.56 - value) / 0.22, 0, 1), 1.15);
+}
+
+function lineupPositionsCompatible(currentPlayer: PlayerImpact | null, candidate: PlayerImpact): boolean {
+  if (!currentPlayer) return true;
+  const current = currentPlayer.position;
+  const next = candidate.position;
+  if (current === next) return true;
+  const neighbors: Record<string, string[]> = {
+    PG: ["SG"],
+    SG: ["PG", "SF"],
+    SF: ["SG", "PF"],
+    PF: ["SF", "C"],
+    C: ["PF"]
+  };
+  return neighbors[current]?.includes(next) ?? false;
+}
+
+function lineupRolePenalty(player: PlayerImpact, currentPlayer: PlayerImpact | null, fitStrength: number): number {
+  const currentScore = currentPlayer?.score ?? 74;
+  const currentTotal = currentPlayer?.total ?? 1.2;
+  const scoreLeap = Math.max(0, player.score - currentScore - 14);
+  const totalLeap = Math.max(0, player.total - currentTotal - 1.6);
+  const eliteTax = Math.max(0, player.score - 86) * 0.1 + Math.max(0, player.total - 4.2) * 0.9;
+  const fitDiscount = fitStrength >= 9 ? 0.35 : fitStrength >= 6 ? 0.6 : 1;
+  return (scoreLeap * 0.11 + totalLeap * 1.15 + eliteTax) * fitDiscount;
+}
+
+function curateLineupSuggestions(suggestions: LineupSuggestion[], currentPlayer: PlayerImpact | null, maxResults: number): LineupSuggestion[] {
+  const replacingStar = currentPlayer ? lineupIsObviousStar(currentPlayer) : false;
+  const curated: LineupSuggestion[] = [];
+  const starCap = replacingStar ? maxResults : Math.max(2, Math.ceil(maxResults / 6));
+  let obviousStarAdds = 0;
+
+  suggestions.forEach((suggestion) => {
+    if (curated.length >= maxResults) return;
+    const obviousStar = lineupIsObviousStar(suggestion.player) && !replacingStar;
+    if (obviousStar && obviousStarAdds >= starCap) return;
+    if (obviousStar) obviousStarAdds += 1;
+    curated.push(suggestion);
+  });
+
+  suggestions.forEach((suggestion) => {
+    if (curated.length >= maxResults) return;
+    if (!curated.some((item) => lineupPlayerId(item.player) === lineupPlayerId(suggestion.player))) {
+      curated.push(suggestion);
+    }
+  });
+  return curated;
+}
+
+function lineupIsObviousStar(player: PlayerImpact): boolean {
+  const tier = player.tier.toLowerCase();
+  return player.score >= 88 || player.total >= 4.4 || tier.includes("franchise") || tier.includes("star+");
+}
+
+function lineupSuggestionReasons(
+  player: PlayerImpact,
+  summary: LineupSummary,
+  baseline: LineupSummary,
+  improvedGaps: LineupSkill[],
+  newGaps: LineupSkill[],
+  netDelta: number,
+  scoreDelta: number
+): string[] {
+  const reasons: string[] = [];
+  if (improvedGaps.length > 0) {
+    reasons.push(`Lifts ${improvedGaps.slice(0, 2).map((skill) => skill.label).join(", ")}`);
+  }
+  if (summary.gaps < baseline.gaps) reasons.push(`${baseline.gaps - summary.gaps} fewer gap${baseline.gaps - summary.gaps === 1 ? "" : "s"}`);
+  if (netDelta > 0.15) reasons.push(`${formatSigned(netDelta, 1)} net`);
+  if (scoreDelta > 1) reasons.push(`${formatSigned(scoreDelta, 0)} score`);
+  if (newGaps.length === 0) reasons.push("No new gaps");
+  else reasons.push(`Watch ${newGaps[0].label}`);
+  if (reasons.length === 1) reasons.unshift(`${player.position || "Lineup"} fit`);
+  return reasons.slice(0, 4);
+}
+
+function formatGapDelta(value: number): string {
+  if (value < 0) return `${Math.abs(value)} fewer gaps`;
+  if (value > 0) return `${value} new gaps`;
+  return "Gaps even";
+}
+
+function buildLineupPercentiles(players: PlayerImpact[]): Map<string, Record<string, number>> {
+  const percentileMap = new Map<string, Record<string, number>>();
+  const valueRanks = new Map<string, Map<string, number>>();
+
+  lineupSkills.forEach((skill) => {
+    const values = players
+      .map((player) => ({ id: lineupPlayerId(player), value: lineupSkillValue(player, skill) }))
+      .filter((item) => Number.isFinite(item.value))
+      .sort((a, b) => a.value - b.value);
+    const ranks = new Map<string, number>();
+    values.forEach((item, index) => {
+      ranks.set(item.id, values.length <= 1 ? 0.5 : index / (values.length - 1));
+    });
+    valueRanks.set(skill.key, ranks);
+  });
+
+  players.forEach((player) => {
+    const id = lineupPlayerId(player);
+    const ranks: Record<string, number> = {};
+    lineupSkills.forEach((skill) => {
+      ranks[skill.key] = valueRanks.get(skill.key)?.get(id) ?? 0.5;
+    });
+    percentileMap.set(id, ranks);
+  });
+
+  return percentileMap;
+}
+
+function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImpact>, percentileMap: Map<string, Record<string, number>>): LineupSummary {
+  const slots = selectedIds.map((id) => playerMap.get(id) ?? null);
+  const players = slots.filter((player): player is PlayerImpact => Boolean(player));
+  const divisor = Math.max(1, players.length);
+  const skillAverages: Record<string, number> = {};
+
+  lineupSkills.forEach((skill) => {
+    skillAverages[skill.key] = players.reduce((sum, player) => sum + (percentileMap.get(lineupPlayerId(player))?.[skill.key] ?? 0.5), 0) / divisor;
+  });
+
+  return {
+    slots,
+    players,
+    offense: players.reduce((sum, player) => sum + player.offense, 0),
+    defense: players.reduce((sum, player) => sum + player.defense, 0),
+    net: players.reduce((sum, player) => sum + player.total, 0),
+    score: players.reduce((sum, player) => sum + player.score, 0) / divisor,
+    gaps: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) < 0.4).length,
+    spikes: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) > 0.6).length,
+    skillAverages
+  };
+}
+
+function lineupSkillValue(player: PlayerImpact, skill: LineupSkill): number {
+  if (Array.isArray(skill.source)) {
+    return skill.source.reduce((sum, key) => sum + Number(player[key] ?? 0), 0) / skill.source.length;
+  }
+  return Number(player[skill.source] ?? 0);
+}
+
+function lineupAverageTone(value: number): "good" | "mid" | "bad" {
+  if (value >= 0.56) return "good";
+  if (value < 0.46) return "bad";
+  return "mid";
+}
+
+function percentileCellStyle(value: number, featured = false): CSSProperties {
+  if (featured) return heatStyleVars("rate", value - 0.5, 0.22);
+  return heatStyleVars("rate", (value - 0.5) * 4, 2);
+}
+
+function TrackerWorkspace({ data }: { data: AppData }) {
+  const classes = useMemo(() => {
+    const trackerYears = data.trackerProspectScores.map((row) => row.draft_year);
+    return Array.from(new Set(trackerYears)).sort((a, b) => b - a);
+  }, [data.trackerProspectScores]);
+  const [year, setYear] = useState<number | undefined>(classes[0]);
+  const [query, setQuery] = useState("");
+
+  const boardScoreByYear = useMemo(() => {
+    const map = new Map<string, number | null | undefined>();
+    data.trackerBoardScores.forEach((row) => {
+      map.set(`${row.draft_year}-${row.board}-score`, row.score);
+      map.set(`${row.draft_year}-${row.board}-z`, row.z_score);
+    });
+    return map;
+  }, [data.trackerBoardScores]);
+  const leaderboard = useMemo(() => {
+    return data.trackerBoardSummary
+      .map((row) => ({
+        ...row,
+        displayBoard: trackerBoardLabel(row.board),
+        modelGroup: trackerBoardGroup(row.board),
+        yearScore: year === undefined ? null : boardScoreByYear.get(`${year}-${row.board}-score`),
+        yearZ: year === undefined ? null : boardScoreByYear.get(`${year}-${row.board}-z`)
+      }))
+      .sort((a, b) => Number(b.yearZ ?? Number.NEGATIVE_INFINITY) - Number(a.yearZ ?? Number.NEGATIVE_INFINITY));
+  }, [boardScoreByYear, data.trackerBoardSummary, year]);
+  const classScores = useMemo(
+    () => data.trackerProspectScores.filter((row) => row.draft_year === year),
+    [data.trackerProspectScores, year]
+  );
+  const boardColumns = useMemo(() => {
+    const present = Array.from(new Set(classScores.map((row) => row.board)));
+    const summaryOrder = leaderboard.map((row) => row.board).filter((board) => present.includes(board));
+    return summaryOrder.sort((a, b) => trackerBoardPriority(a) - trackerBoardPriority(b));
+  }, [classScores, leaderboard]);
+  const matrixRows = useMemo(() => {
+    const grouped = new Map<string, { anchor: DraftTrackerProspectScore; byBoard: Map<string, DraftTrackerProspectScore> }>();
+    classScores.forEach((row) => {
+      const key = `${row.draft_year}-${row.player}`;
+      const current = grouped.get(key);
+      if (current) {
+        current.byBoard.set(row.board, row);
+        if ((row.actual_rank ?? 999) < (current.anchor.actual_rank ?? 999)) current.anchor = row;
+      } else {
+        grouped.set(key, { anchor: row, byBoard: new Map([[row.board, row]]) });
+      }
+    });
+    const q = query.trim().toLowerCase();
+    return Array.from(grouped.values())
+      .filter((row) => !q || row.anchor.player.toLowerCase().includes(q) || String(row.anchor.college ?? "").toLowerCase().includes(q))
+      .sort((a, b) => Number(a.anchor.actual_rank ?? 999) - Number(b.anchor.actual_rank ?? 999) || a.anchor.player.localeCompare(b.anchor.player));
+  }, [classScores, query]);
+  const currentModel = leaderboard.find((row) => row.board === BRENDAN_MODEL_BOARD);
+  const bestExternal = leaderboard.find((row) => ![BRENDAN_MODEL_BOARD, BRENDAN_BASE_BOARD, "NBA Draft - Actual"].includes(row.board) && typeof row.yearZ === "number");
+  const strongestProspect = matrixRows
+    .map((row) => row.byBoard.get(BRENDAN_MODEL_BOARD))
+    .filter((row): row is DraftTrackerProspectScore => Boolean(row))
+    .sort((a, b) => Number(b.weighted_score_contribution ?? 0) - Number(a.weighted_score_contribution ?? 0))[0];
+
+  const clearFilters = () => setQuery("");
+
+  return (
+    <main className="workspace tracker-workspace">
+      <section className="tracker-top">
+        <section className="control-strip board-controls draft-controls tracker-controls">
+          <div className="quick-filters board-control-row">
+            <div className="search">
+              <span>Find</span>
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Prospect name" />
+            </div>
+            {classes.length > 0 && <label>
+              Class
+              <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+                {classes.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>}
+            <div className="board-count" aria-live="polite">
+              <span>Prospects</span>
+              <strong>{matrixRows.length.toLocaleString()}</strong>
+            </div>
+            <button className="clear-filters" onClick={clearFilters} disabled={!query.trim()}>
+              Clear
+            </button>
+          </div>
+        </section>
+        <div className="tracker-summary-grid">
+          <MetricPill label="Brendan overall z" value={formatSigned(currentModel?.weighted_z, 2)} tone="green" />
+          <MetricPill label={`${year ?? "-"} Brendan z`} value={formatSigned(currentModel?.yearZ, 2)} tone="teal" />
+          <MetricPill label={`${year ?? "-"} best other`} value={bestExternal?.displayBoard ?? "-"} tone="gold" />
+          <MetricPill label="Best prospect" value={strongestProspect?.player ?? "-"} />
+        </div>
+      </section>
+
+      <section className="table-panel tracker-leaderboard-panel">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>Model Performance</h2>
+            <p>Overall and selected-class comparison</p>
+          </div>
+        </div>
+        {leaderboard.length > 0 ? <div className="table-wrap compact tracker-leaderboard-wrap">
+          <table className="data-table tracker-board-table">
+            <colgroup>
+              <col className="tracker-rank-col" />
+              <col className="tracker-model-col" />
+              <col className="tracker-metric-col" />
+              <col className="tracker-metric-col" />
+              <col className="tracker-metric-col" />
+              <col className="tracker-metric-col" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th className="align-center">#</th>
+                <th>Model</th>
+                <th className="align-right">All z</th>
+                <th className="align-right">All %</th>
+                <th className="align-right">{year ?? "Class"} z</th>
+                <th className="align-right">{year ?? "Class"} %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((row, index) => (
+                <tr key={row.board} style={trackerZStyle(row.yearZ)}>
+                  <td className="align-center rank-cell">{index + 1}</td>
+                  <td>
+                    <div className="tracker-board-name">
+                      <strong>{row.displayBoard}</strong>
+                    </div>
+                  </td>
+                  <td className="align-right">{formatSigned(row.weighted_z, 2)}</td>
+                  <td className="align-right">{formatPercent(row.weighted_score, 1)}</td>
+                  <td className="align-right tracker-z-cell">{formatSigned(row.yearZ, 2)}</td>
+                  <td className="align-right">{formatPercent(row.yearScore, 1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div> : <EmptyState title="No tracker scores" detail="Run the draft tracker benchmark and frontend export to populate model scores." />}
+      </section>
+
+      <section className="table-panel tracker-matrix-panel">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>Prospect Correctness</h2>
+            <p>Per-prospect accuracy feeding each board score</p>
+          </div>
+          <div className="tracker-context">
+            <span>{year ?? "-"}</span>
+            <strong>{boardColumns.length} models</strong>
+          </div>
+        </div>
+        {matrixRows.length > 0 ? <div className="table-wrap tracker-matrix-wrap">
+          <table className="data-table tracker-matrix-table">
+            <colgroup>
+              <col className="tracker-prospect-col" />
+              <col className="tracker-actual-col" />
+              <col className="tracker-weight-col" />
+              {boardColumns.map((board) => (
+                <col key={board} className="tracker-board-col" />
+              ))}
+            </colgroup>
+            <thead>
+              <tr>
+                <th className="sticky-player">Prospect</th>
+                <th className="align-center">Actual</th>
+                <th className="align-right">Weight</th>
+                {boardColumns.map((board) => (
+                  <th key={board} className={cls("align-center", board === BRENDAN_MODEL_BOARD && "current-model-head")}>
+                    {trackerBoardLabel(board)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {matrixRows.map((row) => (
+                <tr key={`${row.anchor.draft_year}-${row.anchor.player}`}>
+                  <td className="sticky-player">
+                    <div className="draft-player-cell">
+                      <strong>{row.anchor.player}</strong>
+                      <span>{row.anchor.college || "-"}</span>
+                    </div>
+                  </td>
+                  <td className="align-center">
+                    <div className="tracker-actual-cell">
+                      <strong>#{formatNumber(row.anchor.actual_rank, 0)}</strong>
+                      <span>Pick {formatNumber(row.anchor.actual_pick, 0)}</span>
+                    </div>
+                  </td>
+                  <td className="align-right">{formatPercent(row.anchor.actual_weight, 1)}</td>
+                  {boardColumns.map((board) => (
+                    <td key={board} className="tracker-correct-cell" style={trackerCorrectStyle(row.byBoard.get(board)?.correct_pct)}>
+                      <strong>{formatPercentFromWhole(row.byBoard.get(board)?.correct_pct, 0)}</strong>
+                      <span>{formatTrackerRank(row.byBoard.get(board))}</span>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div> : <EmptyState title="No prospect tracker rows" detail="No per-prospect tracker scores are available for this class." />}
+      </section>
+    </main>
+  );
+}
+
+function trackerBoardLabel(board: string): string {
+  return board;
+}
+
+function trackerBoardGroup(board: string): string {
+  if (board === BRENDAN_MODEL_BOARD) return "current";
+  if (board === BRENDAN_BASE_BOARD) return "base";
+  if (board === "NBA Draft - Actual") return "draft";
+  return "external";
+}
+
+function trackerBoardPriority(board: string): number {
+  if (board === BRENDAN_MODEL_BOARD) return 0;
+  if (board === BRENDAN_BASE_BOARD) return 1;
+  if (board === "NBA Draft - Actual") return 2;
+  return 10;
+}
+
+function formatPercent(value: number | null | undefined, digits = 0): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  return `${formatNumber(value * 100, digits)}%`;
+}
+
+function formatPercentFromWhole(value: number | null | undefined, digits = 0): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  return `${formatNumber(value, digits)}%`;
+}
+
+function formatTrackerRank(row: DraftTrackerProspectScore | undefined): string {
+  if (!row) return "unranked";
+  if (typeof row.board_rank !== "number" || !Number.isFinite(row.board_rank)) return "unranked";
+  const delta = typeof row.rank_error === "number" && Number.isFinite(row.rank_error) ? `, off ${formatNumber(row.rank_error, 0)}` : "";
+  return `rank ${formatNumber(row.board_rank, 0)}${delta}`;
+}
+
+function trackerCorrectStyle(value: number | null | undefined): CSSProperties {
+  if (value === null || value === undefined || Number.isNaN(value)) return {};
+  return heatStyleVars("rate", value - 70, 30);
+}
+
+function trackerZStyle(value: number | null | undefined): CSSProperties {
+  if (value === null || value === undefined || Number.isNaN(value)) return {};
+  return heatStyleVars("rate", value, 1.6);
+}
+
+function PlayerHeadshot({ player, size = "table" }: { player: PlayerImpact; size?: "table" | "detail" }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [player.nba_id]);
+
+  const initials = player.player_name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const className = cls("player-headshot", size === "detail" && "large");
+
+  if (!player.nba_id || failed) {
+    return (
+      <span className={className} aria-hidden="true">
+        {initials || "?"}
+      </span>
+    );
+  }
+
+  return (
+    <span className={className} aria-hidden="true">
+      <img
+        src={`${NBA_HEADSHOT_URL}/${player.nba_id}.png`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    </span>
+  );
+}
+
+function ScoreRing({ value, label, size = 40 }: { value: number; label?: string | null; size?: number }) {
+  const dnq = label === "DNQ";
+  const radius = size / 2 - 4;
+  const center = size / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dash = dnq ? 0 : clamp(value, 0, 100) / 100 * circumference;
+  const vars = scoreStyle(value) as CSSProperties & { "--score-fill"?: string };
+  const color = dnq ? "var(--muted)" : vars["--score-fill"] ?? "var(--teal)";
+  const text = dnq ? "DNQ" : String(Math.round(value));
+  const strokeWidth = size > 42 ? 4 : 3;
+
+  return (
+    <svg className="score-ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={vars} role="img" aria-label={`Score ${text}`}>
+      <circle className="score-ring-bg" cx={center} cy={center} r={radius} fill="none" strokeWidth={strokeWidth} />
+      {!dnq && (
+        <circle
+          className="score-ring-fg"
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeDasharray={`${dash.toFixed(1)} ${(circumference - dash).toFixed(1)}`}
+          strokeLinecap="round"
+          strokeWidth={strokeWidth}
+          transform={`rotate(-90 ${center} ${center})`}
+        />
+      )}
+      <text
+        x={center}
+        y={center}
+        dominantBaseline="central"
+        fill={color}
+        fontSize={dnq ? Math.round(size * 0.2) : Math.round(size * 0.24)}
+        fontWeight="800"
+        textAnchor="middle"
+      >
+        {text}
+      </text>
+    </svg>
+  );
+}
+
+function StatValue({ value, tone }: { value: number; tone?: "secondary" }) {
+  return (
+    <span className={cls("stat-value", tone)} style={rateStyle(value)}>{formatSigned(value, 1)}</span>
+  );
+}
+
+function ScoreValue({ value, label }: { value: number; label?: string | null }) {
+  const dnq = label === "DNQ";
+  return (
+    <span className={cls("score-value", dnq && "dnq")} style={scoreStyle(value)}>
+      {dnq ? "DNQ" : Math.round(value)}
+    </span>
+  );
+}
+
+function SkillFingerprint({
+  player,
+  activeSkill
+}: {
+  player: PlayerImpact;
+  activeSkill: SkillKey | null;
+}) {
+  const [hoverSkill, setHoverSkill] = useState<string | null>(null);
+  const aggregateBars = [
+    { key: "OFF_SKILL", label: "OFF", title: "Skill model Off", value: player.skill_model_off ?? player.skill_off_total },
+    { key: "DEF_SKILL", label: "DEF", title: "Skill model Def", value: player.skill_model_def ?? player.skill_def_total }
+  ];
+
+  return (
+    <div className="skill-fingerprint">
+      <div className="skill-bars" onMouseLeave={() => setHoverSkill(null)}>
+        {skillKeys.map((key) => {
+          const value = Number(player[key] ?? 0);
+          const height = Math.max(4, clamp((value + 3) / 6, 0, 1) * 22);
+          return (
+            <span
+              key={key}
+              className={cls("skill-bar", key === "DREB" && "defense-start", activeSkill === key && "active", hoverSkill === key && "open")}
+              onMouseEnter={() => setHoverSkill(key)}
+              title={`${skillLabels[key]}: ${formatSigned(value, 1)}`}
+              style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
+            >
+              <i />
+              <em>{key} {formatSigned(value, 1)}</em>
+            </span>
+          );
+        })}
+        {aggregateBars.map((bar) => {
+          const value = Number(bar.value ?? 0);
+          const height = Math.max(4, clamp((value + 6) / 12, 0, 1) * 22);
+          return (
+            <span
+              key={bar.key}
+              className={cls("skill-bar", "skill-total-bar", bar.key === "OFF_SKILL" && "skill-total-start", hoverSkill === bar.key && "open")}
+              onMouseEnter={() => setHoverSkill(bar.key)}
+              title={`${bar.title}: ${formatSigned(value, 1)}`}
+              style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
+            >
+              <i />
+              <em>{bar.label} {formatSigned(value, 1)}</em>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProspectSkillFingerprint({
+  prospect,
+  activeSkill
+}: {
+  prospect: DraftProspect;
+  activeSkill: SkillKey | null;
+}) {
+  const [hoverSkill, setHoverSkill] = useState<SkillKey | null>(null);
+
+  return (
+    <div className="skill-fingerprint">
+      <div className="skill-bars" onMouseLeave={() => setHoverSkill(null)}>
+        {skillKeys.map((key) => {
+          const value = getProspectSkillValue(prospect, key);
+          const height = Math.max(4, clamp((value + 3) / 6, 0, 1) * 22);
+          return (
+            <span
+              key={key}
+              className={cls("skill-bar", key === "DREB" && "defense-start", activeSkill === key && "active", hoverSkill === key && "open")}
+              onMouseEnter={() => setHoverSkill(key)}
+              title={`${skillLabels[key]}: ${formatSigned(value, 1)}`}
+              style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
+            >
+              <i />
+              <em>{key} {formatSigned(value, 1)}</em>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function getProspectSkillValue(prospect: DraftProspect, key: SkillKey): number {
+  const value = prospect[`${key}_pred` as keyof DraftProspect];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 function scoreStyle(value: number): CSSProperties {
   const score = clamp(value, 0, 100);
-  const pivot = score / 100;
-  const eased = pivot < 0.82 ? pivot * 0.48 : 0.48 + ((pivot - 0.82) / 0.18) * 0.52;
-  const hue = 4 + clamp(eased, 0, 1) * 158;
-  const saturation = 82 - Math.max(0, score - 92) * 0.7;
-  const lightness = 47 + Math.max(0, score - 70) * 0.22;
+  const shifted = (score - 50) / 50 * 2.4;
+  const heat = heatStyleVars("score", shifted, 2.4) as CSSProperties & { "--score-fg": string; "--score-border": string };
+  const color = heat["--score-fg"];
   return {
-    "--score-fill": `hsl(${hue.toFixed(1)} ${saturation.toFixed(1)}% ${lightness.toFixed(1)}%)`
+    "--score-fill": color,
+    "--score-border": heat["--score-border"]
   } as CSSProperties;
 }
 
 function scaleStyle(value: number): CSSProperties {
-  const scale = clamp(value, 0, 2.5);
-  const hue = interpolateColor(scale, [
-    [0, 2],
-    [0.5, 7],
-    [0.8, 48],
-    [1.0, 118],
-    [2.0, 156]
-  ]);
-  const lightness = interpolateColor(scale, [
-    [0, 47],
-    [0.5, 49],
-    [0.8, 51],
-    [1.0, 49],
-    [2.0, 55]
-  ]);
-  return {
-    "--scale-fill": `hsl(${hue.toFixed(1)} 76% ${lightness.toFixed(1)}%)`
-  } as CSSProperties;
+  return heatStyleVars("scale", value - 1, 1.15);
 }
 
 function rateStyle(value: number): CSSProperties {
-  const rate = clamp(value, -3, 6);
-  const hue = interpolateColor(rate, [
-    [-3, 2],
-    [-1, 8],
-    [0, 72],
-    [0.45, 112],
-    [2, 146],
-    [6, 162]
-  ]);
-  const lightness = interpolateColor(rate, [
-    [-3, 47],
-    [0, 50],
-    [2, 53],
-    [6, 58]
-  ]);
-  return {
-    "--rate-fill": `hsl(${hue.toFixed(1)} 76% ${lightness.toFixed(1)}%)`
-  } as CSSProperties;
+  return heatStyleVars("rate", value, 2.4);
+}
+
+function deltaStyle(value: number): CSSProperties {
+  return heatStyleVars("rate", value, 22);
+}
+
+function netMoneyStyle(value: number | null | undefined): CSSProperties {
+  if (value === null || value === undefined || Number.isNaN(value)) return {};
+  return heatStyleVars("rate", value, 35_000_000);
+}
+
+function tierAccentStyle(tier: string): CSSProperties {
+  const normalized = tier.toLowerCase();
+  if (normalized.includes("franchise")) return { "--tc": "var(--green)" } as CSSProperties;
+  if (normalized.includes("star") && normalized.includes("+")) return { "--tc": "var(--teal)" } as CSSProperties;
+  if (normalized.includes("star")) return { "--tc": "var(--gold)" } as CSSProperties;
+  return { "--tc": "var(--muted)" } as CSSProperties;
+}
+
+function rowAccentStyle(player: PlayerImpact): CSSProperties {
+  if (player.score_label === "DNQ") return { "--tc": "color-mix(in srgb, var(--muted) 45%, var(--bg))" } as CSSProperties;
+  const scoreVars = scoreStyle(player.score) as CSSProperties & { "--score-fill"?: string };
+  const tierVars = tierAccentStyle(player.tier) as CSSProperties & { "--tc"?: string };
+  return { "--tc": scoreVars["--score-fill"] ?? tierVars["--tc"] ?? "var(--muted)" } as CSSProperties;
+}
+
+function draftRowAccentStyle(prospect: DraftProspect): CSSProperties {
+  const scoreVars = scoreStyle(prospect.score) as CSSProperties & { "--score-fill"?: string };
+  return { "--tc": scoreVars["--score-fill"] ?? "var(--muted)" } as CSSProperties;
 }
 
 function skillStyle(value: number): CSSProperties {
-  const rateVars = rateStyle(value) as CSSProperties & { "--rate-fill": string };
+  const rateVars = rateStyle(value) as CSSProperties & { "--rate-fg": string };
   return {
-    "--skill-fill": rateVars["--rate-fill"]
+    "--skill-fill": rateVars["--rate-fg"]
   } as CSSProperties;
 }
 
-function interpolateColor(value: number, stops: Array<[number, number]>): number {
-  for (let index = 0; index < stops.length - 1; index += 1) {
-    const [fromValue, fromColor] = stops[index];
-    const [toValue, toColor] = stops[index + 1];
-    if (value <= toValue) {
-      const pct = (value - fromValue) / Math.max(0.001, toValue - fromValue);
-      return fromColor + (toColor - fromColor) * clamp(pct, 0, 1);
-    }
-  }
-  return stops[stops.length - 1][1];
+function heatStyleVars(prefix: "rate" | "scale" | "score", value: number, max: number): CSSProperties {
+  const neutral: Rgb = [245, 247, 245];
+  const negative: Rgb = [232, 56, 42];
+  const positive: Rgb = [126, 216, 82];
+  const elite: Rgb = [43, 198, 162];
+  const rawIntensity = clamp(Math.abs(value) / Math.max(0.001, max), 0, 1);
+  const positiveIntensity = Math.pow(rawIntensity, 0.98);
+  const negativeIntensity = Math.pow(rawIntensity, 0.68);
+  const intensity = value >= 0 ? positiveIntensity : negativeIntensity;
+  const positiveColor = intensity < 0.86 ? mixRgb(neutral, positive, intensity / 0.86) : mixRgb(positive, elite, (intensity - 0.86) / 0.14);
+  const color = value >= 0 ? positiveColor : mixRgb(neutral, negative, intensity);
+  const bgAlpha = 0.025 + intensity * 0.2;
+  const borderAlpha = 0.055 + intensity * 0.42;
+
+  return {
+    [`--${prefix}-fg`]: rgbString(color),
+    [`--${prefix}-bg`]: rgbaString(color, bgAlpha),
+    [`--${prefix}-border`]: rgbaString(color, borderAlpha)
+  } as CSSProperties;
+}
+
+type Rgb = [number, number, number];
+
+function mixRgb(from: Rgb, to: Rgb, amount: number): Rgb {
+  return [
+    Math.round(from[0] + (to[0] - from[0]) * amount),
+    Math.round(from[1] + (to[1] - from[1]) * amount),
+    Math.round(from[2] + (to[2] - from[2]) * amount)
+  ];
+}
+
+function rgbString(color: Rgb): string {
+  return `rgb(${color[0]} ${color[1]} ${color[2]})`;
+}
+
+function rgbaString(color: Rgb, alpha: number): string {
+  return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha.toFixed(3)})`;
 }
 
 function formatSigned(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
   const formatted = formatNumber(value, digits);
   return value > 0 ? `+${formatted}` : formatted;
+}
+
+function formatSeasonValueAdd(player: PlayerImpact): string {
+  if (player.availability_status === "DNQ") return "DNQ";
+  return formatSignedMoney(player.value_add);
 }
 
 function SkillRow({ label, value }: { label: string; value: number }) {
@@ -1090,29 +2477,34 @@ function ProjectionChart({ points }: { points: Array<{ label: string; value: num
   const values = points.map((point) => point.value);
   const min = Math.min(...values, -2);
   const max = Math.max(...values, 6);
-  const width = 320;
-  const height = 150;
+  const width = 286;
+  const height = 104;
+  const padX = 14;
+  const padY = 14;
   const coords = points.map((point, index) => {
-    const x = 20 + index * ((width - 40) / (points.length - 1));
-    const y = height - 24 - ((point.value - min) / Math.max(1, max - min)) * (height - 48);
+    const x = padX + index * ((width - padX * 2) / Math.max(1, points.length - 1));
+    const y = height - padY - ((point.value - min) / Math.max(1, max - min)) * (height - padY * 2);
     return { ...point, x, y };
   });
   const path = coords.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const baselineValue = min <= 0 && max > 0 ? 0 : min;
+  const baselineY = height - padY - ((baselineValue - min) / Math.max(1, max - min)) * (height - padY * 2);
+  const areaPath = coords.length > 0
+    ? `${path} L ${coords[coords.length - 1].x} ${baselineY} L ${coords[0].x} ${baselineY} Z`
+    : "";
 
   return (
-    <section>
-      <h3>Projection Arc</h3>
-      <svg className="projection" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Player projection line">
-        <line x1="20" x2={width - 20} y1={height - 24} y2={height - 24} />
-        <path d={path} />
-        {coords.map((point) => (
-          <g key={point.label}>
-            <circle cx={point.x} cy={point.y} r="4" />
-            <text x={point.x} y={height - 6} textAnchor="middle">{point.label}</text>
-          </g>
-        ))}
-      </svg>
-    </section>
+    <svg className="projection" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Player projection line">
+      {min <= 0 && max > 0 && <line x1={padX} x2={width - padX} y1={baselineY} y2={baselineY} />}
+      {areaPath && <path className="projection-area" d={areaPath} />}
+      <path className="projection-line" d={path} />
+      {coords.map((point) => (
+        <g key={point.label}>
+          <circle cx={point.x} cy={point.y} r="4" />
+          <text x={point.x} y={height - 3} textAnchor="middle">{point.label}</text>
+        </g>
+      ))}
+    </svg>
   );
 }
 
@@ -1201,6 +2593,35 @@ function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, directio
   }
 
   return direction === "asc" ? result : -result;
+}
+
+function compareDraftProspects(a: DraftProspect, b: DraftProspect, key: DraftSortKey, direction: SortDirection): number {
+  const aValue = getDraftSortValue(a, key);
+  const bValue = getDraftSortValue(b, key);
+  let result = 0;
+
+  if (typeof aValue === "string" || typeof bValue === "string") {
+    result = String(aValue ?? "").localeCompare(String(bValue ?? ""));
+  } else {
+    const aNumber = Number(aValue ?? Number.NEGATIVE_INFINITY);
+    const bNumber = Number(bValue ?? Number.NEGATIVE_INFINITY);
+    result = aNumber - bNumber;
+  }
+
+  if (result === 0) {
+    result = a.rank_in_class - b.rank_in_class || a.player.localeCompare(b.player);
+  }
+
+  return direction === "asc" ? result : -result;
+}
+
+function getDraftSortValue(prospect: DraftProspect, key: DraftSortKey): string | number | boolean | null | undefined {
+  const skill = draftSortSkill(key);
+  if (skill) {
+    return getProspectSkillValue(prospect, skill);
+  }
+
+  return prospect[key as keyof DraftProspect];
 }
 
 export default App;

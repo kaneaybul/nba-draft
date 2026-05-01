@@ -195,6 +195,47 @@ aggregate_best_two_year_skill_targets <- function(training_dt, skill_cols, windo
   out[finite_skill_counts > 0]
 }
 
+select_best_impact_target_season <- function(training_dt, skill_cols, window_min, window_max, min_window_year) {
+  if (!nrow(training_dt)) return(training_dt)
+  if (!is.finite(window_max)) {
+    stop("Best impact target season requires a finite target window max.")
+  }
+
+  dt <- copy(training_dt)
+  dt[, years_after_draft := outcome_year - draft_year]
+  dt[, max_years_after_draft := suppressWarnings(max(years_after_draft, na.rm = TRUE)), by = .(join_player, draft_year)]
+  dt <- dt[
+    is.finite(years_after_draft) &
+      is.finite(max_years_after_draft) &
+      max_years_after_draft >= min_window_year &
+      years_after_draft >= window_min &
+      years_after_draft <= window_max &
+      is.finite(impact_total)
+  ]
+
+  if (!nrow(dt)) return(dt)
+
+  target_counts <- dt[
+    ,
+    .(eligible_target_seasons = uniqueN(outcome_year[is.finite(outcome_year)])),
+    by = .(join_player, draft_year)
+  ]
+
+  setorder(dt, join_player, draft_year, -impact_total, -outcome_year)
+  out <- dt[, .SD[1], by = .(join_player, draft_year)]
+  out <- merge(out, target_counts, by = c("join_player", "draft_year"), all.x = TRUE, sort = FALSE)
+  out[, years_after_draft := outcome_year - draft_year]
+  out[, target_aggregation := sprintf(
+    "best_impact_total_season_y%d_y%d",
+    as.integer(window_min),
+    as.integer(window_max)
+  )]
+
+  available_skills <- intersect(skill_cols, names(out))
+  finite_skill_counts <- rowSums(as.data.frame(lapply(out[, ..available_skills], function(x) is.finite(suppressWarnings(as.numeric(x))))))
+  out[finite_skill_counts > 0]
+}
+
 read_college_manual_supplement <- function(path) {
   if (!file.exists(path)) {
     return(data.table())
@@ -290,14 +331,14 @@ scv_review_fp <- Sys.getenv("SCV_REVIEW_OUTPUT", file.path(draft_dir, "scv_revie
 outcome_lag <- suppressWarnings(as.integer(Sys.getenv("DRAFT_OUTCOME_LAG", "4")))
 if (!is.finite(outcome_lag) || outcome_lag < 1L) outcome_lag <- 4L
 target_mode <- trimws(tolower(Sys.getenv("DRAFT_TARGET_MODE", "best_two_year_skill_avg")))
-if (!target_mode %in% c("best_two_year_skill_avg", "best_impact_post_year_1", "best_impact_3_5", "latest_available", "fixed_lag")) {
+if (!target_mode %in% c("best_two_year_skill_avg", "best_impact_total_y3_y4", "best_impact_post_year_1", "best_impact_3_5", "latest_available", "fixed_lag")) {
   target_mode <- "best_two_year_skill_avg"
 }
 default_min_years_after_draft <- if (identical(target_mode, "best_two_year_skill_avg")) "5" else "4"
 min_years_after_draft <- suppressWarnings(as.integer(Sys.getenv("DRAFT_MIN_YEARS_AFTER_DRAFT", default_min_years_after_draft)))
 if (!is.finite(min_years_after_draft) || min_years_after_draft < 0L) min_years_after_draft <- 4L
 if (identical(target_mode, "best_two_year_skill_avg") && min_years_after_draft < 5L) min_years_after_draft <- 5L
-min_draft_year <- suppressWarnings(as.integer(Sys.getenv("DRAFT_MIN_DRAFT_YEAR", "0")))
+min_draft_year <- suppressWarnings(as.integer(Sys.getenv("DRAFT_MIN_DRAFT_YEAR", "2016")))
 if (!is.finite(min_draft_year)) min_draft_year <- 0L
 max_train_draft_year <- suppressWarnings(as.integer(Sys.getenv("DRAFT_MAX_TRAIN_DRAFT_YEAR", "")))
 if (!is.finite(max_train_draft_year)) max_train_draft_year <- NA_integer_
@@ -306,7 +347,10 @@ if (!is.finite(target_window_min)) target_window_min <- 2L
 target_window_max_raw <- trimws(Sys.getenv("DRAFT_TARGET_WINDOW_MAX", ""))
 target_window_max <- suppressWarnings(as.integer(target_window_max_raw))
 if (!is.finite(target_window_max) && nzchar(target_window_max_raw)) target_window_max <- NA_integer_
-if (identical(target_mode, "best_two_year_skill_avg")) {
+if (identical(target_mode, "best_impact_total_y3_y4")) {
+  target_window_min <- 3L
+  target_window_max <- 4L
+} else if (identical(target_mode, "best_two_year_skill_avg")) {
   if (!is.finite(target_window_max)) target_window_max <- 5L
   if (target_window_max < target_window_min) target_window_max <- target_window_min
 } else if (identical(target_mode, "best_impact_3_5")) {
@@ -331,7 +375,7 @@ college_manual_supplement_dt <- read_college_manual_supplement(college_manual_su
 manual_supplement_rows <- nrow(college_manual_supplement_dt)
 draft_dt <- apply_college_manual_supplement(draft_dt, college_manual_supplement_dt)
 
-draftvar_vars <- read_draftvar_variables(draftvar_fp)
+draftvar_vars <- unique(c(read_draftvar_variables(draftvar_fp), "3pa_100"))
 available_vars <- intersect(draftvar_vars, names(draft_dt))
 
 id_cols <- c(
@@ -385,7 +429,6 @@ training_candidates <- copy(draft_dt[draft_year >= min_draft_year & draft_year <
 if (is.finite(max_train_draft_year)) {
   training_candidates <- training_candidates[draft_year <= max_train_draft_year]
 }
-training_candidates <- training_candidates[!is.na(scv_draft)]
 training_candidates <- training_candidates[!is.na(cbbd_id)]
 if (identical(target_mode, "fixed_lag")) {
   training_candidates[, outcome_year := draft_year + outcome_lag]
@@ -430,6 +473,25 @@ if (identical(target_mode, "fixed_lag")) {
     window_max = target_window_max,
     min_window_year = min_years_after_draft,
     min_eligible_seasons = min_eligible_target_seasons
+  )
+} else if (identical(target_mode, "best_impact_total_y3_y4")) {
+  training_dt <- merge(
+    training_candidates,
+    skill_targets_dt,
+    by = "join_player",
+    all.x = TRUE,
+    sort = FALSE,
+    suffixes = c("", "_skill"),
+    allow.cartesian = TRUE
+  )
+  training_dt[, years_after_draft := outcome_year - draft_year]
+  training_dt <- training_dt[!is.na(outcome_year)]
+  training_dt <- select_best_impact_target_season(
+    training_dt,
+    skill_cols = c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH"),
+    window_min = target_window_min,
+    window_max = target_window_max,
+    min_window_year = min_years_after_draft
   )
 } else {
   training_dt <- merge(
@@ -494,6 +556,18 @@ if (identical(target_mode, "best_two_year_skill_avg")) {
   ]
   if (nrow(invalid_target_rows)) {
     stop("Target selection invariant failed: expected best two-year skill averages from a full target window.")
+  }
+} else if (identical(target_mode, "best_impact_total_y3_y4")) {
+  invalid_target_rows <- training_dt[
+    !is.finite(years_after_draft) |
+      years_after_draft < target_window_min |
+      years_after_draft > target_window_max |
+      !is.finite(max_years_after_draft) |
+      max_years_after_draft < min_years_after_draft |
+      !is.finite(impact_total)
+  ]
+  if (nrow(invalid_target_rows)) {
+    stop("Target selection invariant failed: expected best IMPACT_TOTAL season from years 3-4.")
   }
 } else if (identical(target_mode, "best_impact_post_year_1")) {
   invalid_target_rows <- training_dt[
