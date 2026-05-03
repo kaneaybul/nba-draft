@@ -40,14 +40,6 @@ read_csv_required <- function(path, required = character()) {
   out
 }
 
-normalize_name <- function(x) {
-  x <- iconv(as.character(x), from = "", to = "ASCII//TRANSLIT")
-  x <- tolower(trimws(x))
-  x <- gsub("\\b(jr|sr|ii|iii|iv|v)\\b", " ", x)
-  x <- gsub("[^a-z0-9]+", " ", x)
-  gsub("\\s+", " ", trimws(x))
-}
-
 safe_weighted_mean <- function(value, weight) {
   value <- suppressWarnings(as.numeric(value))
   weight <- suppressWarnings(as.numeric(weight))
@@ -193,6 +185,138 @@ build_tracker_prospect_scores <- function(actual, tracker_boards, panel, all_sco
   rows[, display_board := fifelse(board == "SCV Adjusted Model", "SCV Current Model", board)]
   setorder(rows, -draft_year, actual_rank, display_board)
   rows[]
+}
+
+read_csv_optional <- function(path) {
+  if (!file.exists(path)) return(data.table())
+  tryCatch(
+    fread(path, na.strings = c("", "NA", "N/A", "NaN")),
+    error = function(e) data.table()
+  )
+}
+
+load_scv_draft_reference <- function(base_dir) {
+  path <- file.path(base_dir, "ref", "scvardraft.csv")
+  dt <- read_csv_optional(path)
+  if (!nrow(dt) || !"name" %in% names(dt)) {
+    return(data.table(name_key = character(), scv_draft_ref = numeric()))
+  }
+  score_col <- names(dt)[tolower(names(dt)) %in% c("sc", "scv", "shot_creation", "shot_creation_rank")][1]
+  if (is.na(score_col) || !nzchar(score_col)) {
+    return(data.table(name_key = character(), scv_draft_ref = numeric()))
+  }
+  dt[, name_key := normalize_name(name)]
+  dt[, scv_draft_ref := suppressWarnings(as.numeric(get(score_col)))]
+  dt <- dt[nzchar(name_key) & is.finite(scv_draft_ref)]
+  unique(dt[, .(name_key, scv_draft_ref)], by = "name_key")
+}
+
+load_realgm_draft_bio_reference <- function(base_dir) {
+  paths <- c(
+    file.path(base_dir, "processed", "draft", "no_college_realgm_draft_map.csv"),
+    file.path(base_dir, "processed", "draft", "draft_no_college_all_classes.csv")
+  )
+  parts <- lapply(paths, function(path) {
+    dt <- read_csv_optional(path)
+    if (!nrow(dt) || !all(c("player", "draft_year", "age") %in% names(dt))) {
+      return(data.table(draft_year = integer(), name_key = character(), draft_age_ref = numeric()))
+    }
+    dt
+  })
+  dt <- rbindlist(parts, use.names = TRUE, fill = TRUE)
+  if (!nrow(dt)) {
+    return(data.table(draft_year = integer(), name_key = character(), draft_age_ref = numeric()))
+  }
+  dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  dt[, name_key := normalize_name(player)]
+  dt[, draft_age_ref := suppressWarnings(as.numeric(age))]
+  dt <- dt[is.finite(draft_year) & nzchar(name_key) & is.finite(draft_age_ref)]
+  setorder(dt, draft_year, name_key)
+  unique(dt[, .(draft_year, name_key, draft_age_ref)], by = c("draft_year", "name_key"))
+}
+
+build_presence_index <- function(path) {
+  dt <- read_csv_optional(path)
+  if (!nrow(dt) || !"player" %in% names(dt) || !"draft_year" %in% names(dt)) {
+    return(data.table(
+      draft_year = integer(),
+      name_key = character(),
+      present = logical(),
+      names_seen = character()
+    ))
+  }
+
+  dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  dt[, name_key := normalize_name(player)]
+  dt <- dt[is.finite(draft_year) & nzchar(name_key)]
+  if (!nrow(dt)) {
+    return(data.table(
+      draft_year = integer(),
+      name_key = character(),
+      present = logical(),
+      names_seen = character()
+    ))
+  }
+
+  dt[, .(
+    present = TRUE,
+    names_seen = paste(sort(unique(as.character(player))), collapse = " | ")
+  ), by = .(draft_year, name_key)]
+}
+
+build_missing_actuals_audit <- function(base_dir, actual, prospect_scores, years, brendan_board = "SCV Adjusted Model") {
+  draft_dir <- file.path(base_dir, "processed", "draft")
+  actual_rows <- copy(actual[draft_year %in% years])
+  actual_rows[, name_key := as.character(name_key)]
+
+  source_idx <- build_presence_index(file.path(draft_dir, "draft_prediction_unified.csv"))
+  setnames(source_idx, c("present", "names_seen"), c("in_prediction_source", "prediction_source_names"))
+  prediction_idx <- build_presence_index(file.path(draft_dir, "draft_skill_predictions_output.csv"))
+  setnames(prediction_idx, c("present", "names_seen"), c("in_model_predictions", "model_prediction_names"))
+
+  brendan_rows <- prospect_scores[board == brendan_board, .(
+    draft_year,
+    name_key,
+    brendan_adj_rank = board_rank,
+    brendan_adj_eval_rank = eval_rank,
+    brendan_adj_rank_error = rank_error,
+    brendan_adj_correct_pct = correct_pct
+  )]
+
+  out <- merge(
+    actual_rows[, .(
+      draft_year,
+      name_key,
+      player,
+      nba_id,
+      actual_pick,
+      actual_rank,
+      actual_weight,
+      career_minutes,
+      actual_impact
+    )],
+    source_idx,
+    by = c("draft_year", "name_key"),
+    all.x = TRUE,
+    sort = FALSE
+  )
+  out <- merge(out, prediction_idx, by = c("draft_year", "name_key"), all.x = TRUE, sort = FALSE)
+  out <- merge(out, brendan_rows, by = c("draft_year", "name_key"), all.x = TRUE, sort = FALSE)
+
+  out[is.na(in_prediction_source), in_prediction_source := FALSE]
+  out[is.na(in_model_predictions), in_model_predictions := FALSE]
+  out[, unranked_by_brendan_adj := !is.finite(suppressWarnings(as.numeric(brendan_adj_rank)))]
+  out[, missing_reason := fifelse(
+    !in_prediction_source,
+    "missing_from_prediction_source",
+    fifelse(
+      !in_model_predictions,
+      "missing_from_model_predictions",
+      fifelse(unranked_by_brendan_adj, "unranked_by_brendan_adj", "ranked")
+    )
+  )]
+  setorder(out, draft_year, actual_pick, actual_rank)
+  out[]
 }
 
 year_weight <- function(year, latest_impact_year) {
@@ -367,17 +491,25 @@ make_prediction_panel <- function(base_dir) {
   pred[, draft_year := as.integer(draft_year)]
   pred <- merge(pred, source, by = c("player", "draft_year"), all.x = TRUE, sort = FALSE)
   pred[, name_key := normalize_name(player)]
+  scv_ref <- load_scv_draft_reference(base_dir)
+  if (nrow(scv_ref)) {
+    pred <- merge(pred, scv_ref, by = "name_key", all.x = TRUE, sort = FALSE)
+    pred[, scv_draft := fifelse(is.finite(scv_draft), scv_draft, scv_draft_ref)]
+    pred[, scv_draft_ref := NULL]
+  }
+  realgm_bio <- load_realgm_draft_bio_reference(base_dir)
+  if (nrow(realgm_bio)) {
+    pred <- merge(pred, realgm_bio, by = c("draft_year", "name_key"), all.x = TRUE, sort = FALSE)
+    pred[, draft_age := fifelse(is.finite(draft_age), draft_age, draft_age_ref)]
+    pred[, draft_age_ref := NULL]
+  }
   picks[, name_key := normalize_name(player)]
   setorder(picks, draft_year, name_key, actual_pick, na.last = TRUE)
   picks <- unique(picks[, .(draft_year, name_key, actual_pick)], by = c("draft_year", "name_key"))
   pred <- merge(pred, picks, by = c("draft_year", "name_key"), all.x = TRUE, sort = FALSE)
   pred[, pick_proxy := fifelse(is.finite(actual_pick), actual_pick, big_board_rank)]
   pred[, pick_proxy_available := is.finite(pick_proxy)]
-  pred[, pick_proxy := {
-    class_median <- stats::median(pick_proxy, na.rm = TRUE)
-    if (!is.finite(class_median)) class_median <- 65
-    fifelse(is.finite(pick_proxy), pick_proxy, class_median)
-  }, by = draft_year]
+  pred[, pick_proxy := fifelse(is.finite(pick_proxy), pick_proxy, 60)]
   pred[, age_feature := -z_within(draft_age, draft_year)]
   pred[, pick_feature := -z_within(log1p(pick_proxy), draft_year)]
   pred[, base_rank := frank(-TOTAL_pred, ties.method = "first"), by = draft_year]
@@ -558,7 +690,7 @@ fit_adjustment <- function(panel, actual, external_scores, fit_years, latest_imp
 }
 
 base_dir <- resolve_base_dir()
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 draft_dir <- file.path(base_dir, "processed", "draft")
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -641,6 +773,13 @@ fwrite(all_scores[order(board, draft_year)], file.path(draft_dir, "draft_tracker
 fwrite(summary_scores, file.path(draft_dir, "draft_tracker_board_summary.csv"), na = "")
 prospect_scores <- build_tracker_prospect_scores(actual, tracker_boards, panel, all_scores, fit_years)
 fwrite(prospect_scores, file.path(draft_dir, "draft_tracker_prospect_scores.csv"), na = "")
+missing_actuals_audit <- build_missing_actuals_audit(base_dir, actual, prospect_scores, fit_years)
+fwrite(missing_actuals_audit, file.path(draft_dir, "draft_tracker_actuals_audit.csv"), na = "")
+fwrite(
+  missing_actuals_audit[is.finite(actual_pick) & missing_reason != "ranked"],
+  file.path(draft_dir, "draft_tracker_missing_actuals.csv"),
+  na = ""
+)
 fwrite(adjustment, file.path(draft_dir, "draft_tracker_model_adjustment.csv"), na = "")
 fwrite(fit$loyo, file.path(draft_dir, "draft_tracker_adjustment_loyo.csv"), na = "")
 fwrite(panel, file.path(draft_dir, "draft_skill_predictions_adjusted.csv"), na = "")

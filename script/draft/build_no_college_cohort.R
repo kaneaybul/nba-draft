@@ -126,7 +126,8 @@ read_manual_latest_class <- function(path) {
 
   optional_cols <- c(
     "pick_overall", "pick_in_round", "team", "college", "years_in_nba",
-    "source_url", "br_player_url", "realgm_profile_url", "pre_draft_team", "manual_note"
+    "source_url", "br_player_url", "realgm_profile_url", "pre_draft_team",
+    "pos", "age", "big_board_rank", "manual_note"
   )
   for (col_name in optional_cols) {
     if (!col_name %in% names(manual_dt)) manual_dt[, (col_name) := NA]
@@ -200,7 +201,7 @@ safe_fetch_draft_year <- function(year) {
 
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 all_out <- file.path(draft_dir, "draft_picks_all_classes.csv")

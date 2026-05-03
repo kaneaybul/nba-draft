@@ -98,6 +98,7 @@ run_torvik_cache_pull <- identical(
   "true"
 )
 
+run_step_if_present(base_dir, "Pull Consensus Draft Board", file.path("script", "draft", "pull_consensus_board.R"))
 run_step(base_dir, "Build Draft Source Tables", file.path("script", "draft", "build_draft_source_tables.R"))
 if (run_torvik_cache_pull) {
   run_step_if_present(base_dir, "Pull Torvik Player Cache", file.path("script", "draft", "pull_torvik_player_cache.R"))

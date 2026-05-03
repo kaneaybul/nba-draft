@@ -401,11 +401,38 @@ append_manual_no_college_stats <- function(stats_dt, manual_stats_file) {
   combined_dt
 }
 
+apply_consensus_projection_ranks <- function(dt, draft_dir, target_year) {
+  rank_fp <- file.path(draft_dir, sprintf("draft_consensus_projection_ranks_%s.csv", target_year))
+  if (!file.exists(rank_fp) || !nrow(dt) || !"player" %in% names(dt) || !"draft_year" %in% names(dt)) {
+    return(dt)
+  }
+  rank_dt <- fread(rank_fp, na.strings = c("", "NA", "N/A", "NaN"))
+  if (!nrow(rank_dt) || !all(c("player", "draft_year", "consensus_rank") %in% names(rank_dt))) {
+    return(dt)
+  }
+  rank_dt[, join_player_consensus := normalize_name(player)]
+  rank_dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  rank_dt[, consensus_rank := suppressWarnings(as.numeric(consensus_rank))]
+  rank_dt <- unique(
+    rank_dt[is.finite(draft_year) & nzchar(join_player_consensus) & is.finite(consensus_rank),
+      .(join_player_consensus, draft_year, consensus_rank)
+    ],
+    by = c("join_player_consensus", "draft_year")
+  )
+  dt[, join_player_consensus := normalize_name(player)]
+  dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  dt <- merge(dt, rank_dt, by = c("join_player_consensus", "draft_year"), all.x = TRUE, sort = FALSE)
+  if (!"big_board_rank" %in% names(dt)) dt[, big_board_rank := NA_real_]
+  dt[is.finite(consensus_rank), big_board_rank := consensus_rank]
+  dt[, c("join_player_consensus", "consensus_rank") := NULL]
+  dt
+}
+
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
-source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
+source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = TRUE)
 target_draft_year <- parse_optional_int_env("NO_COLLEGE_TARGET_DRAFT_YEAR")
 target_mode <- trimws(tolower(Sys.getenv("NO_COLLEGE_TARGET_MODE", "best_two_year_skill_avg")))
 if (!target_mode %in% c("best_two_year_skill_avg", "best_impact_total_y3_y4")) {
@@ -465,7 +492,15 @@ if (is.finite(target_draft_year)) {
 
 stats_dt <- merge(
   stats_dt,
-  cohort_dt[, .(player_key, draft_year, br_player_url, source_url)],
+  cohort_dt[, .(
+    player_key,
+    draft_year,
+    br_player_url,
+    source_url,
+    cohort_pos = if ("pos" %in% names(cohort_dt)) as.character(pos) else NA_character_,
+    cohort_age = if ("age" %in% names(cohort_dt)) suppressWarnings(as.numeric(age)) else NA_real_,
+    cohort_big_board_rank = if ("big_board_rank" %in% names(cohort_dt)) suppressWarnings(as.numeric(big_board_rank)) else NA_real_
+  )],
   by = c("player_key", "draft_year"),
   all.x = TRUE
 )
@@ -477,6 +512,10 @@ if (all(c("br_player_url.x", "br_player_url.y") %in% names(stats_dt))) {
   stats_dt[, br_player_url := coalesce_character(br_player_url.x, br_player_url.y)]
   stats_dt[, c("br_player_url.x", "br_player_url.y") := NULL]
 }
+stats_dt[, pos := coalesce_character(if ("pos" %in% names(stats_dt)) pos else NA_character_, cohort_pos)]
+stats_dt[, draft_age := coalesce_numeric(if ("draft_age" %in% names(stats_dt)) draft_age else NA_real_, cohort_age)]
+stats_dt[, big_board_rank := coalesce_numeric(if ("big_board_rank" %in% names(stats_dt)) big_board_rank else NA_real_, cohort_big_board_rank)]
+stats_dt[, c("cohort_pos", "cohort_age", "cohort_big_board_rank") := NULL]
 
 derive_per36_from_pairs(stats_dt, "per36_x3pm", list(
   c("adv_xx3pm", "adv_min"),
@@ -643,11 +682,13 @@ if (identical(target_mode, "best_impact_total_y3_y4")) {
 
 prediction_dt <- copy(stats_dt)
 prediction_dt <- apply_prediction_name_filter(prediction_dt, prediction_name_filter_dt, player_key_col = "player_key")
+prediction_year_for_rank <- if (is.finite(target_draft_year)) target_draft_year else max(prediction_dt$draft_year, na.rm = TRUE)
+prediction_dt <- apply_consensus_projection_ranks(prediction_dt, draft_dir, prediction_year_for_rank)
 prediction_dt[, prediction_pool := "no_college"]
 prediction_dt[, player_key := NULL]
 
 preferred_front <- c(
-  "player", "draft_year", "prediction_pool", "realgm_profile_url", "pre_draft_team",
+  "player", "draft_year", "prediction_pool", "big_board_rank", "realgm_profile_url", "pre_draft_team",
   "source_section", "source_season", "source_team", "source_league", "br_player_url", "source_url"
 )
 preferred_front <- preferred_front[preferred_front %in% names(prediction_dt)]

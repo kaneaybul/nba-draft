@@ -1,27 +1,6 @@
 library(data.table)
 library(readxl)
 
-anglicize_text <- function(x) {
-  raw_x <- as.character(x)
-  safe_x <- suppressWarnings(iconv(raw_x, from = "UTF-8", to = "UTF-8", sub = ""))
-  fill_idx <- is.na(safe_x) & !is.na(raw_x)
-  safe_x[fill_idx] <- raw_x[fill_idx]
-  converted <- suppressWarnings(iconv(safe_x, from = "", to = "ASCII//TRANSLIT", sub = ""))
-  fill_idx <- is.na(converted) & !is.na(safe_x)
-  converted[fill_idx] <- safe_x[fill_idx]
-  trimws(converted)
-}
-
-normalize_join_name <- function(x) {
-  x <- anglicize_text(x)
-  x <- tolower(trimws(x))
-  x <- gsub("&", " and ", x, fixed = TRUE)
-  x <- gsub("[^a-z0-9 ]+", " ", x)
-  x <- gsub("\\b(jr|sr|ii|iii|iv|v)\\b", " ", x)
-  x <- gsub("\\s+", " ", x)
-  trimws(x)
-}
-
 resolve_base_dir <- function() {
   wd <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
   env_base_dir <- trimws(Sys.getenv("CLEANNBA_BASE_DIR", ""))
@@ -302,12 +281,40 @@ apply_college_manual_supplement <- function(draft_dt, supplement_dt) {
   rbindlist(list(draft_dt, supplement_dt), use.names = TRUE, fill = TRUE, ignore.attr = TRUE)
 }
 
+apply_consensus_projection_ranks <- function(dt, draft_dir, target_year) {
+  rank_fp <- file.path(draft_dir, sprintf("draft_consensus_projection_ranks_%s.csv", target_year))
+  if (!file.exists(rank_fp) || !nrow(dt) || !"player" %in% names(dt) || !"draft_year" %in% names(dt)) {
+    return(dt)
+  }
+  rank_dt <- fread(rank_fp, na.strings = c("", "NA", "N/A", "NaN"))
+  if (!nrow(rank_dt) || !all(c("player", "draft_year", "consensus_rank") %in% names(rank_dt))) {
+    return(dt)
+  }
+  if (!"rank_source" %in% names(rank_dt)) rank_dt[, rank_source := NA_character_]
+  rank_dt[, join_player_consensus := normalize_join_name(player)]
+  rank_dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  rank_dt[, consensus_rank := suppressWarnings(as.numeric(consensus_rank))]
+  rank_dt <- unique(
+    rank_dt[is.finite(draft_year) & nzchar(join_player_consensus) & is.finite(consensus_rank),
+      .(join_player_consensus, draft_year, consensus_rank, consensus_rank_source = rank_source)
+    ],
+    by = c("join_player_consensus", "draft_year")
+  )
+  dt[, join_player_consensus := normalize_join_name(player)]
+  dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  dt <- merge(dt, rank_dt, by = c("join_player_consensus", "draft_year"), all.x = TRUE, sort = FALSE)
+  if (!"big_board_rank" %in% names(dt)) dt[, big_board_rank := NA_real_]
+  dt[is.finite(consensus_rank), big_board_rank := consensus_rank]
+  dt[, c("join_player_consensus", "consensus_rank", "consensus_rank_source") := NULL]
+  dt
+}
+
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 ref_dir <- file.path(base_dir, "ref")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
-source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
+source(file.path(base_dir, "script", "draft", "prediction_name_filter.R"), local = TRUE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 draftballr_fp <- Sys.getenv("DRAFTBALLR_INPUT", file.path(draft_dir, "draftballr.csv"))
@@ -409,6 +416,8 @@ if (prediction_all_years || prediction_filter_all_years) {
 }
 domestic_dt <- apply_prediction_name_filter(domestic_dt, prediction_name_filter_dt)
 international_dt <- apply_prediction_name_filter(international_dt, prediction_name_filter_dt)
+domestic_dt <- apply_consensus_projection_ranks(domestic_dt, draft_dir, prediction_year)
+international_dt <- apply_consensus_projection_ranks(international_dt, draft_dir, prediction_year)
 
 scv_review_dt <- copy(draft_dt[draft_year == prediction_year])
 scv_review_dt <- apply_prediction_name_filter(scv_review_dt, prediction_name_filter_dt)

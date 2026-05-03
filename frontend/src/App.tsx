@@ -31,7 +31,9 @@ type DraftSortKey =
   | "rank_in_class"
   | "player"
   | "position"
+  | "tier"
   | "college"
+  | "prediction_pool"
   | "score"
   | "OFF_pred"
   | "DEF_pred"
@@ -40,11 +42,13 @@ type DraftSortKey =
   | "draft_age"
   | "scv_draft"
   | `${SkillKey}_pred`;
+type DraftFilterKey = DraftSortKey;
+type DraftYearSelection = number | "All";
 type FilterFieldType = "number" | "text";
 type FilterOperator = "contains" | "equals" | "gt" | "gte" | "lt" | "lte" | "between";
 type FilterRule = {
   id: string;
-  key: FilterKey;
+  key: FilterKey | DraftFilterKey;
   operator: FilterOperator;
   value: string;
   valueTo?: string;
@@ -95,6 +99,7 @@ const lineupSkills: LineupSkill[] = [
 const LINEUP_SUGGESTIONS_PER_PAGE = 8;
 const LINEUP_SUGGESTION_PAGE_COUNT = 3;
 const LINEUP_MAX_SUGGESTIONS = LINEUP_SUGGESTIONS_PER_PAGE * LINEUP_SUGGESTION_PAGE_COUNT;
+const impactTierOrder = ["MVP", "Superstar", "Star", "Elite Starter", "Starter", "Fringe Starter", "Strong Bench", "Bench", "Deep Bench", "Project", "Out", "DNQ"];
 const skillLabels: Record<SkillKey, string> = {
   FTD: "Free Throws",
   PASS: "Passing",
@@ -141,6 +146,45 @@ const textOperators: Array<{ value: FilterOperator; label: string }> = [
   { value: "contains", label: "contains" },
   { value: "equals", label: "is exactly" }
 ];
+const draftFilterFields: Array<{ key: DraftFilterKey; label: string; type: FilterFieldType }> = [
+  { key: "player", label: "Player", type: "text" },
+  { key: "position", label: "Position", type: "text" },
+  { key: "tier", label: "Tier", type: "text" },
+  { key: "college", label: "College", type: "text" },
+  { key: "prediction_pool", label: "Pool", type: "text" },
+  { key: "rank_in_class", label: "Rank", type: "number" },
+  { key: "score", label: "Score", type: "number" },
+  { key: "OFF_pred", label: "Off", type: "number" },
+  { key: "DEF_pred", label: "Def", type: "number" },
+  { key: "TOTAL_pred", label: "Total", type: "number" },
+  { key: "timin", label: "TIMIN", type: "number" },
+  { key: "draft_age", label: "Age", type: "number" },
+  { key: "scv_draft", label: "SCV", type: "number" },
+  ...skillKeys.map((key) => ({ key: `${key}_pred` as DraftFilterKey, label: key, type: "number" as const }))
+];
+
+function useSessionState<T>(key: string, initialValue: T): [T, (value: T | ((current: T) => T)) => void] {
+  const [state, setState] = useState<T>(() => {
+    if (typeof window === "undefined") return initialValue;
+    try {
+      const stored = window.sessionStorage.getItem(key);
+      return stored ? (JSON.parse(stored) as T) : initialValue;
+    } catch {
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(key, JSON.stringify(state));
+    } catch {
+      // Session persistence is a convenience; the app should keep working if storage is unavailable.
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
 
 function latestPlayerSeason(players: PlayerImpact[]): number | null {
   const years = players.map((player) => player.year).filter(Number.isFinite);
@@ -291,17 +335,17 @@ function App() {
 
 function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const seasonPlayers = useMemo(() => data.players.filter((player) => player.year === season), [data.players, season]);
-  const [query, setQuery] = useState("");
-  const [team, setTeam] = useState("All");
-  const [position, setPosition] = useState("All");
-  const [tier, setTier] = useState("All");
-  const [sortKey, setSortKey] = useState<SortKey>("score");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
-  const [filterKey, setFilterKey] = useState<FilterKey>("score");
-  const [filterOperator, setFilterOperator] = useState<FilterOperator>("gte");
-  const [filterValue, setFilterValue] = useState("");
-  const [filterValueTo, setFilterValueTo] = useState("");
+  const [query, setQuery] = useSessionState("impact:query", "");
+  const [team, setTeam] = useSessionState("impact:team", "All");
+  const [position, setPosition] = useSessionState("impact:position", "All");
+  const [tier, setTier] = useSessionState("impact:tier", "All");
+  const [sortKey, setSortKey] = useSessionState<SortKey>("impact:sortKey", "score");
+  const [sortDirection, setSortDirection] = useSessionState<SortDirection>("impact:sortDirection", "desc");
+  const [filterRules, setFilterRules] = useSessionState<FilterRule[]>("impact:rules", []);
+  const [filterKey, setFilterKey] = useSessionState<FilterKey>("impact:filterKey", "score");
+  const [filterOperator, setFilterOperator] = useSessionState<FilterOperator>("impact:filterOperator", "gte");
+  const [filterValue, setFilterValue] = useSessionState("impact:filterValue", "");
+  const [filterValueTo, setFilterValueTo] = useSessionState("impact:filterValueTo", "");
   const [detailPlayer, setDetailPlayer] = useState<PlayerImpact | null>(null);
   const [detailPosition, setDetailPosition] = useState({ left: 28, top: 138 });
 
@@ -961,18 +1005,40 @@ function TradeSide({
 
 function DraftWorkspace({ data }: { data: AppData }) {
   const years = Array.from(new Set(data.prospects.map((prospect) => prospect.draft_year))).sort((a, b) => b - a);
-  const [year, setYear] = useState<number | undefined>(years[0]);
-  const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<DraftSortKey>("rank_in_class");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [year, setYear] = useSessionState<DraftYearSelection>("draft:year", years[0] ?? "All");
+  const [query, setQuery] = useSessionState("draft:query", "");
+  const [position, setPosition] = useSessionState("draft:position", "All");
+  const [tier, setTier] = useSessionState("draft:tier", "All");
+  const [pool, setPool] = useSessionState("draft:pool", "All");
+  const [sortKey, setSortKey] = useSessionState<DraftSortKey>("draft:sortKey", "score");
+  const [sortDirection, setSortDirection] = useSessionState<SortDirection>("draft:sortDirection", "desc");
+  const [filterRules, setFilterRules] = useSessionState<FilterRule[]>("draft:rules", []);
+  const [filterKey, setFilterKey] = useSessionState<DraftFilterKey>("draft:filterKey", "score");
+  const [filterOperator, setFilterOperator] = useSessionState<FilterOperator>("draft:filterOperator", "gte");
+  const [filterValue, setFilterValue] = useSessionState("draft:filterValue", "");
+  const [filterValueTo, setFilterValueTo] = useSessionState("draft:filterValueTo", "");
 
-  const yearProspects = useMemo(() => data.prospects.filter((prospect) => prospect.draft_year === year), [data.prospects, year]);
+  const yearProspects = useMemo(
+    () => year === "All" ? data.prospects : data.prospects.filter((prospect) => prospect.draft_year === year),
+    [data.prospects, year]
+  );
+  const positions = useMemo(() => ["All", ...Array.from(new Set(yearProspects.map((prospect) => displayDraftPosition(prospect)))).sort()], [yearProspects]);
+  const tiers = useMemo(() => ["All", ...impactTierOrder.filter((item) => yearProspects.some((prospect) => draftTier(prospect) === item))], [yearProspects]);
+  const pools = useMemo(() => ["All", ...Array.from(new Set(yearProspects.map((prospect) => prospect.prediction_pool).filter(Boolean))).sort()], [yearProspects]);
+  const selectedFilterField = draftFilterFields.find((field) => field.key === filterKey) ?? draftFilterFields[0];
+  const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
+  const quickFilterCount = [query.trim(), position !== "All", tier !== "All", pool !== "All"].filter(Boolean).length;
+  const activeFilterCount = quickFilterCount + filterRules.length;
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return yearProspects
       .filter((prospect) => !q || prospect.player.toLowerCase().includes(q) || String(prospect.college ?? "").toLowerCase().includes(q))
+      .filter((prospect) => position === "All" || displayDraftPosition(prospect) === position)
+      .filter((prospect) => tier === "All" || draftTier(prospect) === tier)
+      .filter((prospect) => pool === "All" || prospect.prediction_pool === pool)
+      .filter((prospect) => passesDraftFilterRules(prospect, filterRules))
       .sort((a, b) => compareDraftProspects(a, b, sortKey, sortDirection));
-  }, [query, sortDirection, sortKey, yearProspects]);
+  }, [filterRules, pool, position, query, sortDirection, sortKey, tier, yearProspects]);
   const summary = useMemo(() => {
     const avg = (values: Array<number | null | undefined>) => {
       const nums = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
@@ -992,10 +1058,38 @@ function DraftWorkspace({ data }: { data: AppData }) {
       return;
     }
     setSortKey(key);
-    setSortDirection(["rank_in_class", "player", "position", "college"].includes(key) ? "asc" : "desc");
+    setSortDirection(["rank_in_class", "player", "position", "tier", "college", "prediction_pool"].includes(key) ? "asc" : "desc");
+  };
+  const handleFilterKeyChange = (key: DraftFilterKey) => {
+    const nextField = draftFilterFields.find((field) => field.key === key) ?? draftFilterFields[0];
+    setFilterKey(key);
+    setFilterOperator(nextField.type === "number" ? "gte" : "contains");
+    setFilterValue("");
+    setFilterValueTo("");
+  };
+  const addFilterRule = () => {
+    const value = filterValue.trim();
+    const valueTo = filterValueTo.trim();
+    if (!value || (filterOperator === "between" && !valueTo)) return;
+    setFilterRules((current) => [
+      ...current,
+      {
+        id: `draft-${filterKey}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        key: filterKey,
+        operator: filterOperator,
+        value,
+        valueTo: filterOperator === "between" ? valueTo : undefined
+      }
+    ]);
+    setFilterValue("");
+    setFilterValueTo("");
   };
   const clearFilters = () => {
     setQuery("");
+    setPosition("All");
+    setTier("All");
+    setPool("All");
+    setFilterRules([]);
   };
 
   return (
@@ -1010,20 +1104,107 @@ function DraftWorkspace({ data }: { data: AppData }) {
               </div>
               {years.length > 0 && <label>
                 Class
-                <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+                <select
+                  value={String(year)}
+                  onChange={(event) => setYear(event.target.value === "All" ? "All" : Number(event.target.value))}
+                >
+                  <option value="All">All</option>
                   {years.map((item) => (
-                    <option key={item}>{item}</option>
+                    <option key={item} value={item}>{item}</option>
                   ))}
                 </select>
               </label>}
+              <label>
+                Position
+                <select value={position} onChange={(event) => setPosition(event.target.value)}>
+                  {positions.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Tier
+                <select value={tier} onChange={(event) => setTier(event.target.value)}>
+                  {tiers.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Pool
+                <select value={pool} onChange={(event) => setPool(event.target.value)}>
+                  {pools.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
               <div className="board-count" aria-live="polite">
                 <span>Prospects</span>
                 <strong>{summary.count.toLocaleString()}</strong>
               </div>
-              <button className="clear-filters" onClick={clearFilters} disabled={!query.trim()}>
-                Clear
+              <button className="clear-filters" onClick={clearFilters} disabled={activeFilterCount === 0}>
+                Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
               </button>
             </div>
+            <div className="rule-builder board-control-row" aria-label="Add draft filter rule">
+              <label>
+                Filter
+                <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
+                  {draftFilterFields.map((field) => (
+                    <option key={field.key} value={field.key}>
+                      {field.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Match
+                <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                  {availableOperators.map((operator) => (
+                    <option key={operator.value} value={operator.value}>
+                      {operator.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="rule-value">
+                Value
+                <input
+                  value={filterValue}
+                  onChange={(event) => setFilterValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") addFilterRule();
+                  }}
+                  placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
+                />
+              </label>
+              {filterOperator === "between" && (
+                <label className="rule-value">
+                  To
+                  <input
+                    value={filterValueTo}
+                    onChange={(event) => setFilterValueTo(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") addFilterRule();
+                    }}
+                    placeholder="100"
+                  />
+                </label>
+              )}
+              <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                Add
+              </button>
+            </div>
+            {filterRules.length > 0 && (
+              <div className="filter-chips" aria-label="Active draft filter rules">
+                {filterRules.map((rule) => (
+                  <button key={rule.id} onClick={() => setFilterRules((current) => current.filter((item) => item.id !== rule.id))}>
+                    {describeDraftFilterRule(rule)}
+                    <span>Remove</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
@@ -1086,28 +1267,34 @@ function ProspectTable({
           <col className="cg-draft-rank" />
           <col className="cg-draft-player" />
           <col className="cg-draft-meta" />
+          <col className="cg-draft-meta" />
+          <col className="cg-draft-meta" />
+          <col className="cg-draft-rate" />
+          <col className="cg-draft-rate" />
+          <col className="cg-draft-rate" />
           <col className="cg-draft-score" />
-          <col className="cg-draft-rate" />
-          <col className="cg-draft-rate" />
-          <col className="cg-draft-rate" />
+          <col className="cg-draft-tier" />
           <col className="cg-draft-timin" />
           <col className="cg-draft-skills" />
         </colgroup>
         <thead>
           <tr className="group-row">
             <th></th>
-            <th colSpan={2}>Identity</th>
-            <th colSpan={5}>Impact</th>
+            <th colSpan={4}>Identity</th>
+            <th colSpan={6}>Impact</th>
             <th>Skills</th>
           </tr>
           <tr>
             <th className="align-center">{sortableHeader("rank_in_class", "#")}</th>
             <th className="sticky-player">{sortableHeader("player", "Player")}</th>
             <th className="align-center">{sortableHeader("position", "Pos")}</th>
-            <th className="align-center">{sortableHeader("score", "Score")}</th>
+            <th className="align-center">{sortableHeader("draft_age", "Age")}</th>
+            <th className="align-center">{sortableHeader("scv_draft", "SCV")}</th>
             <th className="align-right">{sortableHeader("OFF_pred", "Off")}</th>
             <th className="align-right">{sortableHeader("DEF_pred", "Def")}</th>
             <th className="align-right">{sortableHeader("TOTAL_pred", "Total")}</th>
+            <th className="align-center">{sortableHeader("score", "Score")}</th>
+            <th className="align-center">{sortableHeader("tier", "Tier")}</th>
             <th className="align-right group-end">{sortableHeader("timin", "TIMIN")}</th>
             <th className="align-center">
               <div className="skills-head">
@@ -1132,9 +1319,9 @@ function ProspectTable({
           </tr>
         </thead>
         <tbody>
-          {prospects.map((prospect) => (
+          {prospects.map((prospect, index) => (
             <tr key={`${prospect.draft_year}-${prospect.player}`} style={draftRowAccentStyle(prospect)}>
-              <td className="rank-cell align-center">{prospect.rank_in_class}</td>
+              <td className="rank-cell align-center">{index + 1}</td>
               <td className="sticky-player">
                 <div className="draft-player-cell">
                   <strong>{prospect.player}</strong>
@@ -1142,10 +1329,13 @@ function ProspectTable({
                 </div>
               </td>
               <td className="align-center">
-                <span className="tier-text">{prospect.position || "UNK"}</span>
+                <span className="tier-text">{displayDraftPosition(prospect)}</span>
               </td>
               <td className="align-center">
-                <ScoreRing value={prospect.score} size={38} />
+                {formatNumber(prospect.draft_age, 1)}
+              </td>
+              <td className="align-center">
+                {formatNumber(prospect.scv_draft, 0)}
               </td>
               <td className="align-right">
                 <StatValue value={prospect.OFF_pred} />
@@ -1155,6 +1345,12 @@ function ProspectTable({
               </td>
               <td className="align-right">
                 <StatValue value={prospect.TOTAL_pred} />
+              </td>
+              <td className="align-center score-cell">
+                <ScoreValue value={prospect.score} />
+              </td>
+              <td className="align-center">
+                <span className="tier-text">{draftTier(prospect)}</span>
               </td>
               <td className="align-right group-end-cell">
                 <span className="timin-value">{formatNumber(prospect.timin, 0)}</span>
@@ -1186,17 +1382,10 @@ function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
   );
   const playerMap = useMemo(() => new Map(players.map((player) => [lineupPlayerId(player), player])), [players]);
   const percentileMap = useMemo(() => buildLineupPercentiles(players), [players]);
-  const [lineupA, setLineupA] = useState<string[]>(emptyLineup);
-  const [lineupB, setLineupB] = useState<string[]>(emptyLineup);
-  const [suggestionSlot, setSuggestionSlot] = useState<number | null>(null);
-  const [suggestionPage, setSuggestionPage] = useState(0);
-
-  useEffect(() => {
-    setLineupA(emptyLineup());
-    setLineupB(emptyLineup());
-    setSuggestionSlot(null);
-    setSuggestionPage(0);
-  }, [season]);
+  const [lineupA, setLineupA] = useSessionState<string[]>("lineup:a", emptyLineup());
+  const [lineupB, setLineupB] = useSessionState<string[]>("lineup:b", emptyLineup());
+  const [suggestionSlot, setSuggestionSlot] = useSessionState<number | null>("lineup:suggestionSlot", null);
+  const [suggestionPage, setSuggestionPage] = useSessionState("lineup:suggestionPage", 0);
 
   const summaryA = useMemo(() => summarizeLineup(lineupA, playerMap, percentileMap), [lineupA, playerMap, percentileMap]);
   const summaryB = useMemo(() => summarizeLineup(lineupB, playerMap, percentileMap), [lineupB, playerMap, percentileMap]);
@@ -1211,6 +1400,9 @@ function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
       setSuggestionSlot(null);
       setSuggestionPage(0);
     }
+  };
+  const clearSlot = (side: LineupSide, index: number) => {
+    setSlot(side, index, "");
   };
   const clearSide = (side: LineupSide) => {
     if (side === "a") {
@@ -1259,6 +1451,7 @@ function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
               suggestions={suggestions}
               suggestedSlotPlayer={suggestedSlotPlayer}
               onChange={setSlot}
+              onClearSlot={clearSlot}
               onClear={clearSide}
               onToggleSuggestions={(index) => {
                 setSuggestionSlot((current) => (current === index ? null : index));
@@ -1288,6 +1481,7 @@ function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
                   players={availablePlayers}
                   summary={summaryB}
                   onChange={setSlot}
+                  onClearSlot={clearSlot}
                   onClear={clearSide}
                 />
               </div>
@@ -1311,6 +1505,7 @@ function LineupSheet({
   suggestions,
   suggestedSlotPlayer,
   onChange,
+  onClearSlot,
   onClear,
   onToggleSuggestions,
   onSuggestionPageChange
@@ -1326,6 +1521,7 @@ function LineupSheet({
   suggestions: LineupSuggestion[];
   suggestedSlotPlayer: LineupSlot;
   onChange: (side: LineupSide, index: number, value: string) => void;
+  onClearSlot: (side: LineupSide, index: number) => void;
   onClear: (side: LineupSide) => void;
   onToggleSuggestions: (index: number) => void;
   onSuggestionPageChange: (page: number) => void;
@@ -1392,6 +1588,16 @@ function LineupSheet({
                     >
                       +
                     </button>
+                    {player && (
+                      <button
+                        className="lineup-remove-button"
+                        onClick={() => onClearSlot(side, index)}
+                        title={`Remove ${player.player_name}`}
+                        aria-label={`Remove ${player.player_name}`}
+                      >
+                        X
+                      </button>
+                    )}
                   </td>
                   <td className="sheet-tier">{player?.tier ?? "-"}</td>
                   {lineupSkills.map((skill) => (
@@ -1540,6 +1746,7 @@ function LineupCard({
   players,
   summary,
   onChange,
+  onClearSlot,
   onClear
 }: {
   title: string;
@@ -1549,6 +1756,7 @@ function LineupCard({
   players: PlayerImpact[];
   summary: LineupSummary;
   onChange: (side: LineupSide, index: number, value: string) => void;
+  onClearSlot: (side: LineupSide, index: number) => void;
   onClear: (side: LineupSide) => void;
 }) {
   return (
@@ -1585,6 +1793,14 @@ function LineupCard({
                     <span>{player.position} / {player.tier}</span>
                   </div>
                   <StatValue value={player.total} />
+                  <button
+                    className="lineup-mini-remove"
+                    onClick={() => onClearSlot(side, index)}
+                    title={`Remove ${player.player_name}`}
+                    aria-label={`Remove ${player.player_name}`}
+                  >
+                    X
+                  </button>
                 </div>
               )}
             </label>
@@ -2538,8 +2754,24 @@ function describeFilterRule(rule: FilterRule): string {
 
 function passesFilterRules(player: PlayerImpact, rules: FilterRule[]): boolean {
   return rules.every((rule) => {
-    const value = player[rule.key];
+    const value = player[rule.key as FilterKey];
     const field = filterFields.find((item) => item.key === rule.key);
+    if (field?.type === "number") return passesNumericRule(Number(value), rule);
+    return passesTextRule(String(value ?? ""), rule);
+  });
+}
+
+function describeDraftFilterRule(rule: FilterRule): string {
+  const fieldLabel = draftFilterFields.find((field) => field.key === rule.key)?.label ?? rule.key;
+  const operatorLabel = [...numericOperators, ...textOperators].find((operator) => operator.value === rule.operator)?.label ?? rule.operator;
+  if (rule.operator === "between") return `${fieldLabel} between ${rule.value} and ${rule.valueTo}`;
+  return `${fieldLabel} ${operatorLabel} ${rule.value}`;
+}
+
+function passesDraftFilterRules(prospect: DraftProspect, rules: FilterRule[]): boolean {
+  return rules.every((rule) => {
+    const value = getDraftSortValue(prospect, rule.key as DraftFilterKey);
+    const field = draftFilterFields.find((item) => item.key === rule.key);
     if (field?.type === "number") return passesNumericRule(Number(value), rule);
     return passesTextRule(String(value ?? ""), rule);
   });
@@ -2620,8 +2852,38 @@ function getDraftSortValue(prospect: DraftProspect, key: DraftSortKey): string |
   if (skill) {
     return getProspectSkillValue(prospect, skill);
   }
+  if (key === "position") return displayDraftPosition(prospect);
+  if (key === "tier") return draftTierRank(draftTier(prospect));
 
   return prospect[key as keyof DraftProspect];
+}
+
+function displayDraftPosition(prospect: DraftProspect): string {
+  const raw = prospect.position || "UNK";
+  if (!raw.includes("/")) return raw;
+  if (prospect.draft_year === 2026) return raw.split("/")[0] || "UNK";
+  return raw;
+}
+
+function draftTier(prospect: DraftProspect): string {
+  if (prospect.tier) return prospect.tier;
+  const score = prospect.score;
+  if (!Number.isFinite(score) || score < 0) return "Out";
+  if (score >= 99.5) return "MVP";
+  if (score >= 97) return "Superstar";
+  if (score >= 94) return "Star";
+  if (score >= 89) return "Elite Starter";
+  if (score >= 79) return "Starter";
+  if (score >= 69) return "Fringe Starter";
+  if (score >= 59) return "Strong Bench";
+  if (score >= 45) return "Bench";
+  if (score >= 25) return "Deep Bench";
+  return "Project";
+}
+
+function draftTierRank(tier: string): number {
+  const index = impactTierOrder.indexOf(tier);
+  return index === -1 ? impactTierOrder.length : index;
 }
 
 export default App;

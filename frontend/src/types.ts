@@ -150,6 +150,7 @@ export type DraftProspect = {
   base_rank_in_class?: number | null;
   score: number;
   prediction_pool: string;
+  tier?: string | null;
   scv_draft?: number | null;
   draft_age?: number | null;
   height_wo_shoes_in?: number | null;

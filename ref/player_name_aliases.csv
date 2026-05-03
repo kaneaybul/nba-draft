@@ -1,10 +1,14 @@
 alias,canonical,notes
+Cam Boozer,Cameron Boozer,Consensus-board shortened first name
 Ronald Holland,Ron Holland,Common shortened draft name
 Alen Smailagi,Alen Smailagic,Corrupted/missing final accented character in SCV source
 D anan Musa,Dzanan Musa,Corrupted leading accented character in SCV source
 Danan Musa,Dzanan Musa,Corrupted leading accented character in SCV source
 Josh Primo,Joshua Primo,Short/legal first-name source mismatch
 Juan Hernangomez,Juancho Hernangomez,Common NBA display name mismatch
+De Aaron Fox,De'Aaron Fox,Separated apostrophe prefix in source name key
+De Andre Hunter,De'Andre Hunter,Separated apostrophe prefix in source name key
+De Anthony Melton,De'Anthony Melton,Separated apostrophe prefix in source name key
 Lie Okobo,Elie Okobo,Corrupted leading accented character in SCV source
 Luka Amani,Luka Samanic,Corrupted leading accented character in SCV source
 Vanja Marinkovi,Vanja Marinkovic,Corrupted/missing final accented character in SCV source

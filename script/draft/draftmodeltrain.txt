@@ -932,6 +932,22 @@ apply_skill_feature_policy <- function(candidate_cols, skill_name = NULL) {
   }
 
   skill_name <- toupper(skill_name)
+  feature_profile <- trimws(tolower(Sys.getenv("DRAFT_FEATURE_PROFILE", "all_numeric")))
+
+  forced_candidate_map <- if (!identical(feature_profile, "curated_realgm")) {
+    list(
+      RIM = c("rim_pct", "wingspan_in", "three_pct")
+    )
+  } else {
+    list()
+  }
+
+  if (skill_name %in% names(forced_candidate_map)) {
+    forced_candidates <- intersect(forced_candidate_map[[skill_name]], candidate_cols)
+    if (length(forced_candidates)) {
+      return(forced_candidates)
+    }
+  }
 
   exclude_map <- list(
     DPM = c("ast_to_usg"),
@@ -941,6 +957,7 @@ apply_skill_feature_policy <- function(candidate_cols, skill_name = NULL) {
 
   include_map <- list(
     SHOOT = c("X3PA_100"),
+    RIM = c("rim_pct", "wingspan_in", "three_pct"),
     RIMPRO = c("height_wo_shoes_in")
   )
 
@@ -962,6 +979,7 @@ get_skill_forced_predictors <- function(skill_name, candidate_cols) {
 
   include_map <- list(
     SHOOT = c("X3PA_100"),
+    RIM = c("rim_pct", "wingspan_in", "three_pct"),
     RIMPRO = c("height_wo_shoes_in")
   )
 
@@ -1902,7 +1920,7 @@ draft_dir <- file.path(base_dir, "processed", "draft")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
 model_results_dir <- file.path(base_dir, "processed", "modelresults")
 ref_dir <- file.path(base_dir, "ref")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 

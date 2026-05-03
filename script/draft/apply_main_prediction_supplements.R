@@ -100,7 +100,7 @@ keep_latest_source_rows <- function(dt) {
 
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
 domestic_fp <- file.path(draft_dir, "draft_prediction_domestic.csv")

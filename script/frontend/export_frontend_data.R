@@ -49,6 +49,12 @@ coalesce_col <- function(primary, fallback) {
   ifelse(!is.na(primary) & primary != "", primary, fallback)
 }
 
+coalesce_numeric <- function(primary, fallback) {
+  primary <- suppressWarnings(as.numeric(primary))
+  fallback <- suppressWarnings(as.numeric(fallback))
+  ifelse(is.finite(primary), primary, fallback)
+}
+
 normalize_name <- function(x) {
   x <- iconv(as.character(x), from = "", to = "ASCII//TRANSLIT")
   x <- tolower(x)
@@ -103,6 +109,23 @@ percent_rank <- function(x) {
     out[ok] <- 1
   } else if (sum(ok) > 1) {
     out[ok] <- (rank(x[ok], ties.method = "average") - 1) / (sum(ok) - 1)
+  }
+  out
+}
+
+percent_rank_against <- function(x, reference) {
+  x <- suppressWarnings(as.numeric(x))
+  reference <- sort(suppressWarnings(as.numeric(reference)))
+  reference <- reference[is.finite(reference)]
+  out <- rep(NA_real_, length(x))
+  if (length(reference) == 1) {
+    out[is.finite(x)] <- ifelse(x[is.finite(x)] >= reference[[1]], 1, 0)
+    return(out)
+  }
+  if (length(reference) > 1) {
+    ok <- is.finite(x)
+    below <- findInterval(x[ok], reference, left.open = FALSE)
+    out[ok] <- clamp((below - 1) / (length(reference) - 1), 0, 1)
   }
   out
 }
@@ -178,7 +201,7 @@ rotation_slots_per_position <- function() {
 }
 
 replacement_slots_per_position <- function() {
-  rotation_slots_per_position() + team_count()
+  rotation_slots_per_position() + ceiling(team_count() / 2)
 }
 
 rank_cutoff_value <- function(values, cutoff) {
@@ -189,14 +212,18 @@ rank_cutoff_value <- function(values, cutoff) {
   values[[min(cutoff, length(values))]]
 }
 
+valid_positions <- function() c("PG", "SG", "SF", "PF", "C")
+
 tier_from_score <- function(score) {
-  rank <- rank(-score, ties.method = "average", na.last = "keep")
+  rank <- rank(-score, ties.method = "first", na.last = "keep")
   out <- rep("Project", length(score))
   out[is.na(score) | score < 0] <- "Out"
   valid <- !is.na(score) & score >= 0 & !is.na(rank)
-  out[valid & rank <= 450] <- "Roster"
-  out[valid & rank <= 300] <- "Rotation"
-  out[valid & rank <= 150] <- "Starter"
+  out[valid & rank <= 330] <- "Deep Bench"
+  out[valid & rank <= 270] <- "Bench"
+  out[valid & rank <= 210] <- "Strong Bench"
+  out[valid & rank <= 150] <- "Fringe Starter"
+  out[valid & rank <= 120] <- "Starter"
   out[valid & rank <= 60] <- "Elite Starter"
   out[valid & rank <= 30] <- "Star"
   out[valid & rank <= 10] <- "Superstar"
@@ -226,6 +253,29 @@ replacement_level <- function(position, side) {
           ifelse(pos == "C", -0.5, -0.7)))))
 }
 
+position_parts <- function(position) {
+  parts <- strsplit(toupper(as.character(position)), "/", fixed = TRUE)[[1]]
+  parts[parts %in% valid_positions()]
+}
+
+replacement_reference_lookup <- function(replacement_reference, position, side = "total") {
+  if (is.null(replacement_reference) || !is.data.frame(replacement_reference)) {
+    return(rep(NA_real_, length(position)))
+  }
+  needed <- c("position", paste0("replacement_", side))
+  if (!all(needed %in% names(replacement_reference))) {
+    return(rep(NA_real_, length(position)))
+  }
+  ref_pos <- toupper(as.character(replacement_reference$position))
+  ref_val <- suppressWarnings(as.numeric(replacement_reference[[paste0("replacement_", side)]]))
+  vapply(as.character(position), function(pos) {
+    parts <- position_parts(pos)
+    vals <- ref_val[match(parts, ref_pos)]
+    vals <- vals[is.finite(vals)]
+    if (length(vals) == 0) NA_real_ else mean(vals)
+  }, numeric(1))
+}
+
 draft_position_from_code <- function(pos_code) {
   code <- suppressWarnings(as.integer(pos_code))
   ifelse(code == 1, "PG",
@@ -239,10 +289,39 @@ draft_position_from_code <- function(pos_code) {
                   ifelse(code == 45, "PF/C", "UNK")))))))))
 }
 
-draft_replacement_total <- function(position) {
-  vapply(as.character(position), function(pos) {
-    parts <- strsplit(toupper(pos), "/", fixed = TRUE)[[1]]
-    parts <- parts[parts %in% c("PG", "SG", "SF", "PF", "C")]
+primary_draft_position_from_code <- function(pos_code) {
+  code <- suppressWarnings(as.integer(pos_code))
+  ifelse(code == 1 | code == 12, "PG",
+    ifelse(code == 2 | code == 23, "SG",
+      ifelse(code == 3 | code == 34, "SF",
+        ifelse(code == 4 | code == 45, "PF",
+          ifelse(code == 5, "C", "UNK")))))
+}
+
+draft_tier_from_score <- function(score) {
+  out <- rep("Project", length(score))
+  out[is.na(score) | score < 0] <- "Out"
+  out[score >= 25] <- "Deep Bench"
+  out[score >= 45] <- "Bench"
+  out[score >= 59] <- "Strong Bench"
+  out[score >= 69] <- "Fringe Starter"
+  out[score >= 79] <- "Starter"
+  out[score >= 89] <- "Elite Starter"
+  out[score >= 94] <- "Star"
+  out[score >= 97] <- "Superstar"
+  out[score >= 99.5] <- "MVP"
+  out
+}
+
+draft_replacement_total <- function(position, replacement_reference = NULL) {
+  from_reference <- replacement_reference_lookup(replacement_reference, position, "total")
+  vapply(seq_along(position), function(i) {
+    pos <- as.character(position[[i]])
+    ref_value <- from_reference[[i]]
+    if (is.finite(ref_value)) {
+      return(ref_value)
+    }
+    parts <- position_parts(pos)
     if (length(parts) == 0) {
       return(replacement_level("UNK", "total"))
     }
@@ -263,9 +342,7 @@ replacement_from_data <- function(df, side) {
   cutoff <- replacement_slots_per_position()
   min_sample <- ceiling(rotation_slots_per_position() * 0.75)
   eligible <- !is.na(metric) &
-    !is.na(df$Minutes) &
-    df$Minutes >= 500 &
-    df$position %in% c("PG", "SG", "SF", "PF", "C")
+    df$position %in% valid_positions()
 
   keys <- unique(paste(df$year, df$position, sep = "||"))
   for (key in keys) {
@@ -278,7 +355,7 @@ replacement_from_data <- function(df, side) {
   }
 
   recent_year <- max(df$year, na.rm = TRUE) - 2
-  for (pos in c("PG", "SG", "SF", "PF", "C")) {
+  for (pos in valid_positions()) {
     idx <- is.na(out) & df$position == pos
     values <- metric[
       eligible &
@@ -297,6 +374,31 @@ replacement_from_data <- function(df, side) {
   }
 
   ifelse(is.na(out), fallback, out)
+}
+
+replacement_reference_from_players <- function(players, latest_year = NULL) {
+  if (is.null(players) || !is.data.frame(players) || nrow(players) == 0) {
+    return(data.frame(position = valid_positions(), replacement_total = replacement_level(valid_positions(), "total")))
+  }
+  if (is.null(latest_year)) {
+    latest_year <- max(players$year, na.rm = TRUE)
+  }
+  rows <- players[
+    players$year == latest_year &
+      players$position %in% valid_positions() &
+      is.finite(players$replacement_total),
+    c("position", "replacement_total"),
+    drop = FALSE
+  ]
+  rows <- rows[!duplicated(rows$position), ]
+  missing_pos <- setdiff(valid_positions(), rows$position)
+  if (length(missing_pos) > 0) {
+    rows <- rbind(
+      rows,
+      data.frame(position = missing_pos, replacement_total = replacement_level(missing_pos, "total"), stringsAsFactors = FALSE)
+    )
+  }
+  rows[match(valid_positions(), rows$position), , drop = FALSE]
 }
 
 fallback_cap_assumptions <- function() {
@@ -769,7 +871,7 @@ build_impact_players <- function(base_dir) {
   x$score_delta[current_dnq] <- NA_real_
   x$score_label <- ifelse(current_dnq, "DNQ", format(round(x$score, 1), trim = TRUE, nsmall = 1))
   x$tier <- unlist(ave(x$score, x$year, FUN = tier_from_score))
-  x$tier[current_dnq] <- "DNQ"
+  x$tier[current_dnq] <- "Out"
   x$value <- ave(seq_len(nrow(x)), x$year, FUN = function(idx) {
     league_timin <- sum(x$timin[idx], na.rm = TRUE)
     cap_proxy <- cap_for_year(cap_assumptions, x$year[idx][1], "scale_cap")
@@ -987,7 +1089,104 @@ load_draft_college_reference <- function(base_dir) {
   out
 }
 
-build_draft_prospects <- function(base_dir) {
+load_draft_position_overrides <- function(base_dir) {
+  path <- file.path(base_dir, "ref", "draft_position_overrides.csv")
+  if (!file.exists(path)) {
+    return(data.frame(join_player = character(), draft_year = integer(), position_override = character()))
+  }
+  overrides <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!all(c("player", "draft_year", "position") %in% names(overrides))) {
+    return(data.frame(join_player = character(), draft_year = integer(), position_override = character()))
+  }
+  valid_positions <- c("PG", "SG", "SF", "PF", "C", "PG/SG", "SG/SF", "SF/PF", "PF/C")
+  out <- data.frame(
+    join_player = normalize_name(overrides$player),
+    draft_year = suppressWarnings(as.integer(overrides$draft_year)),
+    position_override = toupper(trimws(as.character(overrides$position))),
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$join_player) & out$join_player != "" & !is.na(out$draft_year), ]
+  out <- out[out$position_override %in% valid_positions, ]
+  out <- out[!duplicated(paste(out$join_player, out$draft_year)), ]
+  out
+}
+
+load_realgm_draft_positions <- function(base_dir) {
+  paths <- c(
+    file.path(base_dir, "processed", "draft", "no_college_realgm_draft_map.csv"),
+    file.path(base_dir, "processed", "draft", "draft_no_college_all_classes.csv")
+  )
+  parts <- lapply(paths[file.exists(paths)], function(path) {
+    map <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+    if (!all(c("player", "draft_year", "pos") %in% names(map))) return(NULL)
+    map[, c("player", "draft_year", "pos"), drop = FALSE]
+  })
+  map <- do.call(rbind, parts[!vapply(parts, is.null, logical(1))])
+  if (is.null(map) || !nrow(map)) {
+    return(data.frame(join_player = character(), draft_year = integer(), realgm_position = character()))
+  }
+  firm_positions <- c("PG", "SG", "SF", "PF", "C")
+  out <- data.frame(
+    join_player = normalize_name(map$player),
+    draft_year = suppressWarnings(as.integer(map$draft_year)),
+    realgm_position = toupper(trimws(as.character(map$pos))),
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$join_player) & out$join_player != "" & !is.na(out$draft_year), ]
+  out <- out[out$realgm_position %in% firm_positions, ]
+  out <- out[!duplicated(paste(out$join_player, out$draft_year)), ]
+  out
+}
+
+load_realgm_draft_bio_reference <- function(base_dir) {
+  paths <- c(
+    file.path(base_dir, "processed", "draft", "no_college_realgm_draft_map.csv"),
+    file.path(base_dir, "processed", "draft", "draft_no_college_all_classes.csv")
+  )
+  parts <- lapply(paths[file.exists(paths)], function(path) {
+    map <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+    if (!all(c("player", "draft_year", "age") %in% names(map))) return(NULL)
+    map[, c("player", "draft_year", "age"), drop = FALSE]
+  })
+  map <- do.call(rbind, parts[!vapply(parts, is.null, logical(1))])
+  if (is.null(map) || !nrow(map)) {
+    return(data.frame(join_player = character(), draft_year = integer(), draft_age_ref = numeric()))
+  }
+  out <- data.frame(
+    join_player = normalize_name(map$player),
+    draft_year = suppressWarnings(as.integer(map$draft_year)),
+    draft_age_ref = suppressWarnings(as.numeric(map$age)),
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$join_player) & out$join_player != "" & !is.na(out$draft_year) & is.finite(out$draft_age_ref), ]
+  out <- out[!duplicated(paste(out$join_player, out$draft_year)), ]
+  out
+}
+
+load_draft_scv_reference <- function(base_dir) {
+  path <- file.path(base_dir, "ref", "scvardraft.csv")
+  if (!file.exists(path)) {
+    return(data.frame(join_player = character(), scv_draft_ref = numeric()))
+  }
+  scv <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!("name" %in% names(scv))) {
+    return(data.frame(join_player = character(), scv_draft_ref = numeric()))
+  }
+  score_col <- names(scv)[tolower(names(scv)) %in% c("sc", "scv", "shot_creation", "shot_creation_rank")][1]
+  if (is.na(score_col) || !nzchar(score_col)) {
+    return(data.frame(join_player = character(), scv_draft_ref = numeric()))
+  }
+  out <- data.frame(
+    join_player = normalize_name(scv$name),
+    scv_draft_ref = suppressWarnings(as.numeric(scv[[score_col]])),
+    stringsAsFactors = FALSE
+  )
+  out <- out[!is.na(out$join_player) & out$join_player != "" & is.finite(out$scv_draft_ref), ]
+  out <- out[!duplicated(out$join_player), ]
+  out
+}
+
+build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement_reference = NULL) {
   adjusted_skill_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_adjusted.csv")
   base_skill_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_output.csv")
   skill_path <- if (file.exists(adjusted_skill_path)) adjusted_skill_path else base_skill_path
@@ -1011,10 +1210,26 @@ build_draft_prospects <- function(base_dir) {
   x$join_player <- normalize_name(x$player)
   college_ref <- load_draft_college_reference(base_dir)
   x <- merge(x, college_ref, by = c("join_player", "draft_year"), all.x = TRUE)
+  scv_ref <- load_draft_scv_reference(base_dir)
+  x <- merge(x, scv_ref, by = "join_player", all.x = TRUE)
+  x$scv_draft <- coalesce_numeric(x$scv_draft, x$scv_draft_ref)
+  x$scv_draft_ref <- NULL
+  realgm_bio <- load_realgm_draft_bio_reference(base_dir)
+  x <- merge(x, realgm_bio, by = c("join_player", "draft_year"), all.x = TRUE)
+  x$draft_age <- coalesce_numeric(x$draft_age, x$draft_age_ref)
+  x$draft_age_ref <- NULL
+  realgm_positions <- load_realgm_draft_positions(base_dir)
+  x <- merge(x, realgm_positions, by = c("join_player", "draft_year"), all.x = TRUE)
+  position_overrides <- load_draft_position_overrides(base_dir)
+  x <- merge(x, position_overrides, by = c("join_player", "draft_year"), all.x = TRUE)
   x$join_player <- NULL
-  x$position <- draft_position_from_code(x$pos_code)
+  x$position <- primary_draft_position_from_code(x$pos_code)
+  x$position <- coalesce_col(x$position, x$realgm_position)
+  x$realgm_position <- NULL
+  x$position <- coalesce_col(x$position_override, x$position)
+  x$position_override <- NULL
   x$college <- coalesce_col(x$college, x$pre_draft_team)
-  x$replacement_total <- draft_replacement_total(x$position)
+  x$replacement_total <- draft_replacement_total(x$position, replacement_reference)
   if (!("FINAL_TOTAL_pred" %in% names(x))) {
     x$FINAL_TOTAL_pred <- x$TOTAL_pred
   }
@@ -1050,10 +1265,20 @@ build_draft_prospects <- function(base_dir) {
   x$FINAL_rank <- ifelse(is.na(x$FINAL_rank), ave(-x$TOTAL_pred, x$draft_year, FUN = rank, ties.method = "first"), x$FINAL_rank)
   x$timin <- round((x$TOTAL_pred - x$replacement_total) * 1800, 1)
   x$rank_in_class <- suppressWarnings(as.numeric(x$FINAL_rank))
-  x$score <- ave(x$TOTAL_pred, x$draft_year, FUN = function(v) round(percent_rank(v) * 100, 1))
+  impact_reference <- if (is.null(impact_reference)) data.frame(total = numeric(), timin = numeric())
+  reference_total <- impact_reference$total
+  reference_timin <- impact_reference$timin
+  if (length(reference_total) < 2 || length(reference_timin) < 2) {
+    reference_total <- x$TOTAL_pred
+    reference_timin <- x$timin
+  }
+  timin_pct <- percent_rank_against(x$timin, reference_timin)
+  total_pct <- percent_rank_against(x$TOTAL_pred, reference_total)
+  x$score <- round(100 * (0.35 * timin_pct + 0.65 * total_pct), 1)
+  x$tier <- draft_tier_from_score(x$score)
   x <- x[order(-x$draft_year, x$rank_in_class), ]
   cols <- c(
-    "player", "draft_year", "rank_in_class", "base_rank_in_class", "score", "prediction_pool", "scv_draft",
+    "player", "draft_year", "rank_in_class", "base_rank_in_class", "score", "prediction_pool", "tier", "scv_draft",
     "draft_age", "height_wo_shoes_in", "wingspan_in", "weight_lbs", "pos_code", "position",
     "replacement_total", "timin", "college", "pre_draft_team",
     paste0(skill_names, "_pred"),
@@ -1114,7 +1339,18 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 players <- build_impact_players(base_dir)
 teams <- build_team_projections(players)
 picks <- build_pick_assets()
-draft <- build_draft_prospects(base_dir)
+latest_impact_year <- max(players$year, na.rm = TRUE)
+replacement_reference <- replacement_reference_from_players(players, latest_impact_year)
+impact_reference <- players[
+  players$year == latest_impact_year &
+    !is.na(players$total) & is.finite(players$total) &
+    !is.na(players$timin) & is.finite(players$timin) &
+    !is.na(players$Minutes) & players$Minutes > 0 &
+    players$score_label != "DNQ",
+  c("total", "timin"),
+  drop = FALSE
+]
+draft <- build_draft_prospects(base_dir, impact_reference, replacement_reference)
 tracker <- build_draft_tracker(base_dir)
 model_summary <- read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_summary.csv"))
 model_details <- read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_feature_details.csv"))

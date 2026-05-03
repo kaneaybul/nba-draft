@@ -112,7 +112,7 @@ resolve_base_dir <- function() {
 
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 
 target_model <- tolower(trimws(Sys.getenv("PREDICTION_GAP_MODEL", "no_college")))
 exclude_year <- suppressWarnings(as.integer(Sys.getenv("PREDICTION_GAP_EXCLUDE_YEAR", "2026")))

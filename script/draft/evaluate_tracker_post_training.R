@@ -5,7 +5,7 @@ script_path <- file.path(base_dir, "script", "draft", "build_draft_tracker_bench
 lines <- readLines(script_path, warn = FALSE, encoding = "UTF-8")
 cut <- grep("^base_dir <- resolve_base_dir\\(\\)", lines)[1]
 eval(parse(text = paste(lines[seq_len(cut - 1)], collapse = "\n")), envir = .GlobalEnv)
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 
 latest_impact_year <- max(
   fread(file.path(base_dir, "processed", "livedata", "impactrefresh", "impactoutput.csv"), select = "year")$year,

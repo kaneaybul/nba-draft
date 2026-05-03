@@ -1251,7 +1251,7 @@ input:focus {
 
 .draft-model-table {
   width: 100%;
-  min-width: 1170px;
+  min-width: 1390px;
   table-layout: fixed;
 }
 
@@ -1269,6 +1269,10 @@ input:focus {
 
 .draft-model-table .cg-draft-score {
   width: 72px;
+}
+
+.draft-model-table .cg-draft-tier {
+  width: 132px;
 }
 
 .draft-model-table .cg-draft-rate {
@@ -1885,6 +1889,29 @@ input:focus {
   border-color: var(--green);
 }
 
+.lineup-remove-button,
+.lineup-mini-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 5px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 0;
+}
+
+.lineup-remove-button:hover,
+.lineup-mini-remove:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
 .sheet-tier {
   overflow: hidden;
   color: var(--muted);
@@ -2036,7 +2063,7 @@ input:focus {
 
 .lineup-player-mini {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: 10px;
   align-items: center;
   min-height: 54px;

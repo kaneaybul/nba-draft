@@ -1,9 +1,9 @@
 [
-{"board":"Brendan Model","weighted_score":0.580892440472,"weighted_z":1.25268056407,"years":7},
-{"board":"Brendan Base","weighted_score":0.557254088928,"weighted_z":0.503437808548,"years":7},
-{"board":"NBA Draft - Actual","weighted_score":0.532643626371,"weighted_z":0.159439215746,"years":7},
-{"board":"NBA Draft Room","weighted_score":0.536801494124,"weighted_z":0.0608684889593,"years":7},
-{"board":"NBADraft.net","weighted_score":0.518580771646,"weighted_z":-0.382708833379,"years":7},
-{"board":"Jonathan Wasserman","weighted_score":0.502046856427,"weighted_z":-0.632907039722,"years":7},
-{"board":"Kevin O'Connor","weighted_score":0.459468995922,"weighted_z":-0.721184521625,"years":7}
+{"board":"Brendan Model","weighted_score":0.594238199718,"weighted_z":1.37935474974,"years":7},
+{"board":"Brendan Base","weighted_score":0.566559364657,"weighted_z":0.59137962317,"years":7},
+{"board":"NBA Draft - Actual","weighted_score":0.532643626371,"weighted_z":0.0698379708005,"years":7},
+{"board":"NBA Draft Room","weighted_score":0.536801494124,"weighted_z":-0.0135780315145,"years":7},
+{"board":"NBADraft.net","weighted_score":0.518580771646,"weighted_z":-0.368505816026,"years":7},
+{"board":"Jonathan Wasserman","weighted_score":0.502046856427,"weighted_z":-0.548333231926,"years":7},
+{"board":"Kevin O'Connor","weighted_score":0.459468995922,"weighted_z":-0.745223122372,"years":7}
 ]

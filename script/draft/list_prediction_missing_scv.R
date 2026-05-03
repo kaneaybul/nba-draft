@@ -37,7 +37,7 @@ read_scv_lookup <- function(path, priority) {
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 ref_dir <- file.path(base_dir, "ref")
-source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 
 prediction_dt <- fread(file.path(draft_dir, "draft_prediction_unified.csv"), na.strings = c("", "NA", "N/A", "NaN"))
 prediction_dt[, draft_year := suppressWarnings(as.integer(draft_year))]

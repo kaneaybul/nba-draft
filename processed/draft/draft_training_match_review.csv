@@ -18,6 +18,7 @@ Buddy Hield,2016,2021,5,0.48654341158258,best_2yr_skill_avg_y2_y5,4,58427,2,TRUE
 Cade Cunningham,2021,2026,5,3.14126219955107,best_2yr_skill_avg_y2_y5,3,31717,1,TRUE,1630595,Cade Cunningham
 Caleb Martin,2019,2024,5,0.344463640173999,best_2yr_skill_avg_y2_y5,4,41844,3,TRUE,1628997,Caleb Martin
 Cam Reddish,2019,2024,5,-2.18809064624946,best_2yr_skill_avg_y2_y5,4,43430,2,TRUE,1629629,Cam Reddish
+Cameron Thomas,2021,2026,5,0.0579502248742624,best_2yr_skill_avg_y2_y5,4,32286,2,TRUE,1630560,Cam Thomas
 Cameron Johnson,2019,2024,5,1.13751140319403,best_2yr_skill_avg_y2_y5,4,41851,5,TRUE,1629661,Cameron Johnson
 Caris LeVert,2016,2021,5,0.263761647044444,best_2yr_skill_avg_y2_y5,4,56069,2,TRUE,1627747,Caris LeVert
 Chimezie Metu,2018,2023,5,-1.75701045198092,best_2yr_skill_avg_y2_y5,2,46067,4,TRUE,1629002,Chimezie Metu
@@ -34,9 +35,13 @@ Danuel House,2016,2021,5,-0.760144502642922,best_2yr_skill_avg_y2_y5,3,57467,4,T
 Darius Garland,2019,2024,5,2.21486011293486,best_2yr_skill_avg_y2_y5,4,43330,2,TRUE,1629636,Darius Garland
 David Nwaba,2016,2021,5,-0.560329685001686,best_2yr_skill_avg_y2_y5,3,57568,5,TRUE,1628021,David Nwaba
 Davion Mitchell,2021,2026,5,0.181529708808628,best_2yr_skill_avg_y2_y5,4,32508,4,TRUE,1630558,Davion Mitchell
+Day'Ron Sharpe,2021,2026,5,0.942932477315452,best_2yr_skill_avg_y2_y5,4,31379,4,TRUE,1630549,DayRon Sharpe
+De'Aaron Fox,2017,2022,5,0.717414189648551,best_2yr_skill_avg_y2_y5,4,51981,2,TRUE,1628368,DeAaron Fox
 Dean Wade,2019,2024,5,-0.0471825370572208,best_2yr_skill_avg_y2_y5,4,44158,4,TRUE,1629731,Dean Wade
 Deandre Ayton,2018,2023,5,2.41462602244482,best_2yr_skill_avg_y2_y5,4,46016,2,TRUE,1629028,Deandre Ayton
 DeAndre' Bembry,2016,2021,5,-1.74828537838224,best_2yr_skill_avg_y2_y5,3,57003,3,TRUE,1627761,DeAndre Bembry
+De'Andre Hunter,2019,2024,5,-0.743006632453586,best_2yr_skill_avg_y2_y5,4,42531,4,TRUE,1629631,DeAndre Hunter
+De'Anthony Melton,2018,2023,5,0.859296616324701,best_2yr_skill_avg_y2_y5,4,47673,4,TRUE,1629001,DeAnthony Melton
 Dejounte Murray,2016,2021,5,0.895996182203392,best_2yr_skill_avg_y2_y5,3,57612,3,TRUE,1627749,Dejounte Murray
 "Dennis Smith, Jr.",2017,2022,5,-2.03481922206965,best_2yr_skill_avg_y2_y5,3,51915,2,TRUE,1628372,Dennis Smith Jr.
 Denzel Valentine,2016,2021,5,-1.62476874407611,best_2yr_skill_avg_y2_y5,2,55984,3,TRUE,1627756,Denzel Valentine
@@ -70,6 +75,7 @@ Isaiah Joe,2020,2025,5,0.811319875223563,best_2yr_skill_avg_y2_y5,4,35976,4,TRUE
 Isaiah Stewart,2020,2025,5,-1.38728356505735,best_2yr_skill_avg_y2_y5,4,37635,4,TRUE,1630191,Isaiah Stewart
 Ja Morant,2019,2024,5,2.4566713012271,best_2yr_skill_avg_y2_y5,3,44342,1,TRUE,1629630,Ja Morant
 Jaden McDaniels,2020,2025,5,0.602083749583801,best_2yr_skill_avg_y2_y5,4,37636,3,TRUE,1630183,Jaden McDaniels
+Jae'Sean Tate,2018,2023,5,-0.57736868053678,best_2yr_skill_avg_y2_y5,3,46699,4,TRUE,1630256,JaeSean Tate
 Jake Laravia,2020,2025,5,-1.32972683138391,best_2yr_skill_avg_y2_y5,2,27912,4,TRUE,1631222,Jake LaRavia
 Jake Layman,2016,2021,5,-1.50082905427009,best_2yr_skill_avg_y2_y5,3,55931,5,TRUE,1627774,Jake Layman
 Jakob Poeltl,2016,2021,5,1.01356751167354,best_2yr_skill_avg_y2_y5,4,56008,4,TRUE,1627751,Jakob Poeltl
@@ -129,25 +135,30 @@ Michael Porter Jr.,2018,2023,5,2.1504186310617,best_2yr_skill_avg_y2_y5,3,47525,
 Mikal Bridges,2018,2023,5,1.98761952866455,best_2yr_skill_avg_y2_y5,4,46041,4,TRUE,1628969,Mikal Bridges
 Miles Bridges,2018,2023,5,0.708138652062299,best_2yr_skill_avg_y2_y5,3,46010,4,TRUE,1628970,Miles Bridges
 Miles McBride,2021,2026,5,0.739528950755938,best_2yr_skill_avg_y2_y5,4,31870,3,TRUE,1630540,Miles McBride
-Mo Bamba,2018,2023,5,-0.7962846704567,best_2yr_skill_avg_y2_y5,4,51204,,TRUE,1628964,Mo Bamba
+Mo Bamba,2018,2023,5,-0.7962846704567,best_2yr_skill_avg_y2_y5,4,51204,5,TRUE,1628964,Mo Bamba
 Monte Morris,2017,2022,5,0.0169193851086105,best_2yr_skill_avg_y2_y5,4,51297,4,TRUE,1628420,Monte Morris
 Moritz Wagner,2018,2023,5,-0.282464142642997,best_2yr_skill_avg_y2_y5,4,48111,4,TRUE,1629021,Moritz Wagner
 Moses Moody,2021,2026,5,0.868334575922528,best_2yr_skill_avg_y2_y5,4,32024,4,TRUE,1630541,Moses Moody
+Nah'Shon Hyland,2021,2026,5,-0.0925040875825669,best_2yr_skill_avg_y2_y5,3,32179,2,TRUE,1630538,Bones Hyland
 Naji Marshall,2020,2025,5,-0.621549190087951,best_2yr_skill_avg_y2_y5,4,34927,3,TRUE,1630230,Naji Marshall
 Naz Reid,2019,2024,5,-0.824611216738024,best_2yr_skill_avg_y2_y5,4,41930,3,TRUE,1629675,Naz Reid
 Neemias Queta,2021,2026,5,1.28125107245133,best_2yr_skill_avg_y2_y5,2,32181,4,TRUE,1629674,Neemias Queta
+Nicolas Claxton,2019,2024,5,1.18908253215426,best_2yr_skill_avg_y2_y5,4,44182,3,TRUE,1629651,Nic Claxton
 Nick Richards,2020,2025,5,-1.7274056944868,best_2yr_skill_avg_y2_y5,3,36390,5,TRUE,1630208,Nick Richards
 Nickeil Alexander-Walker,2019,2024,5,-0.269290816864582,best_2yr_skill_avg_y2_y5,4,43981,3,TRUE,1629638,Nickeil Alexander-Walker
 Obi Toppin,2020,2025,5,0.753149532648017,best_2yr_skill_avg_y2_y5,4,37830,3,TRUE,1630167,Obi Toppin
-OG Anunoby,2017,2022,5,1.46588150302236,best_2yr_skill_avg_y2_y5,4,52695,5,TRUE,1628384,OG Anunoby
+O.G. Anunoby,2016,2021,5,1.03903993133463,best_2yr_skill_avg_y2_y5,4,52695,4,TRUE,1628384,OG Anunoby
+OG Anunoby,2017,2022,5,1.46588150302236,best_2yr_skill_avg_y2_y5,4,52695,4,TRUE,1628384,OG Anunoby
 Onyeka Okongwu,2020,2025,5,0.774009748411936,best_2yr_skill_avg_y2_y5,4,36662,4,TRUE,1630168,Onyeka Okongwu
 Oshae Brissett,2019,2024,5,-0.52113923145354,best_2yr_skill_avg_y2_y5,4,42518,4,TRUE,1629052,Oshae Brissett
 Pascal Siakam,2016,2021,5,1.91939360776382,best_2yr_skill_avg_y2_y5,4,57342,5,TRUE,1627783,Pascal Siakam
 Patrick Williams,2020,2025,5,-1.22978280403178,best_2yr_skill_avg_y2_y5,3,37035,4,TRUE,1630172,Patrick Williams
 Paul Reed,2020,2025,5,0.671712610383571,best_2yr_skill_avg_y2_y5,2,36316,4,TRUE,1630194,Paul Reed
 Payton Pritchard,2020,2025,5,1.24838472289876,best_2yr_skill_avg_y2_y5,4,34903,4,TRUE,1630202,Payton Pritchard
+PJ Washington,2019,2024,5,-0.112974552953129,best_2yr_skill_avg_y2_y5,4,43435,4,TRUE,1629023,P.J. Washington
 Precious Achiuwa,2020,2025,5,-1.40856848199618,best_2yr_skill_avg_y2_y5,4,34890,4,TRUE,1630173,Precious Achiuwa
 Quentin Grimes,2021,2026,5,-0.107840356914542,best_2yr_skill_avg_y2_y5,4,31384,5,TRUE,1629656,Quentin Grimes
+R.J. Barrett,2019,2024,5,-0.497707667412135,best_2yr_skill_avg_y2_y5,4,43431,2,TRUE,1629628,RJ Barrett
 Robert Williams,2018,2023,5,2.46435837259291,best_2yr_skill_avg_y2_y5,3,48997,5,TRUE,1629057,Robert Williams III
 Rui Hachimura,2019,2024,5,-1.07445201588967,best_2yr_skill_avg_y2_y5,4,41807,4,TRUE,1629060,Rui Hachimura
 Saddiq Bey,2020,2025,5,-0.642302636551029,best_2yr_skill_avg_y2_y5,3,34860,4,TRUE,1630180,Saddiq Bey
