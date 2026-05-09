@@ -95,12 +95,31 @@ eval_term <- function(data, term_string) {
     return(out)
   }
 
+  eval_data <- as.list(data)
+  syntactic_names <- make.names(names(data))
+  for (i in seq_along(syntactic_names)) {
+    if (!(syntactic_names[[i]] %in% names(eval_data))) {
+      eval_data[[syntactic_names[[i]]]] <- data[[i]]
+    }
+  }
+
+  if (grepl("^I\\(.+\\)$", term_string)) {
+    inner <- sub("^I\\((.*)\\)$", "\\1", term_string)
+    out <- eval(parse(text = inner), envir = eval_data)
+    out <- suppressWarnings(as.numeric(out))
+    if (length(out) != nrow(data)) {
+      stop("Term did not evaluate to one value per input row: ", term_string)
+    }
+    return(out)
+  }
+
   mm <- model.matrix(
     as.formula(paste0("~ 0 + ", term_string)),
-    data = data,
+    data = as.data.frame(eval_data, check.names = FALSE),
     na.action = stats::na.pass
   )
-  out <- as.numeric(mm[, 1])
+  out <- rep(NA_real_, nrow(data))
+  out[as.integer(rownames(mm))] <- as.numeric(mm[, 1])
   if (length(out) != nrow(data)) {
     stop("Term did not evaluate to one value per input row: ", term_string)
   }

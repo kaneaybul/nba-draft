@@ -114,7 +114,8 @@ if (!file.exists(off_results_fp) || !file.exists(def_results_fp)) {
 Sys.setenv(
   DATABALLR_START_YEAR = "2016",
   DATABALLR_END_YEAR = "2026",
-  DATABALLR_MIN_MINUTES = "500",
+  DATABALLR_MIN_MINUTES = "0",
+  IMPACT_MIN_MINUTES = "0",
   SWITCH_START_YEAR = "2015",
   SWITCH_END_YEAR = "2025",
   IMPACT_EXCLUDE_YEARS = "none"

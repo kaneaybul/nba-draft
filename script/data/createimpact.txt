@@ -36,7 +36,7 @@ out_fp <- file.path(livedata_dir, "impactoutput.csv")
 # =========================
 # Settings
 # =========================
-MIN_MINUTES <- as.numeric(Sys.getenv("IMPACT_MIN_MINUTES", unset = "500"))
+MIN_MINUTES <- as.numeric(Sys.getenv("IMPACT_MIN_MINUTES", unset = "0"))
 
 exclude_years_raw <- trimws(Sys.getenv("IMPACT_EXCLUDE_YEARS", unset = "none"))
 if (!nzchar(exclude_years_raw) || tolower(exclude_years_raw) %in% c("none", "null", "na")) {
@@ -191,7 +191,13 @@ db <- db_raw %>%
 # Join EPM + DPM on correct fields
 # =========================
 depvar_raw <- epm_raw %>%
-  inner_join(db, by = c("nba_id", "year"))
+  inner_join(db, by = c("nba_id", "year")) %>%
+  filter(
+    is.finite(o_epm),
+    is.finite(d_epm),
+    is.finite(o_dpm),
+    is.finite(d_dpm)
+  )
 
 if (nrow(depvar_raw) == 0) {
   stop("Join produced 0 rows. Check nba_id/year alignment.")

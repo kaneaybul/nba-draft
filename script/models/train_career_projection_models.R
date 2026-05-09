@@ -262,7 +262,11 @@ build_panel <- function(base_dir) {
   panel$pos_center <- as.numeric(grepl("\\bC\\b|(^|[-/ ])C($|[-/ ])", pos_text))
   panel$age <- suppressWarnings(as.numeric(panel$age))
   panel$draft_year <- suppressWarnings(as.numeric(panel$draft_year))
-  panel$yoe <- ifelse(!is.na(panel$draft_year), pmax(0, panel$year - panel$draft_year), NA_real_)
+  panel$yoe <- ifelse(
+    !is.na(panel$draft_year),
+    pmax(0, panel$year - panel$draft_year),
+    ifelse(!is.na(panel$age), pmax(0, panel$age - 19), 0)
+  )
   panel$games <- suppressWarnings(as.numeric(panel$games))
   panel$mpg <- suppressWarnings(as.numeric(panel$mpg))
   panel$minutes <- coalesce_num(suppressWarnings(as.numeric(panel$stat_minutes)), panel$games * panel$mpg)
@@ -309,6 +313,14 @@ build_panel <- function(base_dir) {
   for (nm in intersect(fill_zero_cols, names(panel))) {
     panel[[nm]][is.na(panel[[nm]])] <- 0
   }
+  panel$mpg_sample_reliability <- clamp(panel$minutes_equiv / (panel$minutes_equiv + 750), 0, 1)
+  panel$role_prior_mpg <- ifelse(
+    panel$has_prev == 1 & is.finite(panel$avg3_mpg),
+    panel$avg3_mpg,
+    clamp(14 + 2 * panel$total, 8, 24)
+  )
+  panel$adjusted_mpg <- panel$mpg_sample_reliability * panel$mpg +
+    (1 - panel$mpg_sample_reliability) * panel$role_prior_mpg
   panel
 }
 
@@ -413,12 +425,22 @@ feature_sets <- list(
   ),
   skill_reference_shape = c("age", "age_sq", "yoe", "total", "avg2_total", "avg3_total", "mpg", "games_equiv", skill_names),
   usage_history = c("age", "age_sq", "yoe", "games_equiv", "mpg", "minutes_equiv", "avg2_games_equiv", "avg3_games_equiv", "avg2_mpg", "avg3_mpg", "avg2_minutes_equiv", "avg3_minutes_equiv", "has_prev", "prev_total", "prev_games_equiv", "prev_mpg", "prev_minutes_equiv", "delta_mpg", "delta_games"),
-  blended_history = c("age", "age_sq", "yoe", "games_equiv", "mpg", "minutes_equiv", "total", "avg2_total", "avg3_total", "avg2_games_equiv", "avg3_games_equiv", "avg2_mpg", "avg3_mpg", "avg2_minutes_equiv", "avg3_minutes_equiv", "has_prev", "prev_total", "prev_games_equiv", "prev_mpg", "prev_minutes_equiv", "delta_total", "delta_mpg", "delta_games")
+  blended_history = c("age", "age_sq", "yoe", "games_equiv", "mpg", "minutes_equiv", "total", "avg2_total", "avg3_total", "avg2_games_equiv", "avg3_games_equiv", "avg2_mpg", "avg3_mpg", "avg2_minutes_equiv", "avg3_minutes_equiv", "has_prev", "prev_total", "prev_games_equiv", "prev_mpg", "prev_minutes_equiv", "delta_total", "delta_mpg", "delta_games"),
+  minutes_role_history = c(
+    "age", "age_sq", "yoe",
+    "games_equiv", "minutes_equiv",
+    "adjusted_mpg", "mpg_sample_reliability", "role_prior_mpg",
+    "total", "avg2_total", "avg3_total",
+    "avg2_games_equiv", "avg3_games_equiv",
+    "avg2_minutes_equiv", "avg3_minutes_equiv",
+    "has_prev", "prev_total", "prev_games_equiv", "prev_minutes_equiv",
+    "delta_total", "delta_games"
+  )
 )
 
 target_feature_sets <- list(
   target_games = c("gp_reference_shape", "usage_history", "blended_history"),
-  target_mpg = c("mpg_reference_shape", "usage_history", "blended_history"),
+  target_minutes = c("minutes_role_history", "usage_history", "blended_history"),
   target_total = c("total_reference_shape", "usage_history", "blended_history"),
   target_offense = c("component_reference_shape", "total_reference_shape"),
   target_defense = c("component_reference_shape", "total_reference_shape"),
@@ -431,7 +453,7 @@ for (skill_name in skill_names) {
 
 algorithms <- c("lm", "rpart", "ranger")
 validation_targets <- c(
-  "target_mpg", "target_total", "target_offense", "target_defense",
+  "target_minutes", "target_total", "target_offense", "target_defense",
   "target_delta_offense", "target_delta_defense",
   paste0("target_", skill_names)
 )
@@ -626,12 +648,12 @@ if (!is.null(delta_level_validations) && nrow(delta_level_validations)) {
 }
 
 models <- list()
-model_targets <- c("target_games", "target_mpg", "target_delta_offense", "target_delta_defense", paste0("target_", skill_names))
+model_targets <- c("target_games", "target_minutes", "target_delta_offense", "target_delta_defense", paste0("target_", skill_names))
 for (target in model_targets) {
   target_df <- train_df
   if (target == "target_games") {
     target_df <- gp_train_df
-  } else if (target %in% c("target_mpg", validation_targets)) {
+  } else if (target %in% validation_targets) {
     target_df <- target_df[target_df$target_exists == 1, ]
   }
   set_name <- selected[[target]]$model_set
@@ -652,8 +674,21 @@ latest$position <- factor(latest$position, levels = levels(panel$position))
 state <- latest
 predictions <- list()
 for (horizon in 1:5) {
-  projected_games <- clamp(predict_model(models$target_games$model, state, models$target_games$features), 0, 82)
-  projected_mpg <- clamp(predict_model(models$target_mpg$model, state, models$target_mpg$features), 0, 38)
+  fallback_games <- clamp(coalesce_num(state$games_equiv, state$games), 0, 82)
+  fallback_games[!is.finite(fallback_games)] <- 0
+  fallback_mpg <- clamp(coalesce_num(state$adjusted_mpg, coalesce_num(state$mpg, ifelse(fallback_games > 0, state$minutes_equiv / fallback_games, 0))), 0, 38)
+  fallback_mpg[!is.finite(fallback_mpg)] <- 0
+  fallback_minutes <- fallback_games * fallback_mpg
+  projected_games <- clamp(coalesce_num(
+    predict_model(models$target_games$model, state, models$target_games$features),
+    fallback_games
+  ), 0, 82)
+  projected_minutes <- clamp(coalesce_num(
+    predict_model(models$target_minutes$model, state, models$target_minutes$features),
+    fallback_minutes
+  ), 0, 3300)
+  projected_mpg <- clamp(ifelse(projected_games > 0, projected_minutes / projected_games, 0), 0, 38)
+  projected_minutes <- projected_games * projected_mpg
   projected_offense <- clamp(state$offense + predict_model(models$target_delta_offense$model, state, models$target_delta_offense$features), -8, 10)
   projected_defense <- clamp(state$defense + predict_model(models$target_delta_defense$model, state, models$target_delta_defense$features), -8, 10)
   projected_total <- projected_offense + projected_defense
@@ -662,8 +697,6 @@ for (horizon in 1:5) {
     clamp(predict_model(models[[target]]$model, state, models[[target]]$features), -5, 5)
   })
   names(projected_skills) <- paste0("projected_", tolower(skill_names))
-  projected_minutes <- projected_games * projected_mpg
-
   pred_row <- data.frame(
     nba_id = state$nba_id,
     player_name = state$player_name,
@@ -771,6 +804,14 @@ for (horizon in 1:5) {
   state$avg2_minutes_equiv <- rowMeans(cbind(state$minutes_equiv, state$lag1_minutes_equiv), na.rm = TRUE)
   state$avg3_minutes_equiv <- rowMeans(cbind(state$minutes_equiv, state$lag1_minutes_equiv, state$lag2_minutes_equiv), na.rm = TRUE)
   state$has_prev <- 1
+  state$mpg_sample_reliability <- clamp(state$minutes_equiv / (state$minutes_equiv + 750), 0, 1)
+  state$role_prior_mpg <- ifelse(
+    state$has_prev == 1 & is.finite(state$avg3_mpg),
+    state$avg3_mpg,
+    clamp(14 + 2 * state$total, 8, 24)
+  )
+  state$adjusted_mpg <- state$mpg_sample_reliability * state$mpg +
+    (1 - state$mpg_sample_reliability) * state$role_prior_mpg
 }
 
 out_dir <- file.path(base_dir, "processed", "modelresults")
@@ -779,7 +820,7 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(projection_dir, recursive = TRUE, showWarnings = FALSE)
 projection_output <- do.call(rbind, predictions)
 
-model_card_targets <- c("target_games", "target_mpg", "target_total", "target_delta_offense", "target_delta_defense", paste0("target_", skill_names))
+model_card_targets <- c("target_games", "target_minutes", "target_total", "target_delta_offense", "target_delta_defense", paste0("target_", skill_names))
 modeled_card_targets <- setdiff(model_card_targets, "target_total")
 model_card <- data.frame(
   target = modeled_card_targets,
@@ -815,9 +856,9 @@ if (!is.null(component_total_validation)) {
     stringsAsFactors = FALSE
   )
   model_card <- rbind(
-    model_card[model_card$target %in% c("target_games", "target_mpg"), , drop = FALSE],
+    model_card[model_card$target %in% c("target_games", "target_minutes"), , drop = FALSE],
     total_card,
-    model_card[!(model_card$target %in% c("target_games", "target_mpg")), , drop = FALSE]
+    model_card[!(model_card$target %in% c("target_games", "target_minutes")), , drop = FALSE]
   )
 }
 

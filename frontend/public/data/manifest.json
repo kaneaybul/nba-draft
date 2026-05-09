@@ -1,11 +1,11 @@
 {
-"generated_at":"2026-05-09T17:42:02Z",
+"generated_at":"2026-05-09T20:02:40Z",
 "source_root":"C:/Users/brend/Documents/projects/nba&draft",
 "note":"Generated from canonical processed/raw CSV outputs. Excel workbooks are not read at runtime.",
 "datasets":[
-{"dataset":"impact_players","rows":4466,"file":"impact_players.json"},
+{"dataset":"impact_players","rows":5932,"file":"impact_players.json"},
 {"dataset":"team_projections","rows":1080,"file":"team_projections.json"},
-{"dataset":"team_lineups","rows":10638,"file":"team_lineups.json"},
+{"dataset":"team_lineups","rows":10710,"file":"team_lineups.json"},
 {"dataset":"team_schedules","rows":14159,"file":"team_schedules.json"},
 {"dataset":"pick_assets","rows":60,"file":"pick_assets.json"},
 {"dataset":"draft_prospects","rows":491,"file":"draft_prospects.json"},

@@ -29,7 +29,7 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 START_YEAR <- as.integer(Sys.getenv("DATABALLR_START_YEAR", unset = "2016"))
 END_YEAR   <- as.integer(Sys.getenv("DATABALLR_END_YEAR", unset = "2026"))
-MIN_MINUTES <- as.integer(Sys.getenv("DATABALLR_MIN_MINUTES", unset = "500"))
+MIN_MINUTES <- as.integer(Sys.getenv("DATABALLR_MIN_MINUTES", unset = "0"))
 
 years <- START_YEAR:END_YEAR
 

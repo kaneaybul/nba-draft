@@ -651,6 +651,21 @@ projection_roster_status <- function(status, salary) {
   out
 }
 
+prune_low_impact_ufas <- function(rows, impact_col = "projection_y1") {
+  if (!nrow(rows) || !(impact_col %in% names(rows))) {
+    return(rows)
+  }
+  threshold <- suppressWarnings(as.numeric(Sys.getenv("FRONTEND_UFA_MIN_PROJECTED_TOTAL", unset = "-2.5")))
+  if (!is.finite(threshold)) threshold <- -2.5
+  roster_status <- if ("projection_roster_status" %in% names(rows)) {
+    as.character(rows$projection_roster_status)
+  } else {
+    projection_roster_status(rows$contract_status, rows$contract)
+  }
+  impact <- suppressWarnings(as.numeric(rows[[impact_col]]))
+  rows[!(roster_status == "open_ufa" & is.finite(impact) & impact < threshold), , drop = FALSE]
+}
+
 live_minutes_estimate <- function(minutes, games, mpg, projection_minutes) {
   minutes <- suppressWarnings(as.numeric(minutes))
   games <- suppressWarnings(as.numeric(games))
@@ -1115,10 +1130,15 @@ apply_lineup_minute_adjustment <- function(rows) {
       original_minutes <- suppressWarnings(as.numeric(rows$Minutes[[idx]]))
       if (!is.finite(original_minutes)) original_minutes <- 0
       role_target <- selections$role_band_minutes[[i]]
-      adjusted <- 0.5 * original_minutes + 0.5 * role_target
-      adjusted <- clamp(adjusted, 0, 82 * 38)
-      rows$Minutes[[idx]] <- round(adjusted, 0)
       games <- suppressWarnings(as.numeric(rows$games[[idx]]))
+      adjusted <- 0.4 * original_minutes + 0.6 * role_target
+      adjusted <- clamp(adjusted, 0, 82 * 36)
+      if (!is.finite(games) || games <= 0) games <- ifelse(adjusted > 0, min(82, adjusted / 36), 0)
+      if (adjusted > games * 36) {
+        games <- min(82, adjusted / 36)
+      }
+      rows$Minutes[[idx]] <- round(adjusted, 0)
+      rows$games[[idx]] <- round(games, 1)
       rows$p_mpg[[idx]] <- round(ifelse(games > 0, rows$Minutes[[idx]] / games, rows$p_mpg[[idx]]), 1)
       rows$lineup_role[[idx]] <- selections$role_label[[i]]
       rows$lineup_role_order[[idx]] <- selections$role_order[[i]]
@@ -1237,6 +1257,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     vets$skill_source <- "career_projection"
     vets$skill_source_year <- contract_year
     vets <- shift_future_columns(vets, cap_assumptions)
+    vets <- prune_low_impact_ufas(vets, "total")
   }
 
   rookies <- build_rookie_2027_rows(latest, base_dir, cap_assumptions, impact_reference, replacement_reference, target_year)
@@ -1249,6 +1270,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
   minute_rows <- assign_team_projection_scenario(rows, "base")
   minute_rows <- apply_lineup_minute_adjustment(minute_rows)
+  rows$games <- minute_rows$games
   rows$Minutes <- minute_rows$Minutes
   rows$p_mpg <- minute_rows$p_mpg
   rows$lineup_original_minutes <- minute_rows$lineup_original_minutes
@@ -1688,6 +1710,14 @@ build_impact_players <- function(base_dir) {
   contract_year_reference <- load_contract_year_reference(base_dir)
   x <- merge(x, contract_year_reference, by = c("nba_id", "year"), all.x = TRUE)
   x <- merge(x, contract_reference, by = "nba_id", all.x = TRUE)
+  source_cols <- intersect(c("o_epm", "o_dpm", "d_epm", "d_dpm"), names(x))
+  if (length(source_cols) == 4) {
+    has_current_sources <- Reduce(
+      `&`,
+      lapply(source_cols, function(col) is.finite(suppressWarnings(as.numeric(x[[col]]))))
+    )
+    x <- x[has_current_sources, , drop = FALSE]
+  }
   x$player_name <- coalesce_col(x$player_name, x$name)
   x$team <- ifelse(is.na(x$team) | x$team == "", "FA", x$team)
   x$name_key <- normalize_name(x$player_name)
@@ -1708,8 +1738,6 @@ build_impact_players <- function(base_dir) {
   x$skill_source <- "current"
   x$skill_source_year <- x$year
   contract_year <- max(x$year, na.rm = TRUE)
-  x <- append_latest_contract_inactive_rows(x, contract_reference, contract_year)
-  x <- carry_forward_dnq_profiles(x, contract_year)
   x$total <- ifelse(!is.na(x$FINAL_TOTAL), x$FINAL_TOTAL, ifelse(!is.na(x$TOTAL), x$TOTAL, x$off_dep + x$def_dep))
   x$offense <- ifelse(!is.na(x$FINAL_OFF), x$FINAL_OFF, ifelse(!is.na(x$OFF), x$OFF, x$off_dep))
   x$defense <- ifelse(!is.na(x$FINAL_DEF), x$FINAL_DEF, ifelse(!is.na(x$DEF), x$DEF, x$def_dep))
@@ -1867,6 +1895,8 @@ build_impact_players <- function(base_dir) {
       x$key <- NULL
     }
   }
+  x <- prune_low_impact_ufas(x, "projection_y1")
+  current_dnq <- x$year == contract_year & x$availability_status == "DNQ"
 
   current_games <- ifelse(!is.na(x$p_mpg) & x$p_mpg > 0, x$Minutes / x$p_mpg, NA_real_)
   x$raw_minutes <- live_minutes_estimate(
