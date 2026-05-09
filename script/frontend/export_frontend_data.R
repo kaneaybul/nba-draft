@@ -63,6 +63,16 @@ normalize_name <- function(x) {
   x
 }
 
+normalize_team <- function(x) {
+  out <- toupper(trimws(as.character(x)))
+  map <- c(CHO = "CHA", BRK = "BKN", PHO = "PHX", NOK = "NOP", NOH = "NOP", NJN = "BKN")
+  ifelse(out %in% names(map), unname(map[out]), out)
+}
+
+is_blank_text <- function(x) {
+  is.na(x) | !nzchar(trimws(as.character(x)))
+}
+
 attach_contract_ids_from_history <- function(base_dir, contracts) {
   if (!("nba_id" %in% names(contracts)) || !("player_name" %in% names(contracts))) {
     return(contracts)
@@ -132,6 +142,19 @@ percent_rank_against <- function(x, reference) {
 
 clamp <- function(x, lo, hi) pmax(lo, pmin(hi, x))
 
+zero_sum_round <- function(x, digits = 2) {
+  rounded <- round(x, digits)
+  finite <- which(is.finite(rounded))
+  if (!length(finite)) return(rounded)
+  scale <- 10^digits
+  residual_units <- as.integer(round(sum(rounded[finite], na.rm = TRUE) * scale))
+  if (residual_units == 0L) return(rounded)
+  adjust_count <- min(abs(residual_units), length(finite))
+  adjust_idx <- finite[seq_len(adjust_count)]
+  rounded[adjust_idx] <- rounded[adjust_idx] - sign(residual_units) / scale
+  rounded
+}
+
 json_escape <- function(x) {
   x <- as.character(x)
   x <- gsub("\\\\", "\\\\\\\\", x, fixed = FALSE)
@@ -194,6 +217,55 @@ team_conference <- function(team) {
   ifelse(team %in% east, "East", ifelse(team %in% west, "West", "Unknown"))
 }
 
+team_metadata <- function() {
+  data.frame(
+    team_abbr = c(
+      "ATL", "BOS", "BKN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW",
+      "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
+      "OKC", "ORL", "PHI", "PHX", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"
+    ),
+    team_name = c(
+      "Atlanta Hawks", "Boston Celtics", "Brooklyn Nets", "Charlotte Hornets", "Chicago Bulls",
+      "Cleveland Cavaliers", "Dallas Mavericks", "Denver Nuggets", "Detroit Pistons",
+      "Golden State Warriors", "Houston Rockets", "Indiana Pacers", "LA Clippers",
+      "Los Angeles Lakers", "Memphis Grizzlies", "Miami Heat", "Milwaukee Bucks",
+      "Minnesota Timberwolves", "New Orleans Pelicans", "New York Knicks", "Oklahoma City Thunder",
+      "Orlando Magic", "Philadelphia 76ers", "Phoenix Suns", "Portland Trail Blazers",
+      "Sacramento Kings", "San Antonio Spurs", "Toronto Raptors", "Utah Jazz", "Washington Wizards"
+    ),
+    nba_team_id = c(
+      1610612737, 1610612738, 1610612751, 1610612766, 1610612741, 1610612739,
+      1610612742, 1610612743, 1610612765, 1610612744, 1610612745, 1610612754,
+      1610612746, 1610612747, 1610612763, 1610612748, 1610612749, 1610612750,
+      1610612740, 1610612752, 1610612760, 1610612753, 1610612755, 1610612756,
+      1610612757, 1610612758, 1610612759, 1610612761, 1610612762, 1610612764
+    ),
+    conference = team_conference(c(
+      "ATL", "BOS", "BKN", "CHA", "CHI", "CLE", "DAL", "DEN", "DET", "GSW",
+      "HOU", "IND", "LAC", "LAL", "MEM", "MIA", "MIL", "MIN", "NOP", "NYK",
+      "OKC", "ORL", "PHI", "PHX", "POR", "SAC", "SAS", "TOR", "UTA", "WAS"
+    )),
+    stringsAsFactors = FALSE
+  )
+}
+
+team_logo_url <- function(nba_team_id) {
+  ifelse(
+    is.finite(suppressWarnings(as.numeric(nba_team_id))),
+    paste0("https://cdn.nba.com/logos/nba/", nba_team_id, "/primary/L/logo.svg"),
+    NA_character_
+  )
+}
+
+team_abbr_from_name <- function(team_name) {
+  meta <- team_metadata()
+  names <- c(meta$team_name, "Los Angeles Clippers", "LA Clippers", "Phoenix Suns", "Brooklyn Nets", "Charlotte Bobcats")
+  abbrs <- c(meta$team_abbr, "LAC", "LAC", "PHX", "BKN", "CHA")
+  key <- trimws(as.character(team_name))
+  out <- abbrs[match(key, names)]
+  normalize_team(ifelse(is.na(out), key, out))
+}
+
 team_count <- function() 30L
 
 rotation_slots_per_position <- function() {
@@ -201,7 +273,11 @@ rotation_slots_per_position <- function() {
 }
 
 replacement_slots_per_position <- function() {
-  rotation_slots_per_position() + ceiling(team_count() / 2)
+  65L
+}
+
+replacement_pool_years <- function() {
+  3L
 }
 
 rank_cutoff_value <- function(values, cutoff) {
@@ -213,6 +289,19 @@ rank_cutoff_value <- function(values, cutoff) {
 }
 
 valid_positions <- function() c("PG", "SG", "SF", "PF", "C")
+
+position_parts <- function(position) {
+  parts <- unlist(strsplit(toupper(as.character(position)), "[-/[:space:]]+"))
+  parts[parts %in% valid_positions()]
+}
+
+normalize_position_label <- function(position) {
+  vapply(as.character(position), function(pos) {
+    parts <- position_parts(pos)
+    if (length(parts) == 0) return(NA_character_)
+    paste(parts, collapse = "/")
+  }, character(1), USE.NAMES = FALSE)
+}
 
 tier_from_score <- function(score) {
   rank <- rank(-score, ties.method = "first", na.last = "keep")
@@ -232,30 +321,22 @@ tier_from_score <- function(score) {
 }
 
 replacement_level <- function(position, side) {
-  pos <- toupper(as.character(position))
-
   if (identical(side, "total")) {
-    return(replacement_level(pos, "offense") + replacement_level(pos, "defense"))
+    return(replacement_level(position, "offense") + replacement_level(position, "defense"))
   }
 
-  if (identical(side, "offense")) {
-    return(ifelse(pos == "PG", -2.0,
-      ifelse(pos == "SG", -1.0,
-        ifelse(pos == "SF", -2.1,
-          ifelse(pos == "PF", -1.9,
-            ifelse(pos == "C", -1.7, -1.5))))))
+  pos <- normalize_position_label(position)
+  default <- if (identical(side, "offense")) -1.5 else -0.7
+  level_map <- if (identical(side, "offense")) {
+    c(PG = -2.0, SG = -1.0, SF = -2.1, PF = -1.9, C = -1.7)
+  } else {
+    c(PG = -1.5, SG = -0.7, SF = -1.3, PF = -0.8, C = -0.5)
   }
-
-  ifelse(pos == "PG", -1.5,
-    ifelse(pos == "SG", -0.7,
-      ifelse(pos == "SF", -1.3,
-        ifelse(pos == "PF", -0.8,
-          ifelse(pos == "C", -0.5, -0.7)))))
-}
-
-position_parts <- function(position) {
-  parts <- strsplit(toupper(as.character(position)), "/", fixed = TRUE)[[1]]
-  parts[parts %in% valid_positions()]
+  vapply(pos, function(one_pos) {
+    parts <- position_parts(one_pos)
+    if (length(parts) == 0) return(default)
+    mean(unname(level_map[parts]), na.rm = TRUE)
+  }, numeric(1), USE.NAMES = FALSE)
 }
 
 replacement_reference_lookup <- function(replacement_reference, position, side = "total") {
@@ -340,21 +421,30 @@ replacement_from_data <- function(df, side) {
   fallback <- replacement_level(df$position, side)
   out <- rep(NA_real_, nrow(df))
   cutoff <- replacement_slots_per_position()
-  min_sample <- ceiling(rotation_slots_per_position() * 0.75)
+  pool_years <- replacement_pool_years()
   eligible <- !is.na(metric) &
     df$position %in% valid_positions()
 
   keys <- unique(paste(df$year, df$position, sep = "||"))
   for (key in keys) {
     parts <- strsplit(key, "\\|\\|")[[1]]
-    idx <- df$year == as.integer(parts[[1]]) & df$position == parts[[2]]
-    values <- metric[idx & eligible]
+    target_year <- as.integer(parts[[1]])
+    target_pos <- parts[[2]]
+    idx <- df$year == target_year & df$position == target_pos
+    pool_idx <- eligible &
+      df$position == target_pos &
+      df$year <= target_year &
+      df$year > target_year - pool_years
+    pool_seasons <- unique(df$year[pool_idx])
+    pooled_cutoff <- cutoff * max(1, length(pool_seasons))
+    min_sample <- ceiling(pooled_cutoff * 0.75)
+    values <- metric[pool_idx]
     if (sum(is.finite(values)) >= min_sample) {
-      out[idx] <- rank_cutoff_value(values, cutoff)
+      out[idx] <- rank_cutoff_value(values, pooled_cutoff)
     }
   }
 
-  recent_year <- max(df$year, na.rm = TRUE) - 2
+  recent_year <- max(df$year, na.rm = TRUE) - pool_years + 1
   for (pos in valid_positions()) {
     idx <- is.na(out) & df$position == pos
     values <- metric[
@@ -368,6 +458,7 @@ replacement_from_data <- function(df, side) {
         df$year >= recent_year
     ])
     pooled_cutoff <- cutoff * max(1, length(recent_seasons))
+    min_sample <- ceiling(pooled_cutoff * 0.75)
     if (sum(is.finite(values)) >= min_sample) {
       out[idx] <- rank_cutoff_value(values, pooled_cutoff)
     }
@@ -498,6 +589,68 @@ max_salary_for_yos <- function(yos, year, caps, prior_salary = NA_real_) {
   round(pmax(base_max, prior_max, na.rm = TRUE), 0)
 }
 
+is_rookie_scale_rfa <- function(year, draft_year, overall_pick) {
+  year <- suppressWarnings(as.numeric(year))
+  draft_year <- suppressWarnings(as.numeric(draft_year))
+  overall_pick <- suppressWarnings(as.numeric(overall_pick))
+  is.finite(year) &
+    is.finite(draft_year) &
+    is.finite(overall_pick) &
+    overall_pick >= 1 &
+    overall_pick <= 30 &
+    year - draft_year == 5
+}
+
+contract_status_from_salary <- function(
+  salary,
+  yoe,
+  age,
+  team = NA_character_,
+  fallback = NA_character_,
+  year = NA_real_,
+  draft_year = NA_real_,
+  overall_pick = NA_real_
+) {
+  salary <- suppressWarnings(as.numeric(salary))
+  yoe <- suppressWarnings(as.numeric(yoe))
+  age <- suppressWarnings(as.numeric(age))
+  team <- as.character(team)
+  fallback <- as.character(fallback)
+  fallback <- ifelse(fallback == "Option/NG", NA_character_, fallback)
+  out <- ifelse(is.finite(salary) & salary > 0, "Signed", NA_character_)
+  out <- ifelse(!is.na(fallback) & nzchar(trimws(fallback)), fallback, out)
+  is_fa <- is.na(out) & (!is.na(team) & team == "FA")
+  rookie_scale_rfa <- rep(is_rookie_scale_rfa(year, draft_year, overall_pick), length.out = length(salary))
+  out[is_fa] <- ifelse(
+    rookie_scale_rfa[is_fa] |
+      (!is.na(yoe[is_fa]) & yoe[is_fa] <= 4 & (is.na(age[is_fa]) | age[is_fa] <= 27)),
+    "RFA",
+    "UFA"
+  )
+  out
+}
+
+contract_status_label <- function(status, salary) {
+  status <- as.character(status)
+  status <- ifelse(status == "Option/NG", "Player Option", status)
+  salary <- suppressWarnings(as.numeric(salary))
+  ifelse(is.finite(salary) & salary > 0 & !is.na(status) & status != "Signed", status,
+    ifelse(!is.finite(salary) | salary <= 0, status, "Signed")
+  )
+}
+
+projection_roster_status <- function(status, salary) {
+  status <- contract_status_label(status, salary)
+  out <- rep("open_market", length(status))
+  out[status == "Signed"] <- "signed"
+  out[status == "RFA"] <- "restricted"
+  out[status == "Team Option"] <- "team_controlled"
+  out[status == "Player Option"] <- "player_option"
+  out[status == "Rookie FA"] <- "rookie_fa"
+  out[status == "UFA"] <- "open_ufa"
+  out
+}
+
 live_minutes_estimate <- function(minutes, games, mpg, projection_minutes) {
   minutes <- suppressWarnings(as.numeric(minutes))
   games <- suppressWarnings(as.numeric(games))
@@ -514,6 +667,140 @@ live_minutes_estimate <- function(minutes, games, mpg, projection_minutes) {
     )
   )
   ifelse(!is.na(blended), clamp(blended, 250, 2850), NA_real_)
+}
+
+impact_skill_names <- function() c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
+
+projection_skill_col <- function(skill_name) paste0("projected_", tolower(skill_name))
+
+final_pred_value <- function(df, metric) {
+  final_col <- paste0("FINAL_", metric, "_pred")
+  pred_col <- paste0(metric, "_pred")
+  if (final_col %in% names(df) && pred_col %in% names(df)) {
+    return(coalesce_numeric(df[[final_col]], df[[pred_col]]))
+  }
+  if (final_col %in% names(df)) return(suppressWarnings(as.numeric(df[[final_col]])))
+  if (pred_col %in% names(df)) return(suppressWarnings(as.numeric(df[[pred_col]])))
+  rep(NA_real_, nrow(df))
+}
+
+read_adjusted_draft_predictions <- function(base_dir) {
+  adjusted_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_adjusted.csv")
+  base_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_output.csv")
+  path <- if (file.exists(adjusted_path)) adjusted_path else base_path
+  if (!file.exists(path)) return(data.frame())
+  read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+}
+
+fit_rookie_deage_curves <- function(base_dir) {
+  pred <- read_adjusted_draft_predictions(base_dir)
+  skill_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "skilloutput.csv")
+  impact_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "impactoutput.csv")
+  if (!nrow(pred) || !file.exists(skill_path) || !file.exists(impact_path)) {
+    return(list(metric_models = list(), minutes_model = NULL, fallback_minutes = 900))
+  }
+
+  skill_names <- impact_skill_names()
+  metrics <- c("OFF", "DEF", "TOTAL", skill_names)
+  pred$join_player <- if ("name_key" %in% names(pred)) as.character(pred$name_key) else normalize_name(pred$player)
+  pred$draft_year <- suppressWarnings(as.integer(pred$draft_year))
+  if (!("draft_age" %in% names(pred))) pred$draft_age <- NA_real_
+  pred$draft_age <- suppressWarnings(as.numeric(pred$draft_age))
+  if (!("pick_proxy" %in% names(pred))) pred$pick_proxy <- if ("actual_pick" %in% names(pred)) pred$actual_pick else NA_real_
+  pred$pick_proxy <- suppressWarnings(as.numeric(pred$pick_proxy))
+  if (!("FINAL_rank" %in% names(pred))) pred$FINAL_rank <- ave(-final_pred_value(pred, "TOTAL"), pred$draft_year, FUN = rank, ties.method = "first")
+  pred$FINAL_rank <- suppressWarnings(as.numeric(pred$FINAL_rank))
+  for (metric in metrics) {
+    pred[[paste0("pred_", metric)]] <- final_pred_value(pred, metric)
+  }
+  pred$pred_TOTAL <- coalesce_numeric(pred$pred_TOTAL, pred$pred_OFF + pred$pred_DEF)
+
+  skill <- read.csv(skill_path, stringsAsFactors = FALSE, check.names = FALSE)
+  skill$join_player <- normalize_name(skill$player_name)
+  skill$year <- suppressWarnings(as.integer(skill$year))
+  for (skill_name in skill_names) {
+    final_col <- paste0("FINAL_", skill_name)
+    if (final_col %in% names(skill)) {
+      skill[[skill_name]] <- coalesce_numeric(skill[[final_col]], skill[[skill_name]])
+    }
+  }
+  skill$OFF_actual <- if ("FINAL_OFF" %in% names(skill)) coalesce_numeric(skill$FINAL_OFF, skill$OFF) else suppressWarnings(as.numeric(skill$OFF))
+  skill$DEF_actual <- if ("FINAL_DEF" %in% names(skill)) coalesce_numeric(skill$FINAL_DEF, skill$DEF) else suppressWarnings(as.numeric(skill$DEF))
+  skill$TOTAL_actual <- if ("FINAL_TOTAL" %in% names(skill)) coalesce_numeric(skill$FINAL_TOTAL, skill$TOTAL) else suppressWarnings(as.numeric(skill$TOTAL))
+  for (skill_name in skill_names) {
+    skill[[paste0(skill_name, "_actual")]] <- suppressWarnings(as.numeric(skill[[skill_name]]))
+  }
+
+  impact <- read.csv(impact_path, stringsAsFactors = FALSE, check.names = FALSE)
+  impact$join_player <- normalize_name(impact$player_name)
+  impact$year <- suppressWarnings(as.integer(impact$year))
+  if (!("Minutes" %in% names(impact))) impact$Minutes <- NA_real_
+  impact$rookie_minutes <- suppressWarnings(as.numeric(impact$Minutes))
+
+  actual_cols <- c("join_player", "year", paste0(metrics, "_actual"))
+  actual <- merge(
+    skill[, intersect(actual_cols, names(skill)), drop = FALSE],
+    impact[, c("join_player", "year", "rookie_minutes"), drop = FALSE],
+    by = c("join_player", "year"),
+    all.x = TRUE
+  )
+  pred$rookie_year <- pred$draft_year + 1L
+  joined <- merge(pred, actual, by.x = c("join_player", "rookie_year"), by.y = c("join_player", "year"), all.x = FALSE)
+  joined <- joined[is.finite(joined$draft_age), , drop = FALSE]
+
+  metric_models <- list()
+  for (metric in metrics) {
+    actual_col <- paste0(metric, "_actual")
+    pred_col <- paste0("pred_", metric)
+    if (!all(c(actual_col, pred_col) %in% names(joined))) next
+    df <- joined[is.finite(joined[[actual_col]]) & is.finite(joined[[pred_col]]) & is.finite(joined$draft_age), , drop = FALSE]
+    if (nrow(df) < 20) next
+    df$diff <- df[[actual_col]] - df[[pred_col]]
+    metric_models[[metric]] <- tryCatch(lm(diff ~ draft_age, data = df), error = function(e) NULL)
+  }
+
+  minutes_df <- joined[
+    is.finite(joined$rookie_minutes) &
+      joined$rookie_minutes > 0 &
+      is.finite(joined$pred_TOTAL) &
+      is.finite(joined$draft_age),
+    ,
+    drop = FALSE
+  ]
+  if (!("pick_proxy" %in% names(minutes_df)) || sum(is.finite(minutes_df$pick_proxy)) < 20) {
+    minutes_df$pick_proxy <- minutes_df$FINAL_rank
+  }
+  minutes_model <- NULL
+  if (nrow(minutes_df) >= 40 && sum(is.finite(minutes_df$pick_proxy)) >= 40) {
+    minutes_model <- tryCatch(lm(rookie_minutes ~ pick_proxy + pred_TOTAL + draft_age, data = minutes_df), error = function(e) NULL)
+  }
+  fallback_minutes <- if (nrow(minutes_df)) median(minutes_df$rookie_minutes, na.rm = TRUE) else 900
+  list(metric_models = metric_models, minutes_model = minutes_model, fallback_minutes = fallback_minutes)
+}
+
+predict_rookie_adjustment <- function(curves, metric, draft_age) {
+  model <- curves$metric_models[[metric]]
+  if (is.null(model)) return(rep(0, length(draft_age)))
+  out <- suppressWarnings(as.numeric(predict(model, newdata = data.frame(draft_age = draft_age))))
+  out[!is.finite(out)] <- 0
+  clamp(out, -2.5, 2.5)
+}
+
+predict_rookie_minutes <- function(curves, pick_proxy, total, draft_age) {
+  pick_proxy <- suppressWarnings(as.numeric(pick_proxy))
+  total <- suppressWarnings(as.numeric(total))
+  draft_age <- suppressWarnings(as.numeric(draft_age))
+  if (!is.null(curves$minutes_model)) {
+    out <- suppressWarnings(as.numeric(predict(curves$minutes_model, newdata = data.frame(
+      pick_proxy = pick_proxy,
+      pred_TOTAL = total,
+      draft_age = draft_age
+    ))))
+  } else {
+    out <- rep(curves$fallback_minutes, length(total))
+  }
+  out[!is.finite(out)] <- curves$fallback_minutes
+  clamp(out, 120, 2400)
 }
 
 calc_fa_market_values <- function(df, caps, horizon = 1, target_roster_spots = 450) {
@@ -592,6 +879,493 @@ calc_fa_market_values <- function(df, caps, horizon = 1, target_roster_spots = 4
   out
 }
 
+blank_like <- function(template, n) {
+  out <- template[rep(1, n), , drop = FALSE]
+  for (nm in names(out)) {
+    if (is.logical(out[[nm]])) {
+      out[[nm]] <- rep(FALSE, n)
+    } else if (is.numeric(out[[nm]]) || is.integer(out[[nm]])) {
+      out[[nm]] <- rep(NA_real_, n)
+    } else {
+      out[[nm]] <- rep(NA_character_, n)
+    }
+  }
+  out
+}
+
+shift_future_columns <- function(rows, cap_assumptions) {
+  projection_groups <- c(
+    "projection_y", "projection_games_y", "projection_mpg_y", "projection_minutes_y",
+    "projection_timin_y", "projection_value_y", "projection_fa_value_y",
+    "projection_scalability_y", "projection_contract_y", "projection_cap_y",
+    "projection_contract_status_y"
+  )
+  for (prefix in projection_groups) {
+    old <- lapply(1:5, function(horizon) {
+      col <- paste0(prefix, horizon)
+      if (col %in% names(rows)) rows[[col]] else rep(NA_real_, nrow(rows))
+    })
+    for (horizon in 1:4) {
+      col <- paste0(prefix, horizon)
+      if (col %in% names(rows)) rows[[col]] <- old[[horizon + 1]]
+    }
+    col5 <- paste0(prefix, 5)
+    if (col5 %in% names(rows)) rows[[col5]] <- NA_real_
+  }
+  for (horizon in 1:5) {
+    cap_col <- paste0("projection_cap_y", horizon)
+    if (cap_col %in% names(rows)) rows[[cap_col]] <- cap_for_year(cap_assumptions, rows$year + horizon, "scale_cap")
+  }
+  rows
+}
+
+build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_reference, replacement_reference, target_year) {
+  draft <- build_draft_prospects(base_dir, impact_reference, replacement_reference)
+  if (!nrow(draft)) return(template[FALSE, , drop = FALSE])
+  draft <- draft[draft$draft_year == max(draft$draft_year, na.rm = TRUE), , drop = FALSE]
+  if (!nrow(draft)) return(template[FALSE, , drop = FALSE])
+
+  skill_names <- impact_skill_names()
+  curves <- fit_rookie_deage_curves(base_dir)
+  rows <- blank_like(template, nrow(draft))
+  pick_proxy <- if ("pick_proxy" %in% names(draft)) draft$pick_proxy else NA_real_
+  actual_pick <- if ("actual_pick" %in% names(draft)) draft$actual_pick else NA_real_
+  rank_proxy <- coalesce_numeric(pick_proxy, coalesce_numeric(actual_pick, draft$rank_in_class))
+  draft_age <- suppressWarnings(as.numeric(draft$draft_age))
+  draft_age[!is.finite(draft_age)] <- median(draft_age, na.rm = TRUE)
+  if (!any(is.finite(draft_age))) draft_age[] <- 19.5
+
+  off <- final_pred_value(draft, "OFF") + predict_rookie_adjustment(curves, "OFF", draft_age)
+  def <- final_pred_value(draft, "DEF") + predict_rookie_adjustment(curves, "DEF", draft_age)
+  total <- off + def
+  minutes <- predict_rookie_minutes(curves, rank_proxy, total, draft_age)
+  games <- clamp(54 - 0.28 * rank_proxy + 2.5 * total - 0.6 * pmax(0, draft_age - 20), 18, 82)
+  games[!is.finite(games)] <- clamp(minutes[!is.finite(games)] / 18, 18, 82)
+  mpg <- ifelse(games > 0, minutes / games, NA_real_)
+
+  rows$nba_id <- -as.integer(2027000 + seq_len(nrow(rows)))
+  rows$player_name <- as.character(draft$player)
+  rows$year <- target_year
+  drafted_team <- if ("drafted_team" %in% names(draft)) as.character(draft$drafted_team) else rep(NA_character_, nrow(draft))
+  rows$team <- ifelse(!is.na(drafted_team) & nzchar(trimws(drafted_team)) & is.finite(suppressWarnings(as.numeric(actual_pick))), drafted_team, "FA")
+  rows$position <- ifelse(!is.na(draft$position) & nzchar(trimws(draft$position)), as.character(draft$position), "UNK")
+  rows$age <- round(draft_age + 0.5, 1)
+  rows$yoe <- 0
+  rows$games <- round(games, 1)
+  rows$Minutes <- round(minutes, 0)
+  rows$p_mpg <- round(mpg, 1)
+  rows$p_usg <- NA_real_
+  rows$off_dep <- round(off, 3)
+  rows$def_dep <- round(def, 3)
+  rows$offense <- round(off, 3)
+  rows$defense <- round(def, 3)
+  rows$total <- round(total, 3)
+  rows$availability_status <- "rookie_projection"
+  rows$availability_reason <- "Draft model de-aged to rookie season"
+  rows$skill_source <- "draft_model_deaged"
+  rows$skill_source_year <- draft$draft_year
+  rows$contract <- NA_real_
+  rows$contract_status <- "Rookie FA"
+  rows$incumbent_team <- normalize_team(rows$team)
+  rows$market_team <- ifelse(rows$team == "FA" | is_blank_text(rows$team), "FA", normalize_team(rows$team))
+  rows$team_projection_base <- rows$market_team
+  rows$projection_roster_status <- "rookie_fa"
+
+  if ("skill_model_off" %in% names(rows)) rows$skill_model_off <- rows$offense
+  if ("skill_model_def" %in% names(rows)) rows$skill_model_def <- rows$defense
+  if ("skill_off_total" %in% names(rows)) rows$skill_off_total <- rows$offense
+  if ("skill_def_total" %in% names(rows)) rows$skill_def_total <- rows$defense
+  if ("FINAL_OFF" %in% names(rows)) rows$FINAL_OFF <- rows$offense
+  if ("FINAL_DEF" %in% names(rows)) rows$FINAL_DEF <- rows$defense
+  if ("FINAL_TOTAL" %in% names(rows)) rows$FINAL_TOTAL <- rows$total
+
+  for (skill_name in skill_names) {
+    value <- final_pred_value(draft, skill_name) + predict_rookie_adjustment(curves, skill_name, draft_age)
+    value <- clamp(value, -5, 5)
+    rows[[skill_name]] <- round(value, 3)
+    final_col <- paste0("FINAL_", skill_name)
+    if (final_col %in% names(rows)) rows[[final_col]] <- rows[[skill_name]]
+  }
+
+  decay <- c(0.94, 0.88, 0.82, 0.76, 0.70)
+  for (horizon in 1:5) {
+    rows[[paste0("projection_y", horizon)]] <- round(rows$total * decay[[horizon]], 2)
+    rows[[paste0("projection_games_y", horizon)]] <- round(clamp(rows$games + horizon * 1.5, 0, 82), 1)
+    rows[[paste0("projection_mpg_y", horizon)]] <- round(clamp(rows$p_mpg + horizon * 0.4, 0, 34), 1)
+    rows[[paste0("projection_minutes_y", horizon)]] <- round(rows[[paste0("projection_games_y", horizon)]] * rows[[paste0("projection_mpg_y", horizon)]], 0)
+    rows[[paste0("projection_contract_y", horizon)]] <- NA_real_
+    rows[[paste0("projection_contract_status_y", horizon)]] <- NA_character_
+    rows[[paste0("projection_cap_y", horizon)]] <- cap_for_year(cap_assumptions, rows$year + horizon, "scale_cap")
+  }
+  rows
+}
+
+lineup_role_plan <- function() {
+  data.frame(
+    role_order = seq_len(10),
+    role_label = c("Guard 1", "Guard 2", "Forward 1", "Forward 2", "Center", paste0("Bench ", 1:5)),
+    role_type = c(rep("Starter", 5), rep("Bench", 5)),
+    position_group = c("Guard", "Guard", "Forward", "Forward", "Center", rep("Bench", 5)),
+    role_band_minutes = c(2700, 2400, 2700, 2400, 2700, 1900, 1600, 1300, 900, 500),
+    stringsAsFactors = FALSE
+  )
+}
+
+lineup_role_score <- function(df) {
+  total <- suppressWarnings(as.numeric(df$total))
+  total[!is.finite(total)] <- -Inf
+  total
+}
+
+lineup_position_flags <- function(position) {
+  pos <- toupper(trimws(as.character(position)))
+  has_guard <- pos %in% c("PG", "SG", "G") | grepl("(^|[-/ ])G($|[-/ ])", pos)
+  has_forward <- pos %in% c("SF", "PF", "F") | grepl("(^|[-/ ])F($|[-/ ])", pos)
+  has_center <- pos == "C" | grepl("(^|[-/ ])C($|[-/ ])", pos)
+  has_pf <- pos == "PF" | grepl("PF", pos, fixed = TRUE)
+  data.frame(
+    has_guard = has_guard,
+    has_forward = has_forward,
+    has_center = has_center,
+    has_pf = has_pf,
+    stringsAsFactors = FALSE
+  )
+}
+
+lineup_candidate_indices <- function(df, position_group, selected) {
+  available <- which(!(df$.lineup_row_id %in% selected))
+  if (!length(available)) return(integer())
+  if (identical(position_group, "Bench")) return(available)
+
+  flags <- lineup_position_flags(df$position)
+  strict <- switch(position_group,
+    Guard = flags$has_guard,
+    Forward = flags$has_forward,
+    Center = flags$has_center,
+    rep(TRUE, nrow(df))
+  )
+  idx <- available[strict[available]]
+  if (!length(idx) && identical(position_group, "Center")) {
+    idx <- available[flags$has_pf[available]]
+  }
+  if (!length(idx)) idx <- available
+  idx
+}
+
+estimate_team_lineup_rows <- function(df) {
+  if (!nrow(df)) return(data.frame())
+  if (!(".lineup_row_id" %in% names(df))) df$.lineup_row_id <- seq_len(nrow(df))
+  plan <- lineup_role_plan()
+  df$.lineup_role_score <- lineup_role_score(df)
+  selected <- integer()
+  out <- list()
+
+  for (i in seq_len(nrow(plan))) {
+    idx <- lineup_candidate_indices(df, plan$position_group[[i]], selected)
+    if (!length(idx)) next
+    idx <- idx[order(
+      -df$.lineup_role_score[idx],
+      -suppressWarnings(as.numeric(df$Minutes[idx])),
+      -suppressWarnings(as.numeric(df$total[idx])),
+      df$player_name[idx],
+      na.last = TRUE
+    )]
+    picked <- idx[[1]]
+    selected <- c(selected, df$.lineup_row_id[[picked]])
+    row <- cbind(plan[i, , drop = FALSE], df[picked, , drop = FALSE])
+    row$lineup_rank <- length(out) + 1L
+    row$is_starter <- row$role_type == "Starter"
+    row$role_score <- round(df$.lineup_role_score[[picked]], 2)
+    out[[length(out) + 1L]] <- row
+  }
+
+  if (!length(out)) return(data.frame())
+  do.call(rbind, out)
+}
+
+apply_lineup_minute_adjustment <- function(rows) {
+  if (!nrow(rows)) return(rows)
+  rows$lineup_original_minutes <- suppressWarnings(as.numeric(rows$Minutes))
+  rows$lineup_adjusted_minutes <- suppressWarnings(as.numeric(rows$Minutes))
+  rows$lineup_role <- NA_character_
+  rows$lineup_role_order <- NA_integer_
+  rows$lineup_role_band_minutes <- NA_real_
+  rows$.lineup_row_id <- seq_len(nrow(rows))
+
+  eligible <- rows[rows$team != "FA" & !is.na(rows$team), , drop = FALSE]
+  if (!nrow(eligible)) {
+    rows$.lineup_row_id <- NULL
+    return(rows)
+  }
+
+  grouped <- split(eligible, normalize_team(eligible$team))
+  selections <- do.call(rbind, lapply(grouped, estimate_team_lineup_rows))
+  selected_ids <- if (!is.null(selections) && nrow(selections)) selections$.lineup_row_id else integer()
+  nonselected_ids <- setdiff(eligible$.lineup_row_id, selected_ids)
+  if (length(nonselected_ids)) {
+    original_minutes <- suppressWarnings(as.numeric(rows$Minutes[nonselected_ids]))
+    original_minutes[!is.finite(original_minutes)] <- 0
+    rows$Minutes[nonselected_ids] <- round(0.5 * original_minutes, 0)
+    games <- suppressWarnings(as.numeric(rows$games[nonselected_ids]))
+    rows$p_mpg[nonselected_ids] <- round(ifelse(is.finite(games) & games > 0, rows$Minutes[nonselected_ids] / games, rows$p_mpg[nonselected_ids]), 1)
+  }
+  if (!is.null(selections) && nrow(selections)) {
+    for (i in seq_len(nrow(selections))) {
+      idx <- selections$.lineup_row_id[[i]]
+      original_minutes <- suppressWarnings(as.numeric(rows$Minutes[[idx]]))
+      if (!is.finite(original_minutes)) original_minutes <- 0
+      role_target <- selections$role_band_minutes[[i]]
+      adjusted <- 0.5 * original_minutes + 0.5 * role_target
+      adjusted <- clamp(adjusted, 0, 82 * 38)
+      rows$Minutes[[idx]] <- round(adjusted, 0)
+      games <- suppressWarnings(as.numeric(rows$games[[idx]]))
+      rows$p_mpg[[idx]] <- round(ifelse(games > 0, rows$Minutes[[idx]] / games, rows$p_mpg[[idx]]), 1)
+      rows$lineup_role[[idx]] <- selections$role_label[[i]]
+      rows$lineup_role_order[[idx]] <- selections$role_order[[i]]
+      rows$lineup_role_band_minutes[[idx]] <- selections$role_band_minutes[[i]]
+    }
+  }
+
+  for (team in sort(unique(rows$team[rows$team != "FA" & !is.na(rows$team)]))) {
+    idx <- which(rows$team == team)
+    team_minutes <- sum(suppressWarnings(as.numeric(rows$Minutes[idx])), na.rm = TRUE)
+    if (is.finite(team_minutes) && team_minutes > 19680) {
+      scale <- 19680 / team_minutes
+      rows$Minutes[idx] <- round(suppressWarnings(as.numeric(rows$Minutes[idx])) * scale, 0)
+      games <- suppressWarnings(as.numeric(rows$games[idx]))
+      rows$p_mpg[idx] <- round(ifelse(is.finite(games) & games > 0, rows$Minutes[idx] / games, rows$p_mpg[idx]), 1)
+    }
+  }
+
+  rows$lineup_adjusted_minutes <- suppressWarnings(as.numeric(rows$Minutes))
+  rows$.lineup_row_id <- NULL
+  rows
+}
+
+build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_year) {
+  target_year <- contract_year + 1L
+  latest <- x[x$year == contract_year, , drop = FALSE]
+  if (!nrow(latest)) return(latest)
+
+  impact_reference <- x[
+    x$year == contract_year &
+      is.finite(x$total) &
+      is.finite(x$timin) &
+      is.finite(x$Minutes) &
+      x$Minutes > 0 &
+      x$score_label != "DNQ",
+    c("total", "timin"),
+    drop = FALSE
+  ]
+  replacement_reference <- replacement_reference_from_players(x, contract_year)
+
+  vets <- latest[is.finite(latest$projection_minutes_y1) & latest$projection_minutes_y1 > 0, , drop = FALSE]
+  if (nrow(vets)) {
+    original <- vets
+    vets$year <- target_year
+    vets$age <- coalesce_numeric(original$age + 1, original$age)
+    vets$yoe <- coalesce_numeric(original$yoe + 1, original$yoe)
+    vets$games <- original$projection_games_y1
+    vets$p_mpg <- original$projection_mpg_y1
+    vets$Minutes <- original$projection_minutes_y1
+    if ("projection_offense_y1" %in% names(original)) {
+      vets$offense <- coalesce_numeric(original$projection_offense_y1, original$projection_y1 * 0.55)
+    } else {
+      vets$offense <- original$projection_y1 * 0.55
+    }
+    if ("projection_defense_y1" %in% names(original)) {
+      vets$defense <- coalesce_numeric(original$projection_defense_y1, original$projection_y1 - vets$offense)
+    } else {
+      vets$defense <- original$projection_y1 - vets$offense
+    }
+    vets$total <- original$projection_y1
+    vets$off_dep <- vets$offense
+    vets$def_dep <- vets$defense
+    if ("FINAL_OFF" %in% names(vets)) vets$FINAL_OFF <- vets$offense
+    if ("FINAL_DEF" %in% names(vets)) vets$FINAL_DEF <- vets$defense
+    if ("FINAL_TOTAL" %in% names(vets)) vets$FINAL_TOTAL <- vets$total
+    if ("OFF" %in% names(vets)) vets$OFF <- vets$offense
+    if ("DEF" %in% names(vets)) vets$DEF <- vets$defense
+    if ("TOTAL" %in% names(vets)) vets$TOTAL <- vets$total
+    for (skill_name in impact_skill_names()) {
+      projected_col <- paste0("projection_", skill_name, "_y1")
+      if (projected_col %in% names(original)) {
+        vets[[skill_name]] <- coalesce_numeric(original[[projected_col]], original[[skill_name]])
+      }
+      final_col <- paste0("FINAL_", skill_name)
+      if (final_col %in% names(vets)) vets[[final_col]] <- vets[[skill_name]]
+    }
+    if ("skill_model_off" %in% names(vets)) vets$skill_model_off <- vets$offense
+    if ("skill_model_def" %in% names(vets)) vets$skill_model_def <- vets$defense
+    if ("skill_off_total" %in% names(vets)) vets$skill_off_total <- vets$offense
+    if ("skill_def_total" %in% names(vets)) vets$skill_def_total <- vets$defense
+    next_contract <- suppressWarnings(as.numeric(original$projection_contract_y1))
+    vets$contract <- ifelse(is.finite(next_contract) & next_contract > 0, next_contract, NA_real_)
+    next_status <- if ("projection_contract_status_y1" %in% names(original)) as.character(original$projection_contract_status_y1) else NA_character_
+    initial_status_team <- ifelse(!is.finite(vets$contract) | vets$contract <= 0, "FA", vets$team)
+    vets$contract_status <- contract_status_from_salary(
+      vets$contract,
+      vets$yoe,
+      vets$age,
+      initial_status_team,
+      next_status,
+      vets$year,
+      vets$draft_year,
+      vets$overall_pick
+    )
+    vets$incumbent_team <- normalize_team(original$team)
+    vets$projection_roster_status <- projection_roster_status(vets$contract_status, vets$contract)
+    keep_with_incumbent <- vets$projection_roster_status %in% c("signed", "team_controlled", "restricted", "player_option")
+    option_status <- vets$contract_status %in% c("Player Option", "Team Option")
+    should_enter_market <- (!is.finite(vets$contract) | vets$contract <= 0) | option_status
+    vets$market_team <- ifelse(should_enter_market, "FA", vets$incumbent_team)
+    vets$team_projection_base <- ifelse(keep_with_incumbent, vets$incumbent_team, "FA")
+    vets$team <- vets$market_team
+    vets$contract_status <- contract_status_from_salary(
+      vets$contract,
+      vets$yoe,
+      vets$age,
+      vets$team,
+      vets$contract_status,
+      vets$year,
+      vets$draft_year,
+      vets$overall_pick
+    )
+    vets$projection_roster_status <- projection_roster_status(vets$contract_status, vets$contract)
+    vets$availability_status <- "projected"
+    vets$availability_reason <- "Synthetic 2027 career projection"
+    vets$skill_source <- "career_projection"
+    vets$skill_source_year <- contract_year
+    vets <- shift_future_columns(vets, cap_assumptions)
+  }
+
+  rookies <- build_rookie_2027_rows(latest, base_dir, cap_assumptions, impact_reference, replacement_reference, target_year)
+  rows <- rbind(vets, rookies[, names(vets), drop = FALSE])
+  if (!nrow(rows)) return(rows)
+
+  rows$replacement_total <- draft_replacement_total(rows$position, replacement_reference)
+  rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
+  rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
+  rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
+  minute_rows <- assign_team_projection_scenario(rows, "base")
+  minute_rows <- apply_lineup_minute_adjustment(minute_rows)
+  rows$Minutes <- minute_rows$Minutes
+  rows$p_mpg <- minute_rows$p_mpg
+  rows$lineup_original_minutes <- minute_rows$lineup_original_minutes
+  rows$lineup_adjusted_minutes <- minute_rows$lineup_adjusted_minutes
+  rows$lineup_role <- minute_rows$lineup_role
+  rows$lineup_role_order <- minute_rows$lineup_role_order
+  rows$lineup_role_band_minutes <- minute_rows$lineup_role_band_minutes
+
+  rows$replacement_total <- draft_replacement_total(rows$position, replacement_reference)
+  rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
+  rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
+  rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
+  previous_pool <- x[x$year == contract_year, c("nba_id", "score"), drop = FALSE]
+  previous_scores <- previous_pool$score[match(rows$nba_id, previous_pool$nba_id)]
+  rows$score_delta <- round(rows$score - previous_scores, 1)
+  rows$score_delta[rows$availability_status == "rookie_projection"] <- NA_real_
+  rows$score_label <- format(round(rows$score, 1), trim = TRUE, nsmall = 1)
+  rows$tier <- tier_from_score(rows$score)
+
+  league_timin <- sum(rows$timin, na.rm = TRUE)
+  cap_proxy <- cap_for_year(cap_assumptions, target_year, "scale_cap")
+  rows$season_value <- if (is.finite(league_timin) && league_timin > 0) round(rows$timin * cap_proxy * 30 / league_timin, 0) else NA_real_
+  rows$raw_minutes <- rows$Minutes
+  rows$raw_timin <- rows$timin
+  rows$value <- rows$season_value
+  rows$value_add <- ifelse(is.finite(rows$contract), round(rows$season_value - rows$contract, 0), NA_real_)
+  rows$trade_value <- round(rows$value * (0.45 + rows$score / 170), 0)
+  rows$scalability <- {
+    minutes_capacity <- pmin(ifelse(rows$Minutes > 0, 48 * 82 * 5 / rows$Minutes, 15), 15)
+    contract_capacity <- ifelse(is.finite(rows$contract) & rows$contract > 0, pmin(cap_proxy / rows$contract, 15), 15)
+    round(pmax(0, pmin(minutes_capacity, contract_capacity) * rows$value / cap_proxy), 3)
+  }
+
+  for (horizon in 1:5) {
+    rows[[paste0("projection_timin_y", horizon)]] <- round((rows[[paste0("projection_y", horizon)]] - rows$replacement_total) *
+      pmax(0, rows[[paste0("projection_minutes_y", horizon)]]), 1)
+    rows[[paste0("projection_value_y", horizon)]] <- if (is.finite(league_timin) && league_timin > 0) {
+      round(rows[[paste0("projection_timin_y", horizon)]] *
+        cap_for_year(cap_assumptions, rows$year + horizon, "scale_cap") * 30 / league_timin, 0)
+    } else {
+      NA_real_
+    }
+    projected_contract <- suppressWarnings(as.numeric(rows[[paste0("projection_contract_y", horizon)]]))
+    minutes_capacity <- pmin(ifelse(rows[[paste0("projection_minutes_y", horizon)]] > 0, 48 * 82 * 5 / rows[[paste0("projection_minutes_y", horizon)]], 15), 15)
+    future_cap <- cap_for_year(cap_assumptions, rows$year + horizon, "scale_cap")
+    contract_capacity <- ifelse(is.finite(projected_contract) & projected_contract > 0, pmin(future_cap / projected_contract, 15), 15)
+    rows[[paste0("projection_scalability_y", horizon)]] <- round(pmax(0, pmin(minutes_capacity, contract_capacity) *
+      rows[[paste0("projection_value_y", horizon)]] / future_cap), 3)
+  }
+
+  fa_market <- calc_fa_market_values(rows, cap_assumptions, horizon = 1)
+  rows$fa_value <- fa_market$fa_value
+  rows$fa_raw_value <- fa_market$fa_raw_value
+  rows$fa_uncapped_value <- fa_market$fa_uncapped_value
+  rows$fa_min_salary <- fa_market$fa_min_salary
+  rows$fa_max_salary <- fa_market$fa_max_salary
+  rows$fa_market_adjustment <- fa_market$fa_market_adjustment
+  rows$fa_projected_timin <- fa_market$fa_projected_timin
+  rows$fa_missing_roster_slots <- fa_market$fa_missing_roster_slots
+  rows$fa_is_max <- fa_market$fa_is_max
+  rows$fa_max_tier <- fa_market$fa_max_tier
+  for (horizon in 1:5) {
+    rows[[paste0("projection_fa_value_y", horizon)]] <- calc_fa_market_values(rows, cap_assumptions, horizon = horizon)$fa_value
+  }
+  rows$contract_status <- contract_status_label(rows$contract_status, rows$contract)
+
+  rows
+}
+
+load_contract_option_reference <- function(base_dir) {
+  option_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+  paths <- list.files(option_dir, pattern = "^contract_options_[0-9]{4}\\.csv$", full.names = TRUE)
+  if (!length(paths)) {
+    return(data.frame(
+      nba_id = integer(),
+      impact_year = integer(),
+      name_key = character(),
+      team_key = character(),
+      contract_status = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  refs <- do.call(rbind, lapply(paths, function(path) {
+    x <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+    if (!("impact_year" %in% names(x))) {
+      x$impact_year <- suppressWarnings(as.integer(sub("^contract_options_([0-9]{4})\\.csv$", "\\1", basename(path))))
+    }
+    if (!("nba_id" %in% names(x))) x$nba_id <- NA_integer_
+    if (!("player_name" %in% names(x))) x$player_name <- NA_character_
+    if (!("team" %in% names(x))) x$team <- NA_character_
+    if (!("contract_status" %in% names(x))) {
+      if ("option_type" %in% names(x)) {
+        option_type <- trimws(as.character(x$option_type))
+        x$contract_status <- ifelse(
+          grepl("^player$", option_type, ignore.case = TRUE),
+          "Player Option",
+          ifelse(grepl("^(club|team)$", option_type, ignore.case = TRUE), "Team Option", NA_character_)
+        )
+      } else {
+        x$contract_status <- NA_character_
+      }
+    }
+    data.frame(
+      nba_id = suppressWarnings(as.integer(x$nba_id)),
+      impact_year = suppressWarnings(as.integer(x$impact_year)),
+      name_key = normalize_name(x$player_name),
+      team_key = normalize_team(x$team),
+      contract_status = as.character(x$contract_status),
+      stringsAsFactors = FALSE
+    )
+  }))
+  refs <- refs[refs$contract_status %in% c("Player Option", "Team Option") & is.finite(refs$impact_year), , drop = FALSE]
+  refs <- refs[order(refs$impact_year, refs$nba_id, refs$name_key), ]
+  refs[!duplicated(paste(refs$impact_year, refs$nba_id, refs$name_key, refs$team_key)), , drop = FALSE]
+}
+
 load_contract_reference <- function(base_dir) {
   contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
   current_files <- list.files(contract_dir, pattern = "^contracts_[0-9]{4}_current\\.csv$", full.names = TRUE)
@@ -604,6 +1378,8 @@ load_contract_reference <- function(base_dir) {
   if (!file.exists(path)) {
     return(data.frame(nba_id = integer(), contract = numeric(), stringsAsFactors = FALSE))
   }
+  contract_year <- suppressWarnings(as.integer(sub("^contracts_([0-9]{4}).*$", "\\1", basename(path))))
+  if (!is.finite(contract_year)) contract_year <- 2026L
 
   contracts <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
   if (!all(c("nba_id", "salary_y0") %in% names(contracts))) {
@@ -612,13 +1388,45 @@ load_contract_reference <- function(base_dir) {
   if (!("player_name" %in% names(contracts))) contracts$player_name <- NA_character_
   if (!("team" %in% names(contracts))) contracts$team <- NA_character_
   if (!("rank" %in% names(contracts))) contracts$rank <- seq_len(nrow(contracts))
+  if (!("guaranteed" %in% names(contracts))) contracts$guaranteed <- NA_real_
   contracts <- attach_contract_ids_from_history(base_dir, contracts)
+  option_reference <- load_contract_option_reference(base_dir)
+  infer_status <- function(horizon) {
+    salary_col <- paste0("salary_y", horizon)
+    if (!(salary_col %in% names(contracts))) return(rep(NA_character_, nrow(contracts)))
+    salary <- suppressWarnings(as.numeric(contracts[[salary_col]]))
+    status_col <- paste0("contract_status_y", horizon)
+    out <- ifelse(is.finite(salary) & salary > 0, "Signed", NA_character_)
+    if (status_col %in% names(contracts)) {
+      explicit_status <- as.character(contracts[[status_col]])
+      has_explicit_status <- !is.na(explicit_status) & nzchar(trimws(explicit_status))
+      out[has_explicit_status] <- explicit_status[has_explicit_status]
+      return(out)
+    }
+    if (!nrow(option_reference)) return(out)
+
+    options <- option_reference[option_reference$impact_year == contract_year + horizon, , drop = FALSE]
+    if (!nrow(options)) return(out)
+
+    id_match <- match(contracts$nba_id, options$nba_id)
+    has_id_match <- !is.na(id_match) & !is.na(contracts$nba_id)
+    out[has_id_match] <- options$contract_status[id_match[has_id_match]]
+
+    needs_name_match <- is.na(out) | out == "Signed"
+    contract_key <- paste(normalize_name(contracts$player_name), normalize_team(contracts$team), sep = "||")
+    option_key <- paste(options$name_key, options$team_key, sep = "||")
+    name_match <- match(contract_key, option_key)
+    has_name_match <- needs_name_match & !is.na(name_match)
+    out[has_name_match] <- options$contract_status[name_match[has_name_match]]
+    out
+  }
 
   out <- data.frame(
     nba_id = suppressWarnings(as.integer(contracts$nba_id)),
     contract_player_name = as.character(contracts$player_name),
     contract_team = as.character(contracts$team),
     contract = suppressWarnings(as.numeric(contracts$salary_y0)),
+    contract_status = infer_status(0),
     contract_rank = suppressWarnings(as.numeric(contracts$rank)),
     stringsAsFactors = FALSE
   )
@@ -629,12 +1437,52 @@ load_contract_reference <- function(base_dir) {
     } else {
       NA_real_
     }
+    out[[paste0("contract_status_y", horizon)]] <- infer_status(horizon)
   }
   out <- out[!is.na(out$nba_id), ]
   out <- out[order(out$nba_id, out$contract_rank, -out$contract), ]
   out <- out[!duplicated(out$nba_id), ]
   out$contract_rank <- NULL
   out
+}
+
+load_contract_year_reference <- function(base_dir) {
+  path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "contracts_by_year.csv")
+  if (!file.exists(path)) {
+    return(data.frame(nba_id = integer(), year = integer(), stringsAsFactors = FALSE))
+  }
+  contracts <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  required <- c("nba_id", "year", "contract")
+  if (!all(required %in% names(contracts))) {
+    return(data.frame(nba_id = integer(), year = integer(), stringsAsFactors = FALSE))
+  }
+  if (!("team" %in% names(contracts))) contracts$team <- NA_character_
+  if (!("contract_status" %in% names(contracts))) contracts$contract_status <- NA_character_
+  if (!("free_agent_status" %in% names(contracts))) contracts$free_agent_status <- NA_character_
+  if (!("free_agent_year" %in% names(contracts))) contracts$free_agent_year <- NA_integer_
+  if (!("source_contract_year" %in% names(contracts))) contracts$source_contract_year <- NA_integer_
+  if (!("contract_horizon" %in% names(contracts))) contracts$contract_horizon <- NA_integer_
+  if (!("contract_rank" %in% names(contracts))) contracts$contract_rank <- seq_len(nrow(contracts))
+
+  contracts <- contracts[is.finite(suppressWarnings(as.numeric(contracts$contract))) & suppressWarnings(as.numeric(contracts$contract)) > 0, , drop = FALSE]
+  contracts <- contracts[order(
+    suppressWarnings(as.integer(contracts$nba_id)),
+    suppressWarnings(as.integer(contracts$year)),
+    suppressWarnings(as.integer(contracts$contract_horizon)),
+    -suppressWarnings(as.integer(contracts$source_contract_year)),
+    suppressWarnings(as.integer(contracts$contract_rank))
+  ), ]
+  contracts <- contracts[!duplicated(paste(contracts$nba_id, contracts$year)), ]
+  data.frame(
+    nba_id = suppressWarnings(as.integer(contracts$nba_id)),
+    year = suppressWarnings(as.integer(contracts$year)),
+    contract_year_team = as.character(contracts$team),
+    contract_year_contract = suppressWarnings(as.numeric(contracts$contract)),
+    contract_year_status = as.character(contracts$contract_status),
+    contract_year_fa_status = as.character(contracts$free_agent_status),
+    contract_year_fa_year = suppressWarnings(as.integer(contracts$free_agent_year)),
+    stringsAsFactors = FALSE
+  )
 }
 
 append_latest_contract_inactive_rows <- function(x, contract_reference, latest_year) {
@@ -689,6 +1537,13 @@ append_latest_contract_inactive_rows <- function(x, contract_reference, latest_y
     if (contract_col %in% names(inactive) && contract_col %in% names(missing_contracts)) {
       inactive[[contract_col]] <- missing_contracts[[contract_col]][contract_match]
     }
+    status_col <- paste0("contract_status_y", horizon)
+    if (status_col %in% names(inactive) && status_col %in% names(missing_contracts)) {
+      inactive[[status_col]] <- missing_contracts[[status_col]][contract_match]
+    }
+  }
+  if ("contract_status" %in% names(inactive) && "contract_status" %in% names(missing_contracts)) {
+    inactive$contract_status <- missing_contracts$contract_status[contract_match]
   }
   inactive$availability_status <- "DNQ"
   inactive$availability_reason <- "No qualifying current-season sample"
@@ -727,7 +1582,9 @@ carry_forward_dnq_profiles <- function(x, latest_year) {
   prior_pool <- prior_pool[order(prior_pool$nba_id, -prior_pool$year), ]
   prior_pool <- prior_pool[!duplicated(prior_pool$nba_id), , drop = FALSE]
 
-  for (i in which(dnq)) {
+  carry_forward <- dnq & inactive
+
+  for (i in which(carry_forward)) {
     prior_idx <- match(x$nba_id[i], prior_pool$nba_id)
     if (is.na(prior_idx)) {
       next
@@ -764,22 +1621,25 @@ build_impact_players <- function(base_dir) {
   stat_meta <- data.frame(
     nba_id = integer(),
     year = integer(),
-    stat_position = character(),
+    databallr_position = character(),
     age = numeric(),
     draft_year = numeric(),
+    overall_pick = numeric(),
     games = numeric()
   )
   if (file.exists(stats_path)) {
     stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
     if (all(c("nba_id", "year", "Pos2") %in% names(stats))) {
-      keep <- intersect(c("nba_id", "year", "Pos2", "Age", "draft_year", "GamesPlayed"), names(stats))
+      keep <- intersect(c("nba_id", "year", "Pos2", "Age", "draft_year", "overall_pick", "GamesPlayed"), names(stats))
       stat_meta <- stats[, keep, drop = FALSE]
       if (!("Age" %in% names(stat_meta))) stat_meta$Age <- NA_real_
       if (!("draft_year" %in% names(stat_meta))) stat_meta$draft_year <- NA_real_
+      if (!("overall_pick" %in% names(stat_meta))) stat_meta$overall_pick <- NA_real_
       if (!("GamesPlayed" %in% names(stat_meta))) stat_meta$GamesPlayed <- NA_real_
-      names(stat_meta)[names(stat_meta) == "Pos2"] <- "stat_position"
+      names(stat_meta)[names(stat_meta) == "Pos2"] <- "databallr_position"
       names(stat_meta)[names(stat_meta) == "Age"] <- "age"
       names(stat_meta)[names(stat_meta) == "GamesPlayed"] <- "games"
+      stat_meta$databallr_position <- normalize_position_label(stat_meta$databallr_position)
       stat_meta <- stat_meta[!duplicated(paste(stat_meta$year, stat_meta$nba_id)), ]
     }
   }
@@ -825,17 +1685,22 @@ build_impact_players <- function(base_dir) {
   x <- merge(x, stat_meta, by = c("nba_id", "year"), all.x = TRUE)
   x <- merge(x, positions, by = "nba_id", all.x = TRUE)
   contract_reference <- load_contract_reference(base_dir)
+  contract_year_reference <- load_contract_year_reference(base_dir)
+  x <- merge(x, contract_year_reference, by = c("nba_id", "year"), all.x = TRUE)
   x <- merge(x, contract_reference, by = "nba_id", all.x = TRUE)
   x$player_name <- coalesce_col(x$player_name, x$name)
   x$team <- ifelse(is.na(x$team) | x$team == "", "FA", x$team)
   x$name_key <- normalize_name(x$player_name)
   x <- merge(x, bref_meta, by = c("year", "name_key"), all.x = TRUE)
-  x$position <- coalesce_col(x$bref_position, coalesce_col(x$stat_position, x$position))
+  x$position <- coalesce_col(x$databallr_position, coalesce_col(x$bref_position, x$position))
   x$name_key <- NULL
   x$bref_position <- NULL
+  x$databallr_position <- NULL
+  x$position <- normalize_position_label(x$position)
   x$position <- ifelse(is.na(x$position) | x$position == "", "UNK", x$position)
   x$age <- suppressWarnings(as.numeric(x$age))
   x$draft_year <- suppressWarnings(as.numeric(x$draft_year))
+  x$overall_pick <- suppressWarnings(as.numeric(x$overall_pick))
   x$yoe <- ifelse(!is.na(x$draft_year), pmax(0, x$year - x$draft_year), NA_real_)
   x$games <- suppressWarnings(as.numeric(x$games))
   x$availability_status <- "qualified"
@@ -852,7 +1717,27 @@ build_impact_players <- function(base_dir) {
   x$skill_model_def <- x$DEF
   x$skill_off_total <- x$skill_model_off
   x$skill_def_total <- x$skill_model_def
-  x$contract <- ifelse(x$year == contract_year, x$contract, NA_real_)
+  year_contract <- if ("contract_year_contract" %in% names(x)) suppressWarnings(as.numeric(x$contract_year_contract)) else rep(NA_real_, nrow(x))
+  year_status <- if ("contract_year_status" %in% names(x)) as.character(x$contract_year_status) else rep(NA_character_, nrow(x))
+  year_team <- if ("contract_year_team" %in% names(x)) as.character(x$contract_year_team) else rep(NA_character_, nrow(x))
+  has_year_contract <- is.finite(year_contract) & year_contract > 0
+  x$contract <- ifelse(has_year_contract, year_contract, ifelse(x$year == contract_year, x$contract, NA_real_))
+  x$contract_status <- ifelse(!is.na(year_status) & nzchar(trimws(year_status)), year_status, x$contract_status)
+  x$team <- ifelse(has_year_contract & !is.na(year_team) & nzchar(trimws(year_team)) & x$year == contract_year, year_team, x$team)
+  x$contract_status <- contract_status_from_salary(
+    x$contract,
+    x$yoe,
+    x$age,
+    x$team,
+    x$contract_status,
+    x$year,
+    x$draft_year,
+    x$overall_pick
+  )
+  x$incumbent_team <- normalize_team(x$team)
+  x$market_team <- ifelse(is_blank_text(x$team), "FA", normalize_team(x$team))
+  x$team_projection_base <- x$market_team
+  x$projection_roster_status <- projection_roster_status(x$contract_status, x$contract)
 
   x <- x[order(x$year, -x$total, x$player_name), ]
   x$replacement_total <- replacement_from_data(x, "total")
@@ -913,12 +1798,24 @@ build_impact_players <- function(base_dir) {
     x[[paste0("projection_value_y", horizon)]] <- NA_real_
     x[[paste0("projection_fa_value_y", horizon)]] <- NA_real_
     x[[paste0("projection_scalability_y", horizon)]] <- NA_real_
+    x[[paste0("projection_offense_y", horizon)]] <- NA_real_
+    x[[paste0("projection_defense_y", horizon)]] <- NA_real_
+    for (skill_name in impact_skill_names()) {
+      x[[paste0("projection_", skill_name, "_y", horizon)]] <- NA_real_
+    }
     contract_col <- paste0("contract_y", horizon)
     x[[paste0("projection_contract_y", horizon)]] <- if (contract_col %in% names(x)) suppressWarnings(as.numeric(x[[contract_col]])) else NA_real_
     x[[paste0("projection_contract_y", horizon)]] <- ifelse(
       x$year == contract_year,
       x[[paste0("projection_contract_y", horizon)]],
       NA_real_
+    )
+    status_col <- paste0("contract_status_y", horizon)
+    x[[paste0("projection_contract_status_y", horizon)]] <- if (status_col %in% names(x)) as.character(x[[status_col]]) else NA_character_
+    x[[paste0("projection_contract_status_y", horizon)]] <- ifelse(
+      x$year == contract_year,
+      x[[paste0("projection_contract_status_y", horizon)]],
+      NA_character_
     )
     x[[paste0("projection_cap_y", horizon)]] <- cap_for_year(cap_assumptions, x$year + horizon, "scale_cap")
   }
@@ -938,6 +1835,18 @@ build_impact_players <- function(base_dir) {
         x[[paste0("projection_games_y", horizon)]][has_projection] <- round(ph$projected_games[row_match[has_projection]], 1)
         x[[paste0("projection_mpg_y", horizon)]][has_projection] <- round(ph$projected_mpg[row_match[has_projection]], 1)
         x[[paste0("projection_minutes_y", horizon)]][has_projection] <- round(ph$projected_minutes[row_match[has_projection]], 0)
+        if ("projected_offense" %in% names(ph)) {
+          x[[paste0("projection_offense_y", horizon)]][has_projection] <- round(ph$projected_offense[row_match[has_projection]], 2)
+        }
+        if ("projected_defense" %in% names(ph)) {
+          x[[paste0("projection_defense_y", horizon)]][has_projection] <- round(ph$projected_defense[row_match[has_projection]], 2)
+        }
+        for (skill_name in impact_skill_names()) {
+          projected_col <- projection_skill_col(skill_name)
+          if (projected_col %in% names(ph)) {
+            x[[paste0("projection_", skill_name, "_y", horizon)]][has_projection] <- round(ph[[projected_col]][row_match[has_projection]], 2)
+          }
+        }
         projected_timin <- (ph$projected_total[row_match[has_projection]] - x$replacement_total[has_projection]) *
           pmax(0, ph$projected_minutes[row_match[has_projection]])
         base_year <- x$year[has_projection]
@@ -995,14 +1904,27 @@ build_impact_players <- function(base_dir) {
     projection_fa <- calc_fa_market_values(x, cap_assumptions, horizon = horizon)
     x[[paste0("projection_fa_value_y", horizon)]] <- projection_fa$fa_value
   }
-  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Replacement is a position-count cutoff below the top 60 rotation-useful players per position, using the 90th slot as the roster-edge baseline. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves."
+
+  x$lineup_original_minutes <- x$Minutes
+  x$lineup_adjusted_minutes <- x$Minutes
+  x$lineup_role <- NA_character_
+  x$lineup_role_order <- NA_integer_
+  x$lineup_role_band_minutes <- NA_real_
+
+  projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year)
+  if (nrow(projected_2027) > 0) {
+    x <- rbind(x, projected_2027[, names(x), drop = FALSE])
+  }
+
+  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Replacement is a trailing 3-year position-count cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves."
 
   cols <- c(
-    "nba_id", "player_name", "year", "team", "position", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
+    "nba_id", "player_name", "year", "team", "incumbent_team", "market_team", "team_projection_base",
+    "projection_roster_status", "position", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "replacement_total", "score", "score_label", "score_delta", "tier", "availability_status", "availability_reason",
     "skill_source", "skill_source_year", "timin", "season_value", "raw_minutes", "raw_timin",
-    "value", "contract", "value_add", "trade_value",
+    "value", "contract", "contract_status", "value_add", "trade_value",
     "fa_value", "fa_raw_value", "fa_uncapped_value", "fa_min_salary", "fa_max_salary",
     "fa_market_adjustment", "fa_projected_timin", "fa_missing_roster_slots", "fa_is_max",
     "fa_max_tier", "scalability", "skill_model_off", "skill_model_def", "skill_off_total", "skill_def_total",
@@ -1012,56 +1934,574 @@ build_impact_players <- function(base_dir) {
     "projection_games_y1", "projection_games_y2", "projection_games_y3", "projection_games_y4", "projection_games_y5",
     "projection_mpg_y1", "projection_mpg_y2", "projection_mpg_y3", "projection_mpg_y4", "projection_mpg_y5",
     "projection_minutes_y1", "projection_minutes_y2", "projection_minutes_y3", "projection_minutes_y4", "projection_minutes_y5",
+    "projection_offense_y1", "projection_offense_y2", "projection_offense_y3", "projection_offense_y4", "projection_offense_y5",
+    "projection_defense_y1", "projection_defense_y2", "projection_defense_y3", "projection_defense_y4", "projection_defense_y5",
     "projection_timin_y1", "projection_timin_y2", "projection_timin_y3", "projection_timin_y4", "projection_timin_y5",
     "projection_value_y1", "projection_value_y2", "projection_value_y3", "projection_value_y4", "projection_value_y5",
     "projection_fa_value_y1", "projection_fa_value_y2", "projection_fa_value_y3", "projection_fa_value_y4", "projection_fa_value_y5",
     "projection_scalability_y1", "projection_scalability_y2", "projection_scalability_y3", "projection_scalability_y4", "projection_scalability_y5",
     "projection_contract_y1", "projection_contract_y2", "projection_contract_y3", "projection_contract_y4", "projection_contract_y5",
     "projection_cap_y1", "projection_cap_y2", "projection_cap_y3", "projection_cap_y4", "projection_cap_y5",
+    "lineup_original_minutes", "lineup_adjusted_minutes", "lineup_role", "lineup_role_order", "lineup_role_band_minutes",
     "source_note"
   )
   cols <- intersect(cols, names(x))
   x[, cols, drop = FALSE]
 }
 
-build_team_projections <- function(players) {
+team_projection_scenarios <- function() {
+  data.frame(
+    scenario_id = c("base", "guaranteed", "open_market"),
+    scenario_label = c("Base Case", "Guaranteed Only", "Open Market"),
+    stringsAsFactors = FALSE
+  )
+}
+
+assign_team_projection_scenario <- function(players, scenario_id) {
+  assigned <- players
+  projected_year <- max(suppressWarnings(as.numeric(assigned$year)), na.rm = TRUE)
+  is_projected <- assigned$year == projected_year &
+    assigned$availability_status %in% c("projected", "rookie_projection")
+  roster_status <- if ("projection_roster_status" %in% names(assigned)) {
+    as.character(assigned$projection_roster_status)
+  } else {
+    projection_roster_status(assigned$contract_status, assigned$contract)
+  }
+  incumbent <- if ("incumbent_team" %in% names(assigned)) normalize_team(assigned$incumbent_team) else normalize_team(assigned$team)
+  market <- if ("market_team" %in% names(assigned)) normalize_team(assigned$market_team) else normalize_team(assigned$team)
+  base <- if ("team_projection_base" %in% names(assigned)) normalize_team(assigned$team_projection_base) else normalize_team(assigned$team)
+  base[is_blank_text(base)] <- "FA"
+  market[is_blank_text(market)] <- "FA"
+  incumbent[is_blank_text(incumbent)] <- "FA"
+
+  scenario_team <- normalize_team(assigned$team)
+  scenario_team[is_blank_text(scenario_team)] <- "FA"
+  if (scenario_id == "base") {
+    scenario_team[is_projected] <- base[is_projected]
+  } else if (scenario_id == "guaranteed") {
+    scenario_team[is_projected] <- ifelse(roster_status[is_projected] == "signed", incumbent[is_projected], "FA")
+  } else if (scenario_id == "open_market") {
+    scenario_team[is_projected] <- market[is_projected]
+  }
+  assigned$team <- scenario_team
+  assigned$team_projection_scenario <- scenario_id
+  assigned
+}
+
+build_team_projections_for_scenario <- function(players, scenario_id, scenario_label) {
+  players <- assign_team_projection_scenario(players, scenario_id)
   players <- players[players$team != "FA" & !is.na(players$team), ]
+  if (!nrow(players)) {
+    return(data.frame())
+  }
+  players$team <- normalize_team(players$team)
+  skill_names <- impact_skill_names()
+  meta <- team_metadata()
   split_key <- paste(players$year, players$team, sep = "||")
   grouped <- split(players, split_key)
   out <- do.call(rbind, lapply(grouped, function(df) {
-    minutes <- sum(df$Minutes, na.rm = TRUE)
-    wavg <- function(v) if (minutes > 0) sum(v * df$Minutes, na.rm = TRUE) / minutes else mean(v, na.rm = TRUE)
-    data.frame(
+    minutes <- sum(suppressWarnings(as.numeric(df$Minutes)), na.rm = TRUE)
+    weighted <- function(v) {
+      v <- suppressWarnings(as.numeric(v))
+      if (minutes > 0) {
+        sum(v * suppressWarnings(as.numeric(df$Minutes)) / minutes, na.rm = TRUE)
+      } else {
+        mean(v, na.rm = TRUE)
+      }
+    }
+    row <- data.frame(
+      scenario_id = scenario_id,
+      scenario_label = scenario_label,
       year = df$year[1],
       team = df$team[1],
+      team_abbr = df$team[1],
       conference = team_conference(df$team[1]),
       roster_count = nrow(df),
       minutes = round(minutes, 1),
-      offense = round(wavg(df$offense), 2),
-      defense = round(wavg(df$defense), 2),
-      total = round(wavg(df$total), 2),
-      win_units = round(sum(df$total * df$Minutes / 2400, na.rm = TRUE), 2),
+      raw_offense = round(weighted(df$offense) * 5, 2),
+      raw_defense = round(weighted(df$defense) * 5, 2),
+      raw_total = round(weighted(df$total) * 5, 2),
+      stringsAsFactors = FALSE
+    )
+    for (skill_name in skill_names) {
+      row[[skill_name]] <- if (skill_name %in% names(df)) round(weighted(df[[skill_name]]), 2) else NA_real_
+    }
+    row
+  }))
+  out <- merge(out, meta, by = c("team_abbr", "conference"), all.x = TRUE, sort = FALSE)
+  out$team_name <- coalesce_col(out$team_name, out$team)
+  out$team_logo_url <- team_logo_url(out$nba_team_id)
+  out$raw_offense <- round(out$raw_offense - ave(out$raw_offense, out$year, FUN = function(v) mean(v, na.rm = TRUE)), 2)
+  out$raw_defense <- round(out$raw_defense - ave(out$raw_defense, out$year, FUN = function(v) mean(v, na.rm = TRUE)), 2)
+  out$raw_total <- round(out$raw_offense + out$raw_defense, 2)
+  out$minutes_coverage <- round(clamp(out$minutes / 19680, 0, 1), 3)
+  out$missing_minute_offense <- ave(out$raw_offense, out$year, FUN = function(v) {
+    fill <- suppressWarnings(as.numeric(stats::quantile(v, probs = 0.2, na.rm = TRUE, names = FALSE)))
+    ifelse(is.finite(fill), pmin(0, fill), 0)
+  })
+  out$missing_minute_defense <- ave(out$raw_defense, out$year, FUN = function(v) {
+    fill <- suppressWarnings(as.numeric(stats::quantile(v, probs = 0.2, na.rm = TRUE, names = FALSE)))
+    ifelse(is.finite(fill), pmin(0, fill), 0)
+  })
+  out$offense <- ifelse(
+    out$minutes >= 19680,
+    out$raw_offense,
+    out$raw_offense * out$minutes_coverage + out$missing_minute_offense * (1 - out$minutes_coverage)
+  )
+  out$defense <- ifelse(
+    out$minutes >= 19680,
+    out$raw_defense,
+    out$raw_defense * out$minutes_coverage + out$missing_minute_defense * (1 - out$minutes_coverage)
+  )
+  out$offense <- out$offense - ave(out$offense, out$year, FUN = function(v) mean(v, na.rm = TRUE))
+  out$defense <- out$defense - ave(out$defense, out$year, FUN = function(v) mean(v, na.rm = TRUE))
+  out$total <- out$offense + out$defense
+  out$adjusted_total <- out$total
+  out$offense <- ave(out$offense, out$year, FUN = zero_sum_round)
+  out$defense <- ave(out$defense, out$year, FUN = zero_sum_round)
+  out$total <- round(out$offense + out$defense, 2)
+  out$adjusted_total <- out$total
+  out$win_units <- out$adjusted_total
+  out$centered_units <- ave(out$win_units, out$year, FUN = function(v) v - mean(v, na.rm = TRUE))
+  out$projected_wins <- round(clamp(41 + out$centered_units * 2.8, 12, 70), 1)
+  out$projected_losses <- round(82 - out$projected_wins, 1)
+  out$win_pct <- round(out$projected_wins / 82, 3)
+  out$expected_wins <- out$projected_wins
+  out$expected_losses <- out$projected_losses
+  out$league_rank <- ave(-out$projected_wins, out$year, FUN = function(v) rank(v, ties.method = "first"))
+  out$rank <- out$league_rank
+  out$conference_rank <- ave(-out$projected_wins, paste(out$year, out$conference), FUN = function(v) rank(v, ties.method = "first"))
+  out$playoff_status <- ifelse(out$conference_rank <= 6, "Playoff", ifelse(out$conference_rank <= 10, "Play-In", "Lottery"))
+  out <- out[order(out$year, out$league_rank), ]
+  keep <- c(
+    "scenario_id", "scenario_label", "year", "team", "team_name", "team_abbr", "team_logo_url", "conference", "roster_count",
+    "minutes", "minutes_coverage", "raw_offense", "raw_defense", "raw_total", "adjusted_total",
+    "offense", "defense", "total", "win_units", "projected_wins", "projected_losses", "win_pct",
+    "expected_wins", "expected_losses", "league_rank", "rank", "conference_rank", "playoff_status",
+    skill_names
+  )
+  out[, keep, drop = FALSE]
+}
+
+build_team_projections <- function(players) {
+  scenarios <- team_projection_scenarios()
+  out <- do.call(rbind, lapply(seq_len(nrow(scenarios)), function(i) {
+    build_team_projections_for_scenario(players, scenarios$scenario_id[i], scenarios$scenario_label[i])
+  }))
+  row.names(out) <- NULL
+  out
+}
+
+build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label) {
+  empty <- function() {
+    data.frame(
+      scenario_id = character(),
+      scenario_label = character(),
+      year = integer(),
+      team = character(),
+      team_name = character(),
+      team_abbr = character(),
+      team_logo_url = character(),
+      conference = character(),
+      role_order = integer(),
+      role_label = character(),
+      role_type = character(),
+      position_group = character(),
+      role_band_minutes = numeric(),
+      lineup_rank = integer(),
+      is_starter = logical(),
+      nba_id = integer(),
+      player_name = character(),
+      position = character(),
+      original_minutes = numeric(),
+      adjusted_minutes = numeric(),
+      minutes_delta = numeric(),
+      games = numeric(),
+      mpg = numeric(),
+      offense = numeric(),
+      defense = numeric(),
+      total = numeric(),
+      score = numeric(),
+      tier = character(),
+      role_score = numeric(),
+      contract_status = character(),
+      stringsAsFactors = FALSE
+    )
+  }
+  if (!nrow(players)) {
+    return(empty())
+  }
+
+  players <- assign_team_projection_scenario(players, scenario_id)
+  x <- players[players$team != "FA" & !is.na(players$team), , drop = FALSE]
+  if (!nrow(x)) return(empty())
+  x$team <- normalize_team(x$team)
+  x$.lineup_row_id <- seq_len(nrow(x))
+  grouped <- split(x, paste(x$year, x$team, sep = "||"))
+  out <- do.call(rbind, lapply(grouped, estimate_team_lineup_rows))
+  if (is.null(out) || !nrow(out)) return(empty())
+
+  out$scenario_id <- scenario_id
+  out$scenario_label <- scenario_label
+  meta <- team_metadata()
+  out$team_abbr <- out$team
+  out$conference <- team_conference(out$team)
+  out <- merge(out, meta, by = c("team_abbr", "conference"), all.x = TRUE, sort = FALSE)
+  out$team_name <- coalesce_col(out$team_name, out$team)
+  out$team_logo_url <- team_logo_url(out$nba_team_id)
+  original_minutes <- if ("lineup_original_minutes" %in% names(out)) suppressWarnings(as.numeric(out$lineup_original_minutes)) else suppressWarnings(as.numeric(out$Minutes))
+  adjusted_minutes <- if ("lineup_adjusted_minutes" %in% names(out)) suppressWarnings(as.numeric(out$lineup_adjusted_minutes)) else suppressWarnings(as.numeric(out$Minutes))
+  out$original_minutes <- round(original_minutes, 0)
+  out$adjusted_minutes <- round(adjusted_minutes, 0)
+  out$minutes_delta <- round(out$adjusted_minutes - out$original_minutes, 0)
+  out$mpg <- suppressWarnings(as.numeric(out$p_mpg))
+
+  keep <- c(
+    "scenario_id", "scenario_label", "year", "team", "team_name", "team_abbr", "team_logo_url", "conference",
+    "role_order", "role_label", "role_type", "position_group", "role_band_minutes",
+    "lineup_rank", "is_starter", "nba_id", "player_name", "position",
+    "original_minutes", "adjusted_minutes", "minutes_delta", "games", "mpg",
+    "offense", "defense", "total", "score", "tier", "role_score", "contract_status"
+  )
+  out <- out[order(out$year, out$team, out$role_order), intersect(keep, names(out)), drop = FALSE]
+  row.names(out) <- NULL
+  out
+}
+
+build_team_lineups <- function(players) {
+  scenarios <- team_projection_scenarios()
+  out <- do.call(rbind, lapply(seq_len(nrow(scenarios)), function(i) {
+    build_team_lineups_for_scenario(players, scenarios$scenario_id[i], scenarios$scenario_label[i])
+  }))
+  row.names(out) <- NULL
+  out
+}
+
+bref_schedule_empty <- function() {
+  data.frame(
+    season = integer(),
+    season_type = character(),
+    date = character(),
+    time = character(),
+    home_team = character(),
+    away_team = character(),
+    home_score = numeric(),
+    away_score = numeric(),
+    home_win_probability = numeric(),
+    away_win_probability = numeric(),
+    result = character(),
+    arena = character(),
+    notes = character(),
+    is_completed = logical(),
+    stringsAsFactors = FALSE
+  )
+}
+
+download_bref_html <- function(url) {
+  cache_dir <- getOption("bref_schedule_cache_dir", NULL)
+  cache_path <- NULL
+  if (!is.null(cache_dir)) {
+    dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+    cache_key <- paste0(gsub("[^A-Za-z0-9]+", "_", url), ".html")
+    cache_path <- file.path(cache_dir, cache_key)
+    if (file.exists(cache_path) && file.info(cache_path)$size > 0) {
+      return(tryCatch(xml2::read_html(cache_path), error = function(e) NULL))
+    }
+  }
+  tmp <- tempfile(fileext = ".html")
+  on.exit(unlink(tmp), add = TRUE)
+  ok <- tryCatch({
+    utils::download.file(
+      url,
+      tmp,
+      quiet = TRUE,
+      mode = "wb",
+      method = "libcurl",
+      headers = c("User-Agent" = "Mozilla/5.0")
+    )
+    TRUE
+  }, error = function(e) FALSE, warning = function(w) FALSE)
+  if (!ok || !file.exists(tmp) || file.info(tmp)$size == 0) return(NULL)
+  if (!is.null(cache_path)) {
+    file.copy(tmp, cache_path, overwrite = TRUE)
+  }
+  tryCatch(xml2::read_html(tmp), error = function(e) NULL)
+}
+
+parse_bref_schedule_doc <- function(season, season_type, doc) {
+  rows <- rvest::html_elements(doc, "table#schedule tbody tr")
+  if (!length(rows)) return(bref_schedule_empty())
+  text_at <- function(row, stat) {
+    node <- rvest::html_element(row, paste0("[data-stat='", stat, "']"))
+    if (length(node) == 0 || is.na(node)) return(NA_character_)
+    trimws(rvest::html_text2(node))
+  }
+  out <- do.call(rbind, lapply(rows, function(row) {
+    if (length(rvest::html_element(row, "[data-stat='date_game']")) == 0) return(NULL)
+    date_text <- text_at(row, "date_game")
+    if (is.na(date_text) || date_text == "") return(NULL)
+    away_score <- suppressWarnings(as.numeric(text_at(row, "visitor_pts")))
+    home_score <- suppressWarnings(as.numeric(text_at(row, "home_pts")))
+    data.frame(
+      season = season,
+      season_type = season_type,
+      date = as.character(suppressWarnings(as.Date(date_text, format = "%a, %b %d, %Y"))),
+      time = text_at(row, "game_start_time"),
+      home_team = team_abbr_from_name(text_at(row, "home_team_name")),
+      away_team = team_abbr_from_name(text_at(row, "visitor_team_name")),
+      home_score = home_score,
+      away_score = away_score,
+      arena = text_at(row, "arena_name"),
+      notes = text_at(row, "game_remarks"),
+      is_completed = is.finite(home_score) & is.finite(away_score),
       stringsAsFactors = FALSE
     )
   }))
-  out$centered_units <- ave(out$win_units, out$year, FUN = function(v) v - mean(v, na.rm = TRUE))
-  out$projected_wins <- round(clamp(41 + out$centered_units * 1.15, 12, 70), 1)
-  out$rank <- ave(-out$projected_wins, out$year, FUN = rank, ties.method = "first")
-  out$conference_rank <- ave(-out$projected_wins, paste(out$year, out$conference), FUN = rank, ties.method = "first")
-  out <- out[order(out$year, out$rank), ]
-  out[, c("year", "team", "conference", "roster_count", "minutes", "offense", "defense", "total", "win_units", "projected_wins", "rank", "conference_rank")]
+  if (is.null(out) || !nrow(out)) return(bref_schedule_empty())
+  out$result <- ifelse(
+    out$is_completed,
+    ifelse(out$home_score > out$away_score, out$home_team, out$away_team),
+    NA_character_
+  )
+  out$home_win_probability <- NA_real_
+  out$away_win_probability <- NA_real_
+  out
 }
 
-build_pick_assets <- function() {
+parse_bref_schedule <- function(season, season_type, url) {
+  doc <- download_bref_html(url)
+  if (is.null(doc)) return(bref_schedule_empty())
+  docs <- list(doc)
+  if (season_type == "Regular Season") {
+    hrefs <- rvest::html_attr(rvest::html_elements(doc, "div.filter a"), "href")
+    hrefs <- hrefs[!is.na(hrefs) & grepl(sprintf("/leagues/NBA_%s_games-", season), hrefs)]
+    if (length(hrefs)) {
+      urls <- unique(paste0("https://www.basketball-reference.com", hrefs))
+      month_docs <- lapply(urls, download_bref_html)
+      month_docs <- month_docs[!vapply(month_docs, is.null, logical(1))]
+      if (length(month_docs)) docs <- month_docs
+    }
+  }
+  out <- do.call(rbind, lapply(docs, function(item) parse_bref_schedule_doc(season, season_type, item)))
+  if (is.null(out) || !nrow(out)) return(bref_schedule_empty())
+  out <- out[!duplicated(paste(out$season, out$season_type, out$date, out$home_team, out$away_team)), ]
+  out[order(out$date, out$time, out$home_team), ]
+}
+
+classify_extra_regular_games <- function(schedules) {
+  if (!nrow(schedules)) return(schedules)
+  for (season in sort(unique(schedules$season))) {
+    idx <- which(schedules$season == season & schedules$season_type == "Regular Season")
+    if (!length(idx)) next
+    idx <- idx[order(schedules$date[idx], schedules$time[idx], schedules$home_team[idx])]
+    counts <- setNames(rep(0L, length(team_metadata()$team_abbr)), team_metadata()$team_abbr)
+    for (row_idx in idx) {
+      home <- schedules$home_team[row_idx]
+      away <- schedules$away_team[row_idx]
+      is_extra <- (!is.na(counts[home]) && counts[home] >= 82L) || (!is.na(counts[away]) && counts[away] >= 82L)
+      if (is_extra || grepl("play-in|cup final", schedules$notes[row_idx], ignore.case = TRUE)) {
+        schedules$season_type[row_idx] <- "Play-In"
+      } else {
+        counts[home] <- counts[home] + 1L
+        counts[away] <- counts[away] + 1L
+      }
+    }
+  }
+  schedules
+}
+
+build_team_schedules <- function(teams) {
+  schedule_dir <- file.path(resolve_base_dir(), "processed", "livedata", "schedules")
+  options(bref_schedule_cache_dir = file.path(schedule_dir, "bref_html"))
+  schedule_cache <- file.path(schedule_dir, "bref_team_schedules.csv")
+  seasons <- sort(unique(teams$year[is.finite(teams$year) & teams$year <= 2026]))
+  if (!length(seasons)) return(bref_schedule_empty())
+  force_refresh <- tolower(Sys.getenv("NBA_REFRESH_SCHEDULES", "false")) %in% c("1", "true", "yes")
+  if (file.exists(schedule_cache) && !force_refresh) {
+    schedules <- read.csv(schedule_cache, stringsAsFactors = FALSE, check.names = FALSE)
+  } else {
+    schedules <- do.call(rbind, lapply(seasons, function(season) {
+      regular <- parse_bref_schedule(
+        season,
+        "Regular Season",
+        sprintf("https://www.basketball-reference.com/leagues/NBA_%s_games.html", season)
+      )
+      playoffs <- parse_bref_schedule(
+        season,
+        "Playoffs",
+        sprintf("https://www.basketball-reference.com/playoffs/NBA_%s_games.html", season)
+      )
+      if (nrow(regular) && nrow(playoffs)) {
+        playoff_keys <- paste(playoffs$date, playoffs$home_team, playoffs$away_team)
+        regular <- regular[!(paste(regular$date, regular$home_team, regular$away_team) %in% playoff_keys), , drop = FALSE]
+      }
+      rbind(regular, playoffs)
+    }))
+    if (!is.null(schedules) && nrow(schedules)) {
+      dir.create(schedule_dir, recursive = TRUE, showWarnings = FALSE)
+      write.csv(schedules, schedule_cache, row.names = FALSE, na = "")
+    }
+  }
+  if (is.null(schedules) || !nrow(schedules)) return(bref_schedule_empty())
+  schedules <- classify_extra_regular_games(schedules)
+  rating_key <- paste(teams$year, teams$team, sep = "||")
+  ratings <- teams$adjusted_total
+  names(ratings) <- rating_key
+  home_rating <- ratings[paste(schedules$season, schedules$home_team, sep = "||")]
+  away_rating <- ratings[paste(schedules$season, schedules$away_team, sep = "||")]
+  diff <- suppressWarnings(as.numeric(home_rating) - as.numeric(away_rating))
+  schedules$home_win_probability <- round(1 / (1 + exp(-diff / (2.2 * 3))), 3)
+  schedules$away_win_probability <- round(1 - schedules$home_win_probability, 3)
+  schedules
+}
+
+apply_schedule_projections <- function(teams, schedules) {
+  if (!nrow(schedules)) return(teams)
+  teams$expected_wins <- teams$projected_wins
+  teams$expected_losses <- teams$projected_losses
+  teams$actual_wins <- NA_real_
+  teams$actual_losses <- NA_real_
+  teams$remaining_games <- NA_real_
+  teams$playoff_projected_wins <- NA_real_
+  teams$playoff_projected_losses <- NA_real_
+  teams$playoff_actual_wins <- NA_real_
+  teams$playoff_actual_losses <- NA_real_
+  for (idx in seq_len(nrow(teams))) {
+    team <- teams$team[idx]
+    season <- teams$year[idx]
+    games <- schedules[schedules$season == season & (schedules$home_team == team | schedules$away_team == team), , drop = FALSE]
+    if (!nrow(games)) next
+    regular <- games[games$season_type == "Regular Season", , drop = FALSE]
+    playoffs <- games[games$season_type == "Playoffs", , drop = FALSE]
+    is_home <- regular$home_team == team
+    completed <- regular$is_completed
+    win_prob <- ifelse(is_home, regular$home_win_probability, regular$away_win_probability)
+    actual_wins <- sum(completed & regular$result == team, na.rm = TRUE)
+    actual_losses <- sum(completed & regular$result != team, na.rm = TRUE)
+    future_wins <- sum(win_prob[!completed], na.rm = TRUE)
+    expected_wins <- sum(win_prob, na.rm = TRUE)
+    teams$actual_wins[idx] <- actual_wins
+    teams$actual_losses[idx] <- actual_losses
+    teams$remaining_games[idx] <- sum(!completed, na.rm = TRUE)
+    teams$expected_wins[idx] <- round(expected_wins, 1)
+    teams$expected_losses[idx] <- round(nrow(regular) - expected_wins, 1)
+    teams$projected_wins[idx] <- round(actual_wins + future_wins, 1)
+    teams$projected_losses[idx] <- round(actual_losses + sum(1 - win_prob[!completed], na.rm = TRUE), 1)
+    teams$win_pct[idx] <- round(ifelse(nrow(regular) > 0, teams$projected_wins[idx] / nrow(regular), NA_real_), 3)
+    if (nrow(playoffs)) {
+      playoff_is_home <- playoffs$home_team == team
+      playoff_completed <- playoffs$is_completed
+      playoff_prob <- ifelse(playoff_is_home, playoffs$home_win_probability, playoffs$away_win_probability)
+      playoff_actual_wins <- sum(playoff_completed & playoffs$result == team, na.rm = TRUE)
+      playoff_actual_losses <- sum(playoff_completed & playoffs$result != team, na.rm = TRUE)
+      teams$playoff_actual_wins[idx] <- playoff_actual_wins
+      teams$playoff_actual_losses[idx] <- playoff_actual_losses
+      teams$playoff_projected_wins[idx] <- round(playoff_actual_wins + sum(playoff_prob[!playoff_completed], na.rm = TRUE), 1)
+      teams$playoff_projected_losses[idx] <- round(playoff_actual_losses + sum(1 - playoff_prob[!playoff_completed], na.rm = TRUE), 1)
+    }
+  }
+  rank_group <- if ("scenario_id" %in% names(teams)) paste(teams$year, teams$scenario_id) else teams$year
+  conference_rank_group <- if ("scenario_id" %in% names(teams)) paste(teams$year, teams$scenario_id, teams$conference) else paste(teams$year, teams$conference)
+  teams$league_rank <- ave(-teams$projected_wins, rank_group, FUN = function(v) rank(v, ties.method = "first"))
+  teams$rank <- teams$league_rank
+  teams$conference_rank <- ave(-teams$projected_wins, conference_rank_group, FUN = function(v) rank(v, ties.method = "first"))
+  teams$playoff_status <- ifelse(teams$conference_rank <= 6, "Playoff", ifelse(teams$conference_rank <= 10, "Play-In", "Lottery"))
+  order_key <- if ("scenario_id" %in% names(teams)) teams$scenario_id else ""
+  teams[order(teams$year, order_key, teams$league_rank), ]
+}
+
+build_pick_assets <- function(base_dir, players) {
   picks <- 1:60
-  base_value <- ifelse(picks <= 30, 34000000 * exp(-(picks - 1) / 19), 4200000 * exp(-(picks - 31) / 18))
+  fallback_value <- ifelse(picks <= 30, 34000000 * exp(-(picks - 1) / 19), 4200000 * exp(-(picks - 31) / 18))
+  value <- fallback_value
+  training_n <- rep(0L, length(picks))
+
+  draft_path <- file.path(base_dir, "processed", "draft", "draft_picks_all_classes.csv")
+  if (file.exists(draft_path) && is.data.frame(players) && nrow(players)) {
+    draft <- read.csv(draft_path, stringsAsFactors = FALSE, check.names = FALSE)
+    required <- c("player", "draft_year", "pick_overall")
+    if (all(required %in% names(draft)) && all(c("player_name", "year", "value") %in% names(players))) {
+      latest_impact_year <- max(suppressWarnings(as.integer(players$skill_source_year)), na.rm = TRUE)
+      if (!is.finite(latest_impact_year)) {
+        latest_impact_year <- max(suppressWarnings(as.integer(players$year)), na.rm = TRUE)
+      }
+      impact <- players
+      impact$join_player <- normalize_name(impact$player_name)
+      impact$year <- suppressWarnings(as.integer(impact$year))
+      impact$value <- suppressWarnings(as.numeric(impact$value))
+      impact <- impact[
+        !is.na(impact$join_player) & impact$join_player != "" &
+          !is.na(impact$year) & impact$year <= latest_impact_year &
+          is.finite(impact$value),
+        c("join_player", "year", "value"),
+        drop = FALSE
+      ]
+
+      draft_ref <- data.frame(
+        join_player = normalize_name(draft$player),
+        draft_year = suppressWarnings(as.integer(draft$draft_year)),
+        pick = suppressWarnings(as.integer(draft$pick_overall)),
+        stringsAsFactors = FALSE
+      )
+      draft_ref <- draft_ref[
+        !is.na(draft_ref$join_player) & draft_ref$join_player != "" &
+          !is.na(draft_ref$draft_year) & draft_ref$pick %in% picks,
+        ,
+        drop = FALSE
+      ]
+      draft_ref <- draft_ref[!duplicated(paste(draft_ref$join_player, draft_ref$draft_year, draft_ref$pick)), ]
+      training <- merge(draft_ref, impact, by = "join_player", all = FALSE)
+      training$nba_year <- training$year - training$draft_year
+      training <- training[training$nba_year %in% c(3, 4), , drop = FALSE]
+
+      if (nrow(training)) {
+        target <- aggregate(
+          value ~ join_player + draft_year + pick,
+          data = training,
+          FUN = function(x) 4 * max(x, na.rm = TRUE)
+        )
+        target$value <- pmax(0, suppressWarnings(as.numeric(target$value)))
+        target <- target[is.finite(target$value), , drop = FALSE]
+        training_counts <- table(target$pick)
+        training_n[as.integer(names(training_counts))] <- as.integer(training_counts)
+
+        if (nrow(target) >= 30 && length(unique(target$pick)) >= 20) {
+          target_by_pick <- aggregate(target$value, by = list(pick = target$pick), FUN = median)
+          names(target_by_pick)[2] <- "target_value"
+          target_by_pick <- target_by_pick[order(target_by_pick$pick), , drop = FALSE]
+          fit <- isoreg(target_by_pick$pick, -log1p(target_by_pick$target_value))
+          fitted_curve <- approx(
+            x = target_by_pick$pick,
+            y = fit$yf,
+            xout = picks,
+            rule = 2,
+            ties = mean
+          )$y
+          trained_value <- pmax(0, expm1(-fitted_curve))
+          if (all(is.finite(trained_value)) && max(trained_value, na.rm = TRUE) > 0) {
+            value <- trained_value
+          }
+        }
+      }
+    }
+  }
+
   data.frame(
     asset_id = paste0("pick-", picks),
     label = paste0("Pick ", picks),
     pick = picks,
     round = ifelse(picks <= 30, 1, 2),
-    normalized = round(base_value / max(base_value), 3),
-    value = round(base_value, 0),
+    normalized = round(value / max(value, na.rm = TRUE), 3),
+    value = round(value, 0),
+    asset_type = "slot_value",
+    origin_team = NA_character_,
+    draft_year = NA_integer_,
+    protection = NA_character_,
+    protection_cutoff = NA_integer_,
+    counterparty_team = NA_character_,
+    convey_probability = NA_real_,
+    expected_pick = picks,
+    training_n = training_n,
     stringsAsFactors = FALSE
   )
 }
@@ -1204,9 +2644,14 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
     "tracker_adjustment_version"
   )
   skill <- skill[, intersect(skill_cols, names(skill)), drop = FALSE]
-  unified <- read_csv_required(unified_path, c("player", "draft_year", "scv_draft", "draft_age", "height_wo_shoes_in", "wingspan_in", "weight_lbs", "pos_code", "pre_draft_team"))
+  unified <- read_csv_required(unified_path, c("player", "draft_year", "scv_draft", "draft_age", "height_wo_shoes_in", "wingspan_in", "weight_lbs", "pos_code", "pre_draft_team", "source_team"))
   unified <- unified[!duplicated(paste(unified$player, unified$draft_year)), ]
   x <- merge(skill, unified, by = c("player", "draft_year"), all.x = TRUE)
+  if (!"prediction_pool" %in% names(x)) {
+    prediction_pool_x <- if ("prediction_pool.x" %in% names(x)) x[["prediction_pool.x"]] else NA_character_
+    prediction_pool_y <- if ("prediction_pool.y" %in% names(x)) x[["prediction_pool.y"]] else NA_character_
+    x$prediction_pool <- coalesce_col(prediction_pool_x, prediction_pool_y)
+  }
   x$join_player <- normalize_name(x$player)
   college_ref <- load_draft_college_reference(base_dir)
   x <- merge(x, college_ref, by = c("join_player", "draft_year"), all.x = TRUE)
@@ -1228,7 +2673,22 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
   x$realgm_position <- NULL
   x$position <- coalesce_col(x$position_override, x$position)
   x$position_override <- NULL
-  x$college <- coalesce_col(x$college, x$pre_draft_team)
+  college <- if ("college" %in% names(x)) as.character(x[["college"]]) else rep(NA_character_, nrow(x))
+  source_team <- if ("source_team" %in% names(x)) as.character(x[["source_team"]]) else rep(NA_character_, nrow(x))
+  pre_draft_team <- if ("pre_draft_team" %in% names(x)) as.character(x[["pre_draft_team"]]) else rep(NA_character_, nrow(x))
+  prediction_pool <- if ("prediction_pool" %in% names(x)) as.character(x[["prediction_pool"]]) else rep(NA_character_, nrow(x))
+  is_no_college <- !is.na(prediction_pool) & trimws(tolower(prediction_pool)) == "no_college"
+  no_college_source_team <- ifelse(is_no_college, source_team, NA_character_)
+  x$college <- ifelse(
+    !is.na(no_college_source_team) & nzchar(trimws(no_college_source_team)),
+    no_college_source_team,
+    ifelse(!is.na(college) & nzchar(trimws(college)), college, pre_draft_team)
+  )
+  x$pre_draft_team <- ifelse(
+    !is.na(no_college_source_team) & nzchar(trimws(no_college_source_team)),
+    no_college_source_team,
+    pre_draft_team
+  )
   x$replacement_total <- draft_replacement_total(x$position, replacement_reference)
   if (!("FINAL_TOTAL_pred" %in% names(x))) {
     x$FINAL_TOTAL_pred <- x$TOTAL_pred
@@ -1338,8 +2798,14 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 players <- build_impact_players(base_dir)
 teams <- build_team_projections(players)
-picks <- build_pick_assets()
-latest_impact_year <- max(players$year, na.rm = TRUE)
+team_lineups <- build_team_lineups(players)
+schedules <- build_team_schedules(teams)
+teams <- apply_schedule_projections(teams, schedules)
+picks <- build_pick_assets(base_dir, players)
+latest_impact_year <- max(suppressWarnings(as.integer(players$skill_source_year)), na.rm = TRUE)
+if (!is.finite(latest_impact_year)) {
+  latest_impact_year <- max(players$year, na.rm = TRUE)
+}
 replacement_reference <- replacement_reference_from_players(players, latest_impact_year)
 impact_reference <- players[
   players$year == latest_impact_year &
@@ -1357,6 +2823,8 @@ model_details <- read_csv_required(file.path(base_dir, "processed", "draft", "dr
 
 write_json_df(players, file.path(out_dir, "impact_players.json"))
 write_json_df(teams, file.path(out_dir, "team_projections.json"))
+write_json_df(team_lineups, file.path(out_dir, "team_lineups.json"))
+write_json_df(schedules, file.path(out_dir, "team_schedules.json"))
 write_json_df(picks, file.path(out_dir, "pick_assets.json"))
 write_json_df(draft, file.path(out_dir, "draft_prospects.json"))
 write_json_df(tracker$board_summary, file.path(out_dir, "draft_tracker_board_summary.json"))
@@ -1367,17 +2835,17 @@ write_json_df(model_details, file.path(out_dir, "draft_model_feature_details.jso
 
 manifest_rows <- data.frame(
   dataset = c(
-    "impact_players", "team_projections", "pick_assets", "draft_prospects",
+    "impact_players", "team_projections", "team_lineups", "team_schedules", "pick_assets", "draft_prospects",
     "draft_tracker_board_summary", "draft_tracker_board_scores", "draft_tracker_prospect_scores",
     "draft_model_summary", "draft_model_feature_details"
   ),
   rows = c(
-    nrow(players), nrow(teams), nrow(picks), nrow(draft),
+    nrow(players), nrow(teams), nrow(team_lineups), nrow(schedules), nrow(picks), nrow(draft),
     nrow(tracker$board_summary), nrow(tracker$board_scores), nrow(tracker$prospect_scores),
     nrow(model_summary), nrow(model_details)
   ),
   file = c(
-    "impact_players.json", "team_projections.json", "pick_assets.json", "draft_prospects.json",
+    "impact_players.json", "team_projections.json", "team_lineups.json", "team_schedules.json", "pick_assets.json", "draft_prospects.json",
     "draft_tracker_board_summary.json", "draft_tracker_board_scores.json", "draft_tracker_prospect_scores.json",
     "draft_model_summary.json", "draft_model_feature_details.json"
   ),

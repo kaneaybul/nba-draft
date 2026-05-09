@@ -1,0 +1,80 @@
+skill,variant,predictors,predictor_set,temporal_r2,temporal_mse,validation_rows,temporal_splits,includes_r_wingspan,current_reported_r2,delta_vs_current_reported
+DPM,subset_with_r.wingspan,"stl_pct, height_wo_shoes_in, r.wingspan",3,0.41451041768746,0.143956781652614,96,3,TRUE,0.398404,0.0161064176874604
+DPM,current_selected,"stl_pct, height_wo_shoes_in, ast_pct",3,0.403634518921318,0.146630884542318,96,3,FALSE,0.398404,0.0052305189213181
+DPM,subset_without_r.wingspan,"stl_pct, height_wo_shoes_in",2,0.402171312446483,0.146990649261237,96,3,FALSE,0.398404,0.00376731244648343
+DPM,subset_without_r.wingspan,"stl_pct, ast_pct",2,0.398229292984911,0.147959890135957,96,3,FALSE,0.398404,-0.000174707015088815
+DPM,subset_with_r.wingspan,"stl_pct, ast_pct, r.wingspan",3,0.388159824966128,0.150435712512185,96,3,TRUE,0.398404,-0.010244175033872
+DPM,subset_with_r.wingspan,"stl_pct, r.wingspan",2,0.344837103052657,0.161087652029984,96,3,TRUE,0.398404,-0.0535668969473427
+DPM,subset_with_r.wingspan,"height_wo_shoes_in, r.wingspan",2,0.183317195097382,0.200801229904809,96,3,TRUE,0.398404,-0.215086804902618
+DPM,subset_with_r.wingspan,"height_wo_shoes_in, ast_pct, r.wingspan",3,0.178228021422069,0.202052526402136,96,3,TRUE,0.398404,-0.220175978577931
+DPM,subset_without_r.wingspan,"height_wo_shoes_in, ast_pct",2,0.113152185911099,0.218052995285822,96,3,FALSE,0.398404,-0.285251814088901
+DPM,subset_with_r.wingspan,"ast_pct, r.wingspan",2,0.0197190315557416,0.241025797205754,96,3,TRUE,0.398404,-0.378684968444258
+DREB,current_selected,"dr_pct, or_pct, height_wo_shoes_in",3,0.481792758081972,0.0301618170032738,96,3,FALSE,0.481793,-2.41918028498489e-07
+DREB,subset_without_r.wingspan,"dr_pct, or_pct",2,0.458614850745272,0.0315108676205921,96,3,FALSE,0.481793,-0.0231781492547277
+DREB,subset_with_r.wingspan,"dr_pct, or_pct, r.wingspan",3,0.444407584672481,0.0323377896022655,96,3,TRUE,0.481793,-0.037385415327519
+DREB,subset_without_r.wingspan,"dr_pct, height_wo_shoes_in",2,0.424397560978833,0.033502456214498,96,3,FALSE,0.481793,-0.0573954390211673
+DREB,subset_with_r.wingspan,"dr_pct, height_wo_shoes_in, r.wingspan",3,0.414846657279287,0.0340583585375441,96,3,TRUE,0.481793,-0.0669463427207128
+DREB,subset_without_r.wingspan,"or_pct, height_wo_shoes_in",2,0.386373632239158,0.0357156070306593,96,3,FALSE,0.481793,-0.0954193677608425
+DREB,subset_with_r.wingspan,"or_pct, height_wo_shoes_in, r.wingspan",3,0.381359119638773,0.0360074725222599,96,3,TRUE,0.481793,-0.100433880361227
+DREB,subset_with_r.wingspan,"dr_pct, r.wingspan",2,0.370038145377411,0.0366664003147511,96,3,TRUE,0.481793,-0.111754854622589
+DREB,subset_with_r.wingspan,"or_pct, r.wingspan",2,0.278382651839061,0.0420011312868932,96,3,TRUE,0.481793,-0.203410348160939
+DREB,subset_with_r.wingspan,"height_wo_shoes_in, r.wingspan",2,0.204299820527469,0.046313060222572,96,3,TRUE,0.481793,-0.277493179472531
+FTD,current_plus_r.wingspan,"scv_draft, obpm_plus, r.wingspan",3,0.385543551997931,0.150136890980023,96,3,TRUE,0.376995,0.0085485519979312
+FTD,current_selected,"scv_draft, obpm_plus",2,0.376994600961226,0.152225750058588,96,3,FALSE,0.376995,-3.99038774079319e-07
+FTD,subset_with_r.wingspan,"scv_draft, r.wingspan",2,0.334730915529737,0.162552500396506,96,3,TRUE,0.376995,-0.0422640844702626
+FTD,subset_with_r.wingspan,"obpm_plus, r.wingspan",2,0.207551991475311,0.193627523399034,96,3,TRUE,0.376995,-0.169443008524689
+OREB,current_selected,"or_pct, dr_pct",2,0.668710610020494,0.0622290580254323,96,3,FALSE,0.668711,-3.89979506354443e-07
+OREB,current_plus_r.wingspan,"or_pct, dr_pct, r.wingspan",3,0.636497624191001,0.0682799121275813,96,3,TRUE,0.668711,-0.0322133758089993
+OREB,subset_with_r.wingspan,"or_pct, r.wingspan",2,0.610911161793603,0.0730860468887691,96,3,TRUE,0.668711,-0.0577998382063969
+OREB,subset_with_r.wingspan,"dr_pct, r.wingspan",2,0.362597292210444,0.119729068567688,96,3,TRUE,0.668711,-0.306113707789557
+PASS,current_selected,"ast_pct, assisted_pct, height_wo_shoes_in",3,0.464856080662243,0.169291981869448,96,3,FALSE,0.409161,0.0556950806622435
+PASS,subset_without_r.wingspan,"ast_pct, height_wo_shoes_in",2,0.462173549797556,0.170140596513282,96,3,FALSE,0.409161,0.0530125497975555
+PASS,subset_with_r.wingspan,"ast_pct, height_wo_shoes_in, r.wingspan",3,0.452415248813483,0.173227620496133,96,3,TRUE,0.409161,0.0432542488134831
+PASS,subset_without_r.wingspan,"ast_pct, assisted_pct",2,0.406740673026112,0.187676704521341,96,3,FALSE,0.409161,-0.00242032697388828
+PASS,subset_with_r.wingspan,"ast_pct, assisted_pct, r.wingspan",3,0.402360868094433,0.189062249288444,96,3,TRUE,0.409161,-0.00680013190556683
+PASS,subset_with_r.wingspan,"ast_pct, r.wingspan",2,0.353236413500398,0.204602697336086,96,3,TRUE,0.409161,-0.0559245864996021
+PASS,subset_with_r.wingspan,"assisted_pct, height_wo_shoes_in, r.wingspan",3,0.314112910928179,0.216979359106478,96,3,TRUE,0.409161,-0.0950480890718211
+PASS,subset_without_r.wingspan,"assisted_pct, height_wo_shoes_in",2,0.307655292602207,0.219022217046288,96,3,FALSE,0.409161,-0.101505707397793
+PASS,subset_with_r.wingspan,"height_wo_shoes_in, r.wingspan",2,0.260344694720224,0.233988854224528,96,3,TRUE,0.409161,-0.148816305279776
+PASS,subset_with_r.wingspan,"assisted_pct, r.wingspan",2,0.20206045615841,0.252426986288313,96,3,TRUE,0.409161,-0.207100543841591
+RIM,current_selected,"rim_pct, wingspan_in, three_pct",3,0.151678192424368,0.199093947938583,96,3,FALSE,0.151678,1.9242436830047e-07
+RIM,subset_without_r.wingspan,"rim_pct, three_pct",2,0.119377679215022,0.206674604993327,96,3,FALSE,0.151678,-0.0323003207849777
+RIM,subset_with_r.wingspan,"rim_pct, three_pct, r.wingspan",3,0.101863875989389,0.210784946371413,96,3,TRUE,0.151678,-0.0498141240106107
+RIM,subset_with_r.wingspan,"wingspan_in, three_pct, r.wingspan",3,0.0951874833765779,0.212351839207837,96,3,TRUE,0.151678,-0.0564905166234221
+RIM,subset_without_r.wingspan,"rim_pct, wingspan_in",2,0.090430771506694,0.213468199222308,96,3,FALSE,0.151678,-0.061247228493306
+RIM,subset_with_r.wingspan,"rim_pct, wingspan_in, r.wingspan",3,0.081931712516327,0.215462856430274,96,3,TRUE,0.151678,-0.069746287483673
+RIM,subset_without_r.wingspan,"wingspan_in, three_pct",2,0.0737141260910722,0.217391454409626,96,3,FALSE,0.151678,-0.0779638739089278
+RIM,subset_with_r.wingspan,"three_pct, r.wingspan",2,0.0681227933780874,0.21870369287164,96,3,TRUE,0.151678,-0.0835552066219127
+RIM,subset_with_r.wingspan,"wingspan_in, r.wingspan",2,0.0470209403447329,0.223656119169906,96,3,TRUE,0.151678,-0.104657059655267
+RIM,subset_with_r.wingspan,"rim_pct, r.wingspan",2,0.0291498499074867,0.227850312832435,96,3,TRUE,0.151678,-0.122528150092513
+RIMPRO,current_selected,"height_wo_shoes_in, blk_pct, wingspan_in",3,0.631578703651081,0.0434504286839351,96,3,FALSE,0.632008,-0.000429296348919528
+RIMPRO,subset_without_r.wingspan,"blk_pct, wingspan_in",2,0.629961820454418,0.0436411187138629,96,3,FALSE,0.632008,-0.00204617954558162
+RIMPRO,subset_with_r.wingspan,"blk_pct, wingspan_in, r.wingspan",3,0.622442814739596,0.0445278861858403,96,3,TRUE,0.632008,-0.00956518526040362
+RIMPRO,subset_with_r.wingspan,"height_wo_shoes_in, blk_pct, r.wingspan",3,0.586785042091524,0.0487332497813414,96,3,TRUE,0.632008,-0.0452229579084764
+RIMPRO,subset_with_r.wingspan,"blk_pct, r.wingspan",2,0.57879701356176,0.0496753323031645,96,3,TRUE,0.632008,-0.0532109864382401
+RIMPRO,subset_without_r.wingspan,"height_wo_shoes_in, blk_pct",2,0.577876996688732,0.0497838361489673,96,3,FALSE,0.632008,-0.054131003311268
+RIMPRO,subset_with_r.wingspan,"wingspan_in, r.wingspan",2,0.512536161541673,0.0574899251450205,96,3,TRUE,0.632008,-0.119471838458327
+RIMPRO,subset_with_r.wingspan,"height_wo_shoes_in, wingspan_in, r.wingspan",3,0.500207961084177,0.0589438736547515,96,3,TRUE,0.632008,-0.131800038915823
+RIMPRO,subset_without_r.wingspan,"height_wo_shoes_in, wingspan_in",2,0.496907492856852,0.0593331203154526,96,3,FALSE,0.632008,-0.135100507143148
+RIMPRO,subset_with_r.wingspan,"height_wo_shoes_in, r.wingspan",2,0.301351770751121,0.0823963363708114,96,3,TRUE,0.632008,-0.33065622924888
+SHOOT,current_selected,"X3PA_100, ft_pct, blk_pct",3,0.684508063600578,0.261488548820615,96,3,FALSE,0.6621,0.0224080636005783
+SHOOT,subset_without_r.wingspan,"X3PA_100, ft_pct",2,0.633318974110519,0.303915499185704,96,3,FALSE,0.6621,-0.0287810258894807
+SHOOT,subset_with_r.wingspan,"X3PA_100, ft_pct, r.wingspan",3,0.618339232930324,0.31633112802117,96,3,TRUE,0.6621,-0.0437607670696757
+SHOOT,subset_without_r.wingspan,"X3PA_100, blk_pct",2,0.598561939137596,0.332723102765375,96,3,FALSE,0.6621,-0.0635380608624044
+SHOOT,subset_with_r.wingspan,"X3PA_100, blk_pct, r.wingspan",3,0.597962784098439,0.333219699234671,96,3,TRUE,0.6621,-0.0641372159015606
+SHOOT,subset_with_r.wingspan,"X3PA_100, r.wingspan",2,0.534009665640637,0.386225834126537,96,3,TRUE,0.6621,-0.128090334359363
+SHOOT,subset_with_r.wingspan,"ft_pct, blk_pct, r.wingspan",3,0.516934777215071,0.40037797965086,96,3,TRUE,0.6621,-0.145165222784929
+SHOOT,subset_without_r.wingspan,"ft_pct, blk_pct",2,0.510766195254226,0.405490673064299,96,3,FALSE,0.6621,-0.151333804745774
+SHOOT,subset_with_r.wingspan,"blk_pct, r.wingspan",2,0.358280212740802,0.531875324088914,96,3,TRUE,0.6621,-0.303819787259198
+SHOOT,subset_with_r.wingspan,"ft_pct, r.wingspan",2,0.293321256300663,0.585715125658133,96,3,TRUE,0.6621,-0.368778743699337
+SWITCH,current_selected,"or_pct, height_wo_shoes_in, blk_pct",3,0.327594892195453,0.0182424796168952,96,3,FALSE,0.319286,0.00830889219545344
+SWITCH,current_plus_r.wingspan,"or_pct, height_wo_shoes_in, blk_pct, r.wingspan",4,0.323521541110082,0.0183529904135635,96,3,TRUE,0.319286,0.00423554111008201
+SWITCH,subset_with_r.wingspan,"or_pct, height_wo_shoes_in, r.wingspan",3,0.317328775855517,0.0185210013233817,96,3,TRUE,0.319286,-0.00195722414448291
+SWITCH,subset_without_r.wingspan,"or_pct, height_wo_shoes_in",2,0.29230210989152,0.0191999795738856,96,3,FALSE,0.319286,-0.0269838901084796
+SWITCH,subset_without_r.wingspan,"or_pct, blk_pct",2,0.270587409218039,0.0197891035704542,96,3,FALSE,0.319286,-0.0486985907819614
+SWITCH,subset_with_r.wingspan,"height_wo_shoes_in, r.wingspan",2,0.269604760092074,0.0198157630298232,96,3,TRUE,0.319286,-0.049681239907926
+SWITCH,subset_with_r.wingspan,"or_pct, blk_pct, r.wingspan",3,0.267176984589402,0.0198816290451283,96,3,TRUE,0.319286,-0.0521090154105982
+SWITCH,subset_without_r.wingspan,"height_wo_shoes_in, blk_pct",2,0.261766428882987,0.0200284184597902,96,3,FALSE,0.319286,-0.0575195711170128
+SWITCH,subset_with_r.wingspan,"height_wo_shoes_in, blk_pct, r.wingspan",3,0.260660247616697,0.0200584293698334,96,3,TRUE,0.319286,-0.0586257523833035
+SWITCH,subset_with_r.wingspan,"or_pct, r.wingspan",2,0.183234131619914,0.0221590147557749,96,3,TRUE,0.319286,-0.136051868380086
+SWITCH,subset_with_r.wingspan,"blk_pct, r.wingspan",2,0.150734386015871,0.023040739091082,96,3,TRUE,0.319286,-0.168551613984129

@@ -1,0 +1,313 @@
+model,features,n_features,n_rows,validation_rows,temporal_r2,temporal_mse,spec
+ranger_loyo_mtry1_node5_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.24851899651533,0.144337426726299,ranger_spec_07
+ranger_loyo_mtry1_node5_sf1,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.248455584242518,0.14434960636123,ranger_spec_11
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.243860897102222,0.145232110796296,ranger_spec_11
+ranger_loyo_mtry1_node10_sf1,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.243170283698584,0.14536475734502,ranger_spec_11
+ranger_loyo_mtry1_node10_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.242891712612113,0.145418262667969,ranger_spec_07
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.237043894422358,0.146541456768097,ranger_spec_11
+ranger_loyo_mtry2_node10_sf1,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.235983028576403,0.146745217935175,ranger_spec_11
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.233697693405662,0.147184163691917,ranger_spec_07
+ranger_loyo_mtry2_node5_sf1,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.231168189511632,0.147670007088178,ranger_spec_11
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.230240440537107,0.147848200414436,ranger_spec_07
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.2302271591921,0.147850751370685,ranger_spec_11
+ranger_loyo_mtry1_node5_sf1,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.228603311254121,0.148162644860575,ranger_spec_09
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.228057666306202,0.148267447227267,ranger_spec_17
+ranger_loyo_mtry1_node10_sf1,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.226860813436314,0.148497327507152,ranger_spec_09
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.226606046130381,0.148546260823073,ranger_spec_11
+ranger_loyo_mtry1_node5_sf1,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.225874296618257,0.148686808409903,ranger_spec_17
+ranger_loyo_mtry1_node5_sf0.65,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.225800561459261,0.148700970768046,ranger_spec_16
+ranger_loyo_mtry1_node10_sf1,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.225315512575036,0.148794134410853,ranger_spec_16
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.224991721930925,0.148856325082543,ranger_spec_14
+ranger_loyo_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.224956655874304,0.148863060241988,ranger_spec_14
+ranger_loyo_mtry1_node5_sf1,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.224784671994586,0.148896093293418,ranger_spec_16
+ranger_loyo_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.223957580774972,0.149054953221684,ranger_spec_10
+ranger_loyo_mtry1_node5_sf0.65,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.223246180844421,0.149191592251644,ranger_spec_09
+ranger_loyo_mtry1_node10_sf0.65,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.222113910954646,0.149409068038113,ranger_spec_16
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.221649905458097,0.149498189864278,ranger_spec_17
+ranger_loyo_mtry1_node10_sf1,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.220950733780156,0.149632480206105,ranger_spec_17
+ranger_loyo_mtry2_node10_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.220539164909953,0.149711530496625,ranger_spec_07
+ranger_loyo_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.22035590006187,0.14974673029071,ranger_spec_14
+ranger_loyo_mtry2_node5_sf0.65,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.220261099027492,0.149764938784723,ranger_spec_09
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.219904270330971,0.14983347509582,ranger_spec_14
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.219061488342186,0.149995348759942,ranger_spec_10
+ranger_loyo_mtry2_node10_sf0.65,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.218979891738984,0.150011021070594,ranger_spec_09
+ranger_loyo_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.218496997626447,0.150103770845055,ranger_spec_10
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.217376448810559,0.150318995357527,ranger_spec_07
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.216791121934317,0.15043141945703,ranger_spec_07
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.216680852609184,0.150452598955331,ranger_spec_11
+ranger_loyo_mtry2_node5_sf0.65,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.215989266502055,0.150585432331823,ranger_spec_16
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.21552621939765,0.150674370079009,ranger_spec_11
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.215157482834425,0.150745193541517,ranger_spec_17
+ranger_loyo_mtry2_node5_sf1,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.214725024374611,0.150828256108589,ranger_spec_17
+ranger_loyo_mtry2_node5_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.214688746476606,0.150835224027167,ranger_spec_07
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.214611656966171,0.15085003065769,ranger_spec_10
+ranger_loyo_mtry2_node10_sf1,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.214167386634235,0.150935361938435,ranger_spec_16
+ranger_loyo_mtry2_node10_sf1,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.2138132393278,0.151003383233259,ranger_spec_17
+ranger_loyo_mtry1_node5_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.213630929683328,0.151038399560789,ranger_spec_08
+ranger_loyo_mtry2_node10_sf0.65,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.21336818102868,0.151088865859354,ranger_spec_16
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.213134220088052,0.151133802883667,ranger_spec_17
+ranger_loyo_mtry1_node10_sf0.65,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.212201782358349,0.151312896782068,ranger_spec_09
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.211542448995464,0.151439535353784,ranger_spec_18
+ranger_loyo_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.211487388231251,0.151450110909232,ranger_spec_10
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.210567840191555,0.151626729076804,ranger_spec_08
+ranger_loyo_mtry3_node10_sf1,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.210482367274862,0.151643145913415,ranger_spec_11
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.210416596340602,0.151655778577928,ranger_spec_10
+ranger_loyo_mtry1_node10_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.209859214236792,0.151762835307498,ranger_spec_08
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.209119415177247,0.151904928975939,ranger_spec_10
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.209086912194972,0.15191117184409,ranger_spec_18
+ranger_loyo_mtry3_node5_sf1,"rim_pct_shrunk, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.208674561902722,0.151990372222832,ranger_spec_11
+ranger_loyo_mtry2_node5_sf1,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.207875659537936,0.152143817900106,ranger_spec_16
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.20697749250883,0.152316329403591,ranger_spec_08
+ranger_loyo_mtry2_node10_sf1,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.206147329051619,0.152475779418456,ranger_spec_09
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.205907718662073,0.152521801535959,ranger_spec_14
+ranger_loyo_mtry3_node5_sf0.65,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.205353971240912,0.152628160149758,ranger_spec_09
+ranger_loyo_mtry3_node10_sf0.65,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.205269029911189,0.152644474884127,ranger_spec_09
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.204859792720036,0.152723077327592,ranger_spec_10
+ranger_loyo_mtry2_node5_sf1,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.204232925534133,0.152843480100374,ranger_spec_09
+ranger_loyo_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.204230457275119,0.152843954180428,ranger_spec_10
+ranger_loyo_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.20354946379411,0.152974753024591,ranger_spec_14
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.203053316315952,0.153070048381282,ranger_spec_17
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.202726460339474,0.153132827813279,ranger_spec_14
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.201982685442367,0.15327568512333,ranger_spec_17
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.20139353267198,0.153388844064716,ranger_spec_07
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.200599333422692,0.153541386411653,ranger_spec_10
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.200033741437524,0.153650020018275,ranger_spec_08
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.199909583315946,0.153673867146403,ranger_spec_26
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.199784486281946,0.153697894612027,ranger_spec_14
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.199669411425699,0.153719997111697,ranger_spec_07
+ranger_loyo_mtry3_node10_sf0.65,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.199019728516844,0.153844782114668,ranger_spec_16
+ranger_loyo_mtry3_node5_sf0.65,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.198658976503375,0.153914071979706,ranger_spec_16
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.198551435407635,0.15393472746528,ranger_spec_26
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.197630080655397,0.154111692649261,ranger_spec_14
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.197501587758297,0.154136372360437,ranger_spec_08
+ranger_loyo_mtry1_node5_sf0.65,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.196881987047467,0.154255379456803,ranger_spec_24
+ranger_loyo_mtry3_node10_sf1,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.19683044363324,0.154265279432637,ranger_spec_09
+ranger_loyo_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.195758284302051,0.154471209746493,ranger_spec_14
+ranger_loyo_mtry3_node10_sf1,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.195683438265692,0.154485585471546,ranger_spec_16
+ranger_loyo_mtry3_node10_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.194948138887879,0.154626814883301,ranger_spec_07
+ranger_loyo_mtry2_node10_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.19443777368898,0.154724841046515,ranger_spec_08
+ranger_loyo_mtry1_node5_sf1,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.193921583524389,0.154823986014535,ranger_spec_18
+ranger_loyo_mtry1_node10_sf1,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.193765078023155,0.154854046124121,ranger_spec_18
+ranger_loyo_mtry3_node5_sf1,"height_wo_shoes_in, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.193307130796438,0.154942004334607,ranger_spec_16
+ranger_loyo_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.192302520629632,0.155134960438178,ranger_spec_10
+ranger_loyo_mtry1_node10_sf0.65,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.192189030851996,0.155156758490807,ranger_spec_24
+ranger_loyo_mtry2_node5_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.19175752087036,0.155239638883082,ranger_spec_08
+ranger_loyo_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.191698408054135,0.155250992718696,ranger_spec_14
+ranger_loyo_mtry3_node10_sf1,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.190806338600592,0.155422333057026,ranger_spec_17
+ranger_loyo_mtry1_node10_sf1,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.188144971006542,0.155933503596689,ranger_spec_24
+ranger_loyo_mtry3_node5_sf1,"wingspan_in, scv_draft, close_2_pct, three_pct",4,156,156,0.187446382609789,0.156067681907332,ranger_spec_09
+ranger_loyo_mtry3_node10_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.187279634936391,0.156099709237337,ranger_spec_08
+ranger_loyo_mtry3_node5_sf1,"rim_pct, height_wo_shoes_in, wingspan_in, scv_draft, three_pct",5,156,156,0.186304461142489,0.156287011478339,ranger_spec_17
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.185221421747548,0.15649503153285,ranger_spec_08
+ranger_loyo_mtry3_node5_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, three_pct",4,156,156,0.184868198736305,0.156562875297718,ranger_spec_07
+ranger_loyo_mtry1_node5_sf1,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.184846640838013,0.156567015936737,ranger_spec_24
+ranger_loyo_mtry3_node5_sf1,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.18449006739863,0.156635503220435,ranger_spec_08
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.183748854988586,0.156777868351992,ranger_spec_18
+ranger_loyo_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, close_2_pct, three_pct",5,156,156,0.182501722766552,0.157017405818516,ranger_spec_14
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.181800306953372,0.157152127192803,ranger_spec_18
+ranger_loyo_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.180928624175895,0.157319551849499,ranger_spec_10
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct_shrunk, wingspan_in, scv_draft, mid_pct, three_pct",5,156,156,0.17993670421799,0.157510070536703,ranger_spec_08
+ranger_loyo_mtry1_node10_sf1,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.178461267110697,0.157793458665446,ranger_spec_26
+ranger_loyo_mtry1_node5_sf1,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.174564617680361,0.158541890560625,ranger_spec_26
+ranger_loyo_mtry2_node5_sf0.65,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.171612308876109,0.159108942360645,ranger_spec_24
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.171089576831334,0.159209343831688,ranger_spec_26
+ranger_loyo_mtry2_node10_sf0.65,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.170044916937034,0.159409992311487,ranger_spec_24
+ranger_loyo_mtry2_node5_sf1,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.16937468684515,0.159538723824764,ranger_spec_18
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.16862793131394,0.159682153627072,ranger_spec_26
+ranger_loyo_mtry2_node10_sf1,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.16734528047218,0.15992851317712,ranger_spec_18
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.164847786706267,0.160408208368037,ranger_spec_18
+ranger_loyo_mtry3_node5_sf0.65,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.163837330245753,0.160602287372899,ranger_spec_24
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.162371333176726,0.160883862347583,ranger_spec_18
+ranger_loyo_mtry3_node10_sf0.65,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.160088833837024,0.161322263424483,ranger_spec_24
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.158277140562335,0.161670236485776,ranger_spec_26
+ranger_loyo_mtry2_node10_sf1,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.155986946704679,0.162110115453555,ranger_spec_24
+ranger_loyo_mtry3_node10_sf1,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.153902124543641,0.162510548551013,ranger_spec_18
+ranger_loyo_mtry2_node5_sf1,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.153202921165344,0.162644844981546,ranger_spec_24
+ranger_loyo_mtry2_node10_sf1,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.152898951130118,0.162703228696481,ranger_spec_26
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.151269838892539,0.16301613330369,ranger_spec_26
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.150875990844465,0.19773056109552,ranger_spec_13
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.150047632638094,0.197923456045101,ranger_spec_20
+ranger_loyo_mtry1_node10_sf0.65,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.149114852323808,0.198140667162598,ranger_spec_19
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.148375627423391,0.198312806158504,ranger_spec_20
+ranger_loyo_mtry2_node5_sf1,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.147478776701859,0.163744284991657,ranger_spec_26
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.145506566682211,0.198980907618425,ranger_spec_13
+ranger_loyo_mtry1_node5_sf0.65,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.144241066407168,0.199275597294788,ranger_spec_19
+ranger_loyo_mtry3_node10_sf1,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.139935647438453,0.165193098550875,ranger_spec_26
+ranger_loyo_mtry3_node5_sf1,"rim_pct_shrunk, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.13955205141795,0.165266776078644,ranger_spec_18
+ranger_loyo_mtry1_node10_sf1,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.136384796938056,0.201105040996174,ranger_spec_20
+ranger_loyo_mtry3_node10_sf1,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.134313885461314,0.166272873892747,ranger_spec_24
+ranger_loyo_mtry1_node10_sf1,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.133770157038691,0.201713896956894,ranger_spec_13
+ranger_loyo_mtry1_node5_sf1,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.133259581302642,0.201832791753981,ranger_spec_19
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.132923551436467,0.166539916219175,ranger_spec_25
+ranger_loyo_mtry1_node5_sf1,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.132760081695977,0.201949107317347,ranger_spec_13
+ranger_loyo_mtry1_node5_sf1,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.132638981098894,0.201977307307869,ranger_spec_20
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.132486822544735,0.166623799010779,ranger_spec_25
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.132335580607186,0.202047958412791,ranger_spec_13
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.131645966798351,0.202208544762829,ranger_spec_21
+ranger_loyo_mtry3_node5_sf1,"wingspan_in, or_pct, scv_draft, close_2_pct, three_pct",5,156,156,0.131083589437359,0.166893318872061,ranger_spec_24
+ranger_loyo_mtry3_node5_sf1,"rim_pct, wingspan_in, or_pct, scv_draft, three_pct",5,156,156,0.131000855222793,0.16690920968444,ranger_spec_26
+ranger_loyo_mtry1_node10_sf1,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.130863053631016,0.202390857190928,ranger_spec_19
+ranger_loyo_mtry1_node10_sf0.65,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.130398680321345,0.202498993098156,ranger_spec_23
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.127336579387564,0.203212046703094,ranger_spec_13
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.127334128834734,0.203212617349055,ranger_spec_20
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.126050255145958,0.215967157688313,ranger_spec_05
+ranger_loyo_mtry1_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.125586426763871,0.214175894696934,ranger_spec_06
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.124827753724384,0.203796262319096,ranger_spec_21
+ranger_loyo_mtry2_node10_sf0.65,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.124646838046147,0.20383839109909,ranger_spec_19
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.124515722588278,0.216346365573908,ranger_spec_05
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.124478068412972,0.203877691500331,ranger_spec_20
+ranger_loyo_mtry1_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.123791677112449,0.214615494588926,ranger_spec_06
+ranger_loyo_mtry2_node10_sf0.65,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.123721497057538,0.204053869864158,ranger_spec_23
+ranger_loyo_mtry1_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.122147584065417,0.215018193163251,ranger_spec_04
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.121932421412608,0.215070894373618,ranger_spec_06
+ranger_loyo_mtry1_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.121927449397546,0.215072112202123,ranger_spec_04
+ranger_loyo_mtry2_node5_sf0.65,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.121553779609917,0.204558653597267,ranger_spec_19
+ranger_loyo_mtry1_node5_sf0.65,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.121112091573745,0.204661506917018,ranger_spec_23
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.120286438628989,0.215474055813613,ranger_spec_06
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.119988263585979,0.215547089797266,ranger_spec_04
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.119324363966694,0.215709703118126,ranger_spec_06
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.11855346693137,0.205257318931182,ranger_spec_13
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.117177008781043,0.216235669013665,ranger_spec_02
+ranger_loyo_mtry1_node5_sf1,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.117017785361794,0.205614924151552,ranger_spec_23
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.116842409136113,0.216317624715763,ranger_spec_06
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.11575352436419,0.216584332458399,ranger_spec_02
+ranger_loyo_mtry2_node5_sf0.65,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.115384727356028,0.205995204855313,ranger_spec_23
+ranger_loyo_mtry1_node10_sf1,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.115317921769649,0.169921440529465,ranger_spec_25
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.114997571071364,0.216769493093819,ranger_spec_04
+ranger_loyo_mtry1_node10_sf1,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.114950922018278,0.206096222577006,ranger_spec_23
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.114411475950002,0.216913049244864,ranger_spec_04
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.11398500634239,0.206321149733116,ranger_spec_13
+ranger_loyo_mtry3_node10_sf0.65,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.113596205602986,0.206411687496184,ranger_spec_19
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.113522444482963,0.170266298975792,ranger_spec_25
+ranger_loyo_mtry1_node5_sf1,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.11256230228291,0.170450714089154,ranger_spec_25
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.11244594463899,0.170473062974655,ranger_spec_25
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.11213134923049,0.206752800065532,ranger_spec_20
+ranger_loyo_mtry1_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.112034785937395,0.217495187635035,ranger_spec_02
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.112023819199111,0.217497873790712,ranger_spec_04
+ranger_loyo_mtry3_node10_sf0.65,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.112018261981005,0.206779134034484,ranger_spec_23
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.111880395089411,0.21753300360566,ranger_spec_04
+ranger_loyo_mtry3_node5_sf0.65,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.111669689029767,0.206860304186886,ranger_spec_19
+ranger_loyo_mtry1_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.111322162588008,0.21766973518108,ranger_spec_02
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.111049479824167,0.219674092587538,ranger_spec_01
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.109810792719721,0.219980192262934,ranger_spec_01
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.108060250837158,0.207700813030552,ranger_spec_20
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.108045395243582,0.218472335459926,ranger_spec_04
+ranger_loyo_mtry3_node5_sf0.65,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.107778335431161,0.207766461028734,ranger_spec_23
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.107395727589619,0.218631462851474,ranger_spec_03
+ranger_loyo_mtry1_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.107244326025687,0.220614407811912,ranger_spec_05
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.106965323286109,0.218736884621684,ranger_spec_06
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.106699092702638,0.218802094237769,ranger_spec_02
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.106503165055623,0.208063402525063,ranger_spec_21
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.106213790952419,0.17167007663423,ranger_spec_25
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.10598347351399,0.218977375574521,ranger_spec_06
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.105877087699695,0.220952274579293,ranger_spec_05
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.104829324696778,0.221211193812354,ranger_spec_05
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.104680865166343,0.219296432044864,ranger_spec_02
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.104521519681956,0.17199511223642,ranger_spec_25
+ranger_loyo_mtry2_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.104375249713827,0.219371288457184,ranger_spec_06
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.104209818853124,0.219411808531078,ranger_spec_03
+ranger_loyo_mtry2_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.103756877749068,0.21952275038877,ranger_spec_06
+ranger_loyo_mtry1_node10_sf1,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.1031613027447,0.208841602532032,ranger_spec_21
+ranger_loyo_mtry2_node10_sf1,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.102827718982889,0.208919282239217,ranger_spec_19
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.1011177243651,0.209317478723594,ranger_spec_21
+ranger_loyo_mtry2_node5_sf1,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.101075327204377,0.20932735150341,ranger_spec_19
+ranger_loyo_mtry2_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.10091478853791,0.220218882080042,ranger_spec_04
+ranger_loyo_mtry2_node10_sf1,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.100127323336968,0.209548107641032,ranger_spec_13
+ranger_loyo_mtry2_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.0995312964753936,0.220557749933156,ranger_spec_04
+ranger_loyo_mtry2_node10_sf1,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.0993381414830055,0.17299068693161,ranger_spec_25
+ranger_loyo_mtry3_node5_sf1,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.0990730866536195,0.1730415961786,ranger_spec_25
+ranger_loyo_mtry2_node10_sf1,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.0989240278699719,0.209828312046145,ranger_spec_20
+ranger_loyo_mtry2_node10_sf1,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.0984651925930213,0.209935158343958,ranger_spec_23
+ranger_loyo_mtry1_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0972315314623935,0.221121046574845,ranger_spec_03
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0970137052551229,0.221174400187208,ranger_spec_03
+ranger_loyo_mtry2_node5_sf1,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.096708806275805,0.210344157793107,ranger_spec_13
+ranger_loyo_mtry3_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.0965400912610291,0.221290405592465,ranger_spec_06
+ranger_loyo_mtry2_node5_sf1,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.0963104222062347,0.210436927170439,ranger_spec_20
+ranger_loyo_mtry1_node5_sf1,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.0962766098882055,0.210444800847951,ranger_spec_21
+ranger_loyo_mtry2_node5_sf1,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.0958799229828022,0.210537175016552,ranger_spec_23
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.0956442691530901,0.221509825221036,ranger_spec_02
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0953222730669228,0.173762017292006,ranger_spec_15
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0951156615534752,0.173801701294722,ranger_spec_12
+ranger_loyo_mtry1_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.0950923258550191,0.223617364163282,ranger_spec_05
+ranger_loyo_mtry2_node5_sf1,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.0950131670326517,0.173821387481493,ranger_spec_25
+ranger_loyo_mtry3_node10_sf1,"rim_100, rim_makes_100, height_wo_shoes_in, wingspan_in, scv_draft",5,156,156,0.0948274241468842,0.173857063233827,ranger_spec_25
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.0947798889793129,0.223694572383091,ranger_spec_05
+ranger_loyo_mtry3_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk, ua_rimmakes_100, assisted_pct",5,172,172,0.0945664421310237,0.22177382451593,ranger_spec_06
+ranger_loyo_mtry1_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0935557308788679,0.223997081705934,ranger_spec_01
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.0923966129636358,0.222305295112326,ranger_spec_02
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.0920776567329586,0.224362337802207,ranger_spec_05
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.092017806875308,0.222398078590725,ranger_spec_03
+ranger_loyo_mtry3_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.0916814603909264,0.222480462157753,ranger_spec_04
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0912055798069504,0.222597022733848,ranger_spec_03
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0906535341436891,0.224714261593724,ranger_spec_01
+ranger_loyo_mtry1_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0895384994236085,0.223005351748359,ranger_spec_03
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0889974211218008,0.225123513984098,ranger_spec_01
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0880731953123006,0.223364258367204,ranger_spec_03
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.0873502049028282,0.212523440772501,ranger_spec_21
+ranger_loyo_mtry3_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100, assisted_pct",5,172,172,0.0873246814855057,0.223547596805048,ranger_spec_04
+ranger_loyo_mtry2_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.0872466958435095,0.223566698343678,ranger_spec_02
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0872274173357653,0.175316801299237,ranger_spec_15
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.086322344601522,0.212762792612649,ranger_spec_21
+ranger_loyo_mtry3_node10_sf1,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.0840977277490314,0.21328082617868,ranger_spec_23
+ranger_loyo_mtry2_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.0840543749582606,0.224348614593248,ranger_spec_02
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0832951972811719,0.22653262598695,ranger_spec_01
+ranger_loyo_mtry3_node5_sf1,"rim_pct_shrunk, fta_100, or_pct, scv_draft, three_pct",5,176,176,0.0828827692180852,0.213563746493548,ranger_spec_23
+ranger_loyo_mtry3_node10_sf1,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.0824249495162941,0.213670356300289,ranger_spec_13
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0821936517265288,0.176283639810672,ranger_spec_12
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0819629314350112,0.2268618504873,ranger_spec_01
+ranger_loyo_mtry3_node10_sf1,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.0787702526718585,0.214521404262533,ranger_spec_20
+ranger_loyo_mtry2_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0787475463112323,0.22564845120177,ranger_spec_03
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0785052819486406,0.176992067302634,ranger_spec_12
+ranger_loyo_mtry2_node10_sf1,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.0778060842077529,0.214745924555615,ranger_spec_21
+ranger_loyo_mtry2_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0768532771417245,0.22611242706696,ranger_spec_03
+ranger_loyo_mtry1_node10_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0767830526605019,0.17732285696003,ranger_spec_15
+ranger_loyo_mtry1_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0764745496730948,0.228218118643917,ranger_spec_01
+ranger_loyo_mtry2_node5_sf1,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.0755201985676715,0.215278225427266,ranger_spec_21
+ranger_loyo_mtry1_node10_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0744265760971477,0.177775466888582,ranger_spec_12
+ranger_loyo_mtry1_node5_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0737645889716973,0.177902615170136,ranger_spec_15
+ranger_loyo_mtry3_node10_sf1,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.0724495587113,0.215993267441361,ranger_spec_19
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0703856321565973,0.178551613520659,ranger_spec_12
+ranger_loyo_mtry2_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.0697792827222327,0.229872627706774,ranger_spec_05
+ranger_loyo_mtry3_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.0696235567384945,0.227883250259971,ranger_spec_02
+ranger_loyo_mtry3_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, ua_rimmakes_100",4,172,172,0.0693424706735771,0.227952098527294,ranger_spec_02
+ranger_loyo_mtry3_node5_sf1,"rim_pct_shrunk, or_pct, scv_draft, three_pct",4,176,176,0.0690903871325316,0.216775498156691,ranger_spec_13
+ranger_loyo_mtry1_node10_sf0.65,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0686346228178242,0.216881629337417,ranger_spec_22
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0684254512502435,0.178928106694311,ranger_spec_15
+ranger_loyo_mtry3_node5_sf1,"rim_pct, or_pct, scv_draft, three_pct",4,176,176,0.0681162063896279,0.217002349950806,ranger_spec_20
+ranger_loyo_mtry3_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0668216537220366,0.228569538881022,ranger_spec_03
+ranger_loyo_mtry2_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.066225586382817,0.230750803714296,ranger_spec_05
+ranger_loyo_mtry1_node5_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.064855276160962,0.179613832458448,ranger_spec_12
+ranger_loyo_mtry3_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct, assisted_pct",4,172,172,0.0634622011676098,0.229392391794745,ranger_spec_03
+ranger_loyo_mtry3_node10_sf1,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.0619957832344117,0.218427577233952,ranger_spec_21
+ranger_loyo_mtry3_node5_sf1,"rim_100, rim_pct_shrunk, or_pct, scv_draft, three_pct",5,176,176,0.0618579829608564,0.218459665980843,ranger_spec_21
+ranger_loyo_mtry3_node5_sf1,"or_pct, scv_draft, close_2_pct, three_pct",4,176,176,0.0605834346465561,0.218756462621396,ranger_spec_19
+ranger_loyo_mtry3_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.0604892867302537,0.232168336402997,ranger_spec_05
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0602442645576975,0.180499472343334,ranger_spec_12
+ranger_loyo_mtry2_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0600022262666927,0.232288696943814,ranger_spec_01
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0594344262986039,0.180655018484674,ranger_spec_15
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.056062015821393,0.181302759475981,ranger_spec_15
+ranger_loyo_mtry1_node5_sf0.65,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0547926558929043,0.220104927533227,ranger_spec_22
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0524290477343169,0.18200054593051,ranger_spec_12
+ranger_loyo_mtry2_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0507215813986218,0.234582094825641,ranger_spec_01
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0504185283087304,0.18238670765506,ranger_spec_15
+ranger_loyo_mtry3_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct_shrunk",3,177,177,0.0499035548051052,0.234784242465543,ranger_spec_05
+ranger_loyo_mtry3_node10_sf1,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0452779251029658,0.235927310594085,ranger_spec_01
+ranger_loyo_mtry2_node10_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0443028162676,0.183561356294909,ranger_spec_12
+ranger_loyo_mtry2_node10_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0407146143072421,0.184250544491458,ranger_spec_15
+ranger_loyo_mtry3_node10_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0386163257387497,0.184653564090225,ranger_spec_12
+ranger_loyo_mtry1_node10_sf1,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0373231766504315,0.224172943388881,ranger_spec_22
+ranger_loyo_mtry2_node10_sf0.65,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0364502037469963,0.224376227503046,ranger_spec_22
+ranger_loyo_mtry3_node5_sf1,"rim_100, height_wo_shoes_in, rim_pct",3,177,177,0.0364473879366189,0.23810947956193,ranger_spec_01
+ranger_loyo_mtry2_node5_sf0.65,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0348110658346664,0.224757923999227,ranger_spec_22
+ranger_loyo_mtry2_node5_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0335379276345957,0.185628975192896,ranger_spec_12
+ranger_loyo_mtry2_node5_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0329983267295307,0.185732616676493,ranger_spec_15
+ranger_loyo_mtry3_node5_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, mid_pct",5,156,156,0.0316144424241615,0.185998420201263,ranger_spec_12
+ranger_loyo_mtry3_node10_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0285426530811505,0.186588420703151,ranger_spec_15
+ranger_loyo_mtry1_node5_sf1,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0265490132137116,0.226681860059128,ranger_spec_22
+ranger_loyo_mtry3_node5_sf0.65,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0257021538668222,0.226879063261515,ranger_spec_22
+ranger_loyo_mtry3_node10_sf0.65,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,0.0237470123121496,0.227334345684881,ranger_spec_22
+ranger_loyo_mtry3_node5_sf1,"rim_100, rim_makes_100, wingspan_in, scv_draft, three_pct",5,156,156,0.0149018050160689,0.189208426929454,ranger_spec_15
+ranger_loyo_mtry2_node10_sf1,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,-0.000899465641147845,0.233073627417805,ranger_spec_22
+ranger_loyo_mtry2_node5_sf1,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,-0.00406628928638519,0.233811067190455,ranger_spec_22
+ranger_loyo_mtry3_node5_sf1,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,-0.0136881304332155,0.236051649282377,ranger_spec_22
+ranger_loyo_mtry3_node10_sf1,"rim_100, rim_makes_100, or_pct, scv_draft, three_pct",5,176,176,-0.0137199823777194,0.236059066459127,ranger_spec_22

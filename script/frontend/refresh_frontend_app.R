@@ -38,7 +38,7 @@ if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY"))) {
 
 run_script(base_dir, "Refresh backend outputs", file.path("script", "refresh_outputs_2026.txt"))
 run_script(base_dir, "Refresh Basketball-Reference availability data", file.path("script", "data", "pull_bref_player_seasons.R"))
-run_script(base_dir, "Refresh contract data", file.path("script", "data", "pull_contracts_bref.R"))
+run_script(base_dir, "Refresh contract data", file.path("script", "data", "pull_contracts_databallr.R"))
 run_script(base_dir, "Refresh salary cap assumptions", file.path("script", "data", "pull_salary_cap_assumptions.R"))
 run_script(base_dir, "Train career projection models", file.path("script", "models", "train_career_projection_models.R"))
 run_script(base_dir, "Export frontend data", file.path("script", "frontend", "export_frontend_data.R"))

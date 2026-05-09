@@ -1,0 +1,38 @@
+alias,canonical,notes
+Cam Boozer,Cameron Boozer,Consensus-board shortened first name
+Ronald Holland,Ron Holland,Common shortened draft name
+Alen Smailagi,Alen Smailagic,Corrupted/missing final accented character in SCV source
+D anan Musa,Dzanan Musa,Corrupted leading accented character in SCV source
+Danan Musa,Dzanan Musa,Corrupted leading accented character in SCV source
+Josh Primo,Joshua Primo,Short/legal first-name source mismatch
+Juan Hernangomez,Juancho Hernangomez,Common NBA display name mismatch
+De Aaron Fox,De'Aaron Fox,Separated apostrophe prefix in source name key
+De Andre Hunter,De'Andre Hunter,Separated apostrophe prefix in source name key
+De Anthony Melton,De'Anthony Melton,Separated apostrophe prefix in source name key
+Lie Okobo,Elie Okobo,Corrupted leading accented character in SCV source
+Luka Amani,Luka Samanic,Corrupted leading accented character in SCV source
+Vanja Marinkovi,Vanja Marinkovic,Corrupted/missing final accented character in SCV source
+Bub Carrington,Carlton Carrington,Nickname/source display-name mismatch
+Hansen Yang,Yang Hansen,International source name order mismatch
+Kenyon Martin,KJ Martin,Common abbreviated NBA display name
+Luka Don I,Luka Doncic,Corrupted accented characters in SCV source
+Luka Don?i?,Luka Doncic,Corrupted accented characters in SCV source
+Luka Amaniz,Luka Samanic,Corrupted accented characters in SCV source
+Luka ?amani?,Luka Samanic,Corrupted accented characters in SCV source
+Mohamed Bamba,Mo Bamba,Common shortened NBA display name
+Bones Hyland,Nahshon Hyland,Nickname/source display-name mismatch
+Nahshon Bones Hyland,Nahshon Hyland,Quoted nickname embedded in SCV source
+Sviatoslav Mykhailiuk,Svi Mykhailiuk,Common shortened NBA display name
+Edrice Adebayo,Bam Adebayo,College/Torvik legal-name source mismatch
+Nicolas Claxton,Nic Claxton,Legal first-name source mismatch
+Wesley Iwundu,Wes Iwundu,Common shortened first-name source mismatch
+Kasparas Jokucionis,Kasparas Jakucionis,Watchlist/source spelling mismatch
+Kasparas Jakučionis,Kasparas Jakucionis,Accented draft source spelling
+V.J. Edgecombe,VJ Edgecombe,Initialed display-name source mismatch
+Egor D?min,Egor Demin,Corrupted accented character in draft/NBA source
+Egor Dёmin,Egor Demin,Accented Basketball Reference draft source spelling
+Egor Dëmin,Egor Demin,Accented NBA source spelling
+Cameron Thomas,Cam Thomas,Common shortened first-name source mismatch
+G.G. Jackson,Gregory Jackson,Initialed display-name source mismatch
+GG Jackson,Gregory Jackson,Initialed display-name source mismatch
+Leonard Millar,Leonard Miller,Common misspelling

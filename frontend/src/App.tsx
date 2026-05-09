@@ -1,9 +1,9 @@
 import { type CSSProperties, type MouseEvent, useEffect, useMemo, useState } from "react";
 import { loadAppData } from "./data";
-import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact } from "./types";
+import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
-type View = "impact" | "teams" | "trade" | "draft" | "lineups" | "tracker";
+type View = "impact" | "teams" | "startingLineups" | "trade" | "draft" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type SortKey =
   | "player_name"
@@ -20,6 +20,7 @@ type SortKey =
   | "value"
   | "value_add"
   | "contract"
+  | "contract_status"
   | "trade_value"
   | "fa_value"
   | "scalability"
@@ -43,6 +44,18 @@ type DraftSortKey =
   | "scv_draft"
   | `${SkillKey}_pred`;
 type DraftFilterKey = DraftSortKey;
+type TeamSortKey =
+  | "projected_wins"
+  | "win_pct"
+  | "adjusted_total"
+  | "offense"
+  | "defense"
+  | "raw_offense"
+  | "raw_defense"
+  | "minutes"
+  | SkillKey;
+type ConferenceFilter = "All" | "East" | "West";
+type TeamProjectionScenario = "base" | "guaranteed" | "open_market";
 type DraftYearSelection = number | "All";
 type FilterFieldType = "number" | "text";
 type FilterOperator = "contains" | "equals" | "gt" | "gte" | "lt" | "lte" | "between";
@@ -82,6 +95,35 @@ type LineupSuggestion = {
   improvedGaps: LineupSkill[];
   reasons: string[];
 };
+type CareerChartPoint = {
+  label: string;
+  year: number;
+  value: number;
+  valueAdd?: number | null;
+  kind: "actual" | "projection";
+  isCurrent?: boolean;
+};
+type TradeAsset = { kind: "player" | "pick"; id: string; player?: PlayerImpact; pick?: PickAsset };
+type TradeSideState = { team: string; assets: TradeAsset[] };
+type SavedTradeScenario = { id: string; name: string; createdAt: string; left: TradeSideState; right: TradeSideState };
+type TradePickKind = "first" | "second";
+type TradePickBuilderState = {
+  assetType: TradePickKind;
+  protectionCutoff: number;
+};
+type PickDistributionPoint = { pick: number; probability: number };
+type TradePickContext = {
+  firstRound: PickDistributionPoint[];
+  secondRound: PickDistributionPoint[];
+  slotValues: Map<number, number>;
+};
+type TradeVerdict = "Accepted" | "Maybe" | "Declined";
+type TradeImpactSummary = {
+  offense: number;
+  defense: number;
+  total: number;
+  outgoingSalary: number;
+};
 
 const skillKeys: SkillKey[] = ["FTD", "PASS", "SHOOT", "RIM", "OREB", "DREB", "SWITCH", "DPM", "RIMPRO"];
 const emptyLineup = () => Array.from({ length: 5 }, () => "");
@@ -114,6 +156,11 @@ const skillLabels: Record<SkillKey, string> = {
 const NBA_HEADSHOT_URL = "https://cdn.nba.com/headshots/nba/latest/260x190";
 const BRENDAN_MODEL_BOARD = "Brendan Model";
 const BRENDAN_BASE_BOARD = "Brendan Base";
+const teamProjectionScenarios: Array<{ id: TeamProjectionScenario; label: string; shortLabel: string }> = [
+  { id: "base", label: "Base Case", shortLabel: "Base" },
+  { id: "guaranteed", label: "Guaranteed Only", shortLabel: "Guaranteed" },
+  { id: "open_market", label: "Open Market", shortLabel: "Market" }
+];
 const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType }> = [
   { key: "player_name", label: "Player", type: "text" },
   { key: "team", label: "Team", type: "text" },
@@ -129,6 +176,7 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "score_delta", label: "Delta", type: "number" },
   { key: "value", label: "Raw Value", type: "number" },
   { key: "contract", label: "Salary", type: "number" },
+  { key: "contract_status", label: "FA Status", type: "text" },
   { key: "value_add", label: "Szn VA", type: "number" },
   { key: "fa_value", label: "FA Value", type: "number" },
   { key: "scalability", label: "Scale", type: "number" },
@@ -311,6 +359,7 @@ function App() {
         {[
           ["impact", "Player Impact"],
           ["teams", "Team Projections"],
+          ["startingLineups", "Starting Lineups"],
           ["trade", "Trade Sandbox"],
           ["draft", "Draft Board"],
           ["lineups", "Lineup Synergy"],
@@ -325,6 +374,7 @@ function App() {
 
       {view === "impact" && <ImpactWorkspace data={data} season={season} />}
       {view === "teams" && <TeamWorkspace data={data} season={season} />}
+      {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
       {view === "trade" && <TradeWorkspace data={data} season={season} />}
       {view === "draft" && <DraftWorkspace data={data} />}
       {view === "lineups" && <LineupWorkspace data={data} season={season} />}
@@ -374,7 +424,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       return;
     }
     setSortKey(key);
-    setSortDirection(["player_name", "team", "position", "tier"].includes(key) ? "asc" : "desc");
+    setSortDirection(["player_name", "team", "position", "tier", "contract_status"].includes(key) ? "asc" : "desc");
   };
   const handleFilterKeyChange = (key: FilterKey) => {
     const nextField = filterFields.find((field) => field.key === key) ?? filterFields[0];
@@ -408,10 +458,12 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     setFilterRules([]);
   };
   const showDetail = (player: PlayerImpact, event: MouseEvent<HTMLButtonElement>) => {
+    const width = Math.min(620, window.innerWidth - 32);
+    const visibleHeight = Math.min(660, window.innerHeight - 32);
     setDetailPlayer(player);
     setDetailPosition({
-      left: Math.max(16, Math.min(event.clientX + 14, window.innerWidth - 448)),
-      top: Math.max(16, Math.min(event.clientY - 18, window.innerHeight - 520))
+      left: Math.max(16, Math.min(event.clientX + 14, window.innerWidth - width - 16)),
+      top: Math.max(16, Math.min(event.clientY - 18, window.innerHeight - visibleHeight - 16))
     });
   };
   const closeDetail = () => setDetailPlayer(null);
@@ -540,8 +592,14 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
 
       {detailPlayer && (
         <div className="detail-overlay active" role="presentation" onClick={closeDetail}>
-          <div className="detail-popover" role="dialog" aria-label={`${detailPlayer.player_name} detail`} style={detailPosition} onClick={(event) => event.stopPropagation()}>
-            <PlayerDetail player={detailPlayer} />
+          <div
+            className="detail-popover"
+            role="dialog"
+            aria-label={`${detailPlayer.player_name} detail`}
+            style={{ ...detailPosition, "--detail-top": `${detailPosition.top}px` } as CSSProperties}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <PlayerDetail player={detailPlayer} allPlayers={data.players} />
           </div>
         </div>
       )}
@@ -670,7 +728,7 @@ function PlayerTable({
                 <span className="tier-text">{player.tier}</span>
               </td>
               <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.value)}</div></td>
-              <td className="money-text muted-num"><div className="cell-stage money-stage">{formatMoney(player.contract)}</div></td>
+              <td className="money-text muted-num"><div className="cell-stage money-stage">{formatSalarySlot(player)}</div></td>
               <td className="va-cell" style={netMoneyStyle(player.value_add)}><div className="cell-stage money-stage">{formatSeasonValueAdd(player)}</div></td>
               <td className="align-center">
                 <div className="cell-stage">
@@ -699,15 +757,8 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-function PlayerDetail({ player }: { player: PlayerImpact }) {
-  const projection = [
-    { label: "Now", value: player.total },
-    { label: "+1", value: player.projection_y1 },
-    { label: "+2", value: player.projection_y2 },
-    { label: "+3", value: player.projection_y3 },
-    { label: "+4", value: player.projection_y4 },
-    { label: "+5", value: player.projection_y5 ?? player.projection_y4 }
-  ].filter((point) => point.value !== null && point.value !== undefined && Number.isFinite(point.value));
+function PlayerDetail({ player, allPlayers }: { player: PlayerImpact; allPlayers: PlayerImpact[] }) {
+  const trajectory = buildCareerTrajectory(player, allPlayers);
   const scoreVars = scoreStyle(player.score) as CSSProperties & { "--score-fill"?: string };
   const scoreColor = player.score_label === "DNQ" ? "var(--muted)" : scoreVars["--score-fill"] ?? "var(--teal)";
   const detailStyle = {
@@ -754,8 +805,11 @@ function PlayerDetail({ player }: { player: PlayerImpact }) {
         </div>
 
         <section>
-          <h3 className="dp-section-head">Projection Arc</h3>
-          <ProjectionChart points={projection} />
+          <div className="dp-section-row">
+            <h3 className="dp-section-head">Career Arc</h3>
+            <span>Total impact / bars are Szn VA</span>
+          </div>
+          <ProjectionChart points={trajectory} currentYear={player.year} />
         </section>
 
         <section>
@@ -776,7 +830,7 @@ function PlayerDetail({ player }: { player: PlayerImpact }) {
             </div>
             <div className="mc">
               <span>Salary</span>
-              <strong className="muted-num">{formatMoney(player.contract)}</strong>
+              <strong className="muted-num">{formatSalarySlot(player)}</strong>
             </div>
             <div className="mc">
               <span>Season VA</span>
@@ -808,15 +862,32 @@ function PlayerDetail({ player }: { player: PlayerImpact }) {
 }
 
 function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
-  const teams = useMemo(
-    () => data.teams.filter((team) => team.year === season).sort((a, b) => a.rank - b.rank),
-    [data.teams, season]
-  );
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
-  const currentTeam = teams.find((team) => team.team === selectedTeam) ?? teams[0];
+  const [conference, setConference] = useSessionState<ConferenceFilter>("teams:conference", "All");
+  const [scenario, setScenario] = useSessionState<TeamProjectionScenario>("teams:scenario", "base");
+  const [sortKey, setSortKey] = useSessionState<TeamSortKey>("teams:sortKey", "projected_wins");
+  const [sortDirection, setSortDirection] = useSessionState<SortDirection>("teams:sortDirection", "desc");
+  const [selectedTeam, setSelectedTeam] = useSessionState<string>("teams:selected", "");
+  const allTeams = useMemo(() => {
+    const selected = data.teams.filter((team) => team.year === season && ((team.scenario_id ?? "base") === scenario));
+    if (selected.length > 0) return selected;
+    return data.teams.filter((team) => team.year === season && ((team.scenario_id ?? "base") === "base"));
+  }, [data.teams, scenario, season]);
+  const teams = useMemo(() => {
+    const filtered = allTeams.filter((team) => conference === "All" || team.conference === conference);
+    return filtered.sort((a, b) => {
+      const av = Number(a[sortKey] ?? 0);
+      const bv = Number(b[sortKey] ?? 0);
+      const diff = av === bv ? a.conference_rank - b.conference_rank : av - bv;
+      return sortDirection === "desc" ? -diff : diff;
+    });
+  }, [allTeams, conference, sortDirection, sortKey]);
+  const currentTeam = teams.find((team) => team.team === selectedTeam) ?? teams[0] ?? allTeams[0];
+  useEffect(() => {
+    if (currentTeam && currentTeam.team !== selectedTeam) setSelectedTeam(currentTeam.team);
+  }, [currentTeam, selectedTeam, setSelectedTeam]);
   if (!currentTeam) {
     return (
-      <main className="workspace team-grid">
+      <main className="workspace team-board-workspace">
         <section className="table-panel">
           <EmptyState title="No team projections" detail={`No team projection rows are available for ${season}.`} />
         </section>
@@ -825,146 +896,773 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   }
 
   const contributors = data.players
-    .filter((player) => player.year === season && player.team === currentTeam.team)
-    .sort((a, b) => b.timin - a.timin)
-    .slice(0, 12);
+    .filter((player) => player.year === season && teamForProjectionScenario(player, scenario) === currentTeam.team)
+    .sort((a, b) => b.Minutes - a.Minutes)
+    .slice(0, 14);
+  const schedule = data.schedules
+    .filter((game) => game.season === season && (game.home_team === currentTeam.team || game.away_team === currentTeam.team))
+    .sort((a, b) => `${a.date ?? ""} ${a.time ?? ""}`.localeCompare(`${b.date ?? ""} ${b.time ?? ""}`));
+  const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
+  const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
+  const playoffSchedule = schedule.filter((game) => game.season_type === "Playoffs");
+  const teamMeta = useMemo(() => {
+    const map = new Map<string, TeamProjection>();
+    data.teams.forEach((team) => {
+      if (!map.has(team.team)) map.set(team.team, team);
+    });
+    return map;
+  }, [data.teams]);
+  const handleSort = (key: TeamSortKey) => {
+    if (sortKey === key) {
+      setSortDirection(sortDirection === "desc" ? "asc" : "desc");
+    } else {
+      setSortKey(key);
+      setSortDirection("desc");
+    }
+  };
+  const seasonGames = Math.max(82, Number(currentTeam.projected_wins ?? 0) + Number(currentTeam.projected_losses ?? 0));
 
   return (
-    <main className="workspace team-grid">
-      <section className="table-panel">
+    <main className="workspace team-board-workspace">
+      <section className="table-panel team-board-panel">
         <div className="panel-heading">
           <div>
-            <h2>Team Projection</h2>
-            <p>Impact-derived wins by roster contribution</p>
+            <h2>Team Projections</h2>
+            <p>Minute-share ratings under {teamProjectionScenarios.find((item) => item.id === scenario)?.label ?? "Base Case"} roster assumptions</p>
+          </div>
+          <div className="team-controls">
+            <div className="segmented-control scenario-control" aria-label="Roster scenario">
+              {teamProjectionScenarios.map((item) => (
+                <button key={item.id} className={cls(scenario === item.id && "active")} onClick={() => setScenario(item.id)}>
+                  {item.shortLabel}
+                </button>
+              ))}
+            </div>
+            <div className="segmented-control" aria-label="Conference filter">
+              {(["All", "East", "West"] as ConferenceFilter[]).map((item) => (
+                <button key={item} className={cls(conference === item && "active")} onClick={() => setConference(item)}>
+                  {item}
+                </button>
+              ))}
+            </div>
+            <span>{teams.length} teams</span>
           </div>
         </div>
-        <div className="team-rank-list">
-          {teams.map((team) => (
-            <button
-              key={team.team}
-              className={cls(currentTeam.team === team.team && "selected")}
-              onClick={() => setSelectedTeam(team.team)}
-            >
-              <span>{team.rank}. {team.team}</span>
-              <strong>{formatNumber(team.projected_wins, 1)} W</strong>
-              <small>{team.conference} #{team.conference_rank}</small>
-            </button>
-          ))}
-        </div>
-      </section>
-      <section className="detail-panel wide">
-        <div className="player-head">
-          <div>
-            <p>{currentTeam.conference} / League #{currentTeam.rank}</p>
-            <h2>{currentTeam.team}</h2>
-          </div>
-          <strong>{formatNumber(currentTeam.projected_wins, 1)}</strong>
-        </div>
-        <div className="metric-grid">
-          <MetricPill label="Offense" value={formatNumber(currentTeam.offense, 1)} tone="green" />
-          <MetricPill label="Defense" value={formatNumber(currentTeam.defense, 1)} tone="teal" />
-          <MetricPill label="Total" value={formatNumber(currentTeam.total, 1)} tone="gold" />
-          <MetricPill label="Minutes" value={formatNumber(currentTeam.minutes, 0)} />
-        </div>
-        <h3>Roster Drivers</h3>
-        {contributors.length > 0 ? <div className="table-wrap compact">
-          <table className="data-table">
+        <div className="table-wrap team-board-wrap">
+          <table className="data-table team-board-table">
             <thead>
               <tr>
-                <th>Player</th>
-                <th>Score</th>
-                <th>Total</th>
-                <th>TIMIN</th>
-                <th>Value</th>
+                <th><TeamSortButton label="Rank" sortKey="projected_wins" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th>Team</th>
+                <th><TeamSortButton label="W-L" sortKey="projected_wins" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Win %" sortKey="win_pct" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Adj" sortKey="adjusted_total" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Off" sortKey="offense" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Def" sortKey="defense" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Min" sortKey="minutes" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th className="team-skills-head">Skills</th>
               </tr>
             </thead>
             <tbody>
-              {contributors.map((player) => (
-                <tr key={player.nba_id}>
-                  <td>{player.player_name}</td>
-                  <td>{formatNumber(player.score, 1)}</td>
-                  <td>{formatNumber(player.total, 1)}</td>
-                  <td>{formatNumber(player.timin, 0)}</td>
-                  <td>{formatMoney(player.value)}</td>
+              {teams.map((team) => (
+                <tr key={team.team} className={cls(currentTeam.team === team.team && "selected-row")} onClick={() => setSelectedTeam(team.team)}>
+                  <td className="team-rank-cell">{formatNumber(team.league_rank ?? team.rank, 0)}</td>
+                  <td className="team-cell">
+                    <div className="team-cell-inner">
+                      <TeamLogo team={team} />
+                      <div>
+                        <strong>{team.team_name ?? team.team}</strong>
+                      </div>
+                      <span className={cls("playoff-badge", playoffBadgeClass(team.playoff_status))}>{team.playoff_status}</span>
+                    </div>
+                  </td>
+                  <td className="team-record-cell">
+                    <div className="team-record-stack">
+                      <strong>{formatNumber(team.projected_wins, 1)}-{formatNumber(team.projected_losses, 1)}</strong>
+                      <span>{formatNumber(team.expected_wins, 1)} xW</span>
+                    </div>
+                  </td>
+                  <td>{formatPercent(team.win_pct, 1)}</td>
+                  <td><StatValue value={team.adjusted_total} /></td>
+                  <td><StatValue value={team.offense} tone="secondary" /></td>
+                  <td><StatValue value={team.defense} tone="secondary" /></td>
+                  <td>
+                    <div className="minutes-coverage">
+                      <strong>{formatNumber(team.minutes, 0)}</strong>
+                      <span style={{ width: `${clamp(Number(team.minutes_coverage ?? team.minutes / 19680), 0, 1) * 100}%` }} />
+                    </div>
+                  </td>
+                  <td><TeamSkillStrip team={team} activeSkill={skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null} onSort={handleSort} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div> : <EmptyState title="No roster drivers" detail={`No player rows are available for ${currentTeam.team} in ${season}.`} />}
+        </div>
+      </section>
+      <section className="detail-panel team-detail-panel">
+        <div className="team-detail-head">
+          <div className="team-title-lockup">
+            <TeamLogo team={currentTeam} size="large" />
+            <div>
+              <p>{currentTeam.conference} #{formatNumber(currentTeam.conference_rank, 0)} / {currentTeam.playoff_status}</p>
+              <h2>{currentTeam.team_name ?? currentTeam.team}</h2>
+            </div>
+          </div>
+          <div className="team-record-hero">
+            <strong>{formatNumber(currentTeam.projected_wins, 1)}-{formatNumber(currentTeam.projected_losses, 1)}</strong>
+            <span>{formatPercent(currentTeam.win_pct, 1)} over {formatNumber(seasonGames, 0)} games</span>
+          </div>
+        </div>
+        <div className="metric-grid team-metric-grid">
+          <MetricPill label="Adj Off" value={formatSigned(currentTeam.offense, 1)} tone="green" />
+          <MetricPill label="Adj Def" value={formatSigned(currentTeam.defense, 1)} tone="teal" />
+          <MetricPill label="Adj Total" value={formatSigned(currentTeam.adjusted_total, 1)} tone="gold" />
+          <MetricPill label="Raw Total" value={formatSigned(currentTeam.raw_total, 1)} tone="gold" />
+          <MetricPill label="Minutes" value={formatNumber(currentTeam.minutes, 0)} />
+          <MetricPill label="Coverage" value={formatPercent(Number(currentTeam.minutes_coverage ?? currentTeam.minutes / 19680), 0)} />
+          {Number.isFinite(Number(currentTeam.playoff_projected_wins)) && <MetricPill label="Playoffs" value={`${formatNumber(currentTeam.playoff_projected_wins, 1)}-${formatNumber(currentTeam.playoff_projected_losses, 1)}`} />}
+        </div>
+        <section>
+          <div className="section-heading-row">
+            <h3>Roster Contributions</h3>
+            <span>{contributors.length} drivers</span>
+          </div>
+          {contributors.length > 0 ? <div className="table-wrap compact team-contrib-wrap">
+            <table className="data-table team-contrib-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Share</th>
+                  <th>Off</th>
+                  <th>Def</th>
+                  <th>Total</th>
+                  <th>Min</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contributors.map((player) => {
+                  const share = currentTeam.minutes > 0 ? player.Minutes / currentTeam.minutes : 0;
+                  return (
+                    <tr key={`${player.nba_id}-${player.player_name}`}>
+                      <td>{player.player_name}</td>
+                      <td>{formatPercent(share, 1)}</td>
+                      <td>{formatSigned(player.offense * share * 5, 2)}</td>
+                      <td>{formatSigned(player.defense * share * 5, 2)}</td>
+                      <td>{formatSigned(player.total * share * 5, 2)}</td>
+                      <td>{formatNumber(player.Minutes, 0)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div> : <EmptyState title="No roster drivers" detail={`No player rows are available for ${currentTeam.team} in ${season}.`} />}
+        </section>
+        <section className="team-skill-panel">
+          <div className="section-heading-row">
+            <h3>Skill Profile</h3>
+            <span>Minute-share aggregate</span>
+          </div>
+          <div className="team-skill-grid">
+            {skillKeys.map((key) => <SkillRow key={key} label={key} value={Number(currentTeam[key] ?? 0)} />)}
+          </div>
+        </section>
+        <TeamScheduleTable team={currentTeam.team} games={regularSchedule} title="Regular Season Schedule" teamMeta={teamMeta} />
+        {playInSchedule.length > 0 && <TeamScheduleTable team={currentTeam.team} games={playInSchedule} title="Play-In Schedule" teamMeta={teamMeta} />}
+        {playoffSchedule.length > 0 && <TeamScheduleTable team={currentTeam.team} games={playoffSchedule} title="Playoff Schedule" teamMeta={teamMeta} />}
       </section>
     </main>
   );
 }
 
+function StartingLineupsWorkspace({ data, season }: { data: AppData; season: number }) {
+  const [selectedTeam, setSelectedTeam] = useSessionState<string>("startingLineups:selected", "");
+  const [scenario, setScenario] = useSessionState<TeamProjectionScenario>("startingLineups:scenario", "base");
+  const seasonLineups = useMemo(
+    () =>
+      data.lineups
+        .filter((row) => row.year === season && ((row.scenario_id ?? "base") === scenario))
+        .sort((a, b) => a.team.localeCompare(b.team) || a.role_order - b.role_order),
+    [data.lineups, scenario, season]
+  );
+  const seasonTeams = useMemo(
+    () => data.teams.filter((team) => team.year === season && ((team.scenario_id ?? "base") === scenario)),
+    [data.teams, scenario, season]
+  );
+  const teamMap = useMemo(() => new Map(seasonTeams.map((team) => [team.team, team])), [seasonTeams]);
+  const playerMap = useMemo(() => {
+    const map = new Map<string, PlayerImpact>();
+    data.players
+      .filter((player) => player.year === season)
+      .forEach((player) => {
+        map.set(`${player.nba_id}`, player);
+        map.set(`${player.nba_id}-${teamForProjectionScenario(player, scenario)}`, player);
+      });
+    return map;
+  }, [data.players, scenario, season]);
+  const teams = useMemo(() => {
+    const lineupTeams = Array.from(new Set(seasonLineups.map((row) => row.team)));
+    return lineupTeams
+      .map((team) => teamMap.get(team) ?? seasonTeams.find((item) => item.team === team))
+      .filter((team): team is TeamProjection => Boolean(team))
+      .sort((a, b) => (a.team_name ?? a.team).localeCompare(b.team_name ?? b.team));
+  }, [seasonLineups, seasonTeams, teamMap]);
+  const currentTeam = teams.find((team) => team.team === selectedTeam) ?? teams[0];
+
+  useEffect(() => {
+    if (currentTeam && currentTeam.team !== selectedTeam) setSelectedTeam(currentTeam.team);
+  }, [currentTeam, selectedTeam, setSelectedTeam]);
+
+  if (!currentTeam) {
+    return (
+      <main className="workspace starting-lineups-workspace">
+        <section className="table-panel">
+          <EmptyState title="No starting lineups" detail={`No lineup rows are available for ${season}.`} />
+        </section>
+      </main>
+    );
+  }
+
+  const currentRows = seasonLineups.filter((row) => row.team === currentTeam.team).sort((a, b) => a.role_order - b.role_order);
+  const starters = currentRows.filter((row) => row.role_type === "Starter");
+  const bench = currentRows.filter((row) => row.role_type !== "Starter");
+  const starterTotal = starters.reduce((sum, row) => sum + Number(row.total ?? 0), 0);
+  const starterMinutes = starters.reduce((sum, row) => sum + Number(row.adjusted_minutes ?? 0), 0);
+  const benchMinutes = bench.reduce((sum, row) => sum + Number(row.adjusted_minutes ?? 0), 0);
+  const minutesDelta = currentRows.reduce((sum, row) => sum + Number(row.minutes_delta ?? 0), 0);
+
+  return (
+    <main className="workspace starting-lineups-workspace">
+      <section className="detail-panel starting-detail-panel">
+        <div className="panel-heading starting-lineups-heading">
+          <div>
+            <h2>Starting Lineups</h2>
+            <p>Estimated five-man shape plus first five bench roles</p>
+          </div>
+          <div className="lineup-heading-controls">
+            <div className="segmented-control scenario-control" aria-label="Lineup roster scenario">
+              {teamProjectionScenarios.map((item) => (
+                <button key={item.id} className={cls(scenario === item.id && "active")} onClick={() => setScenario(item.id)}>
+                  {item.shortLabel}
+                </button>
+              ))}
+            </div>
+            <label className="starting-team-select">
+              <span>Team</span>
+              <select value={currentTeam.team} onChange={(event) => setSelectedTeam(event.target.value)}>
+                {teams.map((team) => (
+                  <option key={team.team} value={team.team}>
+                    {team.team_name ?? team.team}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+        <div className="team-detail-head">
+          <div className="team-title-lockup">
+            <TeamLogo team={currentTeam} size="large" />
+            <div>
+              <p>{currentTeam.conference} #{formatNumber(currentTeam.conference_rank, 0)}</p>
+              <h2>{currentTeam.team_name ?? currentTeam.team}</h2>
+            </div>
+          </div>
+          <div className="team-record-hero">
+            <strong>{formatSigned(starterTotal, 1)}</strong>
+            <span>starter total</span>
+          </div>
+        </div>
+
+        <div className="metric-grid starting-metric-grid">
+          <MetricPill label="Starter Min" value={formatNumber(starterMinutes, 0)} />
+          <MetricPill label="Bench Min" value={formatNumber(benchMinutes, 0)} />
+          <MetricPill label="Min Delta" value={formatSigned(minutesDelta, 0)} tone={minutesDelta >= 0 ? "green" : undefined} />
+          <MetricPill label="Team Adj" value={formatSigned(currentTeam.adjusted_total, 1)} tone="gold" />
+        </div>
+
+        <section>
+          <div className="section-heading-row">
+            <h3>Starting Five</h3>
+            <span>2 guards / 2 forwards / 1 center</span>
+          </div>
+          <div className="starter-card-grid">
+            {starters.map((row) => (
+              <StartingLineupCard key={`${row.scenario_id ?? "base"}-${row.team}-${row.role_order}-${row.nba_id}`} row={row} player={playerMap.get(`${row.nba_id}-${row.team}`) ?? playerMap.get(`${row.nba_id}`)} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="section-heading-row">
+            <h3>Bench</h3>
+            <span>Next five by role score</span>
+          </div>
+          <StartingBenchTable rows={bench} />
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function StartingLineupCard({ row, player }: { row: TeamLineupRow; player?: PlayerImpact }) {
+  return (
+    <div className="starter-card">
+      <div className="starter-card-top">
+        {player ? <PlayerHeadshot player={player} /> : <span className="player-headshot">{row.player_name.slice(0, 2).toUpperCase()}</span>}
+        <div>
+          <span>{row.role_label} / {row.position}</span>
+          <strong>{row.player_name}</strong>
+        </div>
+      </div>
+      <div className="starter-card-stats">
+        <div>
+          <span>Total</span>
+          <strong style={rateStyle(row.total)}>{formatSigned(row.total, 1)}</strong>
+        </div>
+        <div>
+          <span>Score</span>
+          <strong>{formatNumber(row.score, 1)}</strong>
+        </div>
+        <div>
+          <span>Min</span>
+          <strong>{formatNumber(row.adjusted_minutes, 0)}</strong>
+        </div>
+      </div>
+      <div className="starter-minute-row">
+        <span>{formatNumber(row.original_minutes, 0)} model</span>
+        <strong className={cls(row.minutes_delta > 0 && "good-text", row.minutes_delta < 0 && "bad-text")}>{formatSigned(row.minutes_delta, 0)}</strong>
+        <span>{formatNumber(row.role_band_minutes, 0)} role</span>
+      </div>
+      <div className="starter-tier">{row.tier}</div>
+    </div>
+  );
+}
+
+function StartingBenchTable({ rows }: { rows: TeamLineupRow[] }) {
+  if (!rows.length) return <EmptyState title="No bench estimate" detail="This team does not have enough eligible player rows for bench roles." />;
+  return (
+    <div className="table-wrap compact starting-bench-wrap">
+      <table className="data-table starting-bench-table">
+        <thead>
+          <tr>
+            <th>Role</th>
+            <th>Player</th>
+            <th>Pos</th>
+            <th>Total</th>
+            <th>Score</th>
+            <th>Model Min</th>
+            <th>Adj Min</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.team}-${row.role_order}-${row.nba_id}`}>
+              <td>{row.role_label}</td>
+              <td>{row.player_name}</td>
+              <td>{row.position}</td>
+              <td><StatValue value={row.total} /></td>
+              <td>{formatNumber(row.score, 1)}</td>
+              <td>{formatNumber(row.original_minutes, 0)}</td>
+              <td>
+                {formatNumber(row.adjusted_minutes, 0)}
+                <span className={cls("bench-delta", row.minutes_delta > 0 && "good-text", row.minutes_delta < 0 && "bad-text")}>
+                  {formatSigned(row.minutes_delta, 0)}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TeamSortButton({ label, sortKey, active, direction, onSort }: { label: string; sortKey: TeamSortKey; active: TeamSortKey; direction: SortDirection; onSort: (key: TeamSortKey) => void }) {
+  return (
+    <button className={cls("sort-header sort-btn", active === sortKey && "active on")} onClick={() => onSort(sortKey)}>
+      {label}
+      {active === sortKey && <span className="sort-arr">{direction === "desc" ? "v" : "^"}</span>}
+    </button>
+  );
+}
+
+function TeamLogo({ team, size = "normal" }: { team: TeamProjection; size?: "normal" | "large" }) {
+  const [failed, setFailed] = useState(false);
+  const label = team.team_abbr ?? team.team;
+  if (!team.team_logo_url || failed) {
+    return <span className={cls("team-logo-fallback", size === "large" && "large")}>{label}</span>;
+  }
+  return <img className={cls("team-logo", size === "large" && "large")} src={team.team_logo_url} alt="" onError={() => setFailed(true)} />;
+}
+
+function TeamSkillStrip({ team, activeSkill, onSort }: { team: TeamProjection; activeSkill: SkillKey | null; onSort: (key: TeamSortKey) => void }) {
+  return (
+    <div className="team-skill-strip">
+      {skillKeys.map((key) => {
+        const value = Number(team[key] ?? 0);
+        const height = Math.max(4, clamp((value + 3) / 6, 0, 1) * 22);
+        return (
+          <button
+            key={key}
+            className={cls("team-skill-dot", activeSkill === key && "active")}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSort(key);
+            }}
+            title={`${skillLabels[key]}: ${formatSigned(value, 1)}`}
+            style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
+          >
+            <span />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TeamScheduleTable({ team, games, title, teamMeta }: { team: string; games: TeamScheduleGame[]; title: string; teamMeta: Map<string, TeamProjection> }) {
+  return (
+    <section>
+      <div className="section-heading-row">
+        <h3>{title}</h3>
+        <span>{games.length} games</span>
+      </div>
+      {games.length > 0 ? <div className="table-wrap compact team-schedule-wrap">
+        <table className="data-table team-schedule-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Loc</th>
+              <th>Opponent</th>
+              <th>Model</th>
+              <th>Result</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {games.map((game, index) => {
+              const isHome = game.home_team === team;
+              const opponent = isHome ? game.away_team : game.home_team;
+              const probability = isHome ? game.home_win_probability : game.away_win_probability;
+              const teamScore = isHome ? game.home_score : game.away_score;
+              const opponentScore = isHome ? game.away_score : game.home_score;
+              const won = game.is_completed && game.result === team;
+              const opponentMeta = teamMeta.get(opponent) ?? {
+                year: game.season,
+                team: opponent,
+                team_name: opponent,
+                team_abbr: opponent,
+                conference: "",
+                roster_count: 0,
+                minutes: 0,
+                raw_offense: 0,
+                raw_defense: 0,
+                raw_total: 0,
+                adjusted_total: 0,
+                offense: 0,
+                defense: 0,
+                total: 0,
+                win_units: 0,
+                projected_wins: 0,
+                projected_losses: 0,
+                win_pct: 0,
+                expected_wins: 0,
+                expected_losses: 0,
+                league_rank: 0,
+                rank: 0,
+                conference_rank: 0,
+                playoff_status: ""
+              };
+              return (
+                <tr key={`${game.date}-${game.home_team}-${game.away_team}-${index}`}>
+                  <td>
+                    <div className="schedule-date-cell">
+                      <strong>{formatDateLabel(game.date)}</strong>
+                      <span>{game.time || "-"}</span>
+                    </div>
+                  </td>
+                  <td>{isHome ? "Home" : "Away"}</td>
+                  <td>
+                    <div className="schedule-opponent">
+                      <TeamLogo team={opponentMeta} />
+                      <span>{opponent}</span>
+                    </div>
+                  </td>
+                  <td>{formatPercent(probability, 1)}</td>
+                  <td><span className={cls("result-pill", game.is_completed ? won ? "win" : "loss" : "future")}>{game.is_completed ? won ? "W" : "L" : "Proj"}</span></td>
+                  <td>{game.is_completed ? `${formatNumber(teamScore, 0)}-${formatNumber(opponentScore, 0)}` : "-"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div> : <EmptyState title="No schedule rows" detail="No Basketball-Reference schedule rows are available for this team and season yet." />}
+    </section>
+  );
+}
+
+function playoffBadgeClass(status: string | null | undefined): string {
+  if (status === "Playoff") return "playoff";
+  if (status === "Play-In") return "play-in";
+  return "lottery";
+}
+
+function formatDateLabel(value: string | null | undefined): string {
+  if (!value) return "-";
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+const TRADE_ACCEPTED_DIFF = 10_000_000;
+const TRADE_MAYBE_DIFF = 20_000_000;
+const TRADE_IMPACT_DENOMINATOR = 48 * 82 * 0.9;
+const TRADE_PICK_PROTECTIONS = [
+  { label: "Unprotected", cutoff: 0 },
+  { label: "Top-3 protected", cutoff: 3 },
+  { label: "Top-5 protected", cutoff: 5 },
+  { label: "Top-8 protected", cutoff: 8 },
+  { label: "Top-10 protected", cutoff: 10 },
+  { label: "Top-14 protected", cutoff: 14 }
+];
+
 function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
   const players = useMemo(
-    () => data.players.filter((player) => player.year === season).sort((a, b) => b.trade_value - a.trade_value),
+    () => data.players.filter((player) => player.year === season).sort((a, b) => playerTradeValue(b) - playerTradeValue(a)),
     [data.players, season]
   );
-  const [playerId, setPlayerId] = useState(players[0]?.nba_id ?? 0);
-  const [pickId, setPickId] = useState(data.picks[0]?.asset_id ?? "");
-  const [left, setLeft] = useState<Array<PlayerImpact | PickAsset>>([]);
-  const [right, setRight] = useState<Array<PlayerImpact | PickAsset>>([]);
+  const playerMap = useMemo(() => new Map(players.map((player) => [player.nba_id, player])), [players]);
+  const pickMap = useMemo(() => new Map(data.picks.map((pick) => [pick.asset_id, pick])), [data.picks]);
+  const teamOptions = useMemo(() => {
+    const baseTeams = data.teams
+      .filter((team) => team.year === season && ((team.scenario_id ?? "base") === "base"))
+      .sort((a, b) => (a.team_name ?? a.team).localeCompare(b.team_name ?? b.team));
+    const seen = new Set(baseTeams.map((team) => team.team));
+    const fallbackTeams = Array.from(new Set(players.map((player) => player.team)))
+      .filter((team) => !seen.has(team))
+      .sort()
+      .map((team) => ({
+        year: season,
+        team,
+        team_name: team,
+        team_abbr: team,
+        conference: "All",
+        scenario_id: "base",
+        scenario_label: "Base Case",
+        roster_count: 0,
+        minutes: 0,
+        raw_offense: 0,
+        raw_defense: 0,
+        raw_total: 0,
+        adjusted_total: 0,
+        offense: 0,
+        defense: 0,
+        total: 0,
+        win_units: 0,
+        projected_wins: 0,
+        projected_losses: 0,
+        win_pct: 0,
+        expected_wins: 0,
+        expected_losses: 0,
+        league_rank: 0,
+        rank: 0,
+        conference_rank: 0,
+        playoff_status: ""
+      } as TeamProjection));
+    return [...baseTeams, ...fallbackTeams];
+  }, [data.teams, players, season]);
+  const teamMeta = useMemo(() => new Map(teamOptions.map((team) => [team.team, team])), [teamOptions]);
+  const defaultLeftTeam = teamOptions[0]?.team ?? players[0]?.team ?? "";
+  const defaultRightTeam = teamOptions[1]?.team ?? teamOptions[0]?.team ?? players[1]?.team ?? defaultLeftTeam;
+  const [left, setLeft] = useSessionState<TradeSideState>("trade:left", { team: defaultLeftTeam, assets: [] });
+  const [right, setRight] = useSessionState<TradeSideState>("trade:right", { team: defaultRightTeam, assets: [] });
+  const [savedScenarios, setSavedScenarios] = useSessionState<SavedTradeScenario[]>("trade:savedScenarios", []);
+  const [scenarioName, setScenarioName] = useSessionState("trade:scenarioName", "");
+  const [leftPickBuilder, setLeftPickBuilder] = useSessionState<TradePickBuilderState>(
+    "trade:leftPickBuilder",
+    defaultTradePickBuilder()
+  );
+  const [rightPickBuilder, setRightPickBuilder] = useSessionState<TradePickBuilderState>(
+    "trade:rightPickBuilder",
+    defaultTradePickBuilder()
+  );
 
-  const selectedPlayer = players.find((player) => player.nba_id === Number(playerId)) ?? players[0] ?? null;
-  const selectedPick = data.picks.find((pick) => pick.asset_id === pickId) ?? data.picks[0] ?? null;
+  const leftSide = useMemo(() => hydrateTradeSide(left, playerMap, pickMap), [left, pickMap, playerMap]);
+  const rightSide = useMemo(() => hydrateTradeSide(right, playerMap, pickMap), [right, pickMap, playerMap]);
+  const pickContext = useMemo(() => buildTradePickContext(data.picks), [data.picks]);
   const hasAssets = players.length > 0 || data.picks.length > 0;
-  const leftTotal = assetTotal(left);
-  const rightTotal = assetTotal(right);
+  const leftTotal = assetTotal(leftSide.assets);
+  const rightTotal = assetTotal(rightSide.assets);
   const diff = Math.abs(leftTotal - rightTotal);
-  const tolerance = Math.max(8_000_000, Math.max(leftTotal, rightTotal) * 0.12);
-  const verdict = diff <= tolerance ? "Balanced" : "Declined";
-  const whoSaysNo = diff <= tolerance ? "Neither" : leftTotal > rightTotal ? "Left side" : "Right side";
+  const verdict = tradeVerdict(diff);
+  const whoSaysNo = whoSaysNoLabel(leftSide, rightSide, diff);
+  const leftImpact = tradeImpactSummary(leftSide.assets);
+  const rightImpact = tradeImpactSummary(rightSide.assets);
+  const leftDelta = subtractTradeImpact(rightImpact, leftImpact);
+  const rightDelta = subtractTradeImpact(leftImpact, rightImpact);
+  const selectedPlayerIds = useMemo(() => selectedTradePlayerIds(leftSide.assets, rightSide.assets), [leftSide.assets, rightSide.assets]);
+  const leftRoster = useMemo(() => tradeRoster(players, leftSide.team), [leftSide.team, players]);
+  const rightRoster = useMemo(() => tradeRoster(players, rightSide.team), [rightSide.team, players]);
+  const leftPickPreview = useMemo(
+    () => buildTradePickAsset(leftPickBuilder, pickContext),
+    [leftPickBuilder, pickContext]
+  );
+  const rightPickPreview = useMemo(
+    () => buildTradePickAsset(rightPickBuilder, pickContext),
+    [pickContext, rightPickBuilder]
+  );
+
+  useEffect(() => {
+    if (teamOptions.length === 0) return;
+    setLeft((current) => teamOptions.some((team) => team.team === current.team) ? current : { ...current, team: defaultLeftTeam });
+    setRight((current) => teamOptions.some((team) => team.team === current.team) ? current : { ...current, team: defaultRightTeam });
+  }, [defaultLeftTeam, defaultRightTeam, setLeft, setRight, teamOptions]);
+
+  const setSideTeam = (side: "left" | "right", team: string) => {
+    if (side === "left") setLeft({ team, assets: [] });
+    else setRight({ team, assets: [] });
+  };
+  const updatePickBuilder = (side: "left" | "right", patch: Partial<TradePickBuilderState>) => {
+    if (side === "left") setLeftPickBuilder((current) => ({ ...current, ...patch }));
+    else setRightPickBuilder((current) => ({ ...current, ...patch }));
+  };
+  const togglePlayer = (side: "left" | "right", player: PlayerImpact) => {
+    const target = side === "left" ? leftSide : rightSide;
+    const opposite = side === "left" ? rightSide : leftSide;
+    const onTarget = target.assets.some((asset) => asset.kind === "player" && asset.player?.nba_id === player.nba_id);
+    const onOpposite = opposite.assets.some((asset) => asset.kind === "player" && asset.player?.nba_id === player.nba_id);
+    if (onOpposite) return;
+    const nextAssets = onTarget
+      ? target.assets.filter((asset) => !(asset.kind === "player" && asset.player?.nba_id === player.nba_id))
+      : [...target.assets, playerTradeAsset(player)];
+    if (side === "left") setLeft({ ...target, assets: nextAssets });
+    else setRight({ ...target, assets: nextAssets });
+  };
+  const addPick = (side: "left" | "right") => {
+    const selectedPick = side === "left" ? leftPickPreview : rightPickPreview;
+    if (!selectedPick) return;
+    const asset = pickTradeAsset(selectedPick);
+    if (side === "left") setLeft((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
+    else setRight((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
+  };
+  const removeAsset = (side: "left" | "right", index: number) => {
+    if (side === "left") setLeft((current) => ({ ...current, assets: hydrateTradeSide(current, playerMap, pickMap).assets.filter((_, i) => i !== index) }));
+    else setRight((current) => ({ ...current, assets: hydrateTradeSide(current, playerMap, pickMap).assets.filter((_, i) => i !== index) }));
+  };
+  const clearSide = (side: "left" | "right") => {
+    if (side === "left") setLeft((current) => ({ ...current, assets: [] }));
+    else setRight((current) => ({ ...current, assets: [] }));
+  };
+  const resetTrade = () => {
+    setLeft({ team: defaultLeftTeam, assets: [] });
+    setRight({ team: defaultRightTeam, assets: [] });
+    setLeftPickBuilder(defaultTradePickBuilder());
+    setRightPickBuilder(defaultTradePickBuilder());
+    setScenarioName("");
+  };
+  const saveScenario = () => {
+    const name = scenarioName.trim() || `Scenario ${savedScenarios.length + 1}`;
+    const scenario: SavedTradeScenario = {
+      id: `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name,
+      createdAt: new Date().toISOString(),
+      left: leftSide,
+      right: rightSide
+    };
+    setSavedScenarios((current) => [scenario, ...current.filter((item) => item.name !== name)].slice(0, 12));
+    setScenarioName(name);
+  };
+  const loadScenario = (scenario: SavedTradeScenario) => {
+    setLeft(hydrateTradeSide(scenario.left, playerMap, pickMap));
+    setRight(hydrateTradeSide(scenario.right, playerMap, pickMap));
+    setScenarioName(scenario.name);
+  };
+  const deleteScenario = (id: string) => {
+    setSavedScenarios((current) => current.filter((scenario) => scenario.id !== id));
+  };
 
   return (
     <main className="workspace trade-grid">
-      <section className="table-panel trade-builder">
-        <div className="panel-heading">
-          <div>
-            <h2>Trade Sandbox</h2>
-            <p>Player and pick value balance</p>
-          </div>
-        </div>
-        {hasAssets ? <div className="trade-controls">
-          <label>
-            Player asset
-            <select value={playerId} onChange={(event) => setPlayerId(Number(event.target.value))} disabled={players.length === 0}>
-              {players.slice(0, 250).map((player) => (
-                <option key={player.nba_id} value={player.nba_id}>
-                  {player.player_name} / {formatMoney(player.trade_value)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="button-row">
-            <button disabled={!selectedPlayer} onClick={() => selectedPlayer && setLeft([...left, selectedPlayer])}>Add left</button>
-            <button disabled={!selectedPlayer} onClick={() => selectedPlayer && setRight([...right, selectedPlayer])}>Add right</button>
-          </div>
-          <label>
-            Pick asset
-            <select value={pickId} onChange={(event) => setPickId(event.target.value)} disabled={data.picks.length === 0}>
-              {data.picks.map((pick) => (
-                <option key={pick.asset_id} value={pick.asset_id}>
-                  {pick.label} / {formatMoney(pick.value)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="button-row">
-            <button disabled={!selectedPick} onClick={() => selectedPick && setLeft([...left, selectedPick])}>Add left</button>
-            <button disabled={!selectedPick} onClick={() => selectedPick && setRight([...right, selectedPick])}>Add right</button>
-          </div>
-        </div> : <EmptyState title="No trade assets" detail={`No players or picks are available for ${season}.`} />}
-      </section>
-
-      <TradeSide title="Left Side" assets={left} setAssets={setLeft} total={leftTotal} />
-      <TradeSide title="Right Side" assets={right} setAssets={setRight} total={rightTotal} />
-
+      {hasAssets ? <>
+        <TradeSide
+          title="Team 1 Sends"
+          side={leftSide}
+          roster={leftRoster}
+          selectedPlayerIds={selectedPlayerIds}
+          teamOptions={teamOptions}
+          teamMeta={teamMeta}
+          total={leftTotal}
+          impact={leftImpact}
+          delta={leftDelta}
+          oppositeTeam={rightSide.team}
+          pickBuilder={leftPickBuilder}
+          pickPreview={leftPickPreview}
+          onTeamChange={(team) => setSideTeam("left", team)}
+          onTogglePlayer={(player) => togglePlayer("left", player)}
+          onPickBuilderChange={(patch) => updatePickBuilder("left", patch)}
+          onAddPick={() => addPick("left")}
+          onRemove={(index) => removeAsset("left", index)}
+          onClear={() => clearSide("left")}
+        />
+        <TradeSide
+          title="Team 2 Sends"
+          side={rightSide}
+          roster={rightRoster}
+          selectedPlayerIds={selectedPlayerIds}
+          teamOptions={teamOptions}
+          teamMeta={teamMeta}
+          total={rightTotal}
+          impact={rightImpact}
+          delta={rightDelta}
+          oppositeTeam={leftSide.team}
+          pickBuilder={rightPickBuilder}
+          pickPreview={rightPickPreview}
+          onTeamChange={(team) => setSideTeam("right", team)}
+          onTogglePlayer={(player) => togglePlayer("right", player)}
+          onPickBuilderChange={(patch) => updatePickBuilder("right", patch)}
+          onAddPick={() => addPick("right")}
+          onRemove={(index) => removeAsset("right", index)}
+          onClear={() => clearSide("right")}
+        />
+      </> : <section className="table-panel trade-side"><EmptyState title="No trade assets" detail={`No players or picks are available for ${season}.`} /></section>}
       <section className="detail-panel trade-verdict">
-        <p>Value Diff</p>
-        <h2>{formatMoney(diff)}</h2>
-        <div className={cls("verdict", verdict === "Balanced" ? "ok" : "bad")}>{verdict}</div>
-        <span>{whoSaysNo} says no</span>
+        <div className="trade-verdict-head">
+          <div className="trade-summary-title">
+            <div>
+              <h2>Trade Sandbox</h2>
+              <p>4-year value: current season plus three projected seasons</p>
+            </div>
+            <button className="clear-filters" onClick={resetTrade}>Reset</button>
+          </div>
+          <p>Value Diff</p>
+          <h2>{formatMoney(diff)}</h2>
+          <div className={cls("verdict", verdictClass(verdict))}>{verdict}</div>
+          <span>{whoSaysNo}</span>
+        </div>
+        <div className="trade-scoreboard">
+          <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} sends`} value={formatMoney(leftTotal)} tone="gold" />
+          <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} sends`} value={formatMoney(rightTotal)} tone="gold" />
+          <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} net`} value={formatSigned(leftDelta.total, 2)} tone={leftDelta.total >= 0 ? "green" : "teal"} />
+          <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} net`} value={formatSigned(rightDelta.total, 2)} tone={rightDelta.total >= 0 ? "green" : "teal"} />
+        </div>
+        <div className="scenario-tools">
+          <label>
+            Scenario
+            <input value={scenarioName} onChange={(event) => setScenarioName(event.target.value)} placeholder="Name this trade" />
+          </label>
+          <button onClick={saveScenario} disabled={leftSide.assets.length === 0 && rightSide.assets.length === 0}>Save</button>
+        </div>
+        <div className="saved-scenarios">
+          {savedScenarios.length === 0 && <p className="empty">No saved scenarios</p>}
+          {savedScenarios.map((scenario) => (
+            <div key={scenario.id} className="saved-scenario-row">
+              <button onClick={() => loadScenario(scenario)}>
+                <strong>{scenario.name}</strong>
+                <span>{new Date(scenario.createdAt).toLocaleString()}</span>
+              </button>
+              <button className="remove-scenario" onClick={() => deleteScenario(scenario.id)}>Delete</button>
+            </div>
+          ))}
+        </div>
       </section>
     </main>
   );
@@ -972,15 +1670,48 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
 
 function TradeSide({
   title,
-  assets,
-  setAssets,
-  total
+  side,
+  roster,
+  selectedPlayerIds,
+  teamOptions,
+  teamMeta,
+  total,
+  impact,
+  delta,
+  oppositeTeam,
+  pickBuilder,
+  pickPreview,
+  onTeamChange,
+  onTogglePlayer,
+  onPickBuilderChange,
+  onAddPick,
+  onRemove,
+  onClear
 }: {
   title: string;
-  assets: Array<PlayerImpact | PickAsset>;
-  setAssets: (assets: Array<PlayerImpact | PickAsset>) => void;
+  side: TradeSideState;
+  roster: PlayerImpact[];
+  selectedPlayerIds: Set<number>;
+  teamOptions: TeamProjection[];
+  teamMeta: Map<string, TeamProjection>;
   total: number;
+  impact: TradeImpactSummary;
+  delta: TradeImpactSummary;
+  oppositeTeam: string;
+  pickBuilder: TradePickBuilderState;
+  pickPreview: PickAsset | null;
+  onTeamChange: (team: string) => void;
+  onTogglePlayer: (player: PlayerImpact) => void;
+  onPickBuilderChange: (patch: Partial<TradePickBuilderState>) => void;
+  onAddPick: () => void;
+  onRemove: (index: number) => void;
+  onClear: () => void;
 }) {
+  const selectedOnSide = new Set(
+    side.assets
+      .filter((asset) => asset.kind === "player" && asset.player)
+      .map((asset) => asset.player!.nba_id)
+  );
   return (
     <section className="trade-side">
       <div className="panel-heading">
@@ -988,14 +1719,79 @@ function TradeSide({
           <h2>{title}</h2>
           <p>{formatMoney(total)}</p>
         </div>
-        <button onClick={() => setAssets([])}>Clear</button>
+        <button onClick={onClear} disabled={side.assets.length === 0}>Clear</button>
+      </div>
+      <label className="trade-side-team">
+        Team
+        <select value={side.team} onChange={(event) => onTeamChange(event.target.value)}>
+          {teamOptions.map((team) => (
+            <option key={team.team} value={team.team} disabled={teamOptions.length > 1 && team.team === oppositeTeam}>
+              {team.team_name ?? team.team}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="trade-side-metrics">
+        <MetricPill label="Value" value={formatMoney(total)} tone="gold" />
+        <MetricPill label="Salary" value={formatMoney(impact.outgoingSalary)} />
+        <MetricPill label="Out Impact" value={formatSigned(impact.total, 2)} tone="teal" />
+        <MetricPill label="Net Impact" value={formatSigned(delta.total, 2)} tone={delta.total >= 0 ? "green" : "teal"} />
+      </div>
+      <div className="trade-roster-list" aria-label={`${teamFullName(side.team, teamMeta)} roster`}>
+        {roster.map((player) => {
+          const selectedHere = selectedOnSide.has(player.nba_id);
+          const selectedElsewhere = selectedPlayerIds.has(player.nba_id) && !selectedHere;
+          return (
+            <button
+              key={player.nba_id}
+              className={cls("trade-roster-row", selectedHere && "selected", selectedElsewhere && "disabled")}
+              disabled={selectedElsewhere}
+              onClick={() => onTogglePlayer(player)}
+            >
+              <span>
+                <strong>{player.player_name}</strong>
+                <small>{player.position} / {player.tier} / {formatSalarySlot(player)}</small>
+              </span>
+              <em>{formatMoney(playerTradeValue(player))}</em>
+            </button>
+          );
+        })}
+        {roster.length === 0 && <p className="empty">No roster rows for this team.</p>}
+      </div>
+      <div className="trade-pick-adder compact">
+        <div className="trade-pick-fields">
+          <label>
+            Type
+            <select value={coerceTradePickKind(pickBuilder.assetType)} onChange={(event) => onPickBuilderChange({ assetType: event.target.value as TradePickKind })}>
+              <option value="first">1st round pick</option>
+              <option value="second">2nd round pick</option>
+            </select>
+          </label>
+          {coerceTradePickKind(pickBuilder.assetType) !== "second" && <label>
+            Protection
+            <select value={pickBuilder.protectionCutoff} onChange={(event) => onPickBuilderChange({ protectionCutoff: Number(event.target.value) })}>
+              {TRADE_PICK_PROTECTIONS.map((protection) => (
+                <option key={protection.cutoff} value={protection.cutoff}>{protection.label}</option>
+              ))}
+            </select>
+          </label>}
+        </div>
+        <div className="trade-pick-preview">
+          <span>{pickPreview ? assetLabel({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "No pick value"}</span>
+          <strong>{pickPreview ? formatMoney(pickPreview.value) : "-"}</strong>
+          <small>{pickPreview ? assetMeta({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "Pick curve unavailable"}</small>
+        </div>
+        <button disabled={!pickPreview} onClick={onAddPick}>Add pick</button>
       </div>
       <div className="asset-list">
-        {assets.length === 0 && <p className="empty">No assets</p>}
-        {assets.map((asset, index) => (
-          <button key={`${assetLabel(asset)}-${index}`} onClick={() => setAssets(assets.filter((_, i) => i !== index))}>
-            <span>{assetLabel(asset)}</span>
-            <strong>{formatMoney(assetValue(asset))}</strong>
+        {side.assets.length === 0 && <p className="empty">No assets</p>}
+        {side.assets.map((asset, index) => (
+          <button key={`${asset.id}-${index}`} onClick={() => onRemove(index)} title="Remove asset">
+            <span>
+              <strong>{assetLabel(asset)}</strong>
+              <small>{assetMeta(asset)}</small>
+            </span>
+            <em>{formatMoney(assetValue(asset))}</em>
           </button>
         ))}
       </div>
@@ -2662,6 +3458,71 @@ function formatSeasonValueAdd(player: PlayerImpact): string {
   return formatSignedMoney(player.value_add);
 }
 
+function impactNumber(player: PlayerImpact, key: keyof PlayerImpact): number | null {
+  const value = player[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function projectedValueAdd(player: PlayerImpact, seasonIndex: number): number | null {
+  const value = impactNumber(player, `projection_value_y${seasonIndex}` as keyof PlayerImpact);
+  const contract = impactNumber(player, `projection_contract_y${seasonIndex}` as keyof PlayerImpact);
+  return value !== null && contract !== null ? value - contract : null;
+}
+
+function buildCareerTrajectory(player: PlayerImpact, allPlayers: PlayerImpact[]): CareerChartPoint[] {
+  const actual = allPlayers
+    .filter((row) => row.nba_id === player.nba_id && row.year <= player.year && Number.isFinite(row.total))
+    .sort((a, b) => a.year - b.year)
+    .reduce<PlayerImpact[]>((rows, row) => {
+      const existingIndex = rows.findIndex((item) => item.year === row.year);
+      const resolvedRow = row.year === player.year ? player : row;
+      if (existingIndex >= 0) {
+        const current = rows[existingIndex];
+        rows[existingIndex] = resolvedRow.year === player.year || Number(resolvedRow.Minutes ?? 0) >= Number(current.Minutes ?? 0) ? resolvedRow : current;
+      }
+      else rows.push(resolvedRow);
+      return rows;
+    }, [])
+    .map((row) => ({
+      label: String(row.year),
+      year: row.year,
+      value: row.total,
+      valueAdd: row.value_add ?? null,
+      kind: "actual" as const,
+      isCurrent: row.year === player.year
+    }));
+
+  const projections = [1, 2, 3, 4, 5]
+    .map((seasonIndex): CareerChartPoint | null => {
+      const value = impactNumber(player, `projection_y${seasonIndex}` as keyof PlayerImpact);
+      if (value === null) return null;
+      const year = player.year + seasonIndex;
+      return {
+        label: String(year),
+        year,
+        value,
+        valueAdd: projectedValueAdd(player, seasonIndex),
+        kind: "projection" as const
+      };
+    })
+    .filter((point): point is CareerChartPoint => point !== null);
+
+  return [...actual, ...projections];
+}
+
+function chartPointTitle(point: CareerChartPoint): string {
+  const label = point.kind === "projection" ? "Projected" : point.isCurrent ? "Current season" : "Actual";
+  const valueAdd = point.valueAdd !== null && point.valueAdd !== undefined && Number.isFinite(point.valueAdd)
+    ? `\nSzn VA: ${formatSignedMoney(point.valueAdd)}`
+    : "";
+  return `${point.year} ${label}\nTotal impact: ${formatSigned(point.value, 2)}${valueAdd}`;
+}
+
+function valueAddBarTitle(point: CareerChartPoint): string {
+  const label = point.kind === "projection" ? "Projected" : point.isCurrent ? "Current season" : "Actual";
+  return `${point.year} ${label}\nSzn VA: ${formatSignedMoney(point.valueAdd)}\nTotal impact: ${formatSigned(point.value, 2)}`;
+}
+
 function SkillRow({ label, value }: { label: string; value: number }) {
   const shifted = clamp((value + 3) / 6 * 100, 0, 100);
   return (
@@ -2689,38 +3550,135 @@ function gradeFromValue(value: number): string {
   return "F";
 }
 
-function ProjectionChart({ points }: { points: Array<{ label: string; value: number }> }) {
+function ProjectionChart({ points, currentYear }: { points: CareerChartPoint[]; currentYear: number }) {
   const values = points.map((point) => point.value);
-  const min = Math.min(...values, -2);
-  const max = Math.max(...values, 6);
-  const width = 286;
-  const height = 104;
-  const padX = 14;
-  const padY = 14;
+  if (values.length === 0) {
+    return <div className="projection-empty">No career rows available</div>;
+  }
+  const valueAdds = points
+    .map((point) => point.valueAdd)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  const rangePad = Math.max(0.75, (rawMax - rawMin) * 0.18);
+  const min = Math.min(rawMin - rangePad, 0);
+  const max = Math.max(rawMax + rangePad, 2);
+  const width = 560;
+  const height = 236;
+  const padLeft = 42;
+  const padRight = 22;
+  const padTop = 24;
+  const padBottom = 40;
+  const plotWidth = width - padLeft - padRight;
+  const plotHeight = height - padTop - padBottom;
+  const yFor = (value: number) => height - padBottom - ((value - min) / Math.max(1, max - min)) * plotHeight;
   const coords = points.map((point, index) => {
-    const x = padX + index * ((width - padX * 2) / Math.max(1, points.length - 1));
-    const y = height - padY - ((point.value - min) / Math.max(1, max - min)) * (height - padY * 2);
+    const x = padLeft + index * (plotWidth / Math.max(1, points.length - 1));
+    const y = yFor(point.value);
     return { ...point, x, y };
   });
-  const path = coords.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-  const baselineValue = min <= 0 && max > 0 ? 0 : min;
-  const baselineY = height - padY - ((baselineValue - min) / Math.max(1, max - min)) * (height - padY * 2);
-  const areaPath = coords.length > 0
-    ? `${path} L ${coords[coords.length - 1].x} ${baselineY} L ${coords[0].x} ${baselineY} Z`
-    : "";
+  const actualCoords = coords.filter((point) => point.kind === "actual");
+  const projectionCoords = coords.filter((point) => point.kind === "projection");
+  const bridgeCoords = projectionCoords.length > 0 && actualCoords.length > 0 ? [actualCoords[actualCoords.length - 1], ...projectionCoords] : projectionCoords;
+  const pathFor = (items: typeof coords) => items.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const actualPath = pathFor(actualCoords);
+  const projectionPath = pathFor(bridgeCoords);
+  const baselineY = yFor(0);
+  const yTicks = [max, (max + min) / 2, min];
+  const labelPoints = coords.filter((point, index) => {
+    const actualPeak = point.kind === "actual" && point.value === Math.max(...actualCoords.map((item) => item.value));
+    return point.isCurrent || actualPeak || index === 0 || point.kind === "projection" && index === coords.length - 1;
+  });
+  const maxAbsValueAdd = Math.max(...valueAdds.map((value) => Math.abs(value)), 1);
 
   return (
-    <svg className="projection" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Player projection line">
-      {min <= 0 && max > 0 && <line x1={padX} x2={width - padX} y1={baselineY} y2={baselineY} />}
-      {areaPath && <path className="projection-area" d={areaPath} />}
-      <path className="projection-line" d={path} />
-      {coords.map((point) => (
-        <g key={point.label}>
-          <circle cx={point.x} cy={point.y} r="4" />
-          <text x={point.x} y={height - 3} textAnchor="middle">{point.label}</text>
-        </g>
-      ))}
-    </svg>
+    <div className="projection-card">
+      <svg className="projection" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${points[0]?.label ?? ""} through ${points[points.length - 1]?.label ?? ""} impact trajectory`}>
+        <defs>
+          <linearGradient id={`projectionFill-${currentYear}`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--detail-score, var(--score-fill, var(--green)))" stopOpacity="0.24" />
+            <stop offset="100%" stopColor="var(--detail-score, var(--score-fill, var(--green)))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <rect className="projection-plot-bg" x={padLeft} y={padTop} width={plotWidth} height={plotHeight} rx="4" />
+        {yTicks.map((tick) => {
+          const y = yFor(tick);
+          return (
+            <g key={tick.toFixed(2)} className="projection-gridline">
+              <line x1={padLeft} x2={width - padRight} y1={y} y2={y} />
+              <text x={padLeft - 10} y={y + 4} textAnchor="end">{formatSigned(tick, 1)}</text>
+            </g>
+          );
+        })}
+        {min <= 0 && max > 0 && <line className="projection-zero" x1={padLeft} x2={width - padRight} y1={baselineY} y2={baselineY} />}
+        {coords.map((point) => {
+          if (point.valueAdd === null || point.valueAdd === undefined || !Number.isFinite(point.valueAdd)) return null;
+          const barMaxHeight = 48;
+          const barHeight = Math.max(3, Math.abs(point.valueAdd) / maxAbsValueAdd * barMaxHeight);
+          const barY = point.valueAdd >= 0 ? baselineY - barHeight : baselineY;
+          return (
+            <g key={`${point.label}-va`}>
+              <title>{valueAddBarTitle(point)}</title>
+              <rect
+                className={cls("projection-va-bar", point.valueAdd < 0 && "negative", point.kind === "projection" && "projected")}
+                x={point.x - 5}
+                y={barY}
+                width="10"
+                height={barHeight}
+                rx="3"
+              />
+              <rect
+                className="projection-bar-hit-target"
+                x={point.x - 8}
+                y={Math.min(barY, baselineY) - 3}
+                width="16"
+                height={barHeight + 6}
+                rx="5"
+              />
+            </g>
+          );
+        })}
+        {actualCoords.length > 1 && (
+          <path
+            className="projection-area"
+            d={`${actualPath} L ${actualCoords[actualCoords.length - 1].x} ${baselineY} L ${actualCoords[0].x} ${baselineY} Z`}
+            fill={`url(#projectionFill-${currentYear})`}
+          />
+        )}
+        {actualPath && <path className="projection-line actual-line" d={actualPath} />}
+        {projectionPath && <path className="projection-line projection-line-dashed" d={projectionPath} />}
+        {coords.map((point) => (
+          <g key={`${point.kind}-${point.label}`} className={cls("projection-point", point.kind === "projection" ? "projected" : "actual", point.isCurrent && "current")}>
+            <title>{chartPointTitle(point)}</title>
+            {point.isCurrent && <line className="projection-current-line" x1={point.x} x2={point.x} y1={padTop} y2={height - padBottom} />}
+            <circle cx={point.x} cy={point.y} r={point.isCurrent ? 5 : 3.5} />
+            <circle className="projection-hit-target" cx={point.x} cy={point.y} r="11" />
+          </g>
+        ))}
+        {labelPoints.map((point, index) => {
+          const labelY = clamp(point.y + (index % 2 === 0 ? -28 : 12), 4, height - padBottom - 22);
+          return (
+            <g key={`${point.label}-value-label`} className="projection-value-label">
+              <rect x={point.x - 22} y={labelY} width="44" height="17" rx="4" />
+              <text x={point.x} y={labelY + 12} textAnchor="middle">{formatSigned(point.value, 1)}</text>
+            </g>
+          );
+        })}
+        {coords.map((point, index) => {
+          const shouldLabel = points.length <= 12 || point.isCurrent || point.kind === "projection" || index === 0 || index === coords.length - 1 || index % 2 === 0;
+          return shouldLabel ? (
+            <text key={`${point.label}-axis`} className={cls("projection-x-label", point.kind === "projection" && "projected")} x={point.x} y={height - 13} textAnchor="middle">
+              {point.label}
+            </text>
+          ) : null;
+        })}
+      </svg>
+      <div className="projection-legend">
+        <span><i className="legend-line actual" /> Actual</span>
+        <span><i className="legend-line projected" /> Projection</span>
+        <span><i className="legend-bar" /> Szn VA</span>
+      </div>
+    </div>
   );
 }
 
@@ -2733,16 +3691,298 @@ function MetricPill({ label, value, tone }: { label: string; value: string; tone
   );
 }
 
-function assetValue(asset: PlayerImpact | PickAsset): number {
-  return "trade_value" in asset ? asset.trade_value : asset.value;
+function defaultTradePickBuilder(): TradePickBuilderState {
+  return {
+    assetType: "first",
+    protectionCutoff: 0
+  };
 }
 
-function assetLabel(asset: PlayerImpact | PickAsset): string {
-  return "player_name" in asset ? asset.player_name : asset.label;
+function coerceTradePickKind(value: string | null | undefined): TradePickKind {
+  return value === "second" ? "second" : "first";
 }
 
-function assetTotal(assets: Array<PlayerImpact | PickAsset>): number {
+function buildTradePickContext(slotAssets: PickAsset[]): TradePickContext {
+  const slotValues = new Map<number, number>();
+  slotAssets.forEach((asset) => {
+    const pick = Number(asset.pick);
+    const value = Number(asset.value);
+    if (Number.isFinite(pick) && Number.isFinite(value)) slotValues.set(pick, value);
+  });
+  const lotteryWeights = [2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1];
+  const lotteryDistributions = weightedLotteryDistributions(lotteryWeights);
+  const firstRound = averageDistributions([
+    ...lotteryDistributions,
+    ...Array.from({ length: 14 }, (_, index) => [{ pick: 17 + index, probability: 1 }])
+  ]);
+  const secondRound = Array.from({ length: 30 }, (_, index) => ({ pick: 31 + index, probability: 1 / 30 }));
+  return { firstRound, secondRound, slotValues };
+}
+
+function weightedLotteryDistributions(weights: number[]): PickDistributionPoint[][] {
+  const n = weights.length;
+  if (n === 0) return [];
+  const stateCount = 1 << n;
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const maskWeight = new Float64Array(stateCount);
+  const pickCounts = new Uint8Array(stateCount);
+  for (let mask = 1; mask < stateCount; mask += 1) {
+    const bit = mask & -mask;
+    const index = Math.log2(bit);
+    const previous = mask ^ bit;
+    maskWeight[mask] = maskWeight[previous] + weights[index];
+    pickCounts[mask] = pickCounts[previous] + 1;
+  }
+  const stateProbability = new Float64Array(stateCount);
+  const teamPickProbability: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+  stateProbability[0] = 1;
+  for (let mask = 0; mask < stateCount; mask += 1) {
+    const probability = stateProbability[mask];
+    if (probability <= 0) continue;
+    const pickIndex = pickCounts[mask];
+    if (pickIndex >= n) continue;
+    const remainingWeight = totalWeight - maskWeight[mask];
+    for (let index = 0; index < n; index += 1) {
+      const bit = 1 << index;
+      if ((mask & bit) !== 0) continue;
+      const nextProbability = probability * weights[index] / remainingWeight;
+      teamPickProbability[index][pickIndex] += nextProbability;
+      stateProbability[mask | bit] += nextProbability;
+    }
+  }
+  return teamPickProbability.map((distribution) => distribution.map((probability, pickIndex) => ({ pick: pickIndex + 1, probability })));
+}
+
+function averageDistributions(distributions: PickDistributionPoint[][]): PickDistributionPoint[] {
+  const byPick = new Map<number, number>();
+  if (distributions.length === 0) return [];
+  distributions.forEach((distribution) => {
+    distribution.forEach((point) => {
+      byPick.set(point.pick, (byPick.get(point.pick) ?? 0) + point.probability / distributions.length);
+    });
+  });
+  return Array.from(byPick.entries())
+    .map(([pick, probability]) => ({ pick, probability }))
+    .sort((a, b) => a.pick - b.pick);
+}
+
+function buildTradePickAsset(builder: TradePickBuilderState, context: TradePickContext): PickAsset | null {
+  const assetType = coerceTradePickKind(builder.assetType);
+  const protectionCutoff = assetType === "second" ? 0 : Number(builder.protectionCutoff ?? 0);
+  const protection = protectionLabel(protectionCutoff);
+  const distribution = assetType === "second" ? context.secondRound : context.firstRound;
+  if (!distribution) return null;
+  const summary = tradePickSummary(distribution, context.slotValues, protectionCutoff);
+  const round = assetType === "second" ? 2 : 1;
+  const ordinal = round === 1 ? "1st" : "2nd";
+  const label = round === 1
+    ? `${protectionCutoff > 0 ? `${protection[0].toUpperCase()}${protection.slice(1)} ` : "Unprotected "}${ordinal}`
+    : `Generic ${ordinal}`;
+  return {
+    asset_id: `generic-pick-r${round}-${protectionCutoff}`,
+    label,
+    pick: Math.round(summary.expectedPick),
+    round,
+    normalized: normalizedPickValue(summary.value, context.slotValues),
+    value: Math.round(summary.value),
+    asset_type: "generic_pick",
+    origin_team: null,
+    draft_year: null,
+    protection,
+    protection_cutoff: protectionCutoff,
+    counterparty_team: null,
+    convey_probability: roundProbability(summary.conveyProbability),
+    expected_pick: roundTo(summary.expectedPick, 1)
+  };
+}
+
+function tradePickSummary(distribution: PickDistributionPoint[], slotValues: Map<number, number>, protectionCutoff: number) {
+  let value = 0;
+  let conveyProbability = 0;
+  let expectedPick = 0;
+  distribution.forEach((point) => {
+    expectedPick += point.pick * point.probability;
+    if (protectionCutoff > 0 && point.pick <= protectionCutoff) return;
+    conveyProbability += point.probability;
+    value += point.probability * pickSlotValue(slotValues, point.pick);
+  });
+  return { value, conveyProbability, expectedPick };
+}
+
+function pickSlotValue(slotValues: Map<number, number>, pick: number): number {
+  const exact = slotValues.get(pick);
+  if (exact !== undefined) return exact;
+  return pick <= 30 ? 34_000_000 * Math.exp(-(pick - 1) / 19) : 4_200_000 * Math.exp(-(pick - 31) / 18);
+}
+
+function normalizedPickValue(value: number, slotValues: Map<number, number>): number {
+  const maxValue = Math.max(...Array.from(slotValues.values()).filter(Number.isFinite), 1);
+  return roundTo(clamp(value / maxValue, 0, 1), 3);
+}
+
+function protectionLabel(cutoff: number): string {
+  return TRADE_PICK_PROTECTIONS.find((protection) => protection.cutoff === cutoff)?.label.toLowerCase() ?? "unprotected";
+}
+
+function roundProbability(value: number): number {
+  return roundTo(clamp(value, 0, 1), 3);
+}
+
+function roundTo(value: number, digits: number): number {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function formatSalarySlot(player: PlayerImpact): string {
+  const status = player.contract_status?.trim();
+  if (status === "Team Option" || status === "Player Option") return status;
+  const salary = formatMoney(player.contract);
+  if (salary !== "-") {
+    return status && status !== "Signed" ? `${salary} ${status}` : salary;
+  }
+  return status || "-";
+}
+
+function playerTradeAsset(player: PlayerImpact): TradeAsset {
+  return { kind: "player", id: `player-${player.nba_id}`, player };
+}
+
+function pickTradeAsset(pick: PickAsset): TradeAsset {
+  return { kind: "pick", id: `pick-${pick.asset_id}-${Date.now()}-${Math.random().toString(16).slice(2)}`, pick };
+}
+
+function hydrateTradeAsset(asset: TradeAsset, playerMap: Map<number, PlayerImpact>, pickMap: Map<string, PickAsset>): TradeAsset | null {
+  if (asset.kind === "player") {
+    const playerId = asset.player?.nba_id ?? Number(String(asset.id).replace("player-", ""));
+    const player = playerMap.get(playerId) ?? asset.player;
+    return player ? playerTradeAsset(player) : null;
+  }
+  const pickAssetId = asset.pick?.asset_id ?? String(asset.id).replace(/^pick-/, "").split("-").slice(0, 2).join("-");
+  const pick = pickMap.get(pickAssetId) ?? asset.pick;
+  return pick ? { ...asset, kind: "pick", pick } : null;
+}
+
+function hydrateTradeSide(side: TradeSideState, playerMap: Map<number, PlayerImpact>, pickMap: Map<string, PickAsset>): TradeSideState {
+  return {
+    team: side.team,
+    assets: side.assets.map((asset) => hydrateTradeAsset(asset, playerMap, pickMap)).filter((asset): asset is TradeAsset => Boolean(asset))
+  };
+}
+
+function selectedTradePlayerIds(...assetGroups: TradeAsset[][]): Set<number> {
+  const ids = new Set<number>();
+  assetGroups.flat().forEach((asset) => {
+    if (asset.kind === "player" && asset.player) ids.add(asset.player.nba_id);
+  });
+  return ids;
+}
+
+function playerTradeValue(player: PlayerImpact): number {
+  const values = [
+    player.value,
+    player.projection_value_y1,
+    player.projection_value_y2,
+    player.projection_value_y3
+  ]
+    .map((value) => Number(value))
+    .filter(Number.isFinite);
+  if (values.length > 0) return values.reduce((sum, value) => sum + value, 0);
+  return Number(player.trade_value ?? 0);
+}
+
+function assetValue(asset: TradeAsset): number {
+  if (asset.kind === "player") return asset.player ? playerTradeValue(asset.player) : 0;
+  return Number(asset.pick?.value ?? 0);
+}
+
+function assetLabel(asset: TradeAsset): string {
+  return asset.kind === "player" ? asset.player?.player_name ?? "Unknown player" : asset.pick?.label ?? "Pick asset";
+}
+
+function assetMeta(asset: TradeAsset): string {
+  if (asset.kind === "player" && asset.player) {
+    return `${asset.player.team} / ${asset.player.position} / ${formatSalarySlot(asset.player)}`;
+  }
+  if (asset.pick?.asset_type === "generic_pick") {
+    const convey = typeof asset.pick.convey_probability === "number" ? `${formatNumber(asset.pick.convey_probability * 100, 1)}% convey` : "EV";
+    const expected = typeof asset.pick.expected_pick === "number" ? `xPick ${formatNumber(asset.pick.expected_pick, 1)}` : `Pick ${asset.pick.pick}`;
+    const protection = asset.pick.protection && asset.pick.protection !== "unprotected" ? ` / ${asset.pick.protection}` : "";
+    return `${convey} / ${expected}${protection}`;
+  }
+  if (asset.pick?.asset_type === "team_pick") {
+    const convey = typeof asset.pick.convey_probability === "number" ? `${formatNumber(asset.pick.convey_probability * 100, 1)}% convey` : "EV";
+    const expected = typeof asset.pick.expected_pick === "number" ? `xPick ${formatNumber(asset.pick.expected_pick, 1)}` : `Pick ${asset.pick.pick}`;
+    const protection = asset.pick.protection && asset.pick.protection !== "unprotected" ? ` / ${asset.pick.protection}` : "";
+    return `${asset.pick.origin_team ?? "Team"} / ${convey} / ${expected}${protection}`;
+  }
+  if (asset.pick?.asset_type === "pick_swap") {
+    const positive = typeof asset.pick.convey_probability === "number" ? `${formatNumber(asset.pick.convey_probability * 100, 1)}% positive` : "Swap right";
+    const protection = asset.pick.protection && asset.pick.protection !== "unprotected" ? ` / ${asset.pick.protection}` : "";
+    return `${asset.pick.origin_team ?? "Team"} with ${asset.pick.counterparty_team ?? "Team"} / ${positive}${protection}`;
+  }
+  if (asset.pick) return `Pick ${asset.pick.pick} / Round ${asset.pick.round} / ${formatNumber(asset.pick.normalized, 2)} norm`;
+  return "Asset";
+}
+
+function assetTotal(assets: TradeAsset[]): number {
   return assets.reduce((sum, asset) => sum + assetValue(asset), 0);
+}
+
+function tradeRoster(players: PlayerImpact[], team: string): PlayerImpact[] {
+  return players
+    .filter((player) => player.team === team)
+    .sort((a, b) => playerTradeValue(b) - playerTradeValue(a) || b.total - a.total);
+}
+
+function tradeImpactSummary(assets: TradeAsset[]): TradeImpactSummary {
+  return assets.reduce<TradeImpactSummary>((sum, asset) => {
+    if (asset.kind !== "player" || !asset.player) return sum;
+    const minuteShare = Number(asset.player.Minutes ?? 0) / TRADE_IMPACT_DENOMINATOR;
+    return {
+      offense: sum.offense + Number(asset.player.offense ?? 0) * minuteShare,
+      defense: sum.defense + Number(asset.player.defense ?? 0) * minuteShare,
+      total: sum.total + Number(asset.player.total ?? 0) * minuteShare,
+      outgoingSalary: sum.outgoingSalary + (Number.isFinite(Number(asset.player.contract)) ? Number(asset.player.contract) : 0)
+    };
+  }, { offense: 0, defense: 0, total: 0, outgoingSalary: 0 });
+}
+
+function subtractTradeImpact(incoming: TradeImpactSummary, outgoing: TradeImpactSummary): TradeImpactSummary {
+  return {
+    offense: incoming.offense - outgoing.offense,
+    defense: incoming.defense - outgoing.defense,
+    total: incoming.total - outgoing.total,
+    outgoingSalary: incoming.outgoingSalary - outgoing.outgoingSalary
+  };
+}
+
+function tradeVerdict(diff: number): TradeVerdict {
+  if (diff <= TRADE_ACCEPTED_DIFF) return "Accepted";
+  if (diff <= TRADE_MAYBE_DIFF) return "Maybe";
+  return "Declined";
+}
+
+function verdictClass(verdict: TradeVerdict): "ok" | "warn" | "bad" {
+  if (verdict === "Accepted") return "ok";
+  if (verdict === "Maybe") return "warn";
+  return "bad";
+}
+
+function whoSaysNoLabel(left: TradeSideState, right: TradeSideState, diff: number): string {
+  if (diff <= TRADE_ACCEPTED_DIFF) return "Toss-up";
+  const leftTotal = assetTotal(left.assets);
+  const rightTotal = assetTotal(right.assets);
+  return `${leftTotal > rightTotal ? left.team || "Team 1" : right.team || "Team 2"} says no`;
+}
+
+function teamLabel(team: string, teamMeta: Map<string, TeamProjection>): string {
+  const meta = teamMeta.get(team);
+  return meta?.team_abbr ?? team;
+}
+
+function teamFullName(team: string, teamMeta: Map<string, TeamProjection>): string {
+  const meta = teamMeta.get(team);
+  return meta?.team_name ?? team;
 }
 
 function describeFilterRule(rule: FilterRule): string {
@@ -2807,6 +4047,21 @@ function parseNumericToken(token: string): number {
   if (match[2]?.toLowerCase() === "m") return base * 1_000_000;
   if (match[2]?.toLowerCase() === "k") return base * 1_000;
   return base;
+}
+
+function cleanTeamValue(value?: string | null): string {
+  const team = String(value ?? "").trim();
+  return team ? team : "FA";
+}
+
+function teamForProjectionScenario(player: PlayerImpact, scenario: TeamProjectionScenario): string {
+  const isProjected = player.availability_status === "projected" || player.availability_status === "rookie_projection";
+  if (!isProjected) return cleanTeamValue(player.team);
+  const rosterStatus = player.projection_roster_status ?? "";
+  const incumbentTeam = cleanTeamValue(player.incumbent_team ?? player.team);
+  if (scenario === "guaranteed") return rosterStatus === "signed" ? incumbentTeam : "FA";
+  if (scenario === "open_market") return cleanTeamValue(player.market_team ?? player.team);
+  return cleanTeamValue(player.team_projection_base ?? player.team);
 }
 
 function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, direction: SortDirection): number {

@@ -29,6 +29,7 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 START_YEAR <- as.integer(Sys.getenv("DATABALLR_START_YEAR", unset = "2016"))
 END_YEAR   <- as.integer(Sys.getenv("DATABALLR_END_YEAR", unset = "2026"))
+MIN_MINUTES <- as.integer(Sys.getenv("DATABALLR_MIN_MINUTES", unset = "500"))
 
 years <- START_YEAR:END_YEAR
 
@@ -37,7 +38,7 @@ pull_one_year <- function(yr) {
     "https://api.databallr.com/api/supabase/player_stats_with_metrics",
     "?year=", yr,
     "&playoffs=0",
-    "&min_minutes=500",
+    "&min_minutes=", MIN_MINUTES,
     "&order_by=dpm",
     "&order_direction=desc"
   )

@@ -1,0 +1,492 @@
+player,draft_year,team_for_sos,team_source,matched_school,school_sos,school_srs,sos_source,sos_matched,is_non_college_pool,is_intl_label
+A.J. Hammons,2016,Purdue,draft_picks_college,Purdue,7.46,20.17,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ben Simmons,2016,LSU,draft_picks_college,LSU,7,8.79,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Brandon Ingram,2016,Duke,draft_picks_college,Duke,10.59,19.23,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Brice Johnson,2016,UNC,draft_picks_college,North Carolina,10.69,23.44,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Buddy Hield,2016,Oklahoma,draft_picks_college,Oklahoma,11.14,19.76,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Caris LeVert,2016,Michigan,draft_picks_college,Michigan,7.92,13.75,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chinanu Onuaku,2016,Louisville,draft_picks_college,Louisville,7.74,21.57,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Damian Jones,2016,Vanderbilt,draft_picks_college,Vanderbilt,8.68,17.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+DeAndre' Bembry,2016,Saint Joseph's,draft_picks_college,Saint Joseph's,4.93,12.1,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dejounte Murray,2016,Washington,draft_picks_college,Washington,8.12,11.21,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Demetrius Jackson,2016,Notre Dame,draft_picks_college,Notre Dame,9.57,14.1,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Denzel Valentine,2016,Michigan State,draft_picks_college,Michigan St.,6.94,22.59,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Deyonta Davis,2016,Michigan State,draft_picks_college,Michigan St.,6.94,22.59,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Diamond Stone,2016,Maryland,draft_picks_college,Maryland,8.31,16.71,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Domantas Sabonis,2016,Gonzaga,draft_picks_college,Gonzaga,4.23,16.92,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dragan Bender,2016,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Furkan Korkmaz,2016,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Georges Niang,2016,Iowa State,draft_picks_college,Iowa St.,10.16,16.93,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Guerschon Yabusele,2016,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Henry Ellenson,2016,Marquette,draft_picks_college,Marquette,5.57,7.66,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Whitehead,2016,Seton Hall,draft_picks_college,Seton Hall,8.28,14.66,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ivica Zubac,2016,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Jake Layman,2016,Maryland,draft_picks_college,Maryland,8.31,16.71,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jakob Poeltl,2016,Utah,draft_picks_college,Utah,8.79,15.5,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jamal Murray,2016,Kentucky,draft_picks_college,Kentucky,8.84,20.23,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaylen Brown,2016,California,draft_picks_college,California,7.87,15.39,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Juancho Hernangómez,2016,Movistar Estudiantes,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Kris Dunn,2016,Providence,draft_picks_college,Providence,8.46,11.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Malachi Richardson,2016,Syracuse,draft_picks_college,Syracuse,9.75,14.62,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Malcolm Brogdon,2016,Virginia,draft_picks_college,Virginia,11.12,22.04,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Malik Beasley,2016,Florida State,draft_picks_college,Florida St.,8.16,12.16,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Marquese Chriss,2016,Washington,draft_picks_college,Washington,8.12,11.21,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Michael Gbinije,2016,Syracuse,draft_picks_college,Syracuse,9.75,14.62,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Pascal Siakam,2016,New Mexico State,draft_picks_college,New Mexico St.,-3.54,3.59,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Patrick McCaw,2016,UNLV,draft_picks_college,UNLV,3.17,5.5,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Skal Labissiere,2016,Kentucky,draft_picks_college,Kentucky,8.84,20.23,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Stephen Zimmerman Jr.,2016,UNLV,draft_picks_college,UNLV,3.17,5.5,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Taurean Prince,2016,Baylor,draft_picks_college,Baylor,9.76,16.13,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Timothé Luwawu-Cabarrot,2016,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Tyler Ulis,2016,Kentucky,draft_picks_college,Kentucky,8.84,20.23,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Wade Baldwin IV,2016,Vanderbilt,draft_picks_college,Vanderbilt,8.68,17.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Alec Peters,2017,Valparaiso,draft_picks_college,Valparaiso,-1.59,3.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bam Adebayo,2017,Kentucky,draft_picks_college,Kentucky,10.49,23.88,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Caleb Swanigan,2017,Purdue,draft_picks_college,Purdue,8.79,20.13,draft_template_sos_sheet,TRUE,FALSE,FALSE
+D.J. Wilson,2017,Michigan,draft_picks_college,Michigan,10.17,18.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Damyean Dotson,2017,Oregon,draft_picks_college,Oregon,8.38,20.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Davon Reed,2017,Miami (FL),draft_picks_college,Miami FL,9.57,14.48,draft_template_sos_sheet,TRUE,FALSE,FALSE
+De'Aaron Fox,2017,Kentucky,draft_picks_college,Kentucky,10.49,23.88,draft_template_sos_sheet,TRUE,FALSE,FALSE
+"Dennis Smith, Jr.",2017,NC State,draft_picks_college,North Carolina St.,8.09,6.09,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Derrick White,2017,Colorado,draft_picks_college,Colorado,6,9.12,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dillon Brooks,2017,Oregon,draft_picks_college,Oregon,8.38,20.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Donovan Mitchell,2017,Louisville,draft_picks_college,Louisville,11.15,22.47,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dwayne Bacon,2017,Florida State,draft_picks_college,Florida St.,8.87,18.87,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Edmond Sumner,2017,Xavier,draft_picks_college,Xavier,11.51,14.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Frank Jackson,2017,Duke,draft_picks_college,Duke,10.91,21.56,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Frank Mason III,2017,Kansas,draft_picks_college,Kansas,12.23,23.53,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Frank Ntilikina,2017,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Harry Giles,2017,Duke,draft_picks_college,Duke,10.91,21.56,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ike Anigbogu,2017,UCLA,draft_picks_college,UCLA,6.39,20.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Hartenstein,2017,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ivan Rabb,2017,California,draft_picks_college,California,6.34,11.11,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jarrett Allen,2017,Texas,draft_picks_college,Texas,12.75,10.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jawun Evans,2017,Oklahoma State,draft_picks_college,Oklahoma St.,12.22,19.19,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jayson Tatum,2017,Duke,draft_picks_college,Duke,10.91,21.56,draft_template_sos_sheet,TRUE,FALSE,FALSE
+John Collins,2017,Wake Forest,draft_picks_college,Wake Forest,9.8,14.19,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jonathan Isaac,2017,Florida State,draft_picks_college,Florida St.,8.87,18.87,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jordan Bell,2017,Oregon,draft_picks_college,Oregon,8.38,20.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Josh Hart,2017,Villanova,draft_picks_college,Villanova,9.28,23.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Josh Jackson,2017,Kansas,draft_picks_college,Kansas,12.23,23.53,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Justin Patton,2017,Creighton,draft_picks_college,Creighton,8.95,17.27,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kyle Kuzma,2017,Utah,draft_picks_college,Utah,4.32,12.45,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Lauri Markkanen,2017,Arizona,draft_picks_college,Arizona,7.63,18.25,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Lonzo Ball,2017,UCLA,draft_picks_college,UCLA,6.39,20.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Luke Kennard,2017,Duke,draft_picks_college,Duke,10.91,21.56,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Malik Monk,2017,Kentucky,draft_picks_college,Kentucky,10.49,23.88,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Markelle Fultz,2017,Washington,draft_picks_college,Washington,6.82,2.15,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Monte Morris,2017,Iowa State,draft_picks_college,Iowa St.,11.94,20.51,draft_template_sos_sheet,TRUE,FALSE,FALSE
+OG Anunoby,2017,Indiana,draft_picks_college,Indiana,8.16,14.63,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sasha Vezenkov,2017,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Semi Ojeleye,2017,SMU,draft_picks_college,SMU,4.45,18.71,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sindarius Thornwell,2017,South Carolina,draft_picks_college,South Carolina,10.16,17.52,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sterling Brown,2017,SMU,draft_picks_college,SMU,4.45,18.71,draft_template_sos_sheet,TRUE,FALSE,FALSE
+TJ Leaf,2017,UCLA,draft_picks_college,UCLA,6.39,20.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Thomas Bryant,2017,Indiana,draft_picks_college,Indiana,8.16,14.63,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tony Bradley,2017,UNC,draft_picks_college,North Carolina,11.76,24.84,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyler Dorsey,2017,Oregon,draft_picks_college,Oregon,8.38,20.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyler Lydon,2017,Syracuse,draft_picks_college,Syracuse,8.47,13.7,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Vlatko Čančar,2017,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Wesley Iwundu,2017,Kansas State,draft_picks_college,Kansas St.,10.48,14.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Zach Collins,2017,Gonzaga,draft_picks_college,Gonzaga,4.13,25.26,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Aaron Holiday,2018,UCLA,draft_picks_college,UCLA,6.86,12.07,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bruce Brown Jr.,2018,Miami (FL),draft_picks_college,Miami FL,6.96,12.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chandler Hutchison,2018,Boise State,draft_picks_college,Boise St.,3.05,11.21,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chimezie Metu,2018,USC,draft_picks_college,USC,6.29,12.81,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Collin Sexton,2018,Alabama,draft_picks_college,Alabama,10.64,12.34,draft_template_sos_sheet,TRUE,FALSE,FALSE
+De'Anthony Melton,2018,USC,draft_picks_college,USC,6.29,12.81,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Deandre Ayton,2018,Arizona,draft_picks_college,Arizona,6.84,15.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Devonte' Graham,2018,Kansas,draft_picks_college,Kansas,11.88,21.39,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Donte DiVincenzo,2018,Villanova,draft_picks_college,Villanova,10.24,26.64,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Džanan Musa,2018,Cedevita,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Elie Okobo,2018,Pau-Orthez,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Gary Trent Jr.,2018,Duke,draft_picks_college,Duke,9.7,24.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Grayson Allen,2018,Duke,draft_picks_college,Duke,9.7,24.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Hamidou Diallo,2018,Kentucky,draft_picks_college,Kentucky,10.73,17.24,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jacob Evans III,2018,Cincinnati,draft_picks_college,Cincinnati,3.53,20.25,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Brunson,2018,Villanova,draft_picks_college,Villanova,10.24,26.64,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaren Jackson Jr.,2018,Michigan State,draft_picks_college,Michigan St.,7.1,22.41,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jarred Vanderbilt,2018,Kentucky,draft_picks_college,Kentucky,10.73,17.24,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jerome Robinson,2018,Boston College,draft_picks_college,Boston College,7.2,9,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jevon Carter,2018,West Virginia,draft_picks_college,West Virginia,9.38,19.89,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Josh Okogie,2018,Georgia Tech,draft_picks_college,Georgia Tech,7.46,5.25,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Keita Bates-Diop,2018,Ohio State,draft_picks_college,Ohio St.,9.02,17.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kevin Huerter,2018,Maryland,draft_picks_college,Maryland,7.94,13.78,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kevin Knox,2018,Kentucky,draft_picks_college,Kentucky,10.73,17.24,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Khyri Thomas,2018,Creighton,draft_picks_college,Creighton,8.1,16.35,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Landry Shamet,2018,Wichita State,draft_picks_college,Wichita St.,5.46,16.58,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Lonnie Walker IV,2018,Miami (FL),draft_picks_college,Miami FL,6.96,12.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Luka Dončić,2018,Real Madrid,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Marvin Bagley III,2018,Duke,draft_picks_college,Duke,9.7,24.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Melvin Frazier,2018,Tulane,draft_picks_college,Tulane,2.08,1.21,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Mikal Bridges,2018,Villanova,draft_picks_college,Villanova,10.24,26.64,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Miles Bridges,2018,Michigan State,draft_picks_college,Michigan St.,7.1,22.41,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Mo Bamba,2018,Texas,draft_picks_college,Texas,10.67,13.96,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Moritz Wagner,2018,Michigan,draft_picks_college,Michigan,9.41,19.03,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Omari Spellman,2018,Villanova,draft_picks_college,Villanova,10.24,26.64,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Robert Williams,2018,Texas A&M,draft_picks_college,Texas A&M,10.62,15.3,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Shai Gilgeous-Alexander,2018,Kentucky,draft_picks_college,Kentucky,10.73,17.24,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Shake Milton,2018,SMU,draft_picks_college,SMU,3.66,9.08,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Trae Young,2018,Oklahoma,draft_picks_college,Oklahoma,10.56,13.81,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Troy Brown,2018,Oregon,draft_picks_college,Oregon,4.84,10.7,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Wendell Carter Jr.,2018,Duke,draft_picks_college,Duke,9.7,24.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Zhaire Smith,2018,Texas Tech,draft_picks_college,Texas Tech,9.6,19.38,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Admiral Schofield,2019,Tennessee,draft_picks_college,Tennessee,10.16,21.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bol Bol,2019,Oregon,draft_picks_college,Oregon,6.13,13.95,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Brandon Clarke,2019,Gonzaga,draft_picks_college,Gonzaga,5.01,27.79,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bruno Fernando,2019,Maryland,draft_picks_college,Maryland,10.09,16.01,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cam Reddish,2019,Duke,draft_picks_college,Duke,11.98,26.9,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cameron Johnson,2019,UNC,draft_picks_college,North Carolina,11.35,23.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Carsen Edwards,2019,Purdue,draft_picks_college,Purdue,11.99,21.4,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chuma Okeke,2019,Auburn,draft_picks_college,Auburn,10.92,20.84,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Coby White,2019,UNC,draft_picks_college,North Carolina,11.35,23.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cody Martin,2019,Nevada,draft_picks_college,Nevada,2.68,16,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Daniel Gafford,2019,Arkansas,draft_picks_college,Arkansas,8.78,11.75,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Darius Garland,2019,Vanderbilt,draft_picks_college,Vanderbilt,7.79,3.57,draft_template_sos_sheet,TRUE,FALSE,FALSE
+De'Andre Hunter,2019,Virginia,draft_picks_college,Virginia,10.15,25.46,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dylan Windler,2019,Belmont,draft_picks_college,Belmont,-2.6,9.12,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Eric Paschall,2019,Villanova,draft_picks_college,Villanova,7.97,14.33,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Goga Bitadze,2019,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Isaiah Roby,2019,Nebraska,draft_picks_college,Nebraska,11.31,14.85,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ja Morant,2019,Murray State,draft_picks_college,Murray St.,-3.11,8.96,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen McDaniels,2019,San Diego State,draft_picks_college,San Diego St.,2.47,5.29,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jarrell Brantley,2019,College of Charleston,draft_picks_college,College of Charleston,-2.95,2.36,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jarrett Culver,2019,Texas Tech,draft_picks_college,Texas Tech,9.53,22.79,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaxson Hayes,2019,Texas,draft_picks_college,Texas,11.46,16.06,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaylen Nowell,2019,Washington,draft_picks_college,Washington,7.01,12.01,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jordan Poole,2019,Michigan,draft_picks_college,Michigan,10.55,21.82,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Justin James,2019,Wyoming,draft_picks_college,Wyoming,0.19,-9.75,draft_template_sos_sheet,TRUE,FALSE,FALSE
+KZ Okpala,2019,Stanford,draft_picks_college,Stanford,5.13,6.03,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Keldon Johnson,2019,Kentucky,draft_picks_college,Kentucky,10.29,21.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kevin Porter Jr.,2019,USC,draft_picks_college,USC,4.96,8.23,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Luka Šamanić,2019,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Matisse Thybulle,2019,Washington,draft_picks_college,Washington,7.01,12.01,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Mfiondu Kabengele,2019,Florida State,draft_picks_college,Florida St.,10.26,17.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nassir Little,2019,UNC,draft_picks_college,North Carolina,11.35,23.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nickeil Alexander-Walker,2019,Virginia Tech,draft_picks_college,Virginia Tech,7.79,19.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nicolas Claxton,2019,Georgia,draft_picks_college,Georgia,8.12,5.31,draft_template_sos_sheet,TRUE,FALSE,FALSE
+PJ Washington,2019,Kentucky,draft_picks_college,Kentucky,10.29,21.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Quinndary Weatherspoon,2019,Mississippi State,draft_picks_college,Mississippi St.,9.07,15.96,draft_template_sos_sheet,TRUE,FALSE,FALSE
+R.J. Barrett,2019,Duke,draft_picks_college,Duke,11.98,26.9,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Romeo Langford,2019,Indiana,draft_picks_college,Indiana,10.1,13.82,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Rui Hachimura,2019,Gonzaga,draft_picks_college,Gonzaga,5.01,27.79,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sekou Doumbouya,2019,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Talen Horton-Tucker,2019,Iowa State,draft_picks_college,Iowa St.,9.3,18.07,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Terance Mann,2019,Florida State,draft_picks_college,Florida St.,10.26,17.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ty Jerome,2019,Virginia,draft_picks_college,Virginia,10.15,25.46,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyler Herro,2019,Kentucky,draft_picks_college,Kentucky,10.29,21.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Zion Williamson,2019,Duke,draft_picks_college,Duke,11.98,26.9,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Aaron Nesmith,2020,Vanderbilt,draft_picks_college,Vanderbilt,6.41,3.16,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Aleksej Pokusevski,2020,"Olympiacos B, Olympiacos",draft_picks_college,,,,,FALSE,TRUE,TRUE
+Anthony Edwards,2020,Georgia,draft_picks_college,Georgia,8.06,8.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+CJ Elleby,2020,Washington State,draft_picks_college,Washington St.,4.94,5.13,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cole Anthony,2020,UNC,draft_picks_college,North Carolina,10.05,9.45,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Daniel Oturu,2020,Minnesota,draft_picks_college,Minnesota,11.55,16.39,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Deni Avdija,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Desmond Bane,2020,TCU,draft_picks_college,TCU,10.09,9.86,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Devin Vassell,2020,Florida State,draft_picks_college,Florida St.,7.64,17.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Elijah Hughes,2020,Syracuse,draft_picks_college,Syracuse,7.26,12.32,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Immanuel Quickley,2020,Kentucky,draft_picks_college,Kentucky,7.46,15.78,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaac Okoro,2020,Auburn,draft_picks_college,Auburn,7.39,15.04,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Joe,2020,Arkansas,draft_picks_college,Arkansas,7.27,13.46,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Stewart,2020,Washington,draft_picks_college,Washington,8.25,12.41,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaden McDaniels,2020,Washington,draft_picks_college,Washington,8.25,12.41,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jahmi'us Ramsey,2020,Texas Tech,draft_picks_college,Texas Tech,8.41,16.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Smith,2020,Maryland,draft_picks_college,Maryland,10.5,17.82,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jordan Nwora,2020,Louisville,draft_picks_college,Louisville,7.55,17.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Josh Green,2020,Arizona,draft_picks_college,Arizona,8.4,19.49,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Killian Hayes,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Kira Lewis Jr.,2020,Alabama,draft_picks_college,Alabama,8.12,11.12,draft_template_sos_sheet,TRUE,FALSE,FALSE
+LaMelo Ball,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Leandro Bolmaro,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Malachi Flynn,2020,San Diego State,draft_picks_college,San Diego St.,3.93,18.38,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nick Richards,2020,Kentucky,draft_picks_college,Kentucky,7.46,15.78,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nico Mannion,2020,Arizona,draft_picks_college,Arizona,8.4,19.49,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Obi Toppin,2020,Dayton,draft_picks_college,Dayton,3.69,19.17,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Onyeka Okongwu,2020,USC,draft_picks_college,USC,7.22,11.51,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Patrick Williams,2020,Florida State,draft_picks_college,Florida St.,7.64,17.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Paul Reed,2020,DePaul,draft_picks_college,DePaul,8.95,7.63,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Payton Pritchard,2020,Oregon,draft_picks_college,Oregon,9.09,18.22,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Precious Achiuwa,2020,Memphis,draft_picks_college,Memphis,5.07,12.16,draft_template_sos_sheet,TRUE,FALSE,FALSE
+R.J. Hampton,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Robert Woodard II,2020,Mississippi State,draft_picks_college,Mississippi St.,6.96,12.21,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Saben Lee,2020,Vanderbilt,draft_picks_college,Vanderbilt,6.41,3.16,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Saddiq Bey,2020,Villanova,draft_picks_college,Villanova,10.03,16.84,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sam Merrill,2020,Utah State University,draft_picks_college,Utah St.,4.04,13.66,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Skylar Mays,2020,LSU,draft_picks_college,LSU,7.2,14.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Théo Maledon,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Tre Jones,2020,Duke,draft_picks_college,Duke,8,22.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyler Bey,2020,Colorado,draft_picks_college,Colorado,8.31,14.91,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyrell Terry,2020,Stanford,draft_picks_college,Stanford,6.38,13.35,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyrese Haliburton,2020,Iowa State,draft_picks_college,Iowa St.,10.07,9.1,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyrese Maxey,2020,Kentucky,draft_picks_college,Kentucky,7.46,15.78,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Udoka Azubuike,2020,Kansas,draft_picks_college,Kansas,11.63,24.96,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Vernon Carey Jr.,2020,Duke,draft_picks_college,Duke,8,22.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Vít Krejčí,2020,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Xavier Tillman,2020,Michigan State,draft_picks_college,Michigan St.,10.76,21.92,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Zeke Nnaji,2020,Arizona,draft_picks_college,Arizona,8.4,19.49,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Aaron Wiggins,2021,Maryland,draft_picks_college,Maryland,11.97,13.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Alperen Şengün,2021,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ayo Dosunmu,2021,Illinois,draft_picks_college,Illinois,11.34,23.25,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cade Cunningham,2021,Oklahoma State,draft_picks_college,Oklahoma St.,9.78,13.65,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cameron Thomas,2021,LSU,draft_picks_college,LSU,9.14,15.7,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Charles Bassey,2021,Western Kentucky,draft_picks_college,Western Kentucky,0.5,5.19,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chris Duarte,2021,Oregon,draft_picks_college,Oregon,9.65,16.15,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Corey Kispert,2021,Gonzaga,draft_picks_college,Gonzaga,5.92,27.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Davion Mitchell,2021,Baylor,draft_picks_college,Baylor,7.4,24.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Day'Ron Sharpe,2021,UNC,draft_picks_college,North Carolina,9.52,14.79,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Evan Mobley,2021,USC,draft_picks_college,USC,10.65,20.5,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Franz Wagner,2021,Michigan,draft_picks_college,Michigan,11.25,22,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Greg Brown III,2021,Texas,draft_picks_college,Texas,9.36,15.51,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Herbert Jones,2021,Alabama,draft_picks_college,Alabama,10.01,19.58,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Jackson,2021,Kentucky,draft_picks_college,Kentucky,11.49,11.77,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Livers,2021,Michigan,draft_picks_college,Michigan,11.25,22,draft_template_sos_sheet,TRUE,FALSE,FALSE
+JT Thor,2021,Auburn,draft_picks_college,Auburn,9.28,10.02,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaden Springer,2021,Tennessee,draft_picks_college,Tennessee,8.46,16.87,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Green,2021,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Jalen Johnson,2021,Duke,draft_picks_college,Duke,8.33,13.04,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Suggs,2021,Gonzaga,draft_picks_college,Gonzaga,5.92,27.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+James Bouknight,2021,UConn,draft_picks_college,Connecticut,8.59,15.77,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jared Butler,2021,Baylor,draft_picks_college,Baylor,7.4,24.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jason Preston,2021,Ohio University,draft_picks_college,Ohio,-0.57,5.48,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jeremiah Robinson-Earl,2021,Villanova,draft_picks_college,Villanova,9.19,17.47,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jonathan Kuminga,2021,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Josh Christopher,2021,Arizona State,draft_picks_college,Arizona St.,10.24,7.48,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Josh Giddey,2021,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Joshua Primo,2021,Alabama,draft_picks_college,Alabama,10.01,19.58,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kai Jones,2021,Texas,draft_picks_college,Texas,9.36,15.51,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Keon Johnson,2021,Tennessee,draft_picks_college,Tennessee,8.46,16.87,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kessler Edwards,2021,Pepperdine,draft_picks_college,Pepperdine,5.01,5.65,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Luka Garza,2021,Iowa,draft_picks_college,Iowa,10.43,21.4,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Miles McBride,2021,West Virginia,draft_picks_college,West Virginia,10.05,15.36,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Moses Moody,2021,Arkansas,draft_picks_college,Arkansas,7.18,17.8,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nah'Shon Hyland,2021,VCU,draft_picks_college,VCU,4.76,11.3,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Neemias Queta,2021,Utah State University,draft_picks_college,Utah St.,1.32,10.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Quentin Grimes,2021,Houston,draft_picks_college,Houston,5.37,21.66,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sandro Mamukelashvili,2021,Seton Hall,draft_picks_college,Seton Hall,9.53,11.12,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Santi Aldama,2021,Loyola (MD),draft_picks_college,Loyola MD,-3.47,-2.29,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Scottie Barnes,2021,Florida State,draft_picks_college,Florida St.,9.16,17.12,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tre Mann,2021,Florida,draft_picks_college,Florida,9.82,13.7,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Trey Murphy III,2021,Virginia,draft_picks_college,Virginia,7.59,15.27,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Usman Garuba,2021,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ziaire Williams,2021,Stanford,draft_picks_college,Stanford,10.01,10.15,draft_template_sos_sheet,TRUE,FALSE,FALSE
+AJ Griffin,2022,Duke,draft_picks_college,Duke,7.26,19.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Andrew Nembhard,2022,Gonzaga,draft_picks_college,Gonzaga,4.5,25.46,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bennedict Mathurin,2022,Arizona,draft_picks_college,Arizona,6.84,22.75,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Blake Wesley,2022,Notre Dame,draft_picks_college,Notre Dame,7.01,11.87,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bryce McGowens,2022,Nebraska,draft_picks_college,Nebraska,8.25,3,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Caleb Houstan,2022,Michigan,draft_picks_college,Michigan,11.02,14.26,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chet Holmgren,2022,Gonzaga,draft_picks_college,Gonzaga,4.5,25.46,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Christian Braun,2022,Kansas,draft_picks_college,Kansas,11.3,22.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Christian Koloko,2022,Arizona,draft_picks_college,Arizona,6.84,22.75,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dalen Terry,2022,Arizona,draft_picks_college,Arizona,6.84,22.75,draft_template_sos_sheet,TRUE,FALSE,FALSE
+David Roddy,2022,Colorado State,draft_picks_college,Colorado St.,4.77,11.51,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dyson Daniels,2022,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+E.J. Liddell,2022,Ohio State,draft_picks_college,Ohio St.,9.08,14.17,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Mobley,2022,USC,draft_picks_college,USC,6.09,12.5,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jabari Smith,2022,Auburn,draft_picks_college,Auburn,8.17,19.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jabari Walker,2022,Colorado,draft_picks_college,Colorado,6.15,9.82,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaden Hardy,2022,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Jaden Ivey,2022,Purdue,draft_picks_college,Purdue,8.23,19.15,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jake LaRavia,2022,Wake Forest,draft_picks_college,Wake Forest,4.75,13.24,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Duren,2022,Memphis,draft_picks_college,Memphis,7.86,14.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Williams,2022,Santa Clara,draft_picks_college,Santa Clara,3.61,8.98,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaylin Williams,2022,Arkansas,draft_picks_college,Arkansas,8.62,16.27,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jeremy Sochan,2022,Baylor,draft_picks_college,Baylor,8.76,21.73,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Johnny Davis,2022,Wisconsin,draft_picks_college,Wisconsin,9.16,13.13,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Josh Minott,2022,Memphis,draft_picks_college,Memphis,7.86,14.67,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Keegan Murray,2022,Iowa,draft_picks_college,Iowa,6.87,18.9,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kendall Brown,2022,Baylor,draft_picks_college,Baylor,8.76,21.73,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kennedy Chandler,2022,Tennessee,draft_picks_college,Tennessee,9.94,20.46,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Malaki Branham,2022,Ohio State,draft_picks_college,Ohio St.,9.08,14.17,draft_template_sos_sheet,TRUE,FALSE,FALSE
+MarJon Beauchamp,2022,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Mark Williams,2022,Duke,draft_picks_college,Duke,7.26,19.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Max Christie,2022,Michigan State,draft_picks_college,Michigan St.,9.96,13.18,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Moussa Diabate,2022,Michigan,draft_picks_college,Michigan,11.02,14.26,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nikola Jović,2022,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ochai Agbaji,2022,Kansas,draft_picks_college,Kansas,11.3,22.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ousmane Dieng,2022,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Paolo Banchero,2022,Duke,draft_picks_college,Duke,7.26,19.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Patrick Baldwin Jr.,2022,UW-Milwaukee,draft_picks_college,Milwaukee,-6.32,-13.19,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Peyton Watson,2022,UCLA,draft_picks_college,UCLA,8.36,19.3,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ryan Rollins,2022,Toledo,draft_picks_college,Toledo,-3.22,6.26,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tari Eason,2022,LSU,draft_picks_college,LSU,8.3,17.45,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Trevor Keels,2022,Duke,draft_picks_college,Duke,7.26,19.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyty Washington Jr.,2022,Kentucky,draft_picks_college,Kentucky,8.02,20.9,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Vince Williams Jr.,2022,VCU,draft_picks_college,VCU,5.17,9.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Walker Kessler,2022,Auburn,draft_picks_college,Auburn,8.17,19.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Wendell Moore Jr.,2022,Duke,draft_picks_college,Duke,7.26,19.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Amari Bailey,2023,UCLA,draft_picks_college,UCLA,8.66,22.11,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Amen Thompson,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Andre Jackson Jr.,2023,UConn,draft_picks_college,Connecticut,8.51,22.95,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Anthony Black,2023,Arkansas,draft_picks_college,Arkansas,9.87,15.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ausar Thompson,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ben Sheppard,2023,Belmont,draft_picks_college,Belmont,-1.93,1.88,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bilal Coulibaly,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Brandin Podziemski,2023,Santa Clara,draft_picks_college,Santa Clara,5.05,8.55,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Brandon Miller,2023,Alabama,draft_picks_college,Alabama,9.65,23.19,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Brice Sensabaugh,2023,Ohio State,draft_picks_college,Ohio St.,9.45,12.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cam Whitmore,2023,Villanova,draft_picks_college,Villanova,8.69,10.61,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cason Wallace,2023,Kentucky,draft_picks_college,Kentucky,8.08,14.76,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Colby Jones,2023,Xavier,draft_picks_college,Xavier,9.16,16.03,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dariq Whitehead,2023,Duke,draft_picks_college,Duke,7.44,15.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dereck Lively II,2023,Duke,draft_picks_college,Duke,7.44,15.83,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Emoni Bates,2023,Eastern Michigan,draft_picks_college,Eastern Michigan,-1.88,-11.05,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Gradey Dick,2023,Kansas,draft_picks_college,Kansas,11.84,19.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Gregory Jackson,2023,South Carolina,draft_picks_college,South Carolina,6,-2.28,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Hunter Tyson,2023,Clemson,draft_picks_college,Clemson,3.71,10.53,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaime Jaquez Jr.,2023,UCLA,draft_picks_college,UCLA,8.66,22.11,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Hood-Schifino,2023,Indiana,draft_picks_college,Indiana,8.88,14.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jalen Pickett,2023,Penn State,draft_picks_college,Penn St.,9.02,13.04,draft_template_sos_sheet,TRUE,FALSE,FALSE
+James Nnaji,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Jarace Walker,2023,Houston,draft_picks_college,Houston,4.79,22.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaylen Clark,2023,UCLA,draft_picks_college,UCLA,8.66,22.11,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jett Howard,2023,Michigan,draft_picks_college,Michigan,8.69,12.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jordan Hawkins,2023,UConn,draft_picks_college,Connecticut,8.51,22.95,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jordan Walsh,2023,Arkansas,draft_picks_college,Arkansas,9.87,15.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Julian Phillips,2023,Tennessee,draft_picks_college,Tennessee,7.98,20.84,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Julian Strawther,2023,Gonzaga,draft_picks_college,Gonzaga,8.04,18.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Keyonte George,2023,Baylor,draft_picks_college,Baylor,10.54,17.3,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kobe Brown,2023,Missouri,draft_picks_college,Missouri,6.89,11.41,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kobe Bufkin,2023,Michigan,draft_picks_college,Michigan,8.69,12.43,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kris Murray,2023,Iowa,draft_picks_college,Iowa,8.69,14.08,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Leonard Miller,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Marcus Sasser,2023,Houston,draft_picks_college,Houston,4.79,22.2,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Maxwell Lewis,2023,Pepperdine,draft_picks_college,Pepperdine,4.71,-0.12,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Mouhamed Gueye,2023,Washington State,draft_picks_college,Washington St.,7.91,10.53,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nick Smith Jr.,2023,Arkansas,draft_picks_college,Arkansas,9.87,15.99,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Noah Clowney,2023,Alabama,draft_picks_college,Alabama,9.65,23.19,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Olivier-Maxence Prosper,2023,Marquette,draft_picks_college,Marquette,8.01,17.07,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Rayan Rupert,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Scoot Henderson,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Seth Lundy,2023,Penn State,draft_picks_college,Penn St.,9.02,13.04,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Sidy Cissoko,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Taylor Hendricks,2023,Central Florida,draft_picks_college,UCF,5.09,11.09,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Toumani Camara,2023,Dayton,draft_picks_college,Dayton,1.09,8.71,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Trayce Jackson-Davis,2023,Indiana,draft_picks_college,Indiana,8.88,14.94,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Victor Wembanyama,2023,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Adem Bona,2024,UCLA,draft_picks_college,UCLA,7.84,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ajay Mitchell,2024,UC Santa Barbara,draft_picks_college,UC Santa Barbara,-3.01,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Alex Sarr,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Baylor Scheierman,2024,Creighton,draft_picks_college,Creighton,9.53,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Bobi Klintman,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Carlton Carrington,2024,Pitt,draft_picks_college,Pittsburgh,6.92,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cody Williams,2024,Colorado,draft_picks_college,Colorado,8.36,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+DaRon Holmes II,2024,Dayton,draft_picks_college,Dayton,5.73,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dalton Knecht,2024,Tennessee,draft_picks_college,Tennessee,10.42,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Devin Carter,2024,Providence,draft_picks_college,Providence,8.93,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dillon Jones,2024,Weber State,draft_picks_college,Weber St.,-4.15,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Donovan Clingan,2024,UConn,draft_picks_college,Connecticut,8.7,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Harrison Ingram,2024,UNC,draft_picks_college,North Carolina,9.9,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Isaiah Collier,2024,USC,draft_picks_college,USC,9.54,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ja'Kobe Walter,2024,Baylor,draft_picks_college,Baylor,10.71,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jared McCain,2024,Duke,draft_picks_college,Duke,8.36,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jaylon Tyson,2024,California,draft_picks_college,California,8,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Johnny Furphy,2024,Kansas,draft_picks_college,Kansas,11.32,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jonathan Mogbo,2024,San Francisco,draft_picks_college,San Francisco,0.23,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+KJ Simpson,2024,Colorado,draft_picks_college,Colorado,8.36,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kel'el Ware,2024,Indiana,draft_picks_college,Indiana,9.74,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kyle Filipowski,2024,Duke,draft_picks_college,Duke,8.36,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kyshawn George,2024,Miami (FL),draft_picks_college,Miami FL,7.46,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Matas Buzelis,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Melvin Ajinça,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Nikola Djurisic,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Nikola Topić,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Oso Ighodaro,2024,Marquette,draft_picks_college,Marquette,11.02,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Pacôme Dadiet,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Reed Sheppard,2024,Kentucky,draft_picks_college,Kentucky,7.46,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Rob Dillingham,2024,Kentucky,draft_picks_college,Kentucky,7.46,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ron Holland,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ryan Dunn,2024,Virginia,draft_picks_college,Virginia,7.31,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Stephon Castle,2024,UConn,draft_picks_college,Connecticut,8.7,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Terrence Shannon Jr.,2024,Illinois,draft_picks_college,Illinois,9.54,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tidjane Salaün,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Tristan da Silva,2024,Colorado,draft_picks_college,Colorado,8.36,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tristen Newton,2024,UConn,draft_picks_college,Connecticut,8.7,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyler Kolek,2024,Marquette,draft_picks_college,Marquette,11.02,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tyler Smith,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Yves Missi,2024,Baylor,draft_picks_college,Baylor,10.71,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Zaccharie Risacher,2024,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Zach Edey,2024,Purdue,draft_picks_college,Purdue,11.6,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ace Bailey,2025,Rutgers University,draft_picks_college,Rutgers,10.85,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Adou Thiero,2025,Arkansas,draft_picks_college,Arkansas,11.69,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Asa Newell,2025,Georgia,draft_picks_college,Georgia,10.93,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Ben Saraf,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Bogoljub Markovic,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Carter Bryant,2025,Arizona,draft_picks_college,Arizona,13.71,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cedric Coward,2025,Washington State,draft_picks_college,Washington St.,4.33,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Chaz Lanier,2025,Tennessee,draft_picks_college,Tennessee,13.22,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Collin Murray-Boyles,2025,South Carolina,draft_picks_college,South Carolina,11.53,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Cooper Flagg,2025,Duke,draft_picks_college,Duke,9.8,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Danny Wolf,2025,Michigan,draft_picks_college,Michigan,13.58,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Derik Queen,2025,Maryland,draft_picks_college,Maryland,9.94,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Drake Powell,2025,UNC,draft_picks_college,North Carolina,11.24,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Dylan Harper,2025,Rutgers University,draft_picks_college,Rutgers,10.85,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Egor Demin,2025,BYU,draft_picks_college,BYU,10.21,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Hugo González,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Jase Richardson,2025,Michigan State,draft_picks_college,Michigan St.,11.8,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Jeremiah Fears,2025,Oklahoma,draft_picks_college,Oklahoma,11.2,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Joan Beringer,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Johni Broome,2025,Auburn,draft_picks_college,Auburn,14.77,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kam Jones,2025,Marquette,draft_picks_college,Marquette,10.44,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kasparas Jakucionis,2025,Illinois,draft_picks_college,Illinois,12.68,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Khaman Maluach,2025,Duke,draft_picks_college,Duke,9.8,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Kon Knueppel,2025,Duke,draft_picks_college,Duke,9.8,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Liam McNeeley,2025,UConn,draft_picks_college,Connecticut,8.97,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Maxime Raynaud,2025,Stanford,draft_picks_college,Stanford,6.09,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Nique Clifford,2025,Colorado State,draft_picks_college,Colorado St.,6.07,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Noa Essengue,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Noah Penda,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Nolan Traoré,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Rasheer Fleming,2025,Saint Joseph's,draft_picks_college,Saint Joseph's,0.86,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Rocco Zikarsky,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Ryan Kalkbrenner,2025,Creighton,draft_picks_college,Creighton,11.13,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Thomas Sorber,2025,Georgetown,draft_picks_college,Georgetown,5.64,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Tre Johnson,2025,Texas,draft_picks_college,Texas,9.79,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+V.J. Edgecombe,2025,Baylor,draft_picks_college,Baylor,13.87,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Walter Clayton Jr.,2025,Florida,draft_picks_college,Florida,11.74,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Will Riley,2025,Illinois,draft_picks_college,Illinois,12.68,,draft_template_sos_sheet,TRUE,FALSE,FALSE
+Yang Hansen,2025,Int'l,draft_picks_college,,,,,FALSE,TRUE,TRUE
+AJ Dybantsa,2026,BYU,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Aday Mara,2026,Michigan,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Alex Karaban,2026,,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Allen Graves,2026,Santa Clara,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Amari Allen,2026,Alabama,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Bennett Stirtz,2026,Iowa,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Braden Smith,2026,,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Brayden Burries,2026,Arizona,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Caleb Wilson,2026,North Carolina,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Cameron Boozer,2026,Duke,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Cameron Carr,2026,Baylor,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Chris Cenac Jr,2026,Houston,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Christian Anderson,2026,Texas Tech,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Dailyn Swain,2026,Texas,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Darius Acuff Jr.,2026,Arkansas,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Darryn Peterson,2026,Kansas,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Ebuka Okorie,2026,Stanford,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Flory Bidunga,2026,Kansas,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Hannes Steinbach,2026,Washington,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Henri Veesaar,2026,North Carolina,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Isaiah Evans,2026,Duke,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Jayden Quaintance,2026,Kentucky,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Jeremy Fears Jr.,2026,,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Joshua Jefferson,2026,Iowa St.,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Karim Lopez,2026,New Zealand,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Keaton Wagler,2026,Illinois,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Kingston Flemings,2026,Houston,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Koa Peat,2026,Arizona,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Labaron Philon,2026,Alabama,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Luigi Suigo,2026,All Teams,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Meleek Thomas,2026,Arkansas,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Mikel Brown Jr.,2026,Louisville,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Milan Momcilovic,2026,,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Milos Uzan,2026,,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Morez Johnson Jr.,2026,Michigan,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Nate Ament,2026,Tennessee,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Richie Saunders,2026,BYU,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Sergio De Larrea,2026,Valencia Basket,draft_picks_college,,,,,FALSE,TRUE,TRUE
+Tarris Reed Jr.,2026,Connecticut,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Tounde Yessoufou,2026,Baylor,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Tyler Tanner,2026,Vanderbilt,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Yaxel Lendeborg,2026,Michigan,draft_picks_college,,,,,FALSE,FALSE,FALSE
+Zuby Ejiofor,2026,,draft_picks_college,,,,,FALSE,FALSE,FALSE

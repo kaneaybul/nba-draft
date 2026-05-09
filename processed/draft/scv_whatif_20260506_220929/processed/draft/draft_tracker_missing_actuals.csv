@@ -1,0 +1,31 @@
+draft_year,name_key,player,nba_id,actual_pick,actual_rank,actual_weight,career_minutes,actual_impact,in_prediction_source,prediction_source_names,in_model_predictions,model_prediction_names,brendan_adj_rank,brendan_adj_eval_rank,brendan_adj_rank_error,brendan_adj_correct_pct,unranked_by_brendan_adj,missing_reason
+2016,thon maker,Thon Maker,1627748,10,36,0.0037875126197712,3548,-2.11962490964487,FALSE,,FALSE,,,65,29,12.8757852827859,TRUE,missing_from_prediction_source
+2016,ante zizic,Ante Žižić,1627790,23,38,0.00320990821915609,1082,-1.2327225,FALSE,,FALSE,,,65,27,15.3406592193955,TRUE,missing_from_prediction_source
+2016,cheick diallo,Cheick Diallo,1627767,33,42,0.00174304749270334,1477,-2.30785798104265,FALSE,,FALSE,,,65,23,21.5630854828727,TRUE,missing_from_prediction_source
+2016,paul zipser,Paul Zipser,1627835,48,45,0.000486100672390159,1667,-3.12325818041392,FALSE,,FALSE,,,65,20,27.5748067768155,TRUE,missing_from_prediction_source
+2016,abdel nader,Abdel Nader,1627846,58,46,2.74541943021007e-05,2083,-3.54302066922708,FALSE,,FALSE,,,65,19,29.8716426273462,TRUE,missing_from_prediction_source
+2016,tyrone wallace,Tyrone Wallace,1627820,60,44,0.000708066420068761,1479,-2.93405862407032,FALSE,,FALSE,,,65,21,25.4289619338766,TRUE,missing_from_prediction_source
+2017,justin jackson,Justin Jackson,1628382,15,27,0.00438077613052251,4741,-1.99200811927863,FALSE,,FALSE,,,65,38,5.64870361436338,TRUE,missing_from_prediction_source
+2017,terrance ferguson,Terrance Ferguson,1628390,21,36,0.00224995786798823,3951,-2.43933406099722,FALSE,,FALSE,,,65,29,12.8757852827859,TRUE,missing_from_prediction_source
+2017,jonah bolden,Jonah Bolden,1628413,36,44,0.00112633094064002,639,-1.9974915,FALSE,,FALSE,,,65,21,25.4289619338766,TRUE,missing_from_prediction_source
+2018,michael porter,Michael Porter Jr.,1629008,14,7,0.0355866703319329,11460,1.30891861527051,FALSE,,FALSE,,,65,58,0.763261157149498,TRUE,missing_from_prediction_source
+2018,anfernee simons,Anfernee Simons,1629014,24,25,0.0150191438474905,11651,-1.24629572096816,FALSE,,FALSE,,,65,40,4.66989285122488,TRUE,missing_from_prediction_source
+2018,mitchell robinson,Mitchell Robinson,1629011,36,13,0.027564305719982,9005,0.953001642298723,FALSE,,FALSE,,,65,52,1.42176902758048,TRUE,missing_from_prediction_source
+2018,isaac bonga,Isaac Bonga,1629067,39,43,0.00514223659313428,1250,-0.1793,FALSE,,FALSE,,,65,22,23.4273565201538,TRUE,missing_from_prediction_source
+2018,rodions kurucs,Rodions Kurucs,1629066,40,47,0.00374874152928003,1978,-1.61648216663296,FALSE,,FALSE,,,65,18,32.3259540804431,TRUE,missing_from_prediction_source
+2018,justin jackson,Justin Jackson,1628382,43,46,0.00410012855371821,3235,-2.01708784652241,FALSE,,FALSE,,,65,19,29.8716426273462,TRUE,missing_from_prediction_source
+2018,svi mykhailiuk,Svi Mykhailiuk,1629004,47,36,0.00814089701485617,5221,-1.38932025014365,FALSE,,FALSE,,,65,29,12.8757852827859,TRUE,missing_from_prediction_source
+2019,grant williams,Grant Williams,1629684,22,28,0.0183177577128284,8899,-1.15926797984605,FALSE,,FALSE,,,65,37,6.20679152256619,TRUE,missing_from_prediction_source
+2019,darius bazley,Darius Bazley,1629647,23,46,0.0015156822219883,5384,-3.01559821155275,FALSE,,FALSE,,,65,19,29.8716426273462,TRUE,missing_from_prediction_source
+2019,ignas brazdeikis,Ignas Brazdeikis,1629649,47,49,0.000212861986975232,536,-3.13831,FALSE,,FALSE,,,65,16,37.7307550792257,TRUE,missing_from_prediction_source
+2019,miye oni,Miye Oni,1629671,58,48,0.00131688675606599,519,-2.116311,FALSE,,FALSE,,,65,17,34.9438214679863,TRUE,missing_from_prediction_source
+2020,james wiseman,James Wiseman,1630164,2,43,0.00042095011303153,2794,-4.02278613350036,FALSE,,FALSE,,,65,22,23.4273565201538,TRUE,missing_from_prediction_source
+2020,kj martin,KJ Martin,1630231,52,30,0.0101356506549102,6675,-2.18632409078652,FALSE,,FALSE,,,65,35,7.47948090420703,TRUE,missing_from_prediction_source
+2021,dalano banton,Dalano Banton,1630625,46,39,0.0055086009810949,2863,-1.85063991582256,FALSE,,FALSE,,,65,26,16.7247750252877,TRUE,missing_from_prediction_source
+2021,sharife cooper,Sharife Cooper,1630536,48,50,0.00100254229860073,651,-2.53795,FALSE,,FALSE,,,65,15,40.6914949008275,TRUE,missing_from_prediction_source
+2021,brandon boston,Brandon Boston Jr.,1630527,51,44,0.00335962637642087,1753,-2.04341354563605,FALSE,,FALSE,,,65,21,25.4289619338766,TRUE,missing_from_prediction_source
+2021,jericho sims,Jericho Sims,1630579,58,41,0.00390659996791303,3839,-2.40962817048711,FALSE,,FALSE,,,65,24,19.8291838396454,TRUE,missing_from_prediction_source
+2022,shaedon sharpe,Shaedon Sharpe,1631101,7,15,0.0277142537073996,6529,-1.0438879529637,FALSE,,FALSE,,,65,50,1.74262610507542,TRUE,missing_from_prediction_source
+2022,tyrese martin,Tyrese Martin,1631213,51,32,0.00714151108207419,2090,-2.0350513062201,FALSE,,FALSE,,,65,33,8.98930747550008,TRUE,missing_from_prediction_source
+2022,karlo matkovic,Karlo Matković,1631255,52,31,0.00730848790855494,1703,-1.80412088314739,FALSE,,FALSE,,,65,34,8.20248899472768,TRUE,missing_from_prediction_source
+2022,gui santos,Gui Santos,1630611,55,16,0.0229211161433024,2114,0.436630291390729,FALSE,,FALSE,,,65,49,1.92780734671369,TRUE,missing_from_prediction_source

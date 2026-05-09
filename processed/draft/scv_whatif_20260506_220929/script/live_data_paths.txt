@@ -1,0 +1,80 @@
+live_data_parent_folder_name <- "livedata"
+live_data_folder_name <- "impactrefresh"
+legacy_live_data_folder_name <- "Impact & Skill Refresh"
+
+get_live_data_dir <- function(base_dir, create = FALSE) {
+  live_data_dir <- file.path(
+    base_dir,
+    "processed",
+    live_data_parent_folder_name,
+    live_data_folder_name
+  )
+
+  if (isTRUE(create)) {
+    dir.create(live_data_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  live_data_dir
+}
+
+get_legacy_live_data_dirs <- function(base_dir) {
+  c(
+    file.path(base_dir, "processed", legacy_live_data_folder_name),
+    file.path(base_dir, "processed", live_data_parent_folder_name)
+  )
+}
+
+migrate_legacy_live_data_files <- function(base_dir, files = NULL) {
+  live_data_dir <- get_live_data_dir(base_dir, create = TRUE)
+  legacy_dirs <- unique(normalizePath(
+    get_legacy_live_data_dirs(base_dir),
+    winslash = "/",
+    mustWork = FALSE
+  ))
+  live_data_dir_norm <- normalizePath(live_data_dir, winslash = "/", mustWork = FALSE)
+
+  if (is.null(files)) {
+    files <- unlist(
+      lapply(legacy_dirs[file.exists(legacy_dirs)], function(legacy_dir) {
+        dir_entries <- list.files(
+          legacy_dir,
+          all.files = FALSE,
+          no.. = TRUE,
+          full.names = TRUE
+        )
+        basename(dir_entries[file.info(dir_entries)$isdir %in% FALSE])
+      }),
+      use.names = FALSE
+    )
+  }
+
+  files <- unique(files[nzchar(files)])
+
+  for (legacy_dir in legacy_dirs) {
+    if (!dir.exists(legacy_dir) || identical(legacy_dir, live_data_dir_norm)) {
+      next
+    }
+
+    for (nm in files) {
+      legacy_fp <- file.path(legacy_dir, nm)
+      live_fp <- file.path(live_data_dir, nm)
+
+      if (!file.exists(legacy_fp) || file.exists(live_fp)) {
+        next
+      }
+
+      moved <- suppressWarnings(file.rename(legacy_fp, live_fp))
+
+      if (!isTRUE(moved)) {
+        copied <- file.copy(legacy_fp, live_fp, overwrite = FALSE)
+        if (isTRUE(copied)) {
+          file.remove(legacy_fp)
+        } else {
+          stop("Could not migrate legacy live data file: ", legacy_fp)
+        }
+      }
+    }
+  }
+
+  invisible(live_data_dir)
+}
