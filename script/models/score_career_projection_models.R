@@ -62,6 +62,85 @@ add_history_features <- function(panel) {
   panel
 }
 
+add_role_mpg_features <- function(panel) {
+  panel$mpg_sample_reliability <- clamp((panel$minutes_equiv - 300) / 1700, 0, 1)
+  panel$history_role_mpg <- ifelse(
+    is.finite(panel$avg3_mpg) & is.finite(panel$avg3_minutes_equiv) & panel$avg3_minutes_equiv >= 650,
+    panel$avg3_mpg,
+    ifelse(
+      is.finite(panel$avg2_mpg) & is.finite(panel$avg2_minutes_equiv) & panel$avg2_minutes_equiv >= 650,
+      panel$avg2_mpg,
+      NA_real_
+    )
+  )
+  panel$role_prior_mpg <- ifelse(
+    panel$has_prev == 1 & is.finite(panel$history_role_mpg),
+    panel$history_role_mpg,
+    clamp(14 + 2 * panel$total, 8, 24)
+  )
+  panel$reliable_role_mpg <- panel$mpg_sample_reliability * panel$mpg +
+    (1 - panel$mpg_sample_reliability) * panel$role_prior_mpg
+  panel$reliable_role_mpg <- clamp(panel$reliable_role_mpg, 0, 38)
+  panel$adjusted_mpg <- panel$reliable_role_mpg
+  panel
+}
+
+role_mpg_history_floor <- function(state, projected_age) {
+  avg2_minutes <- ifelse(is.finite(state$avg2_minutes_equiv), state$avg2_minutes_equiv, NA_real_)
+  avg3_minutes <- ifelse(is.finite(state$avg3_minutes_equiv), state$avg3_minutes_equiv, NA_real_)
+  avg_history_minutes <- pmax(
+    ifelse(is.na(avg2_minutes), -Inf, avg2_minutes),
+    ifelse(is.na(avg3_minutes), -Inf, avg3_minutes)
+  )
+  avg_history_minutes[!is.finite(avg_history_minutes)] <- NA_real_
+  eligible <- is.finite(avg_history_minutes) &
+    avg_history_minutes >= 1400 &
+    is.finite(state$reliable_role_mpg) &
+    state$reliable_role_mpg >= 26
+  decline <- pmax(0, projected_age - 30) * 0.55 + pmax(0, projected_age - 34) * 0.85
+  floor_mpg <- clamp(state$reliable_role_mpg - decline, 0, 36.5)
+  ifelse(eligible & is.finite(floor_mpg), floor_mpg, NA_real_)
+}
+
+games_history_floor <- function(state, projected_age) {
+  games_sources <- c("games_equiv", "lag1_games_equiv", "lag2_games_equiv", "avg2_games_equiv", "avg3_games_equiv")
+  minute_sources <- c("minutes_equiv", "lag1_minutes_equiv", "lag2_minutes_equiv", "avg2_minutes_equiv", "avg3_minutes_equiv")
+
+  best_games <- rep(-Inf, nrow(state))
+  for (nm in intersect(games_sources, names(state))) {
+    values <- ifelse(is.finite(state[[nm]]), state[[nm]], -Inf)
+    best_games <- pmax(best_games, values)
+  }
+  best_games[!is.finite(best_games)] <- NA_real_
+
+  best_minutes <- rep(-Inf, nrow(state))
+  for (nm in intersect(minute_sources, names(state))) {
+    values <- ifelse(is.finite(state[[nm]]), state[[nm]], -Inf)
+    best_minutes <- pmax(best_minutes, values)
+  }
+  best_minutes[!is.finite(best_minutes)] <- NA_real_
+
+  eligible <- is.finite(best_games) &
+    best_games >= 62 &
+    is.finite(best_minutes) &
+    best_minutes >= 1400 &
+    is.finite(state$reliable_role_mpg) &
+    state$reliable_role_mpg >= 26
+  decline <- pmax(0, projected_age - 30) * 0.8 + pmax(0, projected_age - 34) * 1.2
+  floor_games <- clamp(pmin(best_games, 66) - decline, 0, 72)
+  ifelse(eligible & is.finite(floor_games), floor_games, NA_real_)
+}
+
+reconcile_projected_components <- function(component_offense, component_defense, projected_total) {
+  component_total <- component_offense + component_defense
+  residual <- projected_total - component_total
+  projected_offense <- clamp(component_offense + residual * 0.5, -8, 10)
+  projected_defense <- projected_total - projected_offense
+  projected_defense <- clamp(projected_defense, -8, 10)
+  projected_offense <- clamp(projected_total - projected_defense, -8, 10)
+  data.frame(offense = projected_offense, defense = projected_total - projected_offense)
+}
+
 build_panel <- function(base_dir) {
   skill <- read.csv(file.path(base_dir, "processed", "livedata", "impactrefresh", "skilloutput.csv"), stringsAsFactors = FALSE, check.names = FALSE)
   stats <- read.csv(file.path(base_dir, "raw", "databallr_stats.csv"), stringsAsFactors = FALSE, check.names = FALSE)
@@ -76,6 +155,15 @@ build_panel <- function(base_dir) {
     }
     skill[[skill_name]] <- suppressWarnings(as.numeric(skill[[skill_name]]))
   }
+
+  latest_skill_year <- max(suppressWarnings(as.integer(skill$year)), na.rm = TRUE)
+  latest_skill_keys <- unique(skill[skill$year == latest_skill_year, c("nba_id", "year"), drop = FALSE])
+  stats <- append_darko_dpm_fallback_rows(
+    stats = stats,
+    epm_rows = latest_skill_keys,
+    base_dir = base_dir,
+    strict = TRUE
+  )
 
   stats <- stats[, intersect(c("nba_id", "year", "Age", "draft_year", "Pos2", "GamesPlayed", "MPG", "Minutes"), names(stats)), drop = FALSE]
   names(stats)[names(stats) == "Age"] <- "age"
@@ -151,18 +239,12 @@ build_panel <- function(base_dir) {
   for (nm in intersect(fill_zero_cols, names(panel))) {
     panel[[nm]][is.na(panel[[nm]])] <- 0
   }
-  panel$mpg_sample_reliability <- clamp(panel$minutes_equiv / (panel$minutes_equiv + 750), 0, 1)
-  panel$role_prior_mpg <- ifelse(
-    panel$has_prev == 1 & is.finite(panel$avg3_mpg),
-    panel$avg3_mpg,
-    clamp(14 + 2 * panel$total, 8, 24)
-  )
-  panel$adjusted_mpg <- panel$mpg_sample_reliability * panel$mpg +
-    (1 - panel$mpg_sample_reliability) * panel$role_prior_mpg
+  panel <- add_role_mpg_features(panel)
   panel
 }
 
 base_dir <- resolve_base_dir()
+source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = TRUE)
 model_path <- file.path(base_dir, "processed", "modelresults", "career_projection_models.rds")
 if (!file.exists(model_path)) {
   stop("Missing trained career projection model artifact: ", model_path)
@@ -172,8 +254,15 @@ artifact <- readRDS(model_path)
 models <- artifact$models
 model_targets <- artifact$model_targets
 has_minutes_model <- "target_minutes" %in% names(models)
-usage_target <- if (has_minutes_model) "target_minutes" else "target_mpg"
-needed_targets <- c("target_games", usage_target, "target_delta_offense", "target_delta_defense", paste0("target_", skill_names))
+has_role_mpg_model <- "target_role_mpg" %in% names(models)
+usage_target <- if (has_role_mpg_model) "target_role_mpg" else if (has_minutes_model) "target_minutes" else "target_mpg"
+has_offense_level_model <- "target_offense" %in% names(models)
+has_component_level_models <- all(c("target_offense", "target_defense") %in% names(models))
+component_targets <- if (has_component_level_models) c("target_offense", "target_defense") else if (has_offense_level_model) "target_offense" else c("target_delta_offense", "target_delta_defense")
+has_total_delta_model <- "target_delta_total" %in% names(models)
+has_total_level_model <- "target_total" %in% names(models)
+total_targets <- if (has_total_delta_model) "target_delta_total" else if (has_total_level_model) "target_total" else character()
+needed_targets <- c("target_games", usage_target, total_targets, component_targets, paste0("target_", skill_names))
 missing_targets <- setdiff(needed_targets, names(models))
 if (length(missing_targets) > 0) {
   stop("Model artifact is missing targets: ", paste(missing_targets, collapse = ", "))
@@ -196,8 +285,27 @@ for (horizon in 1:5) {
     predict_model(models$target_games$model, state, models$target_games$features),
     fallback_games
   ), 0, 82)
-  if (has_minutes_model) {
+  games_floor <- games_history_floor(state, state$age + 1)
+  projected_games <- ifelse(is.finite(games_floor), pmax(projected_games, games_floor), projected_games)
+  projected_games <- clamp(projected_games, 0, 82)
+  if (has_role_mpg_model) {
+    state$target_games <- projected_games
+    state$target_minutes_at_adjusted_mpg <- projected_games * state$adjusted_mpg
+    state$target_minutes_at_avg3_mpg <- projected_games * state$avg3_mpg
+    state$target_minutes_at_reliable_role_mpg <- projected_games * state$reliable_role_mpg
+    projected_mpg <- clamp(coalesce_num(
+      predict_model(models$target_role_mpg$model, state, models$target_role_mpg$features),
+      fallback_mpg
+    ), 0, 38)
+    mpg_floor <- role_mpg_history_floor(state, state$age + 1)
+    projected_mpg <- ifelse(is.finite(mpg_floor), pmax(projected_mpg, mpg_floor), projected_mpg)
+    projected_minutes <- projected_games * projected_mpg
+  } else if (has_minutes_model) {
     fallback_minutes <- fallback_games * fallback_mpg
+    state$target_games <- projected_games
+    state$target_minutes_at_adjusted_mpg <- projected_games * state$adjusted_mpg
+    state$target_minutes_at_avg3_mpg <- projected_games * state$avg3_mpg
+    state$target_minutes_at_reliable_role_mpg <- projected_games * state$reliable_role_mpg
     projected_minutes <- clamp(coalesce_num(
       predict_model(models$target_minutes$model, state, models$target_minutes$features),
       fallback_minutes
@@ -211,15 +319,48 @@ for (horizon in 1:5) {
     ), 0, 38)
     projected_minutes <- projected_games * projected_mpg
   }
-  projected_offense <- clamp(state$offense + coalesce_num(
-    predict_model(models$target_delta_offense$model, state, models$target_delta_offense$features),
-    -0.06 * state$offense
-  ), -8, 10)
-  projected_defense <- clamp(state$defense + coalesce_num(
-    predict_model(models$target_delta_defense$model, state, models$target_delta_defense$features),
-    -0.06 * state$defense
-  ), -8, 10)
-  projected_total <- projected_offense + projected_defense
+  if (has_offense_level_model) {
+    projected_offense_component <- clamp(coalesce_num(
+      predict_model(models$target_offense$model, state, models$target_offense$features),
+      state$offense
+    ), -8, 10)
+    component_defense <- NULL
+    if (has_component_level_models) {
+      component_defense <- clamp(coalesce_num(
+      predict_model(models$target_defense$model, state, models$target_defense$features),
+      state$defense
+      ), -8, 10)
+    }
+  } else {
+    projected_offense_component <- clamp(state$offense + coalesce_num(
+      predict_model(models$target_delta_offense$model, state, models$target_delta_offense$features),
+      -0.06 * state$offense
+    ), -8, 10)
+    component_defense <- clamp(state$defense + coalesce_num(
+      predict_model(models$target_delta_defense$model, state, models$target_delta_defense$features),
+      -0.06 * state$defense
+    ), -8, 10)
+  }
+  component_total <- if (!is.null(component_defense)) projected_offense_component + component_defense else NA_real_
+  projected_total <- if (has_total_delta_model) {
+    clamp(state$total + coalesce_num(
+      predict_model(models$target_delta_total$model, state, models$target_delta_total$features),
+      0
+    ), -8, 12)
+  } else if (has_total_level_model) {
+    clamp(coalesce_num(
+      predict_model(models$target_total$model, state, models$target_total$features),
+      component_total
+    ), -8, 12)
+  } else {
+    component_total
+  }
+  projected_offense <- if (has_component_level_models) {
+    reconcile_projected_components(projected_offense_component, component_defense, projected_total)$offense
+  } else {
+    projected_offense_component
+  }
+  projected_defense <- projected_total - projected_offense
   projected_skills <- lapply(skill_names, function(skill_name) {
     target <- paste0("target_", skill_name)
     clamp(coalesce_num(
@@ -335,14 +476,7 @@ for (horizon in 1:5) {
   state$avg2_minutes_equiv <- rowMeans(cbind(state$minutes_equiv, state$lag1_minutes_equiv), na.rm = TRUE)
   state$avg3_minutes_equiv <- rowMeans(cbind(state$minutes_equiv, state$lag1_minutes_equiv, state$lag2_minutes_equiv), na.rm = TRUE)
   state$has_prev <- 1
-  state$mpg_sample_reliability <- clamp(state$minutes_equiv / (state$minutes_equiv + 750), 0, 1)
-  state$role_prior_mpg <- ifelse(
-    state$has_prev == 1 & is.finite(state$avg3_mpg),
-    state$avg3_mpg,
-    clamp(14 + 2 * state$total, 8, 24)
-  )
-  state$adjusted_mpg <- state$mpg_sample_reliability * state$mpg +
-    (1 - state$mpg_sample_reliability) * state$role_prior_mpg
+  state <- add_role_mpg_features(state)
 }
 
 projection_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")

@@ -30,6 +30,7 @@ dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 START_YEAR <- as.integer(Sys.getenv("DATABALLR_START_YEAR", unset = "2016"))
 END_YEAR   <- as.integer(Sys.getenv("DATABALLR_END_YEAR", unset = "2026"))
 MIN_MINUTES <- as.integer(Sys.getenv("DATABALLR_MIN_MINUTES", unset = "0"))
+DATABALLR_LIMIT <- as.integer(Sys.getenv("DATABALLR_LIMIT", unset = "2000"))
 
 years <- START_YEAR:END_YEAR
 
@@ -39,6 +40,7 @@ pull_one_year <- function(yr) {
     "?year=", yr,
     "&playoffs=0",
     "&min_minutes=", MIN_MINUTES,
+    "&limit=", DATABALLR_LIMIT,
     "&order_by=dpm",
     "&order_direction=desc"
   )
@@ -57,12 +59,31 @@ pull_one_year <- function(yr) {
     df <- df %>% mutate(year = yr)
   }
 
+  if (nrow(df) >= DATABALLR_LIMIT) {
+    warning(
+      "Databallr returned ", nrow(df), " rows for ", yr,
+      ", which reached DATABALLR_LIMIT=", DATABALLR_LIMIT,
+      ". Increase DATABALLR_LIMIT or add pagination."
+    )
+  }
+
   df
 }
 
 databallr_stats <- map_dfr(years, pull_one_year)
 
-write.csv(databallr_stats, output_path, row.names = FALSE)
+tmp_output_path <- tempfile(pattern = paste0(basename(output_path), "."), tmpdir = dirname(output_path))
+write.csv(databallr_stats, tmp_output_path, row.names = FALSE)
+if (file.exists(output_path)) {
+  unlink(output_path)
+}
+if (!file.rename(tmp_output_path, output_path)) {
+  copied <- file.copy(tmp_output_path, output_path, overwrite = TRUE)
+  unlink(tmp_output_path)
+  if (!copied) {
+    stop("Could not replace Databallr stats file: ", output_path)
+  }
+}
 
 message("Wrote Databallr stats to: ", output_path)
 

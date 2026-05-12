@@ -122,6 +122,7 @@ if (run_full_no_college_pipeline) {
 }
 
 run_step(base_dir, "Combine Draft Prediction Outputs", file.path("script", "draft", "combine_draft_prediction_outputs.R"))
+run_step(base_dir, "Build Draft Similarity Comps", file.path("script", "draft", "build_draft_similarity_comps.R"))
 
 message("")
 message("Unified draft prediction pipeline complete.")

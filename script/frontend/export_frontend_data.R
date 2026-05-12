@@ -25,6 +25,97 @@ resolve_base_dir <- function() {
   stop("Could not resolve project root.")
 }
 
+if (!exists("frontend_timing_run_id", mode = "function")) {
+  frontend_timing_run_id <- function() {
+    run_id <- Sys.getenv("FRONTEND_REFRESH_RUN_ID", "")
+    if (!nzchar(run_id)) {
+      run_id <- format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC")
+      Sys.setenv(FRONTEND_REFRESH_RUN_ID = run_id)
+    }
+    run_id
+  }
+}
+
+if (!exists("frontend_timing_path", mode = "function")) {
+  frontend_timing_path <- function(base_dir) {
+    file.path(base_dir, "processed", "logs", "frontend_refresh_timings.csv")
+  }
+}
+
+if (!exists("frontend_log_timing", mode = "function")) {
+  frontend_log_timing <- function(base_dir, phase, step, status, started_at, finished_at, detail = "") {
+    path <- frontend_timing_path(base_dir)
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    elapsed_seconds <- as.numeric(difftime(finished_at, started_at, units = "secs"))
+    row <- data.frame(
+      run_id = frontend_timing_run_id(),
+      phase = phase,
+      step = step,
+      status = status,
+      started_at = format(started_at, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      finished_at = format(finished_at, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      elapsed_seconds = round(elapsed_seconds, 3),
+      detail = detail,
+      stringsAsFactors = FALSE
+    )
+    write.table(
+      row,
+      file = path,
+      sep = ",",
+      row.names = FALSE,
+      col.names = !file.exists(path),
+      append = file.exists(path),
+      quote = TRUE
+    )
+    message(sprintf("Timing: [%s] %s - %s in %.3fs", status, step, phase, elapsed_seconds))
+  }
+}
+
+if (!exists("with_frontend_timing", mode = "function")) {
+  with_frontend_timing <- function(base_dir, phase, step, expr, detail = "") {
+    started_at <- Sys.time()
+    tryCatch(
+      {
+        result <- force(expr)
+        frontend_log_timing(base_dir, phase, step, "success", started_at, Sys.time(), detail)
+        invisible(result)
+      },
+      error = function(e) {
+        frontend_log_timing(base_dir, phase, step, "failed", started_at, Sys.time(), conditionMessage(e))
+        stop(e)
+      }
+    )
+  }
+}
+
+if (!exists("print_frontend_timing_summary", mode = "function")) {
+  print_frontend_timing_summary <- function(base_dir) {
+    path <- frontend_timing_path(base_dir)
+    run_id <- frontend_timing_run_id()
+    if (!file.exists(path)) {
+      return(invisible(NULL))
+    }
+    timings <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+    timings <- timings[timings$run_id == run_id, , drop = FALSE]
+    if (!nrow(timings)) {
+      return(invisible(NULL))
+    }
+
+    message("")
+    message("Frontend refresh timing summary")
+    message("Log: ", path)
+    for (i in seq_len(nrow(timings))) {
+      message(sprintf(
+        "- %s / %s: %s (%.3fs)",
+        timings$phase[i],
+        timings$step[i],
+        timings$status[i],
+        suppressWarnings(as.numeric(timings$elapsed_seconds[i]))
+      ))
+    }
+  }
+}
+
 read_csv_required <- function(path, required = character()) {
   if (!file.exists(path)) {
     stop("Missing required input: ", path)
@@ -182,9 +273,22 @@ json_value <- function(x) {
   paste0("\"", json_escape(x), "\"")
 }
 
-write_json_df <- function(df, path) {
-  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+prepare_json_df <- function(df) {
   names(df) <- make.names(names(df), unique = TRUE)
+  for (nm in names(df)) {
+    if (is.numeric(df[[nm]]) || is.integer(df[[nm]])) {
+      bad <- !is.finite(df[[nm]])
+      if (any(bad, na.rm = TRUE)) {
+        df[[nm]][bad] <- NA
+      }
+    }
+  }
+  df
+}
+
+write_json_df_fallback <- function(df, path) {
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  df <- prepare_json_df(df)
   rows <- character(nrow(df))
   for (i in seq_len(nrow(df))) {
     fields <- vapply(names(df), function(nm) {
@@ -195,12 +299,12 @@ write_json_df <- function(df, path) {
   writeLines(c("[", paste(rows, collapse = ",\n"), "]"), path, useBytes = TRUE)
 }
 
-write_json_object <- function(items, path) {
+write_json_object_fallback <- function(items, path) {
   fields <- vapply(names(items), function(nm) {
     value <- items[[nm]]
     if (is.data.frame(value)) {
       tmp <- tempfile(fileext = ".json")
-      write_json_df(value, tmp)
+      write_json_df_fallback(value, tmp)
       raw <- paste(readLines(tmp, warn = FALSE), collapse = "\n")
       unlink(tmp)
       paste0("\"", json_escape(nm), "\":", raw)
@@ -209,6 +313,73 @@ write_json_object <- function(items, path) {
     }
   }, character(1))
   writeLines(c("{", paste(fields, collapse = ",\n"), "}"), path, useBytes = TRUE)
+}
+
+replace_file <- function(tmp, path) {
+  if (file.exists(path)) {
+    unlink(path)
+  }
+  ok <- file.rename(tmp, path)
+  if (!ok) {
+    copied <- file.copy(tmp, path, overwrite = TRUE)
+    if (!copied) {
+      stop("Could not replace JSON output: ", path)
+    }
+    unlink(tmp)
+  }
+  invisible(NULL)
+}
+
+jsonlite_available <- function() {
+  requireNamespace("jsonlite", quietly = TRUE)
+}
+
+write_json_df <- function(df, path) {
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  df <- prepare_json_df(df)
+  tmp <- tempfile(pattern = paste0(basename(path), "."), tmpdir = dirname(path))
+  on.exit(unlink(tmp), add = TRUE)
+  if (jsonlite_available()) {
+    jsonlite::write_json(
+      df,
+      tmp,
+      dataframe = "rows",
+      na = "null",
+      auto_unbox = TRUE,
+      digits = 12
+    )
+    replace_file(tmp, path)
+    return(invisible(NULL))
+  }
+  write_json_df_fallback(df, tmp)
+  replace_file(tmp, path)
+}
+
+write_json_object <- function(items, path) {
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  items <- lapply(items, function(value) {
+    if (is.data.frame(value)) {
+      prepare_json_df(value)
+    } else {
+      value
+    }
+  })
+  tmp <- tempfile(pattern = paste0(basename(path), "."), tmpdir = dirname(path))
+  on.exit(unlink(tmp), add = TRUE)
+  if (jsonlite_available()) {
+    jsonlite::write_json(
+      items,
+      tmp,
+      dataframe = "rows",
+      na = "null",
+      auto_unbox = TRUE,
+      digits = 12
+    )
+    replace_file(tmp, path)
+    return(invisible(NULL))
+  }
+  write_json_object_fallback(items, tmp)
+  replace_file(tmp, path)
 }
 
 team_conference <- function(team) {
@@ -894,6 +1065,197 @@ calc_fa_market_values <- function(df, caps, horizon = 1, target_roster_spots = 4
   out
 }
 
+scale_from_value_contract <- function(value, cap, minutes, contract) {
+  value <- suppressWarnings(as.numeric(value))
+  cap <- suppressWarnings(as.numeric(cap))
+  minutes <- suppressWarnings(as.numeric(minutes))
+  contract <- suppressWarnings(as.numeric(contract))
+  minutes_capacity <- pmin(ifelse(is.finite(minutes) & minutes > 0, 48 * 82 * 5 / minutes, 15), 15)
+  contract_capacity <- ifelse(is.finite(contract) & contract > 0 & is.finite(cap) & cap > 0, pmin(cap / contract, 15), 15)
+  round(pmax(0, pmin(minutes_capacity, contract_capacity) * value / cap), 3)
+}
+
+fit_value_contract_scale_model <- function(rows, cap_assumptions) {
+  empty_model <- list(x = c(0.01, 0.04, 0.08, 0.14, 0.22, 0.32, 0.48), scale = c(0.25, 0.42, 0.65, 0.85, 0.95, 1.10, 1.35))
+  needed <- c("year", "value", "contract")
+  if (!all(needed %in% names(rows)) || nrow(rows) == 0) return(empty_model)
+
+  year <- suppressWarnings(as.numeric(rows$year))
+  cap <- cap_for_year(cap_assumptions, year, "scale_cap")
+  value <- suppressWarnings(as.numeric(rows$value))
+  contract <- suppressWarnings(as.numeric(rows$contract))
+  status <- if ("contract_status" %in% names(rows)) as.character(rows$contract_status) else rep(NA_character_, nrow(rows))
+  availability <- if ("availability_status" %in% names(rows)) as.character(rows$availability_status) else rep(NA_character_, nrow(rows))
+  open_market_status <- trimws(status) %in% c("UFA", "RFA", "Rookie FA")
+
+  observed <- data.frame(
+    value_pct = value / cap,
+    value_contract_scale = value / contract,
+    stringsAsFactors = FALSE
+  )
+  keep <- is.finite(observed$value_pct) &
+    is.finite(observed$value_contract_scale) &
+    observed$value_pct > 0 &
+    observed$value_contract_scale > 0 &
+    is.finite(contract) &
+    contract > 0 &
+    !open_market_status &
+    availability != "DNQ"
+  observed <- observed[keep, , drop = FALSE]
+  if (nrow(observed) < 100) return(empty_model)
+
+  observed$value_pct <- clamp(observed$value_pct, 0.001, 0.65)
+  observed$value_contract_scale <- clamp(observed$value_contract_scale, 0.10, 3.00)
+  breaks <- c(0, 0.015, 0.035, 0.065, 0.105, 0.160, 0.235, 0.330, 0.470, Inf)
+  bucket <- cut(observed$value_pct, breaks = breaks, include.lowest = TRUE, right = FALSE)
+  bucket_levels <- levels(bucket)
+  anchors <- do.call(rbind, lapply(bucket_levels, function(level) {
+    idx <- which(bucket == level)
+    if (length(idx) < 20) return(NULL)
+    data.frame(
+      x = stats::median(observed$value_pct[idx], na.rm = TRUE),
+      scale = as.numeric(stats::quantile(observed$value_contract_scale[idx], probs = 0.25, na.rm = TRUE, names = FALSE)),
+      n = length(idx),
+      stringsAsFactors = FALSE
+    )
+  }))
+  if (is.null(anchors) || nrow(anchors) < 4) return(empty_model)
+
+  anchors <- rbind(
+    data.frame(x = 0.000, scale = 0.18, n = 1000),
+    anchors,
+    data.frame(x = 0.600, scale = max(1.30, max(anchors$scale, na.rm = TRUE)), n = 1000)
+  )
+  anchors <- anchors[order(anchors$x), , drop = FALSE]
+  smoothed <- tryCatch(stats::lowess(anchors$x, anchors$scale, f = 0.55, iter = 1), error = function(e) NULL)
+  if (is.null(smoothed) || length(smoothed$x) < 4) {
+    out <- anchors[, c("x", "scale"), drop = FALSE]
+  } else {
+    out <- data.frame(x = smoothed$x, scale = smoothed$y)
+  }
+  out <- out[is.finite(out$x) & is.finite(out$scale), , drop = FALSE]
+  out <- out[order(out$x), , drop = FALSE]
+  out$scale <- cummax(clamp(out$scale, 0.15, 1.60))
+  list(x = out$x, scale = out$scale)
+}
+
+predict_value_contract_scale <- function(value, cap, contract_scale_model) {
+  value <- suppressWarnings(as.numeric(value))
+  cap <- suppressWarnings(as.numeric(cap))
+  value_pct <- value / cap
+  fallback <- rep(0.8, length(value_pct))
+  if (is.null(contract_scale_model) || is.null(contract_scale_model$x) || is.null(contract_scale_model$scale)) {
+    return(fallback)
+  }
+  predicted <- approx(
+    x = contract_scale_model$x,
+    y = contract_scale_model$scale,
+    xout = value_pct,
+    rule = 2,
+    ties = "ordered"
+  )$y
+  predicted[!is.finite(predicted)] <- fallback[!is.finite(predicted)]
+  clamp(predicted, 0.15, 1.60)
+}
+
+expected_projection_contract <- function(projected_value, cap, season_year, yos, cap_assumptions, contract_scale_model) {
+  projected_value <- suppressWarnings(as.numeric(projected_value))
+  cap <- suppressWarnings(as.numeric(cap))
+  season_year <- suppressWarnings(as.numeric(season_year))
+  yos <- suppressWarnings(as.numeric(yos))
+
+  floor_salary <- min_salary_for_yos(yos, season_year, cap_assumptions)
+  max_salary <- max_salary_for_yos(yos, season_year, cap_assumptions)
+  expected_scale <- predict_value_contract_scale(projected_value, cap, contract_scale_model)
+  curve_contract <- ifelse(is.finite(projected_value) & projected_value > 0, projected_value / expected_scale, NA_real_)
+  nonmax_ceiling <- pmax(floor_salary, max_salary * 0.98)
+
+  ifelse(
+    is.finite(projected_value) & projected_value > 0,
+    ifelse(
+      is.finite(max_salary) & projected_value >= max_salary,
+      max_salary,
+      pmax(floor_salary, pmin(curve_contract, nonmax_ceiling), na.rm = TRUE)
+    ),
+    floor_salary
+  )
+}
+
+impute_projection_contract <- function(
+  projected_contract,
+  projected_value,
+  cap,
+  season_year,
+  yos,
+  cap_assumptions,
+  contract_scale_model
+) {
+  projected_contract <- suppressWarnings(as.numeric(projected_contract))
+  projected_value <- suppressWarnings(as.numeric(projected_value))
+  expected_contract <- expected_projection_contract(projected_value, cap, season_year, yos, cap_assumptions, contract_scale_model)
+  ifelse(
+    is.finite(projected_contract) & projected_contract > 0,
+    projected_contract,
+    expected_contract
+  )
+}
+
+projection_contract_source <- function(projected_contract, projected_value, season_year, yos, cap_assumptions) {
+  projected_contract <- suppressWarnings(as.numeric(projected_contract))
+  projected_value <- suppressWarnings(as.numeric(projected_value))
+  max_salary <- max_salary_for_yos(yos, season_year, cap_assumptions)
+  ifelse(
+    is.finite(projected_contract) & projected_contract > 0,
+    "contract",
+    ifelse(
+      is.finite(projected_value) & projected_value <= 0,
+      "minimum_floor",
+      ifelse(
+      is.finite(projected_value) & is.finite(max_salary) & projected_value >= max_salary,
+      "value_contract_max",
+      ifelse(is.finite(projected_value), "value_contract_curve", NA_character_)
+      )
+    )
+  )
+}
+
+recalculate_projection_scalability <- function(rows, cap_assumptions, horizons = 1:5, contract_scale_model = NULL) {
+  if (is.null(contract_scale_model)) {
+    contract_scale_model <- fit_value_contract_scale_model(rows, cap_assumptions)
+  }
+  for (horizon in horizons) {
+    value_col <- paste0("projection_value_y", horizon)
+    minutes_col <- paste0("projection_minutes_y", horizon)
+    contract_col <- paste0("projection_contract_y", horizon)
+    cap_col <- paste0("projection_cap_y", horizon)
+    scale_col <- paste0("projection_scalability_y", horizon)
+    effective_col <- paste0("projection_effective_contract_y", horizon)
+    source_col <- paste0("projection_contract_source_y", horizon)
+    if (!(value_col %in% names(rows)) || !(minutes_col %in% names(rows))) next
+
+    value <- suppressWarnings(as.numeric(rows[[value_col]]))
+    minutes <- suppressWarnings(as.numeric(rows[[minutes_col]]))
+    projected_contract <- if (contract_col %in% names(rows)) suppressWarnings(as.numeric(rows[[contract_col]])) else rep(NA_real_, nrow(rows))
+    cap <- if (cap_col %in% names(rows)) suppressWarnings(as.numeric(rows[[cap_col]])) else cap_for_year(cap_assumptions, rows$year + horizon, "scale_cap")
+    season_year <- suppressWarnings(as.numeric(rows$year)) + horizon
+    yos <- if ("yoe" %in% names(rows)) suppressWarnings(as.numeric(rows$yoe)) + horizon - 1 else rep(NA_real_, nrow(rows))
+    effective_contract <- impute_projection_contract(
+      projected_contract = projected_contract,
+      projected_value = value,
+      cap = cap,
+      season_year = season_year,
+      yos = yos,
+      cap_assumptions = cap_assumptions,
+      contract_scale_model = contract_scale_model
+    )
+
+    rows[[effective_col]] <- round(effective_contract, 0)
+    rows[[source_col]] <- projection_contract_source(projected_contract, value, season_year, yos, cap_assumptions)
+    rows[[scale_col]] <- scale_from_value_contract(value, cap, minutes, effective_contract)
+  }
+  rows
+}
+
 blank_like <- function(template, n) {
   out <- template[rep(1, n), , drop = FALSE]
   for (nm in names(out)) {
@@ -911,9 +1273,10 @@ blank_like <- function(template, n) {
 shift_future_columns <- function(rows, cap_assumptions) {
   projection_groups <- c(
     "projection_y", "projection_games_y", "projection_mpg_y", "projection_minutes_y",
+    "projection_offense_y", "projection_defense_y",
     "projection_timin_y", "projection_value_y", "projection_fa_value_y",
-    "projection_scalability_y", "projection_contract_y", "projection_cap_y",
-    "projection_contract_status_y"
+    "projection_scalability_y", "projection_contract_y", "projection_effective_contract_y",
+    "projection_cap_y", "projection_contract_status_y", "projection_contract_source_y"
   )
   for (prefix in projection_groups) {
     old <- lapply(1:5, function(horizon) {
@@ -1072,30 +1435,53 @@ estimate_team_lineup_rows <- function(df) {
   if (!(".lineup_row_id" %in% names(df))) df$.lineup_row_id <- seq_len(nrow(df))
   plan <- lineup_role_plan()
   df$.lineup_role_score <- lineup_role_score(df)
-  selected <- integer()
-  out <- list()
+  flags <- lineup_position_flags(df$position)
+  minutes <- suppressWarnings(as.numeric(df$Minutes))
+  total <- suppressWarnings(as.numeric(df$total))
+  player_name <- as.character(df$player_name)
+  selected <- rep(FALSE, nrow(df))
+  out <- vector("list", nrow(plan))
+  out_count <- 0L
 
   for (i in seq_len(nrow(plan))) {
-    idx <- lineup_candidate_indices(df, plan$position_group[[i]], selected)
+    available <- which(!selected)
+    if (!length(available)) next
+    position_group <- plan$position_group[[i]]
+    if (identical(position_group, "Bench")) {
+      idx <- available
+    } else {
+      strict <- switch(position_group,
+        Guard = flags$has_guard,
+        Forward = flags$has_forward,
+        Center = flags$has_center,
+        rep(TRUE, nrow(df))
+      )
+      idx <- available[strict[available]]
+      if (!length(idx) && identical(position_group, "Center")) {
+        idx <- available[flags$has_pf[available]]
+      }
+      if (!length(idx)) idx <- available
+    }
     if (!length(idx)) next
     idx <- idx[order(
       -df$.lineup_role_score[idx],
-      -suppressWarnings(as.numeric(df$Minutes[idx])),
-      -suppressWarnings(as.numeric(df$total[idx])),
-      df$player_name[idx],
+      -minutes[idx],
+      -total[idx],
+      player_name[idx],
       na.last = TRUE
     )]
     picked <- idx[[1]]
-    selected <- c(selected, df$.lineup_row_id[[picked]])
+    selected[picked] <- TRUE
     row <- cbind(plan[i, , drop = FALSE], df[picked, , drop = FALSE])
-    row$lineup_rank <- length(out) + 1L
+    out_count <- out_count + 1L
+    row$lineup_rank <- out_count
     row$is_starter <- row$role_type == "Starter"
     row$role_score <- round(df$.lineup_role_score[[picked]], 2)
-    out[[length(out) + 1L]] <- row
+    out[[out_count]] <- row
   }
 
-  if (!length(out)) return(data.frame())
-  do.call(rbind, out)
+  if (!out_count) return(data.frame())
+  do.call(rbind, out[seq_len(out_count)])
 }
 
 apply_lineup_minute_adjustment <- function(rows) {
@@ -1162,10 +1548,62 @@ apply_lineup_minute_adjustment <- function(rows) {
   rows
 }
 
-build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_year) {
+skill_rollup_groups <- function() {
+  list(
+    off = c("FTD", "OREB", "PASS", "RIM", "SHOOT"),
+    def = c("DPM", "DREB", "RIMPRO", "SWITCH")
+  )
+}
+
+calibrated_skill_rollup <- function(rows, reference, skill_cols, target_col) {
+  row_cols <- intersect(skill_cols, names(rows))
+  ref_cols <- intersect(skill_cols, names(reference))
+  if (!length(row_cols) || !length(ref_cols) || !(target_col %in% names(reference))) {
+    return(rep(NA_real_, nrow(rows)))
+  }
+
+  row_sum <- rowSums(rows[, row_cols, drop = FALSE], na.rm = TRUE)
+  ref_sum <- rowSums(reference[, ref_cols, drop = FALSE], na.rm = TRUE)
+  ref_target <- suppressWarnings(as.numeric(reference[[target_col]]))
+  keep <- is.finite(ref_sum) & is.finite(ref_target)
+  if (sum(keep) < 20) {
+    return(row_sum)
+  }
+
+  ref_sum_sd <- stats::sd(ref_sum[keep], na.rm = TRUE)
+  ref_target_sd <- stats::sd(ref_target[keep], na.rm = TRUE)
+  if (!is.finite(ref_sum_sd) || ref_sum_sd <= 0 || !is.finite(ref_target_sd) || ref_target_sd <= 0) {
+    return(row_sum)
+  }
+
+  out <- mean(ref_target[keep], na.rm = TRUE) +
+    (row_sum - mean(ref_sum[keep], na.rm = TRUE)) * ref_target_sd / ref_sum_sd
+  clamp(out, -8, 10)
+}
+
+recalculate_projected_skill_rollups <- function(rows, reference) {
+  if (!nrow(rows)) return(rows)
+  groups <- skill_rollup_groups()
+  off <- calibrated_skill_rollup(rows, reference, groups$off, "skill_model_off")
+  def <- calibrated_skill_rollup(rows, reference, groups$def, "skill_model_def")
+
+  rows$skill_model_off <- coalesce_numeric(off, rows$skill_model_off)
+  rows$skill_model_def <- coalesce_numeric(def, rows$skill_model_def)
+  rows$skill_off_total <- rows$skill_model_off
+  rows$skill_def_total <- rows$skill_model_def
+  if ("OFF" %in% names(rows)) rows$OFF <- rows$skill_model_off
+  if ("DEF" %in% names(rows)) rows$DEF <- rows$skill_model_def
+  if ("TOTAL" %in% names(rows)) rows$TOTAL <- rows$skill_model_off + rows$skill_model_def
+  rows
+}
+
+build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_year, contract_scale_model = NULL) {
   target_year <- contract_year + 1L
   latest <- x[x$year == contract_year, , drop = FALSE]
   if (!nrow(latest)) return(latest)
+  if (is.null(contract_scale_model)) {
+    contract_scale_model <- fit_value_contract_scale_model(x, cap_assumptions)
+  }
 
   impact_reference <- x[
     x$year == contract_year &
@@ -1263,6 +1701,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rookies <- build_rookie_2027_rows(latest, base_dir, cap_assumptions, impact_reference, replacement_reference, target_year)
   rows <- rbind(vets, rookies[, names(vets), drop = FALSE])
   if (!nrow(rows)) return(rows)
+  rows <- recalculate_projected_skill_rollups(rows, x)
 
   rows$replacement_total <- draft_replacement_total(rows$position, replacement_reference)
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
@@ -1335,6 +1774,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   for (horizon in 1:5) {
     rows[[paste0("projection_fa_value_y", horizon)]] <- calc_fa_market_values(rows, cap_assumptions, horizon = horizon)$fa_value
   }
+  rows <- recalculate_projection_scalability(rows, cap_assumptions, contract_scale_model = contract_scale_model)
   rows$contract_status <- contract_status_label(rows$contract_status, rows$contract)
 
   rows
@@ -1651,6 +2091,14 @@ build_impact_players <- function(base_dir) {
   )
   if (file.exists(stats_path)) {
     stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
+    latest_impact_year <- max(suppressWarnings(as.integer(impact$year)), na.rm = TRUE)
+    latest_impact_keys <- unique(impact[impact$year == latest_impact_year, c("nba_id", "year"), drop = FALSE])
+    stats <- append_darko_dpm_fallback_rows(
+      stats = stats,
+      epm_rows = latest_impact_keys,
+      base_dir = base_dir,
+      strict = TRUE
+    )
     if (all(c("nba_id", "year", "Pos2") %in% names(stats))) {
       keep <- intersect(c("nba_id", "year", "Pos2", "Age", "draft_year", "overall_pick", "GamesPlayed"), names(stats))
       stat_meta <- stats[, keep, drop = FALSE]
@@ -1733,6 +2181,7 @@ build_impact_players <- function(base_dir) {
   x$overall_pick <- suppressWarnings(as.numeric(x$overall_pick))
   x$yoe <- ifelse(!is.na(x$draft_year), pmax(0, x$year - x$draft_year), NA_real_)
   x$games <- suppressWarnings(as.numeric(x$games))
+  x$Minutes <- suppressWarnings(as.numeric(x$Minutes))
   x$availability_status <- "qualified"
   x$availability_reason <- ""
   x$skill_source <- "current"
@@ -1741,6 +2190,21 @@ build_impact_players <- function(base_dir) {
   x$total <- ifelse(!is.na(x$FINAL_TOTAL), x$FINAL_TOTAL, ifelse(!is.na(x$TOTAL), x$TOTAL, x$off_dep + x$def_dep))
   x$offense <- ifelse(!is.na(x$FINAL_OFF), x$FINAL_OFF, ifelse(!is.na(x$OFF), x$OFF, x$off_dep))
   x$defense <- ifelse(!is.na(x$FINAL_DEF), x$FINAL_DEF, ifelse(!is.na(x$DEF), x$DEF, x$def_dep))
+  hide_zero_minute_low_impact <- x$year == contract_year &
+    is.finite(x$Minutes) &
+    x$Minutes <= 0 &
+    is.finite(x$total) &
+    x$total < -2.5
+  if (any(hide_zero_minute_low_impact, na.rm = TRUE)) {
+    x <- x[!hide_zero_minute_low_impact, , drop = FALSE]
+  }
+  dnq_min_minutes <- suppressWarnings(as.numeric(Sys.getenv("IMPACT_DNQ_MIN_MINUTES", unset = "500")))
+  if (!is.finite(dnq_min_minutes) || dnq_min_minutes < 0) dnq_min_minutes <- 500
+  current_low_minutes <- x$year == contract_year &
+    is.finite(x$Minutes) &
+    x$Minutes < dnq_min_minutes
+  x$availability_status[current_low_minutes] <- "DNQ"
+  x$availability_reason[current_low_minutes] <- paste0("Below ", round(dnq_min_minutes, 0), "-minute score threshold")
   x$skill_model_off <- x$OFF
   x$skill_model_def <- x$DEF
   x$skill_off_total <- x$skill_model_off
@@ -1784,7 +2248,7 @@ build_impact_players <- function(base_dir) {
   x$score_delta[current_dnq] <- NA_real_
   x$score_label <- ifelse(current_dnq, "DNQ", format(round(x$score, 1), trim = TRUE, nsmall = 1))
   x$tier <- unlist(ave(x$score, x$year, FUN = tier_from_score))
-  x$tier[current_dnq] <- "Out"
+  x$tier[current_dnq] <- "DNQ"
   x$value <- ave(seq_len(nrow(x)), x$year, FUN = function(idx) {
     league_timin <- sum(x$timin[idx], na.rm = TRUE)
     cap_proxy <- cap_for_year(cap_assumptions, x$year[idx][1], "scale_cap")
@@ -1934,6 +2398,8 @@ build_impact_players <- function(base_dir) {
     projection_fa <- calc_fa_market_values(x, cap_assumptions, horizon = horizon)
     x[[paste0("projection_fa_value_y", horizon)]] <- projection_fa$fa_value
   }
+  contract_scale_model <- fit_value_contract_scale_model(x, cap_assumptions)
+  x <- recalculate_projection_scalability(x, cap_assumptions, contract_scale_model = contract_scale_model)
 
   x$lineup_original_minutes <- x$Minutes
   x$lineup_adjusted_minutes <- x$Minutes
@@ -1941,12 +2407,12 @@ build_impact_players <- function(base_dir) {
   x$lineup_role_order <- NA_integer_
   x$lineup_role_band_minutes <- NA_real_
 
-  projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year)
+  projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year, contract_scale_model)
   if (nrow(projected_2027) > 0) {
     x <- rbind(x, projected_2027[, names(x), drop = FALSE])
   }
 
-  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Replacement is a trailing 3-year position-count cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves."
+  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Replacement is a trailing 3-year position-count cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
   cols <- c(
     "nba_id", "player_name", "year", "team", "incumbent_team", "market_team", "team_projection_base",
@@ -1971,6 +2437,8 @@ build_impact_players <- function(base_dir) {
     "projection_fa_value_y1", "projection_fa_value_y2", "projection_fa_value_y3", "projection_fa_value_y4", "projection_fa_value_y5",
     "projection_scalability_y1", "projection_scalability_y2", "projection_scalability_y3", "projection_scalability_y4", "projection_scalability_y5",
     "projection_contract_y1", "projection_contract_y2", "projection_contract_y3", "projection_contract_y4", "projection_contract_y5",
+    "projection_effective_contract_y1", "projection_effective_contract_y2", "projection_effective_contract_y3", "projection_effective_contract_y4", "projection_effective_contract_y5",
+    "projection_contract_source_y1", "projection_contract_source_y2", "projection_contract_source_y3", "projection_contract_source_y4", "projection_contract_source_y5",
     "projection_cap_y1", "projection_cap_y2", "projection_cap_y3", "projection_cap_y4", "projection_cap_y5",
     "lineup_original_minutes", "lineup_adjusted_minutes", "lineup_role", "lineup_role_order", "lineup_role_band_minutes",
     "source_note"
@@ -2167,6 +2635,12 @@ build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label
   if (!nrow(x)) return(empty())
   x$team <- normalize_team(x$team)
   x$.lineup_row_id <- seq_len(nrow(x))
+  lineup_cols <- c(
+    "year", "team", "nba_id", "player_name", "position",
+    "lineup_original_minutes", "lineup_adjusted_minutes", "Minutes", "games", "p_mpg",
+    "offense", "defense", "total", "score", "tier", "contract_status", ".lineup_row_id"
+  )
+  x <- x[, intersect(lineup_cols, names(x)), drop = FALSE]
   grouped <- split(x, paste(x$year, x$team, sep = "||"))
   out <- do.call(rbind, lapply(grouped, estimate_team_lineup_rows))
   if (is.null(out) || !nrow(out)) return(empty())
@@ -2657,12 +3131,27 @@ load_draft_scv_reference <- function(base_dir) {
 }
 
 build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement_reference = NULL) {
-  adjusted_skill_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_adjusted.csv")
-  base_skill_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_output.csv")
+  draft_dir <- file.path(base_dir, "processed", "draft")
+  adjusted_skill_path <- Sys.getenv(
+    "DRAFT_FRONTEND_ADJUSTED_SKILL_PATH",
+    file.path(draft_dir, "draft_skill_predictions_adjusted.csv")
+  )
+  base_skill_path <- Sys.getenv(
+    "DRAFT_FRONTEND_BASE_SKILL_PATH",
+    file.path(draft_dir, "draft_skill_predictions_output.csv")
+  )
   skill_path <- if (file.exists(adjusted_skill_path)) adjusted_skill_path else base_skill_path
-  unified_path <- file.path(base_dir, "processed", "draft", "draft_prediction_unified.csv")
+  unified_path <- Sys.getenv(
+    "DRAFT_FRONTEND_UNIFIED_SOURCE_PATH",
+    file.path(draft_dir, "draft_prediction_unified.csv")
+  )
+  similarity_path <- file.path(draft_dir, "draft_similarity_comps.csv")
   skill <- read_csv_required(skill_path, c("player", "draft_year", "prediction_pool", "OFF_pred", "DEF_pred", "TOTAL_pred"))
   skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
+  similarity_cols <- c(
+    "similarity_comp_player", "similarity_comp_year", "similarity_score", "similarity_distance",
+    "similarity_comp_total", "similarity_comp_off", "similarity_comp_def", "similarity_comp_minutes"
+  )
   skill_cols <- c(
     "player", "draft_year", "prediction_pool",
     paste0(skill_names, "_pred"), paste0("FINAL_", skill_names, "_pred"),
@@ -2677,6 +3166,17 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
   unified <- read_csv_required(unified_path, c("player", "draft_year", "scv_draft", "draft_age", "height_wo_shoes_in", "wingspan_in", "weight_lbs", "pos_code", "pre_draft_team", "source_team"))
   unified <- unified[!duplicated(paste(unified$player, unified$draft_year)), ]
   x <- merge(skill, unified, by = c("player", "draft_year"), all.x = TRUE)
+  similarity <- read_csv_optional(similarity_path, c("player", "draft_year", similarity_cols))
+  if (nrow(similarity)) {
+    similarity <- similarity[, intersect(c("player", "draft_year", similarity_cols), names(similarity)), drop = FALSE]
+    similarity <- similarity[!duplicated(paste(similarity$player, similarity$draft_year)), , drop = FALSE]
+    x <- merge(x, similarity, by = c("player", "draft_year"), all.x = TRUE)
+  }
+  for (col_name in similarity_cols) {
+    if (!col_name %in% names(x)) {
+      x[[col_name]] <- NA
+    }
+  }
   if (!"prediction_pool" %in% names(x)) {
     prediction_pool_x <- if ("prediction_pool.x" %in% names(x)) x[["prediction_pool.x"]] else NA_character_
     prediction_pool_y <- if ("prediction_pool.y" %in% names(x)) x[["prediction_pool.y"]] else NA_character_
@@ -2773,6 +3273,7 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
     "replacement_total", "timin", "college", "pre_draft_team",
     paste0(skill_names, "_pred"),
     "OFF_pred", "DEF_pred", "TOTAL_pred",
+    similarity_cols,
     "actual_pick", "drafted_team", "pick_proxy", "pick_proxy_available", "age_feature", "pick_feature",
     "adjustment_age_component", "adjustment_pick_component", "adjustment_total_component",
     "adjustment_off_component", "adjustment_def_component", paste0("adjustment_", skill_names, "_component"),
@@ -2823,15 +3324,16 @@ build_draft_tracker <- function(base_dir) {
 
 base_dir <- resolve_base_dir()
 source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
+source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = FALSE)
 out_dir <- file.path(base_dir, "frontend", "public", "data")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
-players <- build_impact_players(base_dir)
-teams <- build_team_projections(players)
-team_lineups <- build_team_lineups(players)
-schedules <- build_team_schedules(teams)
-teams <- apply_schedule_projections(teams, schedules)
-picks <- build_pick_assets(base_dir, players)
+players <- with_frontend_timing(base_dir, "frontend_export", "build_impact_players", build_impact_players(base_dir))
+teams <- with_frontend_timing(base_dir, "frontend_export", "build_team_projections", build_team_projections(players))
+team_lineups <- with_frontend_timing(base_dir, "frontend_export", "build_team_lineups", build_team_lineups(players))
+schedules <- with_frontend_timing(base_dir, "frontend_export", "build_team_schedules", build_team_schedules(teams))
+teams <- with_frontend_timing(base_dir, "frontend_export", "apply_schedule_projections", apply_schedule_projections(teams, schedules))
+picks <- with_frontend_timing(base_dir, "frontend_export", "build_pick_assets", build_pick_assets(base_dir, players))
 latest_impact_year <- max(suppressWarnings(as.integer(players$skill_source_year)), na.rm = TRUE)
 if (!is.finite(latest_impact_year)) {
   latest_impact_year <- max(players$year, na.rm = TRUE)
@@ -2846,22 +3348,22 @@ impact_reference <- players[
   c("total", "timin"),
   drop = FALSE
 ]
-draft <- build_draft_prospects(base_dir, impact_reference, replacement_reference)
-tracker <- build_draft_tracker(base_dir)
-model_summary <- read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_summary.csv"))
-model_details <- read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_feature_details.csv"))
+draft <- with_frontend_timing(base_dir, "frontend_export", "build_draft_prospects", build_draft_prospects(base_dir, impact_reference, replacement_reference))
+tracker <- with_frontend_timing(base_dir, "frontend_export", "build_draft_tracker", build_draft_tracker(base_dir))
+model_summary <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_summary", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_summary.csv")))
+model_details <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_feature_details", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_feature_details.csv")))
 
-write_json_df(players, file.path(out_dir, "impact_players.json"))
-write_json_df(teams, file.path(out_dir, "team_projections.json"))
-write_json_df(team_lineups, file.path(out_dir, "team_lineups.json"))
-write_json_df(schedules, file.path(out_dir, "team_schedules.json"))
-write_json_df(picks, file.path(out_dir, "pick_assets.json"))
-write_json_df(draft, file.path(out_dir, "draft_prospects.json"))
-write_json_df(tracker$board_summary, file.path(out_dir, "draft_tracker_board_summary.json"))
-write_json_df(tracker$board_scores, file.path(out_dir, "draft_tracker_board_scores.json"))
-write_json_df(tracker$prospect_scores, file.path(out_dir, "draft_tracker_prospect_scores.json"))
-write_json_df(model_summary, file.path(out_dir, "draft_model_summary.json"))
-write_json_df(model_details, file.path(out_dir, "draft_model_feature_details.json"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_impact_players_json", write_json_df(players, file.path(out_dir, "impact_players.json")), paste0(nrow(players), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_team_projections_json", write_json_df(teams, file.path(out_dir, "team_projections.json")), paste0(nrow(teams), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_team_lineups_json", write_json_df(team_lineups, file.path(out_dir, "team_lineups.json")), paste0(nrow(team_lineups), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_team_schedules_json", write_json_df(schedules, file.path(out_dir, "team_schedules.json")), paste0(nrow(schedules), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_pick_assets_json", write_json_df(picks, file.path(out_dir, "pick_assets.json")), paste0(nrow(picks), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_prospects_json", write_json_df(draft, file.path(out_dir, "draft_prospects.json")), paste0(nrow(draft), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_board_summary_json", write_json_df(tracker$board_summary, file.path(out_dir, "draft_tracker_board_summary.json")), paste0(nrow(tracker$board_summary), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_board_scores_json", write_json_df(tracker$board_scores, file.path(out_dir, "draft_tracker_board_scores.json")), paste0(nrow(tracker$board_scores), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_prospect_scores_json", write_json_df(tracker$prospect_scores, file.path(out_dir, "draft_tracker_prospect_scores.json")), paste0(nrow(tracker$prospect_scores), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_model_summary_json", write_json_df(model_summary, file.path(out_dir, "draft_model_summary.json")), paste0(nrow(model_summary), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_model_feature_details_json", write_json_df(model_details, file.path(out_dir, "draft_model_feature_details.json")), paste0(nrow(model_details), " rows"))
 
 manifest_rows <- data.frame(
   dataset = c(
@@ -2882,12 +3384,21 @@ manifest_rows <- data.frame(
   stringsAsFactors = FALSE
 )
 
-write_json_object(list(
-  generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-  source_root = base_dir,
-  note = "Generated from canonical processed/raw CSV outputs. Excel workbooks are not read at runtime.",
-  datasets = manifest_rows
-), file.path(out_dir, "manifest.json"))
+with_frontend_timing(
+  base_dir,
+  "frontend_export_write",
+  "write_manifest_json",
+  write_json_object(list(
+    generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    source_root = base_dir,
+    note = "Generated from canonical processed/raw CSV outputs. Excel workbooks are not read at runtime.",
+    datasets = manifest_rows
+  ), file.path(out_dir, "manifest.json")),
+  paste0(nrow(manifest_rows), " datasets")
+)
 
 message("Frontend data export complete: ", out_dir)
 message("Rows: players=", nrow(players), ", teams=", nrow(teams), ", draft=", nrow(draft))
+if (!identical(tolower(Sys.getenv("FRONTEND_REFRESH_SUPPRESS_EXPORT_SUMMARY", "false")), "true")) {
+  print_frontend_timing_summary(base_dir)
+}

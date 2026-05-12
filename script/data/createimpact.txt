@@ -23,6 +23,7 @@ resolve_base_dir <- function() {
 
 base_dir      <- resolve_base_dir()
 source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = TRUE)
 raw_dir       <- file.path(base_dir, "raw")
 epm_dir       <- file.path(raw_dir, "epm")
 databallr_fp  <- file.path(raw_dir, "databallr_stats.csv")
@@ -165,6 +166,14 @@ epm_raw <- purrr::map_dfr(epm_files, function(fp) {
 # Read databallr
 # =========================
 db_raw <- readr::read_csv(databallr_fp, show_col_types = FALSE)
+latest_epm_year <- max(epm_raw$year, na.rm = TRUE)
+latest_epm_rows <- epm_raw[epm_raw$year == latest_epm_year, c("nba_id", "year", "player_name_epm"), drop = FALSE]
+db_raw <- append_darko_dpm_fallback_rows(
+  stats = db_raw,
+  epm_rows = latest_epm_rows,
+  base_dir = base_dir,
+  strict = TRUE
+)
 
 nba_id_col_db  <- pick_col(db_raw, c("nba_id", "player_id", "PLAYER_ID"), "databallr nba_id")
 year_col_db    <- pick_col(db_raw, c("year", "YEAR"), "databallr year")
@@ -178,12 +187,13 @@ db <- db_raw %>%
     nba_id = clean_id(.data[[nba_id_col_db]]),
     year = as.integer(.data[[year_col_db]]),
     player_name_db = if (!is.na(name_col_db) && length(name_col_db) > 0) as.character(.data[[name_col_db]]) else NA_character_,
+    darko_dpm_fallback = if (".darko_dpm_fallback" %in% names(db_raw)) as.logical(.data[[".darko_dpm_fallback"]]) else FALSE,
     Minutes = as.numeric(.data[[minutes_col_db]]),
     o_dpm = as.numeric(.data[[o_dpm_col]]),
     d_dpm = as.numeric(.data[[d_dpm_col]])
   ) %>%
   filter(!year %in% EXCLUDE_YEARS) %>%
-  filter(Minutes >= MIN_MINUTES) %>%
+  filter(Minutes >= MIN_MINUTES | darko_dpm_fallback) %>%
   filter(!is.na(nba_id)) %>%
   distinct(nba_id, year, .keep_all = TRUE)
 

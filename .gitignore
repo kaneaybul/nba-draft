@@ -10,6 +10,7 @@ Thumbs.db
 # Experiment logs
 *.log
 *backup*.csv
+processed/logs/*.csv
 
 # Frontend generated files
 frontend/node_modules/

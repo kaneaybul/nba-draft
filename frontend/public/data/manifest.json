@@ -1,18 +1,1 @@
-{
-"generated_at":"2026-05-09T20:02:40Z",
-"source_root":"C:/Users/brend/Documents/projects/nba&draft",
-"note":"Generated from canonical processed/raw CSV outputs. Excel workbooks are not read at runtime.",
-"datasets":[
-{"dataset":"impact_players","rows":5932,"file":"impact_players.json"},
-{"dataset":"team_projections","rows":1080,"file":"team_projections.json"},
-{"dataset":"team_lineups","rows":10710,"file":"team_lineups.json"},
-{"dataset":"team_schedules","rows":14159,"file":"team_schedules.json"},
-{"dataset":"pick_assets","rows":60,"file":"pick_assets.json"},
-{"dataset":"draft_prospects","rows":491,"file":"draft_prospects.json"},
-{"dataset":"draft_tracker_board_summary","rows":7,"file":"draft_tracker_board_summary.json"},
-{"dataset":"draft_tracker_board_scores","rows":49,"file":"draft_tracker_board_scores.json"},
-{"dataset":"draft_tracker_prospect_scores","rows":2387,"file":"draft_tracker_prospect_scores.json"},
-{"dataset":"draft_model_summary","rows":9,"file":"draft_model_summary.json"},
-{"dataset":"draft_model_feature_details","rows":75,"file":"draft_model_feature_details.json"}
-]
-}
+{"generated_at":"2026-05-11T04:57:40Z","source_root":"C:/Users/brend/Documents/projects/nba&draft","note":"Generated from canonical processed/raw CSV outputs. Excel workbooks are not read at runtime.","datasets":[{"dataset":"impact_players","rows":6049,"file":"impact_players.json"},{"dataset":"team_projections","rows":1080,"file":"team_projections.json"},{"dataset":"team_lineups","rows":10747,"file":"team_lineups.json"},{"dataset":"team_schedules","rows":14159,"file":"team_schedules.json"},{"dataset":"pick_assets","rows":60,"file":"pick_assets.json"},{"dataset":"draft_prospects","rows":491,"file":"draft_prospects.json"},{"dataset":"draft_tracker_board_summary","rows":7,"file":"draft_tracker_board_summary.json"},{"dataset":"draft_tracker_board_scores","rows":49,"file":"draft_tracker_board_scores.json"},{"dataset":"draft_tracker_prospect_scores","rows":2387,"file":"draft_tracker_prospect_scores.json"},{"dataset":"draft_model_summary","rows":9,"file":"draft_model_summary.json"},{"dataset":"draft_model_feature_details","rows":75,"file":"draft_model_feature_details.json"}]}

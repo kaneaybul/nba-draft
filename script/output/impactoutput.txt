@@ -731,7 +731,7 @@ final_tbl <- final_tbl %>%
     nba_id = as.character(nba_id),
     year = as.integer(year)
   ) %>%
-  left_join(impact_tbl, by = c("nba_id", "year")) %>%
+  full_join(impact_tbl, by = c("nba_id", "year")) %>%
   mutate(
     player_name = clean_display_name(coalesce(player_name, player_name_impact))
   ) %>%

@@ -1,10 +1,11 @@
-import { type CSSProperties, type MouseEvent, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type ChangeEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { loadAppData } from "./data";
 import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
-type View = "impact" | "teams" | "startingLineups" | "trade" | "draft" | "lineups" | "tracker";
+type View = "impact" | "teams" | "startingLineups" | "trade" | "draft" | "draftElo" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
+type ImpactSkillSortKey = SkillKey | "skill_total";
 type SortKey =
   | "player_name"
   | "team"
@@ -24,6 +25,9 @@ type SortKey =
   | "trade_value"
   | "fa_value"
   | "scalability"
+  | "future_value_4y"
+  | "future_scale_4y"
+  | "skill_total"
   | "Minutes"
   | SkillKey;
 type SortDirection = "asc" | "desc";
@@ -42,6 +46,7 @@ type DraftSortKey =
   | "timin"
   | "draft_age"
   | "scv_draft"
+  | "similarity_score"
   | `${SkillKey}_pred`;
 type DraftFilterKey = DraftSortKey;
 type TeamSortKey =
@@ -59,6 +64,7 @@ type TeamProjectionScenario = "base" | "guaranteed" | "open_market";
 type DraftYearSelection = number | "All";
 type FilterFieldType = "number" | "text";
 type FilterOperator = "contains" | "equals" | "gt" | "gte" | "lt" | "lte" | "between";
+type FaStatusFilter = "All" | "Signed" | "UFA" | "RFA" | "Rookie" | "PO" | "TO";
 type FilterRule = {
   id: string;
   key: FilterKey | DraftFilterKey;
@@ -124,6 +130,25 @@ type TradeImpactSummary = {
   total: number;
   outgoingSalary: number;
 };
+type DraftEloTab = "compare" | "results";
+type DraftEloResponse = {
+  id: string;
+  draftYear: number;
+  createdAt: string;
+  playerAKey: string;
+  playerBKey: string;
+  winnerKey: string;
+};
+type DraftEloStorageMode = "loading" | "indexeddb" | "localstorage";
+type DraftEloStanding = {
+  key: string;
+  prospect: DraftProspect;
+  rating: number;
+  wins: number;
+  losses: number;
+  matches: number;
+  lastPicked: string | null;
+};
 
 const skillKeys: SkillKey[] = ["FTD", "PASS", "SHOOT", "RIM", "OREB", "DREB", "SWITCH", "DPM", "RIMPRO"];
 const emptyLineup = () => Array.from({ length: 5 }, () => "");
@@ -141,6 +166,12 @@ const lineupSkills: LineupSkill[] = [
 const LINEUP_SUGGESTIONS_PER_PAGE = 8;
 const LINEUP_SUGGESTION_PAGE_COUNT = 3;
 const LINEUP_MAX_SUGGESTIONS = LINEUP_SUGGESTIONS_PER_PAGE * LINEUP_SUGGESTION_PAGE_COUNT;
+const DRAFT_ELO_INITIAL_RATING = 1500;
+const DRAFT_ELO_K = 32;
+const DRAFT_ELO_DB_NAME = "nba-impact-lab-draft-elo";
+const DRAFT_ELO_DB_VERSION = 1;
+const DRAFT_ELO_STORE = "responses";
+const DRAFT_ELO_LOCAL_STORAGE_KEY = "draftElo:responses:v1";
 const impactTierOrder = ["MVP", "Superstar", "Star", "Elite Starter", "Starter", "Fringe Starter", "Strong Bench", "Bench", "Deep Bench", "Project", "Out", "DNQ"];
 const skillLabels: Record<SkillKey, string> = {
   FTD: "Free Throws",
@@ -180,6 +211,9 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "value_add", label: "Szn VA", type: "number" },
   { key: "fa_value", label: "FA Value", type: "number" },
   { key: "scalability", label: "Scale", type: "number" },
+  { key: "future_value_4y", label: "4Y Value", type: "number" },
+  { key: "future_scale_4y", label: "4Y Scale", type: "number" },
+  { key: "skill_total", label: "Skill Total", type: "number" },
   ...skillKeys.map((key) => ({ key, label: key, type: "number" as const }))
 ];
 const numericOperators: Array<{ value: FilterOperator; label: string }> = [
@@ -208,6 +242,7 @@ const draftFilterFields: Array<{ key: DraftFilterKey; label: string; type: Filte
   { key: "timin", label: "TIMIN", type: "number" },
   { key: "draft_age", label: "Age", type: "number" },
   { key: "scv_draft", label: "SCV", type: "number" },
+  { key: "similarity_score", label: "Comp Score", type: "number" },
   ...skillKeys.map((key) => ({ key: `${key}_pred` as DraftFilterKey, label: key, type: "number" as const }))
 ];
 
@@ -232,6 +267,163 @@ function useSessionState<T>(key: string, initialValue: T): [T, (value: T | ((cur
   }, [key, state]);
 
   return [state, setState];
+}
+
+function useDraftEloResponses() {
+  const [responses, setResponses] = useState<DraftEloResponse[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [storageMode, setStorageMode] = useState<DraftEloStorageMode>("loading");
+  const [storageError, setStorageError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    loadDraftEloResponses()
+      .then((result) => {
+        if (!active) return;
+        setResponses(result.responses);
+        setStorageMode(result.mode);
+        setStorageError(null);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setResponses([]);
+        setStorageMode("localstorage");
+        setStorageError(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!loaded) return;
+    saveDraftEloResponses(responses, storageMode)
+      .then((mode) => {
+        setStorageMode(mode);
+        setStorageError(null);
+      })
+      .catch((error: unknown) => {
+        setStorageError(error instanceof Error ? error.message : String(error));
+      });
+  }, [loaded, responses, storageMode]);
+
+  return { responses, setResponses, loaded, storageMode, storageError };
+}
+
+async function loadDraftEloResponses(): Promise<{ responses: DraftEloResponse[]; mode: DraftEloStorageMode }> {
+  if (typeof window === "undefined") return { responses: [], mode: "localstorage" };
+
+  if ("indexedDB" in window) {
+    try {
+      const db = await openDraftEloDb();
+      const indexedResponses = await readDraftEloStore(db);
+      db.close();
+      const localResponses = loadDraftEloLocalStorage();
+      const responses = indexedResponses.length > 0 ? indexedResponses : localResponses;
+      if (indexedResponses.length === 0 && localResponses.length > 0) {
+        await saveDraftEloIndexedDb(localResponses);
+      }
+      return { responses, mode: "indexeddb" };
+    } catch {
+      return { responses: loadDraftEloLocalStorage(), mode: "localstorage" };
+    }
+  }
+
+  return { responses: loadDraftEloLocalStorage(), mode: "localstorage" };
+}
+
+async function saveDraftEloResponses(responses: DraftEloResponse[], preferredMode: DraftEloStorageMode): Promise<DraftEloStorageMode> {
+  const normalized = normalizeDraftEloResponses(responses);
+  if (typeof window === "undefined") return "localstorage";
+
+  if (preferredMode !== "localstorage" && "indexedDB" in window) {
+    try {
+      await saveDraftEloIndexedDb(normalized);
+      saveDraftEloLocalStorage(normalized);
+      return "indexeddb";
+    } catch {
+      saveDraftEloLocalStorage(normalized);
+      return "localstorage";
+    }
+  }
+
+  saveDraftEloLocalStorage(normalized);
+  return "localstorage";
+}
+
+function openDraftEloDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(DRAFT_ELO_DB_NAME, DRAFT_ELO_DB_VERSION);
+    request.onerror = () => reject(request.error ?? new Error("Could not open Draft Elo storage."));
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(DRAFT_ELO_STORE)) {
+        db.createObjectStore(DRAFT_ELO_STORE, { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+function readDraftEloStore(db: IDBDatabase): Promise<DraftEloResponse[]> {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(DRAFT_ELO_STORE, "readonly");
+    const store = transaction.objectStore(DRAFT_ELO_STORE);
+    const request = store.getAll();
+    request.onerror = () => reject(request.error ?? new Error("Could not read Draft Elo responses."));
+    request.onsuccess = () => resolve(normalizeDraftEloResponses(request.result));
+  });
+}
+
+async function saveDraftEloIndexedDb(responses: DraftEloResponse[]): Promise<void> {
+  const db = await openDraftEloDb();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(DRAFT_ELO_STORE, "readwrite");
+    const store = transaction.objectStore(DRAFT_ELO_STORE);
+    store.clear();
+    responses.forEach((response) => store.put(response));
+    transaction.onerror = () => reject(transaction.error ?? new Error("Could not save Draft Elo responses."));
+    transaction.oncomplete = () => resolve();
+  }).finally(() => db.close());
+}
+
+function loadDraftEloLocalStorage(): DraftEloResponse[] {
+  try {
+    const raw = window.localStorage.getItem(DRAFT_ELO_LOCAL_STORAGE_KEY);
+    return normalizeDraftEloResponses(raw ? JSON.parse(raw) : []);
+  } catch {
+    return [];
+  }
+}
+
+function saveDraftEloLocalStorage(responses: DraftEloResponse[]): void {
+  window.localStorage.setItem(DRAFT_ELO_LOCAL_STORAGE_KEY, JSON.stringify(normalizeDraftEloResponses(responses)));
+}
+
+function normalizeDraftEloResponses(value: unknown): DraftEloResponse[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isDraftEloResponse)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+}
+
+function isDraftEloResponse(value: unknown): value is DraftEloResponse {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === "string" &&
+    typeof row.draftYear === "number" &&
+    Number.isFinite(row.draftYear) &&
+    typeof row.createdAt === "string" &&
+    typeof row.playerAKey === "string" &&
+    typeof row.playerBKey === "string" &&
+    typeof row.winnerKey === "string" &&
+    (row.winnerKey === row.playerAKey || row.winnerKey === row.playerBKey)
+  );
 }
 
 function latestPlayerSeason(players: PlayerImpact[]): number | null {
@@ -362,6 +554,7 @@ function App() {
           ["startingLineups", "Starting Lineups"],
           ["trade", "Trade Sandbox"],
           ["draft", "Draft Board"],
+          ["draftElo", "Draft Elo"],
           ["lineups", "Lineup Synergy"],
           ["tracker", "Draft Tracker"]
         ].map(([key, label]) => (
@@ -377,6 +570,7 @@ function App() {
       {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
       {view === "trade" && <TradeWorkspace data={data} season={season} />}
       {view === "draft" && <DraftWorkspace data={data} />}
+      {view === "draftElo" && <DraftEloWorkspace data={data} />}
       {view === "lineups" && <LineupWorkspace data={data} season={season} />}
       {view === "tracker" && <TrackerWorkspace data={data} />}
     </div>
@@ -387,6 +581,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const seasonPlayers = useMemo(() => data.players.filter((player) => player.year === season), [data.players, season]);
   const [query, setQuery] = useSessionState("impact:query", "");
   const [team, setTeam] = useSessionState("impact:team", "All");
+  const [faStatus, setFaStatus] = useSessionState<FaStatusFilter>("impact:faStatus", "All");
   const [position, setPosition] = useSessionState("impact:position", "All");
   const [tier, setTier] = useSessionState("impact:tier", "All");
   const [sortKey, setSortKey] = useSessionState<SortKey>("impact:sortKey", "score");
@@ -399,24 +594,30 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [detailPlayer, setDetailPlayer] = useState<PlayerImpact | null>(null);
   const [detailPosition, setDetailPosition] = useState({ left: 28, top: 138 });
 
-  const teams = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.team))).sort()], [seasonPlayers]);
+  const teams = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => playerTeamFilterValue(player)))).sort()], [seasonPlayers]);
+  const faStatuses = useMemo(() => {
+    const order: FaStatusFilter[] = ["All", "Signed", "UFA", "RFA", "Rookie", "PO", "TO"];
+    const available = new Set(seasonPlayers.map((player) => faStatusLabel(player)));
+    return order.filter((status) => status === "All" || available.has(status));
+  }, [seasonPlayers]);
   const positions = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.position))).sort()], [seasonPlayers]);
   const tiers = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.tier))).sort()], [seasonPlayers]);
   const selectedFilterField = filterFields.find((field) => field.key === filterKey) ?? filterFields[0];
   const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
-  const quickFilterCount = [query.trim(), team !== "All", position !== "All", tier !== "All"].filter(Boolean).length;
+  const quickFilterCount = [query.trim(), team !== "All", faStatus !== "All", position !== "All", tier !== "All"].filter(Boolean).length;
   const activeFilterCount = quickFilterCount + filterRules.length;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return seasonPlayers
       .filter((player) => !q || player.player_name.toLowerCase().includes(q))
-      .filter((player) => team === "All" || player.team === team)
+      .filter((player) => team === "All" || playerTeamFilterValue(player) === team)
+      .filter((player) => faStatus === "All" || faStatusLabel(player) === faStatus)
       .filter((player) => position === "All" || player.position === position)
       .filter((player) => tier === "All" || player.tier === tier)
       .filter((player) => passesFilterRules(player, filterRules))
       .sort((a, b) => comparePlayers(a, b, sortKey, sortDirection));
-  }, [filterRules, position, query, seasonPlayers, sortDirection, sortKey, team, tier]);
+  }, [faStatus, filterRules, position, query, seasonPlayers, sortDirection, sortKey, team, tier]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -453,6 +654,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const clearAllFilters = () => {
     setQuery("");
     setTeam("All");
+    setFaStatus("All");
     setPosition("All");
     setTier("All");
     setFilterRules([]);
@@ -490,6 +692,14 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               Team
               <select value={team} onChange={(event) => setTeam(event.target.value)}>
                 {teams.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              FA Status
+              <select value={faStatus} onChange={(event) => setFaStatus(event.target.value as FaStatusFilter)}>
+                {faStatuses.map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </select>
@@ -626,7 +836,7 @@ function PlayerTable({
       {sortKey === key && <span className="sort-arr">{sortDirection === "desc" ? "v" : "^"}</span>}
     </button>
   );
-  const activeSkill = skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null;
+  const activeSkill = getActiveSkillSort(sortKey);
 
   return (
     <div className="table-wrap">
@@ -642,10 +852,13 @@ function PlayerTable({
           <col className="cg-score" />
           <col className="cg-delta" />
           <col className="cg-tier" />
-          <col className="cg-money" />
-          <col className="cg-money" />
-          <col className="cg-va" />
-          <col className="cg-scale" />
+          <col className="cg-money cg-current-money" />
+          <col className="cg-money cg-current-money" />
+          <col className="cg-va cg-current-va" />
+          <col className="cg-scale cg-current-scale" />
+          <col className="cg-money cg-future-money" />
+          <col className="cg-money cg-fa" />
+          <col className="cg-scale cg-future-scale" />
           <col className="cg-skills" />
         </colgroup>
         <thead>
@@ -653,7 +866,8 @@ function PlayerTable({
             <th></th>
             <th colSpan={3}>Identity</th>
             <th colSpan={6}>Impact</th>
-            <th colSpan={4}>Market</th>
+            <th colSpan={4}>Current Season</th>
+            <th colSpan={3}>Next 4Y</th>
             <th>Skills</th>
           </tr>
           <tr>
@@ -669,16 +883,27 @@ function PlayerTable({
             <th className="col-score c-score align-center">{sortableHeader("score", "Score")}</th>
             <th className="col-rate c-delta align-center">{sortableHeader("score_delta", "Delta")}</th>
             <th className="col-tier c-tier align-center group-end">{sortableHeader("tier", "Tier")}</th>
-            <th className="col-money c-money align-right">{sortableHeader("value", "Value")}</th>
-            <th className="col-money c-money align-right">{sortableHeader("contract", "Salary")}</th>
-            <th className="col-money c-va align-right">{sortableHeader("value_add", "Szn VA")}</th>
-            <th className="col-scale c-scale align-center">{sortableHeader("scalability", "Scale")}</th>
+            <th className="col-money c-money c-current-money align-right">{sortableHeader("value", "Value")}</th>
+            <th className="col-money c-money c-current-money align-right">{sortableHeader("contract", "Contract")}</th>
+            <th className="col-money c-va c-current-va align-right">{sortableHeader("value_add", "Szn VA")}</th>
+            <th className="col-scale c-scale c-current-scale align-center group-end">{sortableHeader("scalability", "Scale")}</th>
+            <th className="col-money c-money c-future-money align-right">{sortableHeader("future_value_4y", "4Y Value")}</th>
+            <th className="col-money c-money c-fa align-right">{sortableHeader("fa_value", "FA")}</th>
+            <th className="col-scale c-scale c-future-scale align-center group-end">{sortableHeader("future_scale_4y", "4Y Scale")}</th>
             <th className="col-skills c-skills align-center">
               <div className="skills-head">
                 <button className={cls("skills-main-sort", activeSkill && "active")} onClick={() => onSort(activeSkill ?? "SHOOT")}>
-                  Skills{activeSkill && <small>{activeSkill} {sortDirection === "desc" ? "v" : "^"}</small>}
+                  Skills{activeSkill && <small>{skillSortLabel(activeSkill)} {sortDirection === "desc" ? "v" : "^"}</small>}
                 </button>
                 <div className="skills-sort-strip" aria-label="Sort by skill">
+                  <button
+                    className={cls("skills-sort-btn", activeSkill === "skill_total" && "active")}
+                    onClick={() => onSort("skill_total")}
+                    title="Sort by skill model Total"
+                  >
+                    Total
+                    {activeSkill === "skill_total" && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
+                  </button>
                   {skillKeys.map((key) => (
                     <button
                       key={key}
@@ -709,7 +934,7 @@ function PlayerTable({
                     >
                       {player.player_name}
                     </button>
-                    <div className="player-sub">{player.team} / {player.position}</div>
+                    <div className="player-sub">{playerMarketTeamLabel(player)} / {player.position}</div>
                   </div>
                 </div>
               </td>
@@ -728,12 +953,21 @@ function PlayerTable({
                 <span className="tier-text">{player.tier}</span>
               </td>
               <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.value)}</div></td>
-              <td className="money-text muted-num"><div className="cell-stage money-stage">{formatSalarySlot(player)}</div></td>
-              <td className="va-cell" style={netMoneyStyle(player.value_add)}><div className="cell-stage money-stage">{formatSeasonValueAdd(player)}</div></td>
-              <td className="align-center">
+              <td className="money-text muted-num"><div className="cell-stage money-stage">{formatContractValue(player)}</div></td>
+              <td className="va-cell" style={netMoneyStyle(currentValueAdd(player))}><div className="cell-stage money-stage">{formatSeasonValueAdd(player)}</div></td>
+              <td className="align-center group-end-cell">
                 <div className="cell-stage">
-                  <span className="scale-value" style={scaleStyle(player.scalability)}>
-                    {formatNumber(player.scalability, 1)}
+                  <span className="scale-value" style={scaleStyle(currentScale(player))}>
+                    {formatNumber(currentScale(player), 1)}
+                  </span>
+                </div>
+              </td>
+              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(futureValue4y(player))}</div></td>
+              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.fa_value)}</div></td>
+              <td className="align-center group-end-cell">
+                <div className="cell-stage">
+                  <span className="scale-value" style={scaleStyle(futureScale4y(player) ?? 0)}>
+                    {formatNumber(futureScale4y(player), 1)}
                   </span>
                 </div>
               </td>
@@ -746,6 +980,47 @@ function PlayerTable({
       </table>
     </div>
   );
+}
+
+function getActiveSkillSort(sortKey: SortKey): ImpactSkillSortKey | null {
+  if (sortKey === "skill_total") return sortKey;
+  return skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null;
+}
+
+function skillSortLabel(key: ImpactSkillSortKey): string {
+  return key === "skill_total" ? "Total" : key;
+}
+
+function faStatusLabel(player: PlayerImpact): FaStatusFilter {
+  const status = player.contract_status?.trim();
+  if (status === "UFA") return "UFA";
+  if (status === "RFA") return "RFA";
+  if (status === "Rookie FA") return "Rookie";
+  if (status === "Player Option") return "PO";
+  if (status === "Team Option") return "TO";
+  return "Signed";
+}
+
+function playerControlTeam(player: PlayerImpact): string {
+  const incumbent = cleanTeamValue(player.incumbent_team);
+  const team = cleanTeamValue(player.team);
+  return incumbent !== "FA" ? incumbent : team;
+}
+
+function playerTeamFilterValue(player: PlayerImpact): string {
+  const status = faStatusLabel(player);
+  if (status === "UFA" || status === "Rookie") return "FA";
+  return playerControlTeam(player);
+}
+
+function playerMarketTeamLabel(player: PlayerImpact): string {
+  const status = faStatusLabel(player);
+  const controlTeam = playerControlTeam(player);
+  if (status === "UFA") return "UFA";
+  if (status === "Rookie") return "Rookie";
+  if (status === "PO" || status === "TO") return controlTeam !== "FA" ? `${status} / ${controlTeam}` : status;
+  if (status === "RFA") return controlTeam !== "FA" ? controlTeam : "RFA";
+  return cleanTeamValue(player.team);
 }
 
 function EmptyState({ title, detail }: { title: string; detail: string }) {
@@ -830,11 +1105,11 @@ function PlayerDetail({ player, allPlayers }: { player: PlayerImpact; allPlayers
             </div>
             <div className="mc">
               <span>Salary</span>
-              <strong className="muted-num">{formatSalarySlot(player)}</strong>
+              <strong className="muted-num">{formatContractValue(player)}</strong>
             </div>
             <div className="mc">
               <span>Season VA</span>
-              <strong style={netMoneyStyle(player.value_add)}>{formatSeasonValueAdd(player)}</strong>
+              <strong style={netMoneyStyle(currentValueAdd(player))}>{formatSeasonValueAdd(player)}</strong>
             </div>
             <div className="mc">
               <span>FA Value</span>
@@ -846,7 +1121,7 @@ function PlayerDetail({ player, allPlayers }: { player: PlayerImpact; allPlayers
             </div>
             <div className="mc">
               <span>Scalability</span>
-              <strong style={scaleStyle(player.scalability)}>{formatNumber(player.scalability, 1)}</strong>
+              <strong style={scaleStyle(currentScale(player))}>{formatNumber(currentScale(player), 1)}</strong>
             </div>
           </div>
           <p className="note note-text">
@@ -2072,6 +2347,7 @@ function ProspectTable({
           <col className="cg-draft-tier" />
           <col className="cg-draft-timin" />
           <col className="cg-draft-skills" />
+          <col className="cg-draft-comp" />
         </colgroup>
         <thead>
           <tr className="group-row">
@@ -2079,6 +2355,7 @@ function ProspectTable({
             <th colSpan={4}>Identity</th>
             <th colSpan={6}>Impact</th>
             <th>Skills</th>
+            <th>Comp</th>
           </tr>
           <tr>
             <th className="align-center">{sortableHeader("rank_in_class", "#")}</th>
@@ -2112,6 +2389,7 @@ function ProspectTable({
                 </div>
               </div>
             </th>
+            <th className="align-center">{sortableHeader("similarity_score", "Top Comp")}</th>
           </tr>
         </thead>
         <tbody>
@@ -2154,6 +2432,9 @@ function ProspectTable({
               <td className="skill-fingerprint-cell">
                 <ProspectSkillFingerprint prospect={prospect} activeSkill={activeSkill} />
               </td>
+              <td className="draft-comp-cell">
+                <DraftSimilarityComp prospect={prospect} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -2162,10 +2443,434 @@ function ProspectTable({
   );
 }
 
+function DraftSimilarityComp({ prospect }: { prospect: DraftProspect }) {
+  const player = prospect.similarity_comp_player?.trim();
+  const year = prospect.similarity_comp_year;
+  const score = prospect.similarity_score;
+  if (!player || typeof year !== "number" || !Number.isFinite(year)) {
+    return <span className="muted-cell">-</span>;
+  }
+
+  const scoreText = typeof score === "number" && Number.isFinite(score) ? `${formatNumber(score, 1)} sim` : "-";
+  const title = [
+    `${year} ${player}`,
+    `Similarity: ${scoreText}`,
+    `Total: ${formatSigned(prospect.similarity_comp_total, 2)}`,
+    `Minutes: ${formatNumber(prospect.similarity_comp_minutes, 0)}`
+  ].join("\n");
+
+  return (
+    <div className="draft-comp" title={title}>
+      <strong>{year} {player}</strong>
+      <span>{scoreText}</span>
+    </div>
+  );
+}
+
 function draftSortSkill(key: DraftSortKey): SkillKey | null {
   if (!key.endsWith("_pred")) return null;
   const skill = key.replace("_pred", "") as SkillKey;
   return skillKeys.includes(skill) ? skill : null;
+}
+
+function DraftEloWorkspace({ data }: { data: AppData }) {
+  const { responses, setResponses, loaded, storageMode, storageError } = useDraftEloResponses();
+  const [tab, setTab] = useSessionState<DraftEloTab>("draftElo:tab", "compare");
+  const [matchup, setMatchup] = useState<[DraftProspect, DraftProspect] | null>(null);
+  const [importNote, setImportNote] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const latestYear = useMemo(() => latestDraftYear(data.prospects), [data.prospects]);
+  const classProspects = useMemo(
+    () => latestYear === null ? [] : data.prospects.filter((prospect) => prospect.draft_year === latestYear),
+    [data.prospects, latestYear]
+  );
+  const prospectMap = useMemo(() => new Map(classProspects.map((prospect) => [draftProspectKey(prospect), prospect])), [classProspects]);
+  const activeResponses = useMemo(
+    () => latestYear === null ? [] : responses.filter((response) => response.draftYear === latestYear),
+    [latestYear, responses]
+  );
+  const standings = useMemo(() => buildDraftEloStandings(classProspects, activeResponses), [activeResponses, classProspects]);
+  const recentResponse = activeResponses[activeResponses.length - 1] ?? null;
+  const canCompare = loaded && classProspects.length >= 2 && matchup !== null;
+
+  useEffect(() => {
+    setMatchup(sampleDraftEloPair(classProspects, null));
+  }, [classProspects]);
+
+  const recordChoice = (winner: DraftProspect) => {
+    if (!matchup || latestYear === null) return;
+    const [playerA, playerB] = matchup;
+    const response: DraftEloResponse = {
+      id: `elo-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      draftYear: latestYear,
+      createdAt: new Date().toISOString(),
+      playerAKey: draftProspectKey(playerA),
+      playerBKey: draftProspectKey(playerB),
+      winnerKey: draftProspectKey(winner)
+    };
+    setResponses((current) => normalizeDraftEloResponses([...current, response]));
+    const pairKey = draftEloPairKey(response.playerAKey, response.playerBKey);
+    setMatchup(sampleDraftEloPair(classProspects, pairKey));
+  };
+
+  const flipResponse = (responseId: string) => {
+    setResponses((current) =>
+      normalizeDraftEloResponses(
+        current.map((response) => {
+          if (response.id !== responseId) return response;
+          const winnerKey = response.winnerKey === response.playerAKey ? response.playerBKey : response.playerAKey;
+          return { ...response, winnerKey };
+        })
+      )
+    );
+  };
+
+  const deleteResponse = (responseId: string) => {
+    setResponses((current) => current.filter((response) => response.id !== responseId));
+  };
+
+  const clearDraftElo = () => {
+    const classLabel = latestYear ? `${latestYear}` : "this class";
+    if (!window.confirm(`Clear all Draft Elo responses for ${classLabel}? This only affects the local Draft Elo store.`)) return;
+    setResponses((current) => current.filter((response) => response.draftYear !== latestYear));
+  };
+
+  const exportResponses = () => {
+    const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), responses }, null, 2);
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `draft-elo-responses-${latestYear ?? "all"}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setImportNote("Exported Draft Elo responses");
+  };
+
+  const importResponses = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result ?? "[]")) as unknown;
+        const imported = normalizeDraftEloResponses(Array.isArray(parsed) ? parsed : (parsed as { responses?: unknown }).responses);
+        if (imported.length === 0) {
+          setImportNote("No valid Draft Elo responses found");
+          return;
+        }
+        setResponses((current) => {
+          const byId = new Map(current.map((response) => [response.id, response]));
+          imported.forEach((response) => byId.set(response.id, response));
+          return normalizeDraftEloResponses([...byId.values()]);
+        });
+        setImportNote(`Imported ${imported.length.toLocaleString()} responses`);
+      } catch {
+        setImportNote("Import failed: invalid JSON");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <main className="workspace draft-elo-workspace">
+      <section className="draft-elo-top">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>Draft Elo</h2>
+            <p>{latestYear ? `${latestYear} class blind comparisons` : "No draft class available"}</p>
+          </div>
+          <div className="draft-elo-status">
+            <MetricPill label="Responses" value={activeResponses.length.toLocaleString()} tone="green" />
+            <MetricPill label="Prospects" value={classProspects.length.toLocaleString()} tone="teal" />
+            <MetricPill label="Storage" value={loaded ? storageLabel(storageMode) : "Loading"} tone="gold" />
+          </div>
+        </div>
+        <div className="segmented-control draft-elo-tabs" aria-label="Draft Elo view">
+          <button className={cls(tab === "compare" && "active")} onClick={() => setTab("compare")}>Compare</button>
+          <button className={cls(tab === "results" && "active")} onClick={() => setTab("results")}>Results</button>
+        </div>
+      </section>
+
+      {storageError && <p className="note-text draft-elo-note">Storage note: {storageError}</p>}
+
+      {tab === "compare" && (
+        <section className="draft-elo-compare">
+          {!loaded && <EmptyState title="Loading choices" detail="Opening local Draft Elo storage." />}
+          {loaded && classProspects.length < 2 && <EmptyState title="Not enough prospects" detail="At least two prospects are needed for blind comparisons." />}
+          {canCompare && matchup && (
+            <>
+              <div className="draft-elo-prompt">
+                <span>Choose one</span>
+                <strong>{latestYear} class</strong>
+                <em>{recentResponse ? recentChoiceText(recentResponse, prospectMap) : "No choices recorded yet"}</em>
+              </div>
+              <div className="draft-elo-card-grid">
+                <DraftEloCard prospect={matchup[0]} side="A" onChoose={recordChoice} />
+                <DraftEloCard prospect={matchup[1]} side="B" onChoose={recordChoice} />
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {tab === "results" && (
+        <section className="draft-elo-results">
+          <section className="table-panel draft-elo-leaderboard-panel">
+            <div className="panel-heading compact-heading">
+              <div>
+                <h2>Elo Leaderboard</h2>
+                <p>Replayed from your saved choices</p>
+              </div>
+              <div className="button-row draft-elo-actions">
+                <button onClick={exportResponses} disabled={!loaded}>Export JSON</button>
+                <button onClick={() => importInputRef.current?.click()} disabled={!loaded}>Import JSON</button>
+                <button onClick={clearDraftElo} disabled={!loaded || activeResponses.length === 0}>Reset class</button>
+                <input ref={importInputRef} className="sr-only" type="file" accept="application/json,.json" onChange={importResponses} />
+              </div>
+            </div>
+            {importNote && <p className="note-text draft-elo-note">{importNote}</p>}
+            {standings.length > 0 ? <DraftEloLeaderboard standings={standings} /> : <EmptyState title="No Elo rows" detail="Make a comparison to populate the leaderboard." />}
+          </section>
+
+          <section className="table-panel draft-elo-history-panel">
+            <div className="panel-heading compact-heading">
+              <div>
+                <h2>Response History</h2>
+                <p>Flip or delete old choices, then ratings replay automatically</p>
+              </div>
+            </div>
+            {activeResponses.length > 0 ? (
+              <DraftEloHistory responses={[...activeResponses].reverse()} prospectMap={prospectMap} onFlip={flipResponse} onDelete={deleteResponse} />
+            ) : (
+              <EmptyState title="No responses yet" detail="Your choices will appear here after you start comparing." />
+            )}
+          </section>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function DraftEloCard({ prospect, side, onChoose }: { prospect: DraftProspect; side: "A" | "B"; onChoose: (prospect: DraftProspect) => void }) {
+  const measurements = [
+    { label: "Height", value: formatInches(prospect.height_wo_shoes_in) },
+    { label: "Wingspan", value: formatInches(prospect.wingspan_in) },
+    { label: "Weight", value: formatWeight(prospect.weight_lbs) }
+  ];
+  const school = prospect.college || prospect.pre_draft_team || "-";
+
+  return (
+    <button className="draft-elo-card" onClick={() => onChoose(prospect)}>
+      <span className="draft-elo-side">Player {side}</span>
+      <strong>{prospect.player}</strong>
+      <span>{displayDraftPosition(prospect)} / Age {formatNumber(prospect.draft_age, 1)}</span>
+      <em>{school}</em>
+      <div className="draft-elo-bio-grid">
+        {measurements.map((item) => (
+          <div key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+    </button>
+  );
+}
+
+function DraftEloLeaderboard({ standings }: { standings: DraftEloStanding[] }) {
+  return (
+    <div className="table-wrap compact draft-elo-table-wrap">
+      <table className="data-table draft-elo-table">
+        <thead>
+          <tr>
+            <th className="align-center">#</th>
+            <th>Player</th>
+            <th className="align-right">Elo</th>
+            <th className="align-right">W</th>
+            <th className="align-right">L</th>
+            <th className="align-right">Total</th>
+            <th>Last Picked</th>
+          </tr>
+        </thead>
+        <tbody>
+          {standings.map((row, index) => (
+            <tr key={row.key}>
+              <td className="rank-cell align-center">{index + 1}</td>
+              <td>
+                <div className="draft-player-cell">
+                  <strong>{row.prospect.player}</strong>
+                  <span>{displayDraftPosition(row.prospect)} / {row.prospect.college || row.prospect.pre_draft_team || "-"}</span>
+                </div>
+              </td>
+              <td className="align-right"><strong>{formatNumber(row.rating, 0)}</strong></td>
+              <td className="align-right">{row.wins}</td>
+              <td className="align-right">{row.losses}</td>
+              <td className="align-right">{row.matches}</td>
+              <td>{formatDateTime(row.lastPicked)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DraftEloHistory({
+  responses,
+  prospectMap,
+  onFlip,
+  onDelete
+}: {
+  responses: DraftEloResponse[];
+  prospectMap: Map<string, DraftProspect>;
+  onFlip: (responseId: string) => void;
+  onDelete: (responseId: string) => void;
+}) {
+  return (
+    <div className="table-wrap compact draft-elo-history-wrap">
+      <table className="data-table draft-elo-history-table">
+        <thead>
+          <tr>
+            <th>Choice</th>
+            <th>Matchup</th>
+            <th>Time</th>
+            <th className="align-center">Edit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {responses.map((response) => {
+            const playerA = prospectMap.get(response.playerAKey);
+            const playerB = prospectMap.get(response.playerBKey);
+            const winner = prospectMap.get(response.winnerKey);
+            return (
+              <tr key={response.id}>
+                <td><strong>{winner?.player ?? "Unknown"}</strong></td>
+                <td>{playerA?.player ?? "Unknown"} vs {playerB?.player ?? "Unknown"}</td>
+                <td>{formatDateTime(response.createdAt)}</td>
+                <td className="align-center">
+                  <div className="draft-elo-row-actions">
+                    <button onClick={() => onFlip(response.id)} disabled={!playerA || !playerB}>Flip</button>
+                    <button onClick={() => onDelete(response.id)}>Delete</button>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function latestDraftYear(prospects: DraftProspect[]): number | null {
+  const years = prospects.map((prospect) => prospect.draft_year).filter(Number.isFinite);
+  return years.length > 0 ? Math.max(...years) : null;
+}
+
+function draftProspectKey(prospect: DraftProspect): string {
+  return `${prospect.draft_year}::${prospect.player}`;
+}
+
+function draftEloPairKey(a: string, b: string): string {
+  return [a, b].sort().join("::");
+}
+
+function sampleDraftEloPair(prospects: DraftProspect[], previousPairKey: string | null): [DraftProspect, DraftProspect] | null {
+  if (prospects.length < 2) return null;
+  const attempts = prospects.length > 2 ? 20 : 1;
+  for (let index = 0; index < attempts; index += 1) {
+    const firstIndex = Math.floor(Math.random() * prospects.length);
+    let secondIndex = Math.floor(Math.random() * prospects.length);
+    while (secondIndex === firstIndex) {
+      secondIndex = Math.floor(Math.random() * prospects.length);
+    }
+    const pair: [DraftProspect, DraftProspect] = [prospects[firstIndex], prospects[secondIndex]];
+    const pairKey = draftEloPairKey(draftProspectKey(pair[0]), draftProspectKey(pair[1]));
+    if (pairKey !== previousPairKey) return pair;
+  }
+  return [prospects[0], prospects[1]];
+}
+
+function buildDraftEloStandings(prospects: DraftProspect[], responses: DraftEloResponse[]): DraftEloStanding[] {
+  const rows = new Map<string, DraftEloStanding>(
+    prospects.map((prospect) => [
+      draftProspectKey(prospect),
+      {
+        key: draftProspectKey(prospect),
+        prospect,
+        rating: DRAFT_ELO_INITIAL_RATING,
+        wins: 0,
+        losses: 0,
+        matches: 0,
+        lastPicked: null
+      } satisfies DraftEloStanding
+    ])
+  );
+
+  responses.forEach((response) => {
+    const playerA = rows.get(response.playerAKey);
+    const playerB = rows.get(response.playerBKey);
+    if (!playerA || !playerB) return;
+
+    const aExpected = expectedDraftEloScore(playerA.rating, playerB.rating);
+    const bExpected = expectedDraftEloScore(playerB.rating, playerA.rating);
+    const aScore = response.winnerKey === response.playerAKey ? 1 : 0;
+    const bScore = response.winnerKey === response.playerBKey ? 1 : 0;
+    playerA.rating += DRAFT_ELO_K * (aScore - aExpected);
+    playerB.rating += DRAFT_ELO_K * (bScore - bExpected);
+    playerA.matches += 1;
+    playerB.matches += 1;
+    playerA.lastPicked = response.createdAt;
+    playerB.lastPicked = response.createdAt;
+    if (aScore === 1) {
+      playerA.wins += 1;
+      playerB.losses += 1;
+    } else {
+      playerB.wins += 1;
+      playerA.losses += 1;
+    }
+  });
+
+  return [...rows.values()].sort((a, b) => b.rating - a.rating || b.matches - a.matches || a.prospect.player.localeCompare(b.prospect.player));
+}
+
+function expectedDraftEloScore(rating: number, opponentRating: number): number {
+  return 1 / (1 + Math.pow(10, (opponentRating - rating) / 400));
+}
+
+function recentChoiceText(response: DraftEloResponse, prospectMap: Map<string, DraftProspect>): string {
+  const winner = prospectMap.get(response.winnerKey)?.player ?? "Unknown";
+  const loserKey = response.winnerKey === response.playerAKey ? response.playerBKey : response.playerAKey;
+  const loser = prospectMap.get(loserKey)?.player ?? "Unknown";
+  return `Last pick: ${winner} over ${loser}`;
+}
+
+function formatInches(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  const total = Math.round(value);
+  const feet = Math.floor(total / 12);
+  const inches = total % 12;
+  return `${feet}'${inches}"`;
+}
+
+function formatWeight(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return "-";
+  return `${formatNumber(value, 0)} lb`;
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString();
+}
+
+function storageLabel(mode: DraftEloStorageMode): string {
+  if (mode === "indexeddb") return "IndexedDB";
+  if (mode === "localstorage") return "Local";
+  return "Loading";
 }
 
 function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
@@ -3262,15 +3967,24 @@ function ScoreValue({ value, label }: { value: number; label?: string | null }) 
   );
 }
 
+function skillAggregateTotal(player: PlayerImpact): number {
+  const off = Number(player.skill_model_off ?? player.skill_off_total);
+  const def = Number(player.skill_model_def ?? player.skill_def_total);
+  if (Number.isFinite(off) && Number.isFinite(def)) return off + def;
+  return Number(player.total ?? 0);
+}
+
 function SkillFingerprint({
   player,
   activeSkill
 }: {
   player: PlayerImpact;
-  activeSkill: SkillKey | null;
+  activeSkill: ImpactSkillSortKey | null;
 }) {
   const [hoverSkill, setHoverSkill] = useState<string | null>(null);
+  const totalValue = skillAggregateTotal(player);
   const aggregateBars = [
+    { key: "skill_total", label: "TOTAL", title: "Skill model Total", value: totalValue },
     { key: "OFF_SKILL", label: "OFF", title: "Skill model Off", value: player.skill_model_off ?? player.skill_off_total },
     { key: "DEF_SKILL", label: "DEF", title: "Skill model Def", value: player.skill_model_def ?? player.skill_def_total }
   ];
@@ -3300,7 +4014,13 @@ function SkillFingerprint({
           return (
             <span
               key={bar.key}
-              className={cls("skill-bar", "skill-total-bar", bar.key === "OFF_SKILL" && "skill-total-start", hoverSkill === bar.key && "open")}
+              className={cls(
+                "skill-bar",
+                "skill-total-bar",
+                bar.key === "skill_total" && "skill-total-start",
+                activeSkill === bar.key && "active",
+                hoverSkill === bar.key && "open"
+              )}
               onMouseEnter={() => setHoverSkill(bar.key)}
               title={`${bar.title}: ${formatSigned(value, 1)}`}
               style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
@@ -3365,7 +4085,30 @@ function scoreStyle(value: number): CSSProperties {
 }
 
 function scaleStyle(value: number): CSSProperties {
-  return heatStyleVars("scale", value - 1, 1.15);
+  const neutral: Rgb = [245, 247, 245];
+  const negative: Rgb = [232, 56, 42];
+  const positive: Rgb = [126, 216, 82];
+  const elite: Rgb = [43, 198, 162];
+  const scale = Number.isFinite(value) ? value : 0.8;
+  let color: Rgb;
+  let intensity: number;
+
+  if (scale >= 0.8) {
+    const raw = clamp((scale - 0.8) / 0.7, 0, 1);
+    intensity = Math.pow(raw, 0.82);
+    color = intensity < 0.82
+      ? mixRgb(neutral, positive, intensity / 0.82)
+      : mixRgb(positive, elite, (intensity - 0.82) / 0.18);
+  } else {
+    intensity = Math.pow(clamp((0.8 - scale) / 0.8, 0, 1), 0.72);
+    color = mixRgb(neutral, negative, intensity);
+  }
+
+  return {
+    "--scale-fg": rgbString(color),
+    "--scale-bg": rgbaString(color, 0.025 + intensity * 0.2),
+    "--scale-border": rgbaString(color, 0.055 + intensity * 0.42)
+  } as CSSProperties;
 }
 
 function rateStyle(value: number): CSSProperties {
@@ -3455,12 +4198,52 @@ function formatSigned(value: number | null | undefined, digits = 1): string {
 
 function formatSeasonValueAdd(player: PlayerImpact): string {
   if (player.availability_status === "DNQ") return "DNQ";
-  return formatSignedMoney(player.value_add);
+  return formatSignedMoney(currentValueAdd(player));
+}
+
+function formatContractValue(player: PlayerImpact): string {
+  if (isOpenMarketContractStatus(player)) return "-";
+  const salary = formatMoney(player.contract);
+  if (salary !== "-") return salary;
+  const status = player.contract_status?.trim();
+  if (status === "Team Option") return "Team Opt";
+  if (status === "Player Option") return "Player Opt";
+  return status || "-";
+}
+
+function isOpenMarketContractStatus(player: PlayerImpact): boolean {
+  const status = faStatusLabel(player);
+  return status === "UFA" || status === "RFA" || status === "Rookie";
+}
+
+function currentValueAdd(player: PlayerImpact): number | null {
+  if (isOpenMarketContractStatus(player)) return null;
+  return impactNumber(player, "value_add");
+}
+
+function currentScale(player: PlayerImpact): number {
+  if (isOpenMarketContractStatus(player)) return 0.8;
+  return impactNumber(player, "scalability") ?? 0;
 }
 
 function impactNumber(player: PlayerImpact, key: keyof PlayerImpact): number | null {
   const value = player[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function futureValue4y(player: PlayerImpact): number | null {
+  const values = [1, 2, 3, 4]
+    .map((index) => impactNumber(player, `projection_value_y${index}` as keyof PlayerImpact))
+    .filter((value): value is number => value !== null);
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0);
+}
+
+function futureScale4y(player: PlayerImpact): number | null {
+  const scales = [1, 2, 3, 4]
+    .map((index) => impactNumber(player, `projection_scalability_y${index}` as keyof PlayerImpact))
+    .filter((value): value is number => value !== null);
+  return scales.length > 0 ? scales.reduce((sum, value) => sum + value, 0) / scales.length : null;
 }
 
 function projectedValueAdd(player: PlayerImpact, seasonIndex: number): number | null {
@@ -3994,7 +4777,7 @@ function describeFilterRule(rule: FilterRule): string {
 
 function passesFilterRules(player: PlayerImpact, rules: FilterRule[]): boolean {
   return rules.every((rule) => {
-    const value = player[rule.key as FilterKey];
+    const value = getPlayerSortValue(player, rule.key as FilterKey);
     const field = filterFields.find((item) => item.key === rule.key);
     if (field?.type === "number") return passesNumericRule(Number(value), rule);
     return passesTextRule(String(value ?? ""), rule);
@@ -4065,8 +4848,8 @@ function teamForProjectionScenario(player: PlayerImpact, scenario: TeamProjectio
 }
 
 function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, direction: SortDirection): number {
-  const aValue = a[key];
-  const bValue = b[key];
+  const aValue = getPlayerSortValue(a, key);
+  const bValue = getPlayerSortValue(b, key);
   let result = 0;
 
   if (typeof aValue === "string" || typeof bValue === "string") {
@@ -4080,6 +4863,15 @@ function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, directio
   }
 
   return direction === "asc" ? result : -result;
+}
+
+function getPlayerSortValue(player: PlayerImpact, key: FilterKey): string | number | null | undefined {
+  if (key === "future_value_4y") return futureValue4y(player);
+  if (key === "future_scale_4y") return futureScale4y(player);
+  if (key === "skill_total") return skillAggregateTotal(player);
+  if (key === "scalability") return currentScale(player);
+  if (key === "value_add") return currentValueAdd(player);
+  return player[key as keyof PlayerImpact] as string | number | null | undefined;
 }
 
 function compareDraftProspects(a: DraftProspect, b: DraftProspect, key: DraftSortKey, direction: SortDirection): number {

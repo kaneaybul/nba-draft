@@ -39,6 +39,7 @@ From the repository root:
 ```
 
 That launcher calls Vite through `node` directly from PowerShell, so it avoids the same Windows shell issue.
+On this machine, the measured frontend build/export baseline is about 2-3 seconds; slower refreshes are more likely coming from the data/model refresh path.
 
 To run the TypeScript check directly:
 
