@@ -1484,7 +1484,89 @@ estimate_team_lineup_rows <- function(df) {
   do.call(rbind, out[seq_len(out_count)])
 }
 
-apply_lineup_minute_adjustment <- function(rows) {
+free_agent_impact_role_order <- function(total, position) {
+  total <- suppressWarnings(as.numeric(total))
+  flags <- lineup_position_flags(position)
+  starter_order <- ifelse(
+    flags$has_center,
+    5L,
+    ifelse(flags$has_forward, 3L, ifelse(flags$has_guard, 1L, 6L))
+  )
+  secondary_starter_order <- ifelse(
+    starter_order == 3L,
+    4L,
+    ifelse(starter_order == 1L, 2L, starter_order)
+  )
+  ifelse(
+    is.finite(total) & total >= 1.20,
+    starter_order,
+    ifelse(
+      is.finite(total) & total >= 0.25,
+      secondary_starter_order,
+      ifelse(
+        is.finite(total) & total >= -0.40,
+        6L,
+        ifelse(
+          is.finite(total) & total >= -1.00,
+          7L,
+          ifelse(
+            is.finite(total) & total >= -1.60,
+            8L,
+            ifelse(is.finite(total) & total >= -2.20, 9L, 10L)
+          )
+        )
+      )
+    )
+  )
+}
+
+free_agent_minutes_role_order <- function(minutes, position) {
+  plan <- lineup_role_plan()
+  flags <- lineup_position_flags(position)
+  minutes <- suppressWarnings(as.numeric(minutes))
+  vapply(seq_along(minutes), function(i) {
+    starter_allowed <- rep(FALSE, nrow(plan))
+    starter_allowed[plan$role_type == "Bench"] <- TRUE
+    if (isTRUE(flags$has_guard[[i]])) starter_allowed[plan$role_order %in% c(1L, 2L)] <- TRUE
+    if (isTRUE(flags$has_forward[[i]])) starter_allowed[plan$role_order %in% c(3L, 4L)] <- TRUE
+    if (isTRUE(flags$has_center[[i]])) starter_allowed[plan$role_order == 5L] <- TRUE
+    candidates <- plan[starter_allowed, , drop = FALSE]
+    if (!nrow(candidates)) candidates <- plan
+    if (!is.finite(minutes[[i]])) return(10L)
+    candidates$role_order[[which.min(abs(candidates$role_band_minutes - minutes[[i]]))]]
+  }, integer(1))
+}
+
+expected_free_agent_role_rows <- function(df) {
+  if (!nrow(df)) return(data.frame())
+  if (!(".lineup_row_id" %in% names(df))) df$.lineup_row_id <- seq_len(nrow(df))
+  plan <- lineup_role_plan()
+  minutes <- suppressWarnings(as.numeric(df$Minutes))
+  impact_order <- free_agent_impact_role_order(df$total, df$position)
+  minutes_order <- free_agent_minutes_role_order(minutes, df$position)
+  impact_target <- plan$role_band_minutes[match(impact_order, plan$role_order)]
+  minutes_target <- plan$role_band_minutes[match(minutes_order, plan$role_order)]
+  role_order <- ifelse(
+    is.finite(impact_target) & impact_target >= minutes_target,
+    impact_order,
+    minutes_order
+  )
+  role_order[!is.finite(role_order)] <- 10L
+  out <- merge(
+    data.frame(.lineup_row_id = df$.lineup_row_id, role_order = as.integer(role_order), stringsAsFactors = FALSE),
+    plan,
+    by = "role_order",
+    all.x = TRUE,
+    sort = FALSE
+  )
+  out$lineup_rank <- match(out$.lineup_row_id, df$.lineup_row_id)
+  out$is_starter <- out$role_type == "Starter"
+  role_score <- round(lineup_role_score(df), 2)
+  out$role_score <- role_score[match(out$.lineup_row_id, df$.lineup_row_id)]
+  out
+}
+
+apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
   if (!nrow(rows)) return(rows)
   rows$lineup_original_minutes <- suppressWarnings(as.numeric(rows$Minutes))
   rows$lineup_adjusted_minutes <- suppressWarnings(as.numeric(rows$Minutes))
@@ -1529,6 +1611,32 @@ apply_lineup_minute_adjustment <- function(rows) {
       rows$lineup_role[[idx]] <- selections$role_label[[i]]
       rows$lineup_role_order[[idx]] <- selections$role_order[[i]]
       rows$lineup_role_band_minutes[[idx]] <- selections$role_band_minutes[[i]]
+    }
+  }
+
+  if (isTRUE(adjust_free_agents)) {
+    free_agents <- rows[rows$team == "FA" & !is.na(rows$team), , drop = FALSE]
+    fa_roles <- expected_free_agent_role_rows(free_agents)
+    if (!is.null(fa_roles) && nrow(fa_roles)) {
+      for (i in seq_len(nrow(fa_roles))) {
+        idx <- fa_roles$.lineup_row_id[[i]]
+        original_minutes <- suppressWarnings(as.numeric(rows$Minutes[[idx]]))
+        if (!is.finite(original_minutes)) original_minutes <- 0
+        role_target <- fa_roles$role_band_minutes[[i]]
+        games <- suppressWarnings(as.numeric(rows$games[[idx]]))
+        adjusted <- max(original_minutes, 0.4 * original_minutes + 0.6 * role_target, na.rm = TRUE)
+        adjusted <- clamp(adjusted, 0, 82 * 36)
+        if (!is.finite(games) || games <= 0) games <- ifelse(adjusted > 0, min(82, adjusted / 36), 0)
+        if (adjusted > games * 36) {
+          games <- min(82, adjusted / 36)
+        }
+        rows$Minutes[[idx]] <- round(adjusted, 0)
+        rows$games[[idx]] <- round(games, 1)
+        rows$p_mpg[[idx]] <- round(ifelse(games > 0, rows$Minutes[[idx]] / games, rows$p_mpg[[idx]]), 1)
+        rows$lineup_role[[idx]] <- paste("Expected", fa_roles$role_label[[i]])
+        rows$lineup_role_order[[idx]] <- fa_roles$role_order[[i]]
+        rows$lineup_role_band_minutes[[idx]] <- fa_roles$role_band_minutes[[i]]
+      }
     }
   }
 
@@ -1671,7 +1779,13 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
       vets$draft_year,
       vets$overall_pick
     )
-    vets$incumbent_team <- normalize_team(original$team)
+    incumbent_team <- normalize_team(original$team)
+    contract_team <- if ("contract_team" %in% names(original)) normalize_team(original$contract_team) else rep(NA_character_, nrow(original))
+    missing_incumbent <- incumbent_team == "FA" | is_blank_text(incumbent_team)
+    contract_controlled_next <- is.finite(vets$contract) & vets$contract > 0
+    use_contract_team <- missing_incumbent & contract_controlled_next & !is_blank_text(contract_team) & contract_team != "FA"
+    incumbent_team[use_contract_team] <- contract_team[use_contract_team]
+    vets$incumbent_team <- incumbent_team
     vets$projection_roster_status <- projection_roster_status(vets$contract_status, vets$contract)
     keep_with_incumbent <- vets$projection_roster_status %in% c("signed", "team_controlled", "restricted", "player_option")
     option_status <- vets$contract_status %in% c("Player Option", "Team Option")
@@ -1708,7 +1822,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
   rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
   minute_rows <- assign_team_projection_scenario(rows, "base")
-  minute_rows <- apply_lineup_minute_adjustment(minute_rows)
+  minute_rows <- apply_lineup_minute_adjustment(minute_rows, adjust_free_agents = TRUE)
   rows$games <- minute_rows$games
   rows$Minutes <- minute_rows$Minutes
   rows$p_mpg <- minute_rows$p_mpg
@@ -1783,7 +1897,8 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
 load_contract_option_reference <- function(base_dir) {
   option_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
   paths <- list.files(option_dir, pattern = "^contract_options_[0-9]{4}\\.csv$", full.names = TRUE)
-  if (!length(paths)) {
+  bref_paths <- list.files(option_dir, pattern = "^contracts_bref_[0-9]{4}_current\\.csv$", full.names = TRUE)
+  if (!length(paths) && !length(bref_paths)) {
     return(data.frame(
       nba_id = integer(),
       impact_year = integer(),
@@ -1794,7 +1909,7 @@ load_contract_option_reference <- function(base_dir) {
     ))
   }
 
-  refs <- do.call(rbind, lapply(paths, function(path) {
+  refs <- lapply(paths, function(path) {
     x <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
     if (!("impact_year" %in% names(x))) {
       x$impact_year <- suppressWarnings(as.integer(sub("^contract_options_([0-9]{4})\\.csv$", "\\1", basename(path))))
@@ -1822,7 +1937,31 @@ load_contract_option_reference <- function(base_dir) {
       contract_status = as.character(x$contract_status),
       stringsAsFactors = FALSE
     )
-  }))
+  })
+  bref_refs <- lapply(bref_paths, function(path) {
+    x <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+    contract_year <- suppressWarnings(as.integer(sub("^contracts_bref_([0-9]{4})_current\\.csv$", "\\1", basename(path))))
+    if (!is.finite(contract_year)) contract_year <- 2026L
+    if (!("nba_id" %in% names(x))) x$nba_id <- NA_integer_
+    if (!("player_name" %in% names(x))) x$player_name <- NA_character_
+    if (!("team" %in% names(x))) x$team <- NA_character_
+    out <- lapply(0:5, function(horizon) {
+      status_col <- paste0("contract_status_y", horizon)
+      if (!(status_col %in% names(x))) {
+        return(NULL)
+      }
+      data.frame(
+        nba_id = suppressWarnings(as.integer(x$nba_id)),
+        impact_year = contract_year + horizon,
+        name_key = normalize_name(x$player_name),
+        team_key = normalize_team(x$team),
+        contract_status = as.character(x[[status_col]]),
+        stringsAsFactors = FALSE
+      )
+    })
+    do.call(rbind, out[!vapply(out, is.null, logical(1))])
+  })
+  refs <- do.call(rbind, c(refs, bref_refs))
   refs <- refs[refs$contract_status %in% c("Player Option", "Team Option") & is.finite(refs$impact_year), , drop = FALSE]
   refs <- refs[order(refs$impact_year, refs$nba_id, refs$name_key), ]
   refs[!duplicated(paste(refs$impact_year, refs$nba_id, refs$name_key, refs$team_key)), , drop = FALSE]
@@ -1863,7 +2002,6 @@ load_contract_reference <- function(base_dir) {
       explicit_status <- as.character(contracts[[status_col]])
       has_explicit_status <- !is.na(explicit_status) & nzchar(trimws(explicit_status))
       out[has_explicit_status] <- explicit_status[has_explicit_status]
-      return(out)
     }
     if (!nrow(option_reference)) return(out)
 
@@ -2061,6 +2199,213 @@ carry_forward_dnq_profiles <- function(x, latest_year) {
   x
 }
 
+load_current_roster_truth <- function(base_dir, roster_year) {
+  roster_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+  path <- file.path(roster_dir, paste0("current_rosters_", roster_year, ".csv"))
+  if (!file.exists(path)) {
+    return(data.frame(
+      nba_id = integer(),
+      player_name = character(),
+      name_key = character(),
+      roster_truth_team = character(),
+      roster_truth_source = character(),
+      roster_truth_pulled_at = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  roster <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  required <- c("player_name", "team")
+  if (!all(required %in% names(roster))) {
+    stop("Roster truth file is missing required columns: ", path)
+  }
+  if (!("nba_id" %in% names(roster))) roster$nba_id <- NA_integer_
+  if (!("roster_source" %in% names(roster))) roster$roster_source <- "NBA.com league roster"
+  if (!("pulled_at" %in% names(roster))) roster$pulled_at <- NA_character_
+
+  out <- data.frame(
+    nba_id = suppressWarnings(as.integer(roster$nba_id)),
+    player_name = as.character(roster$player_name),
+    name_key = normalize_name(roster$player_name),
+    roster_truth_team = normalize_team(roster$team),
+    roster_truth_source = as.character(roster$roster_source),
+    roster_truth_pulled_at = as.character(roster$pulled_at),
+    stringsAsFactors = FALSE
+  )
+  out$roster_truth_team[is_blank_text(out$roster_truth_team)] <- "FA"
+  out <- out[nzchar(out$name_key), , drop = FALSE]
+  out <- out[order(is.na(out$nba_id), out$nba_id, out$name_key), , drop = FALSE]
+  out[!duplicated(ifelse(!is.na(out$nba_id), paste0("id:", out$nba_id), paste0("name:", out$name_key))), , drop = FALSE]
+}
+
+apply_current_roster_truth <- function(x, base_dir, roster_year) {
+  roster <- load_current_roster_truth(base_dir, roster_year)
+  x$current_roster_team <- normalize_team(x$team)
+  x$roster_truth_team <- NA_character_
+  x$roster_status_source <- NA_character_
+  x$roster_truth_pulled_at <- NA_character_
+
+  latest_rows <- x$year == roster_year
+  if (!any(latest_rows, na.rm = TRUE)) {
+    return(x)
+  }
+  if (!nrow(roster)) {
+    allow_missing <- tolower(trimws(Sys.getenv("FRONTEND_ALLOW_MISSING_ROSTER_TRUTH", "false"))) %in% c("1", "true", "yes")
+    message("Roster truth not found for ", roster_year, ". Set FRONTEND_ALLOW_MISSING_ROSTER_TRUTH=true to keep legacy team assignments.")
+    if (!allow_missing) {
+      stop("Missing current roster truth for ", roster_year, ". Run script/data/pull_current_nba_rosters.R first.")
+    }
+    return(x)
+  }
+
+  row_ids <- suppressWarnings(as.integer(x$nba_id))
+  id_match <- match(row_ids, roster$nba_id)
+  name_match <- match(normalize_name(x$player_name), roster$name_key)
+  roster_match <- ifelse(!is.na(id_match), id_match, name_match)
+  matched <- latest_rows & !is.na(roster_match)
+  missing <- latest_rows & is.na(roster_match)
+
+  truth_team <- rep(NA_character_, nrow(x))
+  truth_team[matched] <- roster$roster_truth_team[roster_match[matched]]
+  truth_source <- rep(NA_character_, nrow(x))
+  truth_source[matched] <- roster$roster_truth_source[roster_match[matched]]
+  truth_pulled_at <- rep(NA_character_, nrow(x))
+  truth_pulled_at[matched] <- roster$roster_truth_pulled_at[roster_match[matched]]
+
+  x$roster_truth_team[matched] <- truth_team[matched]
+  x$roster_status_source[matched] <- truth_source[matched]
+  x$roster_truth_pulled_at[matched] <- truth_pulled_at[matched]
+  x$roster_truth_team[missing] <- "FA"
+  x$roster_status_source[missing] <- "NBA.com league roster missing player"
+
+  active <- matched & truth_team != "FA" & !is_blank_text(truth_team)
+  inactive <- latest_rows & !active
+
+  x$team[active] <- truth_team[active]
+  x$incumbent_team[active] <- truth_team[active]
+  x$market_team[active] <- truth_team[active]
+  x$team_projection_base[active] <- truth_team[active]
+  x$current_roster_team[active] <- truth_team[active]
+
+  x$team[inactive] <- "FA"
+  x$market_team[inactive] <- "FA"
+  x$team_projection_base[inactive] <- "FA"
+  x$current_roster_team[inactive] <- "FA"
+  x$projection_roster_status[inactive] <- "open_market"
+  x$contract_status[inactive] <- ifelse(x$contract_status[inactive] %in% c("RFA", "Rookie FA"), x$contract_status[inactive], "UFA")
+
+  message(
+    "Roster truth applied for ", roster_year, ": active=", sum(active, na.rm = TRUE),
+    ", FA/missing=", sum(inactive, na.rm = TRUE),
+    ", roster rows=", nrow(roster)
+  )
+  x
+}
+
+write_roster_truth_audit <- function(base_dir, players, teams, team_lineups, roster_year) {
+  roster <- load_current_roster_truth(base_dir, roster_year)
+  out_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+  audit_path <- file.path(out_dir, paste0("current_roster_audit_", roster_year, ".csv"))
+  dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+  season_players <- players[players$year == roster_year, , drop = FALSE]
+  if (!nrow(season_players)) {
+    return(data.frame())
+  }
+  season_players$name_key <- normalize_name(season_players$player_name)
+
+  if (nrow(roster)) {
+    id_match <- match(suppressWarnings(as.integer(season_players$nba_id)), roster$nba_id)
+    name_match <- match(season_players$name_key, roster$name_key)
+    roster_match <- ifelse(!is.na(id_match), id_match, name_match)
+    truth_team <- ifelse(!is.na(roster_match), roster$roster_truth_team[roster_match], "FA")
+    truth_source <- ifelse(!is.na(roster_match), roster$roster_truth_source[roster_match], "NBA.com league roster missing player")
+  } else {
+    truth_team <- rep(NA_character_, nrow(season_players))
+    truth_source <- rep("missing roster truth file", nrow(season_players))
+  }
+
+  lineup_keys <- unique(paste(
+    suppressWarnings(as.integer(team_lineups$year)),
+    suppressWarnings(as.integer(team_lineups$nba_id)),
+    normalize_team(team_lineups$team),
+    sep = "||"
+  ))
+  lineup_team <- normalize_team(season_players$team)
+  in_lineup <- paste(roster_year, suppressWarnings(as.integer(season_players$nba_id)), lineup_team, sep = "||") %in% lineup_keys
+
+  audit <- data.frame(
+    year = roster_year,
+    nba_id = suppressWarnings(as.integer(season_players$nba_id)),
+    player_name = season_players$player_name,
+    impact_team = normalize_team(season_players$team),
+    roster_truth_team = truth_team,
+    in_team_lineup = in_lineup,
+    contract_status = as.character(season_players$contract_status),
+    roster_status_source = truth_source,
+    stringsAsFactors = FALSE
+  )
+  audit$issue <- ifelse(
+    is.na(audit$roster_truth_team),
+    "missing_roster_truth",
+    ifelse(
+      audit$in_team_lineup & audit$roster_truth_team == "FA",
+      "fa_player_in_lineup",
+      ifelse(
+        audit$in_team_lineup & audit$impact_team != audit$roster_truth_team,
+        "lineup_team_mismatch",
+        ifelse(audit$impact_team != audit$roster_truth_team, "impact_team_mismatch", "")
+      )
+    )
+  )
+  write.csv(audit, audit_path, row.names = FALSE, na = "")
+
+  if (nrow(roster)) {
+    lineup_season <- team_lineups[suppressWarnings(as.integer(team_lineups$year)) == roster_year, , drop = FALSE]
+    if (nrow(lineup_season)) {
+      lineup_id_match <- match(suppressWarnings(as.integer(lineup_season$nba_id)), roster$nba_id)
+      lineup_name_match <- match(normalize_name(lineup_season$player_name), roster$name_key)
+      lineup_match <- ifelse(!is.na(lineup_id_match), lineup_id_match, lineup_name_match)
+      lineup_truth_team <- ifelse(!is.na(lineup_match), roster$roster_truth_team[lineup_match], "FA")
+      stale_lineups <- lineup_season[
+        is.na(lineup_match) |
+          lineup_truth_team == "FA" |
+          normalize_team(lineup_season$team) != lineup_truth_team,
+        ,
+        drop = FALSE
+      ]
+      if (nrow(stale_lineups)) {
+        stale_names <- paste(utils::head(paste(stale_lineups$player_name, stale_lineups$team, sep = "@"), 20), collapse = ", ")
+        stop("Roster truth audit failed: stale ", roster_year, " lineup rows found: ", stale_names)
+      }
+    }
+
+    active_counts <- aggregate(
+      season_players$nba_id,
+      by = list(team = normalize_team(season_players$team)),
+      FUN = function(v) length(unique(v))
+    )
+    names(active_counts)[2] <- "expected_count"
+    active_counts <- active_counts[active_counts$team != "FA", , drop = FALSE]
+    team_scenario <- if ("scenario_id" %in% names(teams)) as.character(teams$scenario_id) else rep("base", nrow(teams))
+    base_teams <- teams[suppressWarnings(as.integer(teams$year)) == roster_year & (is.na(team_scenario) | team_scenario == "base"), , drop = FALSE]
+    team_counts <- merge(
+      active_counts,
+      base_teams[, intersect(c("team", "roster_count"), names(base_teams)), drop = FALSE],
+      by = "team",
+      all.x = TRUE
+    )
+    bad_counts <- team_counts[is.na(team_counts$roster_count) | team_counts$expected_count != team_counts$roster_count, , drop = FALSE]
+    if (nrow(bad_counts)) {
+      bad <- paste(utils::head(paste0(bad_counts$team, " expected ", bad_counts$expected_count, " got ", bad_counts$roster_count), 20), collapse = ", ")
+      stop("Roster truth audit failed: team projection roster counts do not match corrected player pools: ", bad)
+    }
+  }
+
+  message("Roster truth audit written: ", audit_path)
+  audit
+}
+
 build_impact_players <- function(base_dir) {
   cap_assumptions <- load_cap_assumptions(base_dir)
   impact_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "impactoutput.csv")
@@ -2230,6 +2575,7 @@ build_impact_players <- function(base_dir) {
   x$market_team <- ifelse(is_blank_text(x$team), "FA", normalize_team(x$team))
   x$team_projection_base <- x$market_team
   x$projection_roster_status <- projection_roster_status(x$contract_status, x$contract)
+  x <- apply_current_roster_truth(x, base_dir, contract_year)
 
   x <- x[order(x$year, -x$total, x$player_name), ]
   x$replacement_total <- replacement_from_data(x, "total")
@@ -2415,7 +2761,8 @@ build_impact_players <- function(base_dir) {
   x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Replacement is a trailing 3-year position-count cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
   cols <- c(
-    "nba_id", "player_name", "year", "team", "incumbent_team", "market_team", "team_projection_base",
+    "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "roster_status_source", "roster_truth_pulled_at",
+    "incumbent_team", "market_team", "team_projection_base",
     "projection_roster_status", "position", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "replacement_total", "score", "score_label", "score_delta", "tier", "availability_status", "availability_reason",
@@ -3338,6 +3685,13 @@ latest_impact_year <- max(suppressWarnings(as.integer(players$skill_source_year)
 if (!is.finite(latest_impact_year)) {
   latest_impact_year <- max(players$year, na.rm = TRUE)
 }
+roster_audit <- with_frontend_timing(
+  base_dir,
+  "frontend_export",
+  "write_roster_truth_audit",
+  write_roster_truth_audit(base_dir, players, teams, team_lineups, latest_impact_year),
+  paste0("roster year ", latest_impact_year)
+)
 replacement_reference <- replacement_reference_from_players(players, latest_impact_year)
 impact_reference <- players[
   players$year == latest_impact_year &
@@ -3365,6 +3719,31 @@ with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_pro
 with_frontend_timing(base_dir, "frontend_export_write", "write_draft_model_summary_json", write_json_df(model_summary, file.path(out_dir, "draft_model_summary.json")), paste0(nrow(model_summary), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_draft_model_feature_details_json", write_json_df(model_details, file.path(out_dir, "draft_model_feature_details.json")), paste0(nrow(model_details), " rows"))
 
+offseason_truth_path <- file.path(out_dir, "offseason_truth.json")
+offseason_truth_script <- file.path(base_dir, "script", "frontend", "build_offseason_truth_overlay.mjs")
+node_bin <- Sys.which("node")
+if (file.exists(offseason_truth_script) && nzchar(node_bin)) {
+  with_frontend_timing(
+    base_dir,
+    "frontend_export_write",
+    "write_offseason_truth_json",
+    system2(node_bin, offseason_truth_script, stdout = TRUE, stderr = TRUE),
+    "offseason truth overlay"
+  )
+}
+
+cap_tracker_path <- file.path(out_dir, "cap_tracker.json")
+cap_tracker_script <- file.path(base_dir, "script", "frontend", "build_cap_tracker_data.mjs")
+if (file.exists(cap_tracker_script) && nzchar(node_bin)) {
+  with_frontend_timing(
+    base_dir,
+    "frontend_export_write",
+    "write_cap_tracker_json",
+    system2(node_bin, cap_tracker_script, stdout = TRUE, stderr = TRUE),
+    "multi-year cap tracker"
+  )
+}
+
 manifest_rows <- data.frame(
   dataset = c(
     "impact_players", "team_projections", "team_lineups", "team_schedules", "pick_assets", "draft_prospects",
@@ -3383,6 +3762,29 @@ manifest_rows <- data.frame(
   ),
   stringsAsFactors = FALSE
 )
+if (file.exists(offseason_truth_path)) {
+  manifest_rows <- rbind(manifest_rows, data.frame(
+    dataset = "offseason_truth",
+    rows = sum(players$year == latest_impact_year, na.rm = TRUE),
+    file = "offseason_truth.json",
+    stringsAsFactors = FALSE
+  ))
+}
+if (file.exists(cap_tracker_path)) {
+  cap_tracker_rows <- length(unique(teams$team)) * 6
+  if (requireNamespace("jsonlite", quietly = TRUE)) {
+    cap_tracker_data <- tryCatch(jsonlite::fromJSON(cap_tracker_path), error = function(e) NULL)
+    if (!is.null(cap_tracker_data) && "team_seasons" %in% names(cap_tracker_data)) {
+      cap_tracker_rows <- nrow(cap_tracker_data$team_seasons)
+    }
+  }
+  manifest_rows <- rbind(manifest_rows, data.frame(
+    dataset = "cap_tracker",
+    rows = cap_tracker_rows,
+    file = "cap_tracker.json",
+    stringsAsFactors = FALSE
+  ))
+}
 
 with_frontend_timing(
   base_dir,

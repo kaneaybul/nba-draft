@@ -130,6 +130,33 @@ run_script <- function(base_dir, label, relative_path) {
   )
 }
 
+run_node_script <- function(base_dir, label, relative_path) {
+  node_bin <- Sys.which("node")
+  script_path <- file.path(base_dir, relative_path)
+  if (!file.exists(script_path) || !nzchar(node_bin)) {
+    message("Skipping ", label, ": node or script not available.")
+    return(invisible(NULL))
+  }
+
+  message("")
+  message("=== ", label, " ===")
+  with_frontend_timing(
+    base_dir,
+    "frontend_refresh",
+    label,
+    {
+      output <- system2(node_bin, script_path, stdout = TRUE, stderr = TRUE)
+      status <- attr(output, "status")
+      if (length(output)) message(paste(output, collapse = "\n"))
+      if (!is.null(status) && status != 0) {
+        stop(paste0(label, " failed with exit status ", status))
+      }
+      invisible(output)
+    },
+    relative_path
+  )
+}
+
 base_dir <- resolve_base_dir()
 if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY"))) {
   Sys.setenv(REFRESH_FULL_SWITCH_HISTORY = "false")
@@ -138,6 +165,7 @@ if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY"))) {
 run_script(base_dir, "Refresh backend outputs", file.path("script", "refresh_outputs_2026.txt"))
 run_script(base_dir, "Refresh Basketball-Reference availability data", file.path("script", "data", "pull_bref_player_seasons.R"))
 run_script(base_dir, "Refresh contract data", file.path("script", "data", "pull_contracts_databallr.R"))
+run_node_script(base_dir, "Build cap transaction review", file.path("script", "frontend", "build_cap_transaction_review.mjs"))
 run_script(base_dir, "Refresh salary cap assumptions", file.path("script", "data", "pull_salary_cap_assumptions.R"))
 run_script(base_dir, "Score career projections", file.path("script", "models", "score_career_projection_models.R"))
 run_script(base_dir, "Export frontend data", file.path("script", "frontend", "export_frontend_data.R"))

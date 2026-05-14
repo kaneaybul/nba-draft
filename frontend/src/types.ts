@@ -9,6 +9,17 @@ export type PlayerImpact = {
   player_name: string;
   year: number;
   team: string;
+  current_roster_team?: string | null;
+  roster_truth_team?: string | null;
+  roster_truth_pulled_at?: string | null;
+  rights_team?: string | null;
+  bird_rights?: "Bird" | "Early Bird" | "Non-Bird" | "None" | string | null;
+  cap_hold?: number | null;
+  cap_hold_type?: string | null;
+  guaranteed_salary?: number | null;
+  dead_cap?: number | null;
+  waived_date?: string | null;
+  roster_status_source?: string | null;
   incumbent_team?: string | null;
   market_team?: string | null;
   team_projection_base?: string | null;
@@ -376,6 +387,413 @@ export type DraftTrackerProspectScore = {
   board_year_z?: number | null;
 };
 
+export type OffseasonPlayerTruth = {
+  key: string;
+  nba_id?: number | null;
+  player_name: string;
+  year: number;
+  current_roster_team: string;
+  rights_team: string;
+  bird_rights: "Bird" | "Early Bird" | "Non-Bird" | "None" | string;
+  cap_hold: number;
+  cap_hold_type: string;
+  guaranteed_salary: number;
+  dead_cap: number;
+  waived_date?: string | null;
+  roster_status_source: string;
+  contract_status?: string | null;
+  contract_status_source?: string | null;
+  signed_using?: string | null;
+  free_agent_status?: string | null;
+};
+
+export type OffseasonTeamCapSheet = {
+  year: number;
+  team: string;
+  active_salary: number;
+  guaranteed_salary: number;
+  dead_cap: number;
+  cap_holds: number;
+  roster_charges: number;
+  practical_cap_space: number;
+  maximum_cap_space: number;
+  tax_room: number;
+  first_apron_room: number;
+  second_apron_room: number;
+  active_roster_count: number;
+  hold_count: number;
+  cap_validation_delta?: number | null;
+  validation_source?: string | null;
+};
+
+export type OffseasonTruthData = {
+  generated_at: string;
+  source_policy: string;
+  notes: string[];
+  players: Record<string, OffseasonPlayerTruth>;
+  team_caps: OffseasonTeamCapSheet[];
+  stale_roster_conflicts: Array<{ player: string; team: string; issue: string; source: string }>;
+};
+
+export type CapTrackerMoneySource = "contract" | "bref-option" | "override" | "estimated" | "projected" | "unavailable";
+export type CapTrackerCellKind =
+  | "guaranteed"
+  | "partial_guarantee"
+  | "player_option"
+  | "team_option"
+  | "non_guaranteed"
+  | "draft_pick"
+  | "cap_hold"
+  | "dead"
+  | "empty";
+
+export type CapTrackerSeason = {
+  year: number;
+  label: string;
+  salary_cap: number;
+  tax_level: number;
+  first_apron: number;
+  second_apron: number;
+  salary_floor: number;
+  minimum_roster_charge: number;
+  source: string;
+  source_quality: CapTrackerMoneySource;
+};
+
+export type CapTrackerContractCell = {
+  year: number;
+  amount: number;
+  kind: CapTrackerCellKind;
+  status: string;
+  source: CapTrackerMoneySource;
+  label?: string | null;
+  note?: string | null;
+  guaranteed_amount?: number | null;
+  unguaranteed_amount?: number | null;
+  guarantee_deadline?: string | null;
+  guarantee_note?: string | null;
+  guarantee_source?: "contract_notes" | "override" | "unavailable" | string | null;
+};
+
+export type CapTrackerContractRow = {
+  id: string;
+  nba_id?: number | null;
+  player_name: string;
+  team: string;
+  row_type: "player" | "draft_pick" | "dead_money";
+  display_order: number;
+  position?: string | null;
+  age?: number | null;
+  rank?: number | null;
+  contract_notes?: string | null;
+  source: string;
+  source_quality: CapTrackerMoneySource;
+  cells: CapTrackerContractCell[];
+};
+
+export type CapTrackerTeamSeason = {
+  team: string;
+  year: number;
+  guaranteed_salary: number;
+  guaranteed_base_salary?: number;
+  at_risk_salary?: number;
+  option_salary: number;
+  non_guaranteed_salary: number;
+  salary_on_books: number;
+  draft_pick_charges: number;
+  active_salary: number;
+  dead_money: number;
+  cap_holds: number;
+  roster_charges_with_holds: number;
+  roster_charges_renounced: number;
+  tax_salary?: number;
+  apron_salary?: number;
+  team_salary_with_holds?: number;
+  team_salary_renounced?: number;
+  likely_books_with_holds: number;
+  likely_books_renounced: number;
+  cap_room_with_holds: number;
+  cap_room_renounced: number;
+  room_if_holds_retained: number;
+  room_if_renounced: number;
+  tax_room: number;
+  first_apron_room: number;
+  second_apron_room: number;
+  tax_room_with_holds: number;
+  tax_room_renounced: number;
+  first_apron_room_with_holds: number;
+  first_apron_room_renounced: number;
+  second_apron_room_with_holds: number;
+  second_apron_room_renounced: number;
+  salary_floor_room: number;
+  roster_count: number;
+  hold_count: number;
+  status_band: string;
+  status_band_with_holds?: string;
+  status_band_renounced?: string;
+  tax_status_band?: string;
+  apron_status_band?: string;
+  sandbox_dead_money_added?: number;
+  source_quality: CapTrackerMoneySource;
+};
+
+export type CapTrackerException = {
+  id: string;
+  team: string;
+  year: number;
+  name: string;
+  amount: number;
+  path: "retained" | "renounced" | "override" | string;
+  expires?: string | null;
+  note?: string | null;
+  source: string;
+  source_quality?: CapTrackerMoneySource;
+};
+
+export type CapTrackerPick = {
+  id: string;
+  team: string;
+  year: number;
+  round: number;
+  label: string;
+  protection?: string | null;
+  source: string;
+  source_quality: CapTrackerMoneySource;
+};
+
+export type CapTrackerDeadMoney = {
+  id: string;
+  canonical_key?: string;
+  event_key?: string | null;
+  transaction_key?: string | null;
+  effective_date?: string | null;
+  team: string;
+  year: number;
+  player_name: string;
+  amount: number;
+  note?: string | null;
+  source: string;
+  source_quality?: CapTrackerMoneySource;
+};
+
+export type CapTrackerMaxContractLevel = {
+  year: number;
+  tier: "25%" | "30%" | "35%";
+  first_year_salary: number;
+  four_year_non_bird_total: number;
+  five_year_bird_total: number;
+};
+
+export type CapTrackerTeam = {
+  team: string;
+  team_name: string;
+  team_abbr: string;
+  conference?: string | null;
+  team_logo_url?: string | null;
+};
+
+export type CapTrackerData = {
+  schema_version?: number;
+  generated_at: string;
+  source_policy: string;
+  notes: string[];
+  seasons: CapTrackerSeason[];
+  teams: CapTrackerTeam[];
+  team_seasons: CapTrackerTeamSeason[];
+  contracts: CapTrackerContractRow[];
+  exceptions: CapTrackerException[];
+  picks: CapTrackerPick[];
+  dead_money: CapTrackerDeadMoney[];
+  max_contracts: CapTrackerMaxContractLevel[];
+  validation_summary?: {
+    duplicate_contract_ids: number;
+    duplicate_team_seasons: number;
+    duplicate_dead_money_rows: number;
+    team_season_rows_expected: number;
+    team_season_rows_actual: number;
+  };
+  warnings?: string[];
+  source_audit: Array<{ label: string; detail: string; quality: CapTrackerMoneySource }>;
+};
+
+export type CapSandboxDecisionAction =
+  | "retain"
+  | "renounce"
+  | "exercise"
+  | "decline"
+  | "accept"
+  | "keep"
+  | "waive_before_guarantee"
+  | "remove";
+
+export type CapSandboxDecision = {
+  id: string;
+  team: string;
+  row_id: string;
+  year: number;
+  action: CapSandboxDecisionAction;
+  created_at: string;
+};
+
+export type CapSandboxScenario = {
+  id: string;
+  name: string;
+  team: string;
+  created_at: string;
+  updated_at: string;
+  decisions: Record<string, CapSandboxDecision>;
+};
+
+export type SandboxTeamSeason = CapTrackerTeamSeason & {
+  base_likely_books_with_holds?: number;
+  base_likely_books_renounced?: number;
+  sandbox_dead_money_added?: number;
+};
+
+export type SandboxException = CapTrackerException & {
+  sandbox?: boolean;
+};
+
+export type CapReviewRow = {
+  transaction_key: string;
+  transaction_date: string;
+  source: string;
+  source_url: string;
+  reference_url: string;
+  nba_id?: string | null;
+  player_name: string;
+  team_from?: string | null;
+  team_to?: string | null;
+  transaction_type: string;
+  raw_text: string;
+  classification: string;
+  confidence: string;
+  recommended_action: string;
+  affected_files: string;
+  contract_delta?: string | null;
+  salary_resolution_status?: "exact" | "reconciled" | "estimated" | "needs_research" | string;
+  salary_source?: string | null;
+  salary_source_url?: string | null;
+  suggested_amount?: string | number | null;
+  approved_amount?: string | number | null;
+  source_quality?: CapTrackerMoneySource | string | null;
+  resolution_note?: string | null;
+  conflict_note?: string | null;
+  applied_at?: string | null;
+  applied_key?: string | null;
+  applied_amount?: string | number | null;
+  last_error?: string | null;
+  status: "pending_review" | "needs_amount" | "approved" | "rejected" | "needs_research" | "applied" | string;
+};
+
+export type CapReviewData = {
+  generated_at: string;
+  source_policy?: string;
+  resolution_summary?: Record<string, number>;
+  review_summary?: {
+    total: number;
+    by_status: Record<string, number>;
+    by_resolution: Record<string, number>;
+    by_classification: Record<string, number>;
+    by_team: Record<string, number>;
+  };
+  rows: CapReviewRow[];
+};
+
+export type MarketToolKind = "cap" | "bird" | "mle" | "room" | "minimum";
+
+export type MarketLedgerStatus =
+  | "submitted"
+  | "rejected"
+  | "shortlisted"
+  | "won"
+  | "outbid"
+  | "matched"
+  | "declined"
+  | "withdrawn"
+  | "unresolved";
+
+export type MarketComponentBreakdown = {
+  salary: number;
+  totalGuarantee: number;
+  roleFit: number;
+  timeline: number;
+  familiarity: number;
+  willingness: number;
+  taxDrag: number;
+  scarcity: number;
+  security: number;
+  closeOfferAdjustment: number;
+  randomness: number;
+  total: number;
+};
+
+export type MarketBid = {
+  id: string;
+  round: number;
+  tier: string;
+  team: string;
+  playerId: string;
+  player: string;
+  tool: string;
+  toolKind: MarketToolKind;
+  submittedAav: number;
+  years: number;
+  legalMax: number;
+  teamPriority: number;
+  teamUtility: number;
+  playerUtility: number;
+  components: MarketComponentBreakdown;
+  capSnapshot: {
+    capSpace: number;
+    taxRoom: number;
+    firstApronRoom: number;
+    secondApronRoom: number;
+    toolAmount: number;
+  };
+  limiter: string;
+  reason: string;
+};
+
+export type MarketResolution = {
+  playerId: string;
+  player: string;
+  round: number;
+  tier: string;
+  winnerTeam?: string;
+  finalTeam?: string;
+  offerSheetTeam?: string;
+  finalAav?: number;
+  submittedWinnerBid?: number;
+  runnerUpTeam?: string;
+  runnerUpBid?: number;
+  highestRawBidTeam?: string;
+  highestRawBid?: number;
+  clearingRule: string;
+  rfaMatchResult?: "matched" | "declined" | "not_applicable";
+  unresolvedReason?: string;
+};
+
+export type MarketLedgerRow = {
+  id: string;
+  round: number;
+  tier: string;
+  team: string;
+  playerId: string;
+  player: string;
+  status: MarketLedgerStatus;
+  reason: string;
+  offer?: number;
+  legalMax?: number;
+  tool?: string;
+  playerUtility?: number;
+  teamUtility?: number;
+  teamPriority?: number;
+  needFit?: number;
+  rightsSource?: string;
+  capHoldType?: string;
+};
+
 export type AppData = {
   manifest: Manifest;
   players: PlayerImpact[];
@@ -388,4 +806,7 @@ export type AppData = {
   trackerBoardScores: DraftTrackerBoardScore[];
   trackerProspectScores: DraftTrackerProspectScore[];
   modelSummary: ModelSummary[];
+  offseasonTruth?: OffseasonTruthData;
+  capTracker?: CapTrackerData;
+  capReview?: CapReviewData;
 };

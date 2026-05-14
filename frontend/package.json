@@ -4,9 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "dev": "powershell -NoProfile -Command \"& 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\vite\\bin\\vite.js' --host 127.0.0.1\"",
+    "build": "powershell -NoProfile -Command \"& 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\typescript\\bin\\tsc'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\vite\\bin\\vite.js' build\"",
+    "preview": "powershell -NoProfile -Command \"& 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\vite\\bin\\vite.js' preview --host 127.0.0.1\"",
+    "test:offseason-market": "node ../script/frontend/run_offseason_market_regression.mjs",
+    "test:cap-sandbox": "node ../script/frontend/run_cap_sandbox_regression.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

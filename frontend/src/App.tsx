@@ -1,9 +1,11 @@
 import { type CSSProperties, type ChangeEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { loadAppData } from "./data";
+import { CapTrackerWorkspace } from "./CapTracker";
+import { OffseasonSimulatorWorkspace } from "./OffseasonSimulator";
 import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
-type View = "impact" | "teams" | "startingLineups" | "trade" | "draft" | "draftElo" | "lineups" | "tracker";
+type View = "impact" | "teams" | "startingLineups" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type ImpactSkillSortKey = SkillKey | "skill_total";
 type SortKey =
@@ -553,6 +555,8 @@ function App() {
           ["teams", "Team Projections"],
           ["startingLineups", "Starting Lineups"],
           ["trade", "Trade Sandbox"],
+          ["offseason", "Offseason Sim"],
+          ["capTracker", "Cap Tracker"],
           ["draft", "Draft Board"],
           ["draftElo", "Draft Elo"],
           ["lineups", "Lineup Synergy"],
@@ -569,6 +573,8 @@ function App() {
       {view === "teams" && <TeamWorkspace data={data} season={season} />}
       {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
       {view === "trade" && <TradeWorkspace data={data} season={season} />}
+      {view === "offseason" && <OffseasonSimulatorWorkspace data={data} season={season} />}
+      {view === "capTracker" && <CapTrackerWorkspace data={data} />}
       {view === "draft" && <DraftWorkspace data={data} />}
       {view === "draftElo" && <DraftEloWorkspace data={data} />}
       {view === "lineups" && <LineupWorkspace data={data} season={season} />}

@@ -70,39 +70,74 @@ fetch_contracts <- function() {
   if (!requireNamespace("rvest", quietly = TRUE)) {
     stop("Package 'rvest' is required to pull Basketball-Reference contracts.")
   }
+  if (!requireNamespace("xml2", quietly = TRUE)) {
+    stop("Package 'xml2' is required to pull Basketball-Reference contracts.")
+  }
   url <- "https://www.basketball-reference.com/contracts/players.html"
-  page <- rvest::read_html(url)
-  tables <- rvest::html_table(rvest::html_elements(page, "table"), fill = TRUE)
-  if (length(tables) == 0) {
+  html_path <- Sys.getenv("BREF_CONTRACTS_HTML", unset = "")
+  page <- if (nzchar(html_path) && file.exists(html_path)) {
+    rvest::read_html(html_path)
+  } else {
+    rvest::read_html(url)
+  }
+  table <- rvest::html_element(page, "table#player-contracts")
+  if (length(table) == 0 || is.na(xml2::xml_name(table))) {
     stop("No contract table found at ", url)
   }
 
-  raw <- as.data.frame(tables[[1]], stringsAsFactors = FALSE, check.names = FALSE)
-  header <- as.character(raw[1, ])
-  contracts <- raw[-1, , drop = FALSE]
-  names(contracts) <- make.names(header, unique = TRUE)
-  contracts <- contracts[contracts$Rk != "Rk" & nzchar(contracts$Player), , drop = FALSE]
-
-  salary_cols <- grep("^X?20[0-9]{2}", names(contracts), value = TRUE)
-  if (length(salary_cols) < 1) {
-    salary_cols <- names(contracts)[4:min(8, ncol(contracts))]
+  salary_nodes <- xml2::xml_find_all(table, ".//thead/tr[last()]/th[starts-with(@data-stat, 'y')]")
+  salary_stats <- xml2::xml_attr(salary_nodes, "data-stat")
+  salary_stats <- salary_stats[seq_len(min(5, length(salary_stats)))]
+  if (!length(salary_stats)) {
+    stop("No salary year columns found at ", url)
   }
-  salary_cols <- salary_cols[seq_len(min(5, length(salary_cols)))]
+
+  rows <- xml2::xml_find_all(table, ".//tbody/tr[td[@data-stat='player']]")
+  if (!length(rows)) {
+    stop("No player rows found at ", url)
+  }
+
+  cell_value <- function(row, stat) {
+    node <- xml2::xml_find_first(row, paste0(".//*[@data-stat='", stat, "']"))
+    if (length(node) == 0 || is.na(xml2::xml_name(node))) return(NA_character_)
+    value <- xml2::xml_attr(node, "csk")
+    if (is.na(value) || !nzchar(value)) value <- rvest::html_text2(node)
+    value
+  }
+  cell_class <- function(row, stat) {
+    node <- xml2::xml_find_first(row, paste0(".//*[@data-stat='", stat, "']"))
+    if (length(node) == 0 || is.na(xml2::xml_name(node))) return(NA_character_)
+    xml2::xml_attr(node, "class")
+  }
+  option_status <- function(class_name) {
+    class_name <- as.character(class_name)
+    if (grepl("\\bsalary-pl\\b", class_name)) return("Player Option")
+    if (grepl("\\bsalary-tm\\b", class_name)) return("Team Option")
+    NA_character_
+  }
 
   out <- data.frame(
-    rank = suppressWarnings(as.integer(contracts$Rk)),
-    player_name = iconv(contracts$Player, from = "", to = "ASCII//TRANSLIT"),
-    team = normalize_team(contracts$Tm),
+    rank = suppressWarnings(as.integer(vapply(rows, cell_value, character(1), stat = "ranker"))),
+    bref_player_id = vapply(rows, function(row) {
+      node <- xml2::xml_find_first(row, ".//*[@data-stat='player']")
+      value <- xml2::xml_attr(node, "data-append-csv")
+      ifelse(is.na(value), NA_character_, value)
+    }, character(1)),
+    player_name = iconv(vapply(rows, cell_value, character(1), stat = "player"), from = "", to = "ASCII//TRANSLIT"),
+    team = normalize_team(vapply(rows, cell_value, character(1), stat = "team_id")),
     stringsAsFactors = FALSE
   )
-  for (i in seq_along(salary_cols)) {
-    out[[paste0("salary_y", i - 1)]] <- clean_money(contracts[[salary_cols[i]]])
+  for (i in seq_along(salary_stats)) {
+    out[[paste0("salary_y", i - 1)]] <- clean_money(vapply(rows, cell_value, character(1), stat = salary_stats[i]))
+    out[[paste0("contract_status_y", i - 1)]] <- vapply(rows, function(row) option_status(cell_class(row, salary_stats[i])), character(1))
   }
-  for (i in length(salary_cols) + 1:5) {
-    if (i <= 5) out[[paste0("salary_y", i - 1)]] <- NA_real_
+  if (length(salary_stats) < 5) {
+    for (i in (length(salary_stats) + 1):5) {
+      out[[paste0("salary_y", i - 1)]] <- NA_real_
+      out[[paste0("contract_status_y", i - 1)]] <- NA_character_
+    }
   }
-  guaranteed_col <- grep("Guaranteed", names(contracts), value = TRUE)
-  out$guaranteed <- if (length(guaranteed_col) > 0) clean_money(contracts[[guaranteed_col[1]]]) else NA_real_
+  out$guaranteed <- clean_money(vapply(rows, cell_value, character(1), stat = "remain_gtd"))
   out$source <- url
   out
 }
@@ -151,7 +186,7 @@ attach_nba_ids <- function(base_dir, contracts) {
 
 base_dir <- resolve_base_dir()
 contract_year <- infer_contract_year(base_dir)
-out_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("contracts_", contract_year, "_current.csv"))
+out_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("contracts_bref_", contract_year, "_current.csv"))
 dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 
 contracts <- tryCatch(
@@ -168,8 +203,9 @@ contracts <- tryCatch(
 if (!is.null(contracts)) {
   contracts <- attach_nba_ids(base_dir, contracts)
   contracts <- contracts[, c(
-    "rank", "nba_id", "player_name", "team",
+    "rank", "nba_id", "bref_player_id", "player_name", "team",
     "salary_y0", "salary_y1", "salary_y2", "salary_y3", "salary_y4",
+    "contract_status_y0", "contract_status_y1", "contract_status_y2", "contract_status_y3", "contract_status_y4",
     "guaranteed", "match_method", "source"
   )]
   write.csv(contracts, out_path, row.names = FALSE, na = "")

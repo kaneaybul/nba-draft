@@ -1,0 +1,372 @@
+import { choosePlayerOffer, resolveAcceptedOffer, simulateFreeAgencyMarket, type LegacyAuditRow, type TeamBidPlan } from "./offseasonMarket";
+import type { MarketBid, MarketLedgerRow, MarketResolution, MarketToolKind } from "./types";
+
+type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
+type ToolKind = "cap" | "bird" | "mle" | "room" | "minimum";
+type TestPlayer = ReturnType<typeof player>;
+type TestTeam = ReturnType<typeof team>;
+
+const skills: Record<SkillKey, number> = {
+  FTD: 0,
+  OREB: 0,
+  PASS: 0,
+  RIM: 0,
+  SHOOT: 0,
+  DPM: 0,
+  DREB: 0,
+  RIMPRO: 0,
+  SWITCH: 0
+};
+
+const assumptions = {
+  seed: 7,
+  variance: 0,
+  marketAggression: 0.55,
+  taxSensitivity: 0.55,
+  cap: 160_000_000,
+  tax: 190_000_000,
+  firstApron: 200_000_000,
+  secondApron: 210_000_000
+};
+
+export function runOffseasonMarketRegressionTests(): string[] {
+  return [
+    highestAavWinsWhenNotClose(),
+    lowerAavWinsOnlyInsideCloseThreshold(),
+    teamTaxAndTimelineStayTeamSide(),
+    iterativeFallbacksTriggerAfterMiss(),
+    spendingToolsCannotBeSpentTwice(),
+    birdRightsCanExceedCapRoom(),
+    rfaMatchUsesExactOutsideTerms(),
+    rfaDeclineUsesExactOutsideTerms(),
+    secondApronBlocksMle(),
+    unresolvedMarketsAreExplained()
+  ];
+}
+
+function highestAavWinsWhenNotClose(): string {
+  const target = player("p1", "Money Leader", "FA", "UFA", 79, 25_000_000);
+  const high = offerPlan(team("AAA", 116_000_000, ["SHOOT"], 0.6), target, 25_000_000, 4);
+  const lower = offerPlan(team("BBB", 116_000_000, ["SHOOT"], 0.6), target, 21_500_000, 5);
+  const choice = choosePlayerOffer(target, [high, lower], 0.2);
+  expect(choice?.chosen.team.team === "AAA", "highest AAV should win when the money gap is outside the close-offer threshold");
+  expect(choice?.closeMoneyWin === false, "non-close money gap should not be reported as preference win");
+  return "highest AAV wins when offers are not financially close";
+}
+
+function lowerAavWinsOnlyInsideCloseThreshold(): string {
+  const target = player("p2", "Comfort Star", "FA", "UFA", 86, 25_000_000, "AAA", "Bird", { age: 27 });
+  const highest = offerPlan(team("BBB", 116_000_000, ["SHOOT"], 0.6), target, 25_000_000, 4);
+  const closeIncumbent = offerPlan(team("AAA", 116_000_000, ["SHOOT"], 0.6), target, 24_250_000, 5);
+  const choice = choosePlayerOffer(target, [highest, closeIncumbent], 0.2);
+  expect(choice?.chosen.team.team === "AAA", `close incumbent offer should be able to win; got ${choice?.chosen.team.team}`);
+  expect(choice?.closeMoneyWin === true, "inside-threshold lower AAV winner should be marked as close-money preference win");
+
+  const notCloseIncumbent = offerPlan(team("AAA", 116_000_000, ["SHOOT"], 0.6), target, 21_000_000, 5);
+  const notClose = choosePlayerOffer(target, [highest, notCloseIncumbent], 0.2);
+  expect(notClose?.chosen.team.team === "BBB", "lower AAV should not win when outside the close-offer threshold");
+  return "lower AAV wins only inside close-offer threshold with security/role/familiarity edge";
+}
+
+function teamTaxAndTimelineStayTeamSide(): string {
+  const target = player("p3", "Tax Test", "FA", "UFA", 74, 16_000_000);
+  const highTaxTeam = team("AAA", 188_000_000, ["SHOOT"], 0.25, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }], { mode: "tax-sensitive contender" });
+  const roomTeam = team("BBB", 118_000_000, ["SHOOT"], 0.85, undefined, { mode: "rising" });
+  const result = simulateFreeAgencyMarket([target], mapTeams([highTaxTeam, roomTeam]), assumptions, fixedRng);
+  const bids = result.bids.filter((bid) => bid.playerId === target.id);
+  expect(bids.length >= 2, "both teams should submit a team-side bid");
+  expect(bids.some((bid) => bid.team === "AAA" && bid.submittedAav < (bids.find((candidate) => candidate.team === "BBB")?.submittedAav ?? 0)), "tax/timeline pressure should affect bid amount or priority");
+  bids.forEach((bid) => {
+    expect(bid.components.timeline === 0 && bid.components.taxDrag === 0 && bid.components.willingness === 0, "player choice components must not include team timeline, tax drag, or willingness");
+  });
+  return "team tax/timeline affects bid amount and priority, not player choice";
+}
+
+function iterativeFallbacksTriggerAfterMiss(): string {
+  const firstTarget = player("p4", "First Target", "FA", "UFA", 68, 11_000_000);
+  const fallback = player("p5", "Fallback Target", "FA", "UFA", 63, 8_500_000);
+  const result = simulateFreeAgencyMarket([
+    firstTarget,
+    fallback
+  ], mapTeams([
+    team("AAA", 168_000_000, ["SHOOT"], 0.7, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }]),
+    team("BBB", 115_000_000, ["SHOOT"], 0.95)
+  ]), assumptions, fixedRng);
+  expect(result.signings.some((row) => row.player.id === firstTarget.id && row.toTeam === "BBB"), "stronger bidder should win first target");
+  expect(result.signings.some((row) => row.player.id === fallback.id && row.toTeam === "AAA"), `AAA should advance to fallback after miss; signings ${result.signings.map((row) => `${row.toTeam}:${row.player.name}`).join(", ")}`);
+  expect(result.ledger.some((row) => row.team === "AAA" && row.playerId === firstTarget.id && (row.status === "shortlisted" || row.status === "outbid")), "missed target should be visible in ledger");
+  expect(result.ledger.some((row) => row.team === "AAA" && row.playerId === fallback.id && row.status === "won"), "fallback win should be visible in ledger");
+  return "iterative team fallbacks trigger after a miss";
+}
+
+function spendingToolsCannotBeSpentTwice(): string {
+  const mleTeam = team("MLE", 168_000_000, ["SHOOT"], 0.9, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }]);
+  const mleResult = simulateFreeAgencyMarket([
+    player("p6", "MLE One", "FA", "UFA", 62, 9_000_000),
+    player("p7", "MLE Two", "FA", "UFA", 61, 9_000_000)
+  ], mapTeams([mleTeam]), assumptions, fixedRng);
+  expect(mleResult.signings.filter((row) => row.toTeam === "MLE").length === 1, "single MLE should not buy two rotation players");
+
+  const capTeam = team("CAP", 118_000_000, ["PASS"], 0.9, []);
+  const capResult = simulateFreeAgencyMarket([
+    player("p8", "Cap One", "FA", "UFA", 72, 23_000_000),
+    player("p9", "Cap Two", "FA", "UFA", 71, 23_000_000)
+  ], mapTeams([capTeam]), assumptions, fixedRng);
+  expect(capResult.signings.filter((row) => row.toTeam === "CAP").length === 1, "cap room should refresh after a signing and prevent double-spend");
+
+  const roomTeam = team("ROM", 143_900_000, ["DPM"], 0.9, [{ name: "Room", amount: 7_000_000, used: 0, kind: "room" }]);
+  const roomResult = simulateFreeAgencyMarket([
+    player("p10", "Room One", "FA", "UFA", 58, 6_000_000),
+    player("p11", "Room Two", "FA", "UFA", 57, 6_000_000)
+  ], mapTeams([roomTeam]), assumptions, fixedRng);
+  expect(roomResult.signings.filter((row) => row.toTeam === "ROM").length <= 1, "room exception should not be spent twice");
+
+  const minTeam = team("MIN", 205_000_000, ["RIM"], 0.9, [{ name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }]);
+  const minResult = simulateFreeAgencyMarket([
+    player("p12", "Minimum One", "FA", "UFA", 49, 2_000_000),
+    player("p13", "Minimum Two", "FA", "UFA", 48, 2_000_000)
+  ], mapTeams([minTeam]), assumptions, fixedRng);
+  expect(minResult.signings.filter((row) => row.toTeam === "MIN").length === 1, "minimum path should respect its remaining amount in this simplified cap model");
+  return "cap room, MLE, room exception, and minimum paths cannot be double-spent";
+}
+
+function birdRightsCanExceedCapRoom(): string {
+  const birdPlayer = player("p14", "Incumbent Big", "AAA", "RFA", 80, 24_000_000, "AAA", "Bird");
+  const result = simulateFreeAgencyMarket([birdPlayer], mapTeams([team("AAA", 158_000_000, ["RIMPRO"], 0.8)]), assumptions, fixedRng);
+  expect(result.signings[0]?.toTeam === "AAA", `Bird-right incumbent should be signable without cap room; signings ${result.signings.length}`);
+  expect(result.signings[0]?.tool === "bird", "Bird-right incumbent should use rights tool");
+  return "Bird rights can exceed cap room";
+}
+
+function rfaMatchUsesExactOutsideTerms(): string {
+  const rfa = player("p15", "Matched RFA", "AAA", "RFA", 78, 18_000_000, "AAA", "Bird", { age: 24, upside: 0.85, declineRisk: 0.05 });
+  const outsideTeam = team("BBB", 118_000_000, ["SHOOT"], 0.95);
+  const incumbent = team("AAA", 150_000_000, ["SHOOT"], 0.05);
+  const outsideOffer = offerPlan(outsideTeam, rfa, 18_000_000, 4);
+  const choice = choosePlayerOffer(rfa, [outsideOffer], 0.2);
+  expect(Boolean(choice), "outside RFA offer should be acceptable");
+  const ledger: MarketLedgerRow[] = [];
+  const resolutions: MarketResolution[] = [];
+  const audit: LegacyAuditRow[] = [];
+  const signing = resolveAcceptedOffer(choice!, mapTeams([incumbent, outsideTeam]), assumptions, 0, "regression", ledger, resolutions, audit, fixedRng);
+  expect(signing.offerSheetTeam === "BBB", `outside team should create offer sheet; got ${signing.offerSheetTeam}`);
+  expect(signing.toTeam === "AAA" && signing.matched === true, "incumbent should match exact offer sheet");
+  expect(signing.annualSalary === signing.context.resolution?.submittedWinnerBid, "matched AAV must equal outside submitted bid");
+  expect(Boolean(signing.context.resolution?.clearingRule === "matched exact offer sheet"), "resolution should state exact matching rule");
+  expect(ledger.some((row) => row.status === "matched" && row.reason.includes("Matched exact offer sheet")), "ledger should explain exact match");
+  return "RFA match uses exact outside AAV and years";
+}
+
+function rfaDeclineUsesExactOutsideTerms(): string {
+  const rfa = player("p16", "Declined RFA", "AAA", "RFA", 72, 14_000_000, "AAA", "Bird", {
+    age: 34,
+    upside: 0.05,
+    declineRisk: 0.9,
+    replaceability: 0.05,
+    skills: { ...skills, DREB: 0.1 }
+  });
+  const outsideTeam = team("BBB", 120_000_000, ["DREB"], 0.95);
+  const incumbent = team("AAA", 214_000_000, ["SHOOT"], 0.05, [{ name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }], { mode: "rebuilding" });
+  const outsideOffer = offerPlan(outsideTeam, rfa, 18_900_000, 4);
+  const choice = choosePlayerOffer(rfa, [outsideOffer], 0.2);
+  expect(Boolean(choice), "outside RFA offer should be acceptable");
+  const ledger: MarketLedgerRow[] = [];
+  const resolutions: MarketResolution[] = [];
+  const audit: LegacyAuditRow[] = [];
+  const signing = resolveAcceptedOffer(choice!, mapTeams([incumbent, outsideTeam]), assumptions, 0, "regression", ledger, resolutions, audit, fixedRng);
+  expect(signing.offerSheetTeam === "BBB" && signing.toTeam === "BBB" && !signing.matched, "declined RFA should go to outside team");
+  expect(signing.annualSalary === signing.context.resolution?.submittedWinnerBid, "declined RFA terms must equal outside submitted bid");
+  expect(ledger.some((row) => row.status === "declined" && row.reason.includes("Declined exact offer sheet")), "ledger should explain exact decline");
+  return "RFA decline sends player to outside team on exact outside terms";
+}
+
+function secondApronBlocksMle(): string {
+  const mleTeam = team("AAA", 212_000_000, ["SHOOT"], 0.9, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }]);
+  const result = simulateFreeAgencyMarket([player("p17", "Apron Target", "FA", "UFA", 63, 8_000_000)], mapTeams([mleTeam]), assumptions, fixedRng);
+  expect(result.signings.length === 0, "second-apron team should not use MLE");
+  return "second apron blocks MLE";
+}
+
+function unresolvedMarketsAreExplained(): string {
+  const result = simulateFreeAgencyMarket([player("p18", "Too Expensive", "FA", "UFA", 85, 36_000_000)], mapTeams([team("AAA", 205_000_000, ["SHOOT"], 0.2)]), assumptions, fixedRng);
+  expect(result.signings.length === 0, "unresolved player should remain unsigned");
+  expect(result.resolutions.some((row) => row.player === "Too Expensive" && row.unresolvedReason), "unresolved player should have an explanation");
+  return "unresolved markets are explained";
+}
+
+function offerPlan(teamRow: TestTeam, target: TestPlayer, salary: number, years: number, toolKind: MarketToolKind = "cap"): TeamBidPlan<TestPlayer, TestTeam> {
+  const bid: MarketBid = {
+    id: `${teamRow.team}-${target.id}-${salary}`,
+    round: 0,
+    tier: "regression",
+    team: teamRow.team,
+    playerId: target.id,
+    player: target.name,
+    tool: toolKind === "bird" ? "Bird" : "Cap Space",
+    toolKind,
+    submittedAav: salary,
+    years,
+    legalMax: salary,
+    teamPriority: 0.5,
+    teamUtility: 0.5,
+    playerUtility: 0,
+    components: {
+      salary: 0,
+      totalGuarantee: 0,
+      roleFit: 0,
+      timeline: 0,
+      familiarity: 0,
+      willingness: 0,
+      taxDrag: 0,
+      scarcity: 0,
+      security: 0,
+      closeOfferAdjustment: 0,
+      randomness: 0,
+      total: 0
+    },
+    capSnapshot: {
+      capSpace: 40_000_000,
+      taxRoom: 50_000_000,
+      firstApronRoom: 60_000_000,
+      secondApronRoom: 70_000_000,
+      toolAmount: salary
+    },
+    limiter: "regression",
+    reason: "regression offer"
+  };
+  return {
+    bid,
+    team: teamRow,
+    player: target,
+    salary,
+    years,
+    tool: { name: bid.tool, amount: salary, used: 0, kind: toolKind },
+    score: {
+      needFit: 0.5,
+      value: 0.5,
+      timeline: 0.5,
+      urgency: 0.5,
+      taxPain: 0,
+      assetValue: 0,
+      replacement: 0.5,
+      upsideRisk: 0.5,
+      incumbency: target.rightsTeam === teamRow.team ? 0.75 : 0,
+      randomness: 0,
+      total: 0.5
+    },
+    needFit: teamRow.team === target.rightsTeam ? 0.95 : 0.55,
+    timeline: 0.5,
+    taxPain: 0,
+    redundancy: 0,
+    affordability: 1,
+    alternatives: 0
+  };
+}
+
+function player(
+  id: string,
+  name: string,
+  rightsTeam: string,
+  status: "Signed" | "UFA" | "RFA",
+  score: number,
+  marketValue: number,
+  incumbent = rightsTeam,
+  rights: "Bird" | "Early Bird" | "Non-Bird" | "None" = "None",
+  overrides: Partial<ReturnType<typeof basePlayerOverrides>> = {}
+) {
+  const extra = basePlayerOverrides();
+  const mergedSkills = { ...extra.skills, ...(overrides.skills ?? {}) };
+  return {
+    id,
+    name,
+    team: status === "Signed" ? rightsTeam : "FA",
+    incumbentTeam: incumbent,
+    rightsTeam,
+    status,
+    position: overrides.position ?? "G",
+    age: overrides.age ?? 26,
+    salary: status === "Signed" ? marketValue : Math.max(2_000_000, marketValue * 0.6),
+    marketValue,
+    rights,
+    rightsSource: "regression",
+    capHold: rights === "None" ? 0 : marketValue,
+    capHoldType: rights === "None" ? "No retained cap hold" : `${rights} hold`,
+    guaranteedSalary: 0,
+    deadCap: 0,
+    total: 0,
+    score,
+    tier: score >= 84 ? "Star" : score >= 68 ? "Starter" : "Rotation",
+    tradeValue: marketValue,
+    upside: overrides.upside ?? extra.upside,
+    declineRisk: overrides.declineRisk ?? extra.declineRisk,
+    replaceability: overrides.replaceability ?? extra.replaceability,
+    skills: mergedSkills,
+    original: { yoe: 6, projection_effective_contract_y1: marketValue }
+  };
+}
+
+function basePlayerOverrides() {
+  return {
+    age: 26,
+    position: "G",
+    upside: 0.6,
+    declineRisk: 0.1,
+    replaceability: 0.35,
+    skills: { ...skills, SHOOT: 1.5, PASS: 1.2, RIMPRO: 1.1 }
+  };
+}
+
+function team(
+  teamCode: string,
+  activeSalary: number,
+  needs: SkillKey[],
+  willingness: number,
+  exceptions?: Array<{ name: string; amount: number; used: number; kind: ToolKind }>,
+  overrides: { mode?: "rebuilding" | "rising" | "playoff hopeful" | "contender" | "tax-sensitive contender"; projectedWins?: number } = {}
+) {
+  const salarySlot = activeSalary > 0 ? [player(`${teamCode}-salary-slot`, `${teamCode} Salary Slot`, teamCode, "Signed", 45, activeSalary)] : [];
+  return {
+    team: teamCode,
+    name: teamCode,
+    mode: overrides.mode ?? "playoff hopeful",
+    projectedWins: overrides.projectedWins ?? 42,
+    projectedRank: 15,
+    roster: salarySlot as TestPlayer[],
+    payroll: activeSalary,
+    activeSalary,
+    guaranteedSalary: activeSalary,
+    deadCap: 0,
+    capHolds: 0,
+    rosterCharges: 0,
+    heldCapSpace: 0,
+    capSpace: 0,
+    renouncedCapSpace: 0,
+    maximumCapSpace: 0,
+    taxRoom: 0,
+    firstApronRoom: 0,
+    secondApronRoom: 0,
+    needs,
+    pickAssets: 0,
+    pickCount: 0,
+    premiumPickCount: 0,
+    willingness,
+    exceptions: exceptions ?? [
+      { name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" as const },
+      { name: "Room", amount: 7_000_000, used: 0, kind: "room" as const },
+      { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" as const }
+    ],
+    explanations: []
+  };
+}
+
+function mapTeams(teams: TestTeam[]): Map<string, TestTeam> {
+  return new Map(teams.map((row) => [row.team, row]));
+}
+
+function fixedRng(): number {
+  return 0.5;
+}
+
+function expect(condition: boolean, message: string) {
+  if (!condition) throw new Error(message);
+}
