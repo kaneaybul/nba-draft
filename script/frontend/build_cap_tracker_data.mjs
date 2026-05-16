@@ -1,3 +1,8 @@
+import { buildSpotracCapTrackerData } from "./build_cap_tracker_spotrac_data.mjs";
+
+buildSpotracCapTrackerData();
+process.exit(0);
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

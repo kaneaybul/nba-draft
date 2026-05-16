@@ -27,8 +27,8 @@ export function CapTrackerWorkspace({ data }: { data: AppData }) {
   const tracker = data.capTracker;
   const defaultTeam = useMemo(() => defaultTeamForTracker(tracker), [tracker]);
   const [team, setTeam] = useState(defaultTeam);
-  const [startYear, setStartYear] = useState(2026);
-  const [endYear, setEndYear] = useState(2031);
+  const [startYear, setStartYear] = useState(() => tracker?.seasons[0]?.year ?? 2027);
+  const [endYear, setEndYear] = useState(() => tracker?.seasons[tracker.seasons.length - 1]?.year ?? 2031);
   const [holdTreatment, setHoldTreatment] = useState<HoldTreatment>("include");
   const [moneyDisplay, setMoneyDisplay] = useState<MoneyDisplay>("compact");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
@@ -205,6 +205,7 @@ export function CapTrackerWorkspace({ data }: { data: AppData }) {
             <span>Source</span>
             <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
               <option value="all">All sources</option>
+              <option value="spotrac">Spotrac</option>
               <option value="contract">Contract</option>
               <option value="bref-option">BRef option</option>
               <option value="override">Override</option>
@@ -902,6 +903,7 @@ function lineMeta(row: CapTrackerContractRow) {
 
 function sourceLabel(value: string) {
   if (value === "bref-option") return "BRef option";
+  if (value === "spotrac") return "Spotrac";
   if (value === "contract") return "Contract";
   if (value === "override") return "Override";
   if (value === "estimated") return "Estimated";

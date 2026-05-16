@@ -76,19 +76,29 @@ function testPartialGuaranteeParsing() {
 function testGeneratedPayloadInvariants() {
   const payload = JSON.parse(fs.readFileSync("frontend/public/data/cap_tracker.json", "utf8"));
   assert.equal(payload.schema_version, 2);
-  assert.equal(payload.team_seasons.length, 180);
+  assert.deepEqual(payload.seasons.map((season) => season.year), [2027, 2028, 2029, 2030, 2031]);
+  assert.equal(payload.teams.length, 30);
+  assert.equal(payload.team_seasons.length, 150);
   assert.equal(duplicateCount(payload.contracts.map((row) => row.id)), 0);
   assert.equal(payload.validation_summary.duplicate_contract_ids, 0);
+  assert.equal(payload.validation_summary.duplicate_team_seasons, 0);
   assert.equal(payload.validation_summary.duplicate_dead_money_rows, 0);
   assert.equal(payload.team_seasons.filter((row) => row.room_if_renounced > 0 && row.status_band_renounced !== "Cap Space").length, 0);
-  const buddy = payload.contracts.find((row) => row.player_name === "Buddy Hield");
-  assert.ok(buddy, "Buddy Hield should be present in generated cap tracker payload");
-  const buddy2027 = buddy.cells.find((cell) => cell.year === 2027);
-  const buddy2028 = buddy.cells.find((cell) => cell.year === 2028);
-  assert.equal(buddy2027?.guaranteed_amount, 3_000_000);
-  assert.equal(buddy2027?.kind, "partial_guarantee");
-  assert.equal(buddy2027?.amount, 9_658_536, "base cap hit should remain full salary despite partial guarantee metadata");
-  assert.equal(buddy2028?.guaranteed_amount, 3_136_364);
+  assert.match(payload.source_policy, /Spotrac-first/);
+  assert.equal(payload.source_audit.some((row) => row.quality === "spotrac"), true);
+
+  const dallasRows = payload.contracts.filter((row) => row.team === "DAL");
+  assert.ok(dallasRows.length >= 20, "Dallas should retain active roster plus cap-hold rows from Spotrac");
+  assert.equal(dallasRows.some((row) => row.cells.some((cell) => cell.kind === "cap_hold" && cell.amount > 0)), true);
+
+  const jalen = payload.contracts.find((row) => row.team === "ATL" && row.player_name === "Jalen Johnson");
+  assert.ok(jalen, "Jalen Johnson should be present in generated Spotrac cap tracker payload");
+  const jalen2027 = jalen.cells.find((cell) => cell.year === 2027);
+  const jalen2031 = jalen.cells.find((cell) => cell.year === 2031);
+  assert.equal(jalen2027?.kind, "guaranteed");
+  assert.equal(jalen2027?.amount, 30_000_000);
+  assert.equal(jalen2031?.kind, "cap_hold");
+  assert.equal(jalen2031?.amount, 45_000_000);
 }
 
 function duplicateCount(values) {

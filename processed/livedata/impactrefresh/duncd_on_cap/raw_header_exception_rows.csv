@@ -1,0 +1,235 @@
+team,capture,row_bucket,section,row_label,age,pos,rank,contract_notes,2025_26,2026_27,2026_27_holds,2026_27_likely,2027_28,2027_28_holds,2027_28_likely,2028_29,2029_30,2030_31,right_notes,raw_text
+ATL,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+ATL,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+ATL,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+ATL,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+ATL,top,270,header,3,,,,Tax Room:,,ATL,$9,330 459',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: ATL $9 330 459' hoid Tax < < 1st Apron
+ATL,top,288,header,4,,,Tax,Payment:,So,,,Luke Kennard,TPE,,2/5/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Luke Kennard TPE 2/5/2027 RFA h Old 1st Apron < < 2nd Apron
+ATL,top,306,header,5,,First,Apron,Room:,,,,Clint capela,TPE,"$6, 700,000",7/6/2026,,,Dead,,"5 First Apron Room: Clint capela TPE $6, 700,000 7/6/2026 Dead"
+ATL,top,324,header,6,,Second,,Room: $21,209 459,,,Kobe Bufkin,TPE,"SA 503,720",9/16/2026,,NGT,,?Apron-limited,"6 Second Room: $21 209 459 Kobe Bufkin TPE SA 503,720 9/16/2026 NGT ?Apron-limited"
+BOS,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+BOS,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+BOS,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+BOS,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+BOS,top,270,header,3,,,,"Tax Room: $227,776",,BOS,$8,277 776',,$20 156 776',,,,hoid,Tax < < 1st Apron,"3 Tax Room: $227,776 BOS $8 277 776' $20 156 776' hoid Tax < < 1st Apron"
+BOS,top,288,header,4,,,Tax,Payment:,So,,,Anfernee Simons,TPE,,2/4/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Anfernee Simons TPE 2/4/2027 RFA h Old 1st Apron < < 2nd Apron
+BOS,top,306,header,5,,First,Apron,Room:,,,,Kristaps Porzingis,TPE,,7/7/2026,,,Dead,,5 First Apron Room: Kristaps Porzingis TPE 7/7/2026 Dead
+BOS,top,324,header,6,,Second,,Room: $20,156 776,,,Jrue Holiday,TPE,"$4 721,42g",7/7/2026,,NGT,,?Apron-limited,"6 Second Room: $20 156 776 Jrue Holiday TPE $4 721,42g 7/7/2026 NGT ?Apron-limited"
+BRK,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+BRK,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+BRK,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+BRK,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+BRK,top,270,header,3,,,,Tax Room:,,BRI<,,,,,,,,hoid,Tax < < 1st Apron,3 Tax Room: BRI< hoid Tax < < 1st Apron
+BRK,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+BRK,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+BRK,top,324,header,6,,Second,,Room: $56,037 196,,,,,,,,NGT,,?Apron-limited,6 Second Room: $56 037 196 NGT ?Apron-limited
+CHA,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+CHA,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exce ons,,,,,Cap Space,Hard Cap: First Apron Notable Exce ons Cap Space
+CHA,top,252,header,2,,,,"Cap Room: -$30,017,161",,,,MLE,,TMLE,,,,,capc < Tax,"2 Cap Room: -$30,017,161 MLE TMLE capc < Tax"
+CHA,top,270,header,3,,,,Tax Room:,,CHA,,,,,,,,,Tax < < 1st A pron,3 Tax Room: CHA Tax < < 1st A pron
+CHA,top,288,header,,,,Tax,Payment:,SO,,,Collin Sexton,TPE,,2/4/2027,,,RFA hold,1st Apron < < 2nd Apron,Tax Payment: SO Collin Sexton TPE 2/4/2027 RFA hold 1st Apron < < 2nd Apron
+CHA,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+CHA,top,324,header,6,,Second,,Room:,,,,,,,,,,,,6 Second Room:
+CHI,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+CHI,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+CHI,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+CHI,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+CHI,top,270,header,3,,,,Tax Room:,,CHI,Sto,908 582',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: CHI Sto 908 582' hoid Tax < < 1st Apron
+CHI,top,288,header,4,,,Tax,Payment:,So,,,Kevin Huerter,TPE,,2/3/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Kevin Huerter TPE 2/3/2027 RFA h Old 1st Apron < < 2nd Apron
+CHI,top,306,header,,,First,Apron,Room:,,,,Coby White,TPE,,2/4/2027,,,Dead,,First Apron Room: Coby White TPE 2/4/2027 Dead
+CHI,top,315,header,5,,,,,,,,,,,,,,,,5
+CHI,top,324,header,,,Second,,Room: $22,787 582,,,,,,,,NGT,,?Apron-limited,Second Room: $22 787 582 NGT ?Apron-limited
+CLE,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+CLE,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+CLE,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+CLE,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+CLE,top,270,header,3,,,,Tax Room:,,CLE,,,,,,,,hoid,Tax < < 1st Apron,3 Tax Room: CLE hoid Tax < < 1st Apron
+CLE,top,288,header,4,,,Tax,Payment:,,,,De'Andre Hunter,TPE,,2/1/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: De'Andre Hunter TPE 2/1/2027 RFA h Old 1st Apron < < 2nd Apron
+CLE,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+CLE,top,324,header,6,,Second,,"Room: -$4,580",326,,,,,,,,NGT,,?Apron-limited,"6 Second Room: -$4,580 326 NGT ?Apron-limited"
+DAL,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+DAL,top,234,header,,,,,Hard Cap: Second,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Second Apron Notable Exceptions Cap Space
+DAL,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+DAL,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+DAL,top,270,header,3,,,,Tax Room:,,DAL,,,,$20 040 693',,,,hoid,Tax < < 1st Apron,3 Tax Room: DAL $20 040 693' hoid Tax < < 1st Apron
+DAL,top,288,header,4,,,Tax,Payment:,So,,,Anthony Davis,TPE,,2/4/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Anthony Davis TPE 2/4/2027 RFA h Old 1st Apron < < 2nd Apron
+DAL,top,306,header,5,,First,Apron,Room:,,,,Jaden Hardy,TPE,,2/4/2027,,,Dead,,5 First Apron Room: Jaden Hardy TPE 2/4/2027 Dead
+DAL,top,324,header,6,,Second,,Room: $20,040 693,,,,,,,,NGT,,?Apron-limited,6 Second Room: $20 040 693 NGT ?Apron-limited
+DEN,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+DEN,top,234,header,,,,,Hard Cap: Second,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Second Apron Notable Exceptions Cap Space
+DEN,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+DEN,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+DEN,top,270,header,3,,,,"Tax Room: $605,496",,DEN,$3,346 800',,$15 225 800',,,,hoid,Tax < < 1st Apron,"3 Tax Room: $605,496 DEN $3 346 800' $15 225 800' hoid Tax < < 1st Apron"
+DEN,top,288,header,4,,,Tax,Payment:,So,,,Michael Porter,Jr. TPE,,7/8/2026,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Michael Porter Jr. TPE 7/8/2026 RFA h Old 1st Apron < < 2nd Apron
+DEN,top,306,header,5,,First,Apron,Room:,,,,Dario Saric,TPE,,7/13/2026,,,Dead,,5 First Apron Room: Dario Saric TPE 7/13/2026 Dead
+DEN,top,324,header,6,,Second,,Room: $15,225 800,,,,,,,,NGT,,?Apron-limited,6 Second Room: $15 225 800 NGT ?Apron-limited
+DET,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+DET,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+DET,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+DET,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+DET,top,270,header,3,,,,Tax Room:,,DET,$8,683 692*,,,,,,hoid,Tax < < 1st Apron,3 Tax Room: DET $8 683 692* hoid Tax < < 1st Apron
+DET,top,288,header,4,,,Tax,Payment:,So,,,Dennis Schroder,TPE,,7/7/2026,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Dennis Schroder TPE 7/7/2026 RFA h Old 1st Apron < < 2nd Apron
+DET,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+DET,top,324,header,6,,Second,,Room: $20,562 692,,,,,,,,NGT,,?Apron-limited,6 Second Room: $20 562 692 NGT ?Apron-limited
+HOU,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+HOU,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+HOU,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+HOU,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+HOU,top,270,header,3,,,,Tax Room:,,HOU,Sl,255 590',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: HOU Sl 255 590' hoid Tax < < 1st Apron
+HOU,top,288,header,4,,,Tax,Payment:,,,,Cam Whitmore,TPE,,7/6/2026,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: Cam Whitmore TPE 7/6/2026 RFA h Old 1st Apron < < 2nd Apron
+HOU,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+HOU,top,315,header,5,,,,,,,,,,,,,,,,5
+HOU,top,324,header,,,Second,,Room: $13,134 590,,,,,,,,NGT,,?Apron-limited,Second Room: $13 134 590 NGT ?Apron-limited
+IND,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+IND,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+IND,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+IND,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+IND,top,270,header,3,,,,Tax Room:,,IND,$8,466 663',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: IND $8 466 663' hoid Tax < < 1st Apron
+IND,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+IND,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+IND,top,324,header,6,,Second,,Room: $20,345 663,,,,,,,,NGT,,?Apron-limited,6 Second Room: $20 345 663 NGT ?Apron-limited
+LAC,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+LAC,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+LAC,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+LAC,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+LAC,top,270,header,3,,,,Tax Room:,,LAC,$5,828 086',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: LAC $5 828 086' hoid Tax < < 1st Apron
+LAC,top,288,header,4,,,Tax,"Payment: $6,665,",742,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,"4 Tax Payment: $6,665, 742 RFA h Old 1st Apron < < 2nd Apron"
+LAC,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+LAC,top,324,header,6,,Second,,Room: $17,707 086,,,,,,,,NGT,,?Apron-limited,6 Second Room: $17 707 086 NGT ?Apron-limited
+LAL,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+LAL,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+LAL,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+LAL,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+LAL,top,270,header,3,,,,Tax Room:,,,Sl,345 255',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: Sl 345 255' hoid Tax < < 1st Apron
+LAL,top,288,header,4,,,Tax,Payment:,,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: RFA h Old 1st Apron < < 2nd Apron
+LAL,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+LAL,top,324,header,6,,Second,,Room: $13,224 255,,,,,,,,NGT,,?Apron-limited,6 Second Room: $13 224 255 NGT ?Apron-limited
+MEM,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+MEM,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+MEM,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+MEM,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+MEM,top,270,header,3,,,,Tax Room:,,MEM,,,,,,,,hoid,Tax < < 1st Apron,3 Tax Room: MEM hoid Tax < < 1st Apron
+MEM,top,288,header,4,,,Tax,Payment:,So,,,Jaren Jackson,JR. TPE,,2/4/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Jaren Jackson JR. TPE 2/4/2027 RFA h Old 1st Apron < < 2nd Apron
+MEM,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+MEM,top,315,header,5,,,,,,,,,,,,,,,,5
+MEM,top,324,header,,,Second,,Room: $48,500 095,,,,,,,,NGT,,?Apron-limited,Second Room: $48 500 095 NGT ?Apron-limited
+MIA,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+MIA,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+MIA,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+MIA,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < < Tax,2 Cap Room: MLE TMLE Cap < < Tax
+MIA,top,270,header,3,,,,"Tax Room: $890,876",,MIA,$6,440 876',,,,,,hold,Tax < < 1st A pron,"3 Tax Room: $890,876 MIA $6 440 876' hold Tax < < 1st A pron"
+MIA,top,288,header,4,,,Tax,Payment:,So,,Duncan,Robinson,TPE,,7/7/2026,,,RFA hold,1st Apron < < 2nd Apron,4 Tax Payment: So Duncan Robinson TPE 7/7/2026 RFA hold 1st Apron < < 2nd Apron
+MIA,top,306,header,5,,First,Apron,Room:,,,Havvvood,Highsmith,TPE,,8/15/2026,,,Dead,,5 First Apron Room: Havvvood Highsmith TPE 8/15/2026 Dead
+MIA,top,324,header,6,,Second,,Room: $18,319 876,,,,,,,,NGT,,?Apron-limited,6 Second Room: $18 319 876 NGT ?Apron-limited
+MIL,top,207,header,,,c,,,,,,,,,,,,,Q s,c Q s
+MIL,top,234,header,,,,,,,,,,Notable,Exceptions,,,,,Cap Space,Notable Exceptions Cap Space
+MIL,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+MIL,top,252,header,2,,,,,,,,MLE,,TMLE,,,,,Cap < Tax,2 MLE TMLE Cap < Tax
+MIL,top,270,header,3,,,,,,MIL,,,,,,,,hoid,Tax < < 1st Apron,3 MIL hoid Tax < < 1st Apron
+MIL,top,288,header,4,,,,,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 So RFA h Old 1st Apron < < 2nd Apron
+MIL,top,306,header,,,,,,,,,,,,,,,Dead,,Dead
+MIL,top,315,header,5,,,,,,,,,,,,,,,,5
+MIL,top,324,header,,,,,$24,115 046,,,,,,,,NGT,,?Apron-limited,$24 115 046 NGT ?Apron-limited
+MIN,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+MIN,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+MIN,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+MIN,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+MIN,top,270,header,3,,,,Tax Room:,,MIN,$221,324',,$12 100 324',,,,hoid,Tax < < 1st Apron,3 Tax Room: MIN $221 324' $12 100 324' hoid Tax < < 1st Apron
+MIN,top,288,header,4,,,Tax,Payment:,,,,Mike Conley,TPE,,2/3/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: Mike Conley TPE 2/3/2027 RFA h Old 1st Apron < < 2nd Apron
+MIN,top,306,header,5,,First,Apron,"Room: $221,324",,,Nickeil,Alexander-walker,TPE,,7/6/2026,,,Dead,,"5 First Apron Room: $221,324 Nickeil Alexander-walker TPE 7/6/2026 Dead"
+MIN,top,324,header,6,,Second,,Room: $12,100 324,,,,,,,,NGT,,?Apron-limited,6 Second Room: $12 100 324 NGT ?Apron-limited
+NOP,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+NOP,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+NOP,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+NOP,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+NOP,top,270,header,3,,,,"Tax Room: $252,045",,NOP,Sl,950 715',,,,,,hoid,Tax < < 1st Apron,"3 Tax Room: $252,045 NOP Sl 950 715' hoid Tax < < 1st Apron"
+NOP,top,288,header,4,,,Tax,Payment:,So,,,Kelly Olynyk,TPE,,7/6/2026,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Kelly Olynyk TPE 7/6/2026 RFA h Old 1st Apron < < 2nd Apron
+NOP,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+NOP,top,315,header,5,,,,,,,,,,,,,,,,5
+NOP,top,324,header,,,Second,,Room: $13,829 715,,,,,,,,NGT,,?Apron-limited,Second Room: $13 829 715 NGT ?Apron-limited
+NYK,top,225,header,,,Hard,Cap:,Second Apron,,,,,,,,Cap Space,,,,Hard Cap: Second Apron Cap Space
+NYK,top,243,header,,,Cap,:,,,,,,,,,Cap ?s,Tax,,,Cap : Cap ?s Tax
+NYK,top,252,header,,,,,,,,,,,,,Tax,1st Apron,,,Tax 1st Apron
+NYK,top,261,header,,,,,,NYK,,,,,,,,,,,NYK
+NYK,top,270,header,,,Tax Payment:,,"344,438, 224",,,,,,,REA hold,1st Apron,2nd Apron,,,"Tax Payment: 344,438, 224 REA hold 1st Apron 2nd Apron"
+NYK,top,288,header,,First,Apron,Room:,,,,,,,,OCJd,,,,,First Apron Room: OCJd
+NYK,top,297,header,,,,,69 737,,,,,,,,[On-limited,,,,69 737 [On-limited
+NYK,top,315,header,,,,25-26,,2025-26,2026-27,2026-27 Holds,2026-27 Like,2027-28,2027-28,Like,2028-29,2029-30,2030-31,,25-26 2025-26 2026-27 2026-27 Holds 2026-27 Like 2027-28 2027-28 Like 2028-29 2029-30 2030-31
+ORL,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+ORL,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+ORL,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+ORL,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+ORL,top,270,header,3,,,,"Tax Room: $224,647",,ORL,$7,041 557*,,,,,,hoid,Tax < < 1st Apron,"3 Tax Room: $224,647 ORL $7 041 557* hoid Tax < < 1st Apron"
+ORL,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+ORL,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+ORL,top,315,header,5,,,,,,,,,,,,,,,,5
+ORL,top,324,header,,,Second,,Room: $18,920 557,,,,,,,,NGT,,?Apron-limited,Second Room: $18 920 557 NGT ?Apron-limited
+PHI,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+PHI,top,234,header,,,,,Hard Cap: Second,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Second Apron Notable Exceptions Cap Space
+PHI,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+PHI,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+PHI,top,270,header,3,,,,"Tax Room: $139,128",,PHI,,,,$14 196 981',,,,hoid,Tax < < 1st Apron,"3 Tax Room: $139,128 PHI $14 196 981' hoid Tax < < 1st Apron"
+PHI,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+PHI,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+PHI,top,315,header,5,,,,,,,,,,,,,,,,5
+PHI,top,324,header,,,Second,,Room: $14,196 981,,,,,,,,NGT,,?Apron-limited,Second Room: $14 196 981 NGT ?Apron-limited
+PHX,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+PHX,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+PHX,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+PHX,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+PHX,top,270,header,3,,,,Tax Room:,,PHX,$7,577 864',,Sig 456 864',,,,hoid,Tax < < 1st Apron,3 Tax Room: PHX $7 577 864' Sig 456 864' hoid Tax < < 1st Apron
+PHX,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+PHX,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+PHX,top,315,header,5,,,,,,,,,,,,,,,,5
+PHX,top,324,header,,,Second,,Room: Sig,456 864,,,,,,,,NGT,,?Apron-limited,Second Room: Sig 456 864 NGT ?Apron-limited
+POR,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+POR,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+POR,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+POR,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+POR,top,270,header,3,,,,"Tax Room: $705,209",,POR,$7,094 492*,,,,,,hoid,Tax < < 1st Apron,"3 Tax Room: $705,209 POR $7 094 492* hoid Tax < < 1st Apron"
+POR,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+POR,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+POR,top,315,header,5,,,,,,,,,,,,,,,,5
+POR,top,324,header,,,Second,,Room: $18,973 492,,,,,,,,NGT,,?Apron-limited,Second Room: $18 973 492 NGT ?Apron-limited
+SAC,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+SAC,top,234,header,,,,,Hard Cap: First,Apron,,,,,,,,,,Cap Space,Hard Cap: First Apron Cap Space
+SAC,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+SAC,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+SAC,top,270,header,3,,,,"Tax Room: $214,245",,SAC,$3,14245',,,,,,,Tex < < 1st Apron,"3 Tax Room: $214,245 SAC $3 14245' Tex < < 1st Apron"
+SAC,top,288,header,4,,,Tax,Payment:,So,,,Dario Saric,TPE,,2/1/2027,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Dario Saric TPE 2/1/2027 RFA h Old 1st Apron < < 2nd Apron
+SAC,top,306,header,,,First,Apron,Room:,,,Jonas,Valanciunas,TPE,,7/13/2026,,,Dead,,First Apron Room: Jonas Valanciunas TPE 7/13/2026 Dead
+SAC,top,315,header,5,,,,,,,,,,,,,,,,5
+SAC,top,324,header,,,,,Room: $15,293 245,,,,,,,,NGT,,?Apron-limited,Room: $15 293 245 NGT ?Apron-limited
+SAS,top,207,header,,,c,,,,G,,,,,,,,,Q s,c G Q s
+SAS,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+SAS,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+SAS,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+SAS,top,270,header,3,,,,Tax Room:,,SAS,$9,254 331',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: SAS $9 254 331' hoid Tax < < 1st Apron
+SAS,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+SAS,top,306,header,,,First,Apron,Room:,,,,,,,,,,Dead,,First Apron Room: Dead
+SAS,top,315,header,5,,,,,,,,,,,,,,,,5
+SAS,top,324,header,,,Second,,Room: $21,133 331,,,,,,,,NGT,,?Apron-limited,Second Room: $21 133 331 NGT ?Apron-limited
+TOR,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+TOR,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+TOR,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+TOR,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+TOR,top,270,header,3,,,,"Tax Room: $951,646",,TOR,$2,635 574',,$14 514 574',,,,hoid,Tax < < 1st Apron,"3 Tax Room: $951,646 TOR $2 635 574' $14 514 574' hoid Tax < < 1st Apron"
+TOR,top,288,header,4,,,Tax,Payment:,So,,,,,,,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So RFA h Old 1st Apron < < 2nd Apron
+TOR,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+TOR,top,324,header,6,,Second,,Room: $14,514 574,,,,,,,,NGT,,?Apron-limited,6 Second Room: $14 514 574 NGT ?Apron-limited
+UTA,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+UTA,top,234,header,,,,,Hard Cap:,,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: Notable Exceptions Cap Space
+UTA,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+UTA,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+UTA,top,270,header,3,,,,Tax Room:,,,$22,242 853',,,,,,hoid,Tax < < 1st Apron,3 Tax Room: $22 242 853' hoid Tax < < 1st Apron
+UTA,top,288,header,4,,,Tax,Payment:,So,,,John Collins,TPE,,7/7/2026,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So John Collins TPE 7/7/2026 RFA h Old 1st Apron < < 2nd Apron
+UTA,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+UTA,top,324,header,6,,Second,,Room: $34,121 853,,,,,,,,NGT,,?Apron-limited,6 Second Room: $34 121 853 NGT ?Apron-limited
+WAS,top,207,header,,,,C,D,,,,,,,,,,,o,C D o
+WAS,top,234,header,,,,,Hard Cap: First,Apron,,,,Notable,Exceptions,,,,,Cap Space,Hard Cap: First Apron Notable Exceptions Cap Space
+WAS,top,243,header,,,,,,,,,,,,,,Cap Number,Type,,Cap Number Type
+WAS,top,252,header,2,,,,Cap Room:,,,,MLE,,TMLE,,,,,Cap < Tax,2 Cap Room: MLE TMLE Cap < Tax
+WAS,top,270,header,3,,,,"Tax Room: $810,816",,WAS,$8,854 064',,,,,,hoid,Tax < < 1st Apron,"3 Tax Room: $810,816 WAS $8 854 064' hoid Tax < < 1st Apron"
+WAS,top,288,header,4,,,Tax,Payment:,So,,,Kelly Olynyk,TPE,,7/9/2026,,,RFA h Old,1st Apron < < 2nd Apron,4 Tax Payment: So Kelly Olynyk TPE 7/9/2026 RFA h Old 1st Apron < < 2nd Apron
+WAS,top,306,header,5,,First,Apron,Room:,,,,,,,,,,Dead,,5 First Apron Room: Dead
+WAS,top,324,header,6,,Second,,Room: $20,733 064,,,,,,,,NGT,,?Apron-limited,6 Second Room: $20 733 064 NGT ?Apron-limited

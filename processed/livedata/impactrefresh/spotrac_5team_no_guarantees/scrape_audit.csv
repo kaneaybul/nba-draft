@@ -1,0 +1,6 @@
+team,source_url,table_count,active_roster_rows,cap_hold_rows,elapsed_seconds,scraped_at,method
+Atlanta Hawks,https://www.spotrac.com/nba/atlanta-hawks/yearly/_/sort/cap_total/view/roster,13,12,10,11.40,2026-05-15T04:00:04.242Z,Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass
+Boston Celtics,https://www.spotrac.com/nba/boston-celtics/yearly/_/sort/cap_total/view/roster,13,14,5,7.13,2026-05-15T04:00:11.367Z,Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass
+Brooklyn Nets,https://www.spotrac.com/nba/brooklyn-nets/yearly/_/sort/cap_total/view/roster,13,13,6,6.66,2026-05-15T04:00:18.029Z,Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass
+Charlotte Hornets,https://www.spotrac.com/nba/charlotte-hornets/yearly/_/sort/cap_total/view/roster,13,15,3,6.49,2026-05-15T04:00:24.524Z,Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass
+Chicago Bulls,https://www.spotrac.com/nba/chicago-bulls/yearly/_/sort/cap_total/view/roster,13,10,10,7.71,2026-05-15T04:00:32.238Z,Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass

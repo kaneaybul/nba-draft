@@ -435,7 +435,7 @@ export type OffseasonTruthData = {
   stale_roster_conflicts: Array<{ player: string; team: string; issue: string; source: string }>;
 };
 
-export type CapTrackerMoneySource = "contract" | "bref-option" | "override" | "estimated" | "projected" | "unavailable";
+export type CapTrackerMoneySource = "contract" | "bref-option" | "spotrac" | "override" | "estimated" | "projected" | "unavailable";
 export type CapTrackerCellKind =
   | "guaranteed"
   | "partial_guarantee"

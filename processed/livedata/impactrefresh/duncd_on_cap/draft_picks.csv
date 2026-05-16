@@ -1,0 +1,14 @@
+team,season_year,pick_protection_text,related_teams,raw_note,confidence
+ATL,2026,NOP 1st,NOP,,high
+ATL,2026,CLE 1st,CLE,,high
+ATL,2026,2026 #8,,,medium
+ATL,2026,2026 #23,,,medium
+ATL,2026,2026 1st to SAS,SAS,,high
+ATL,2027,"2027 1st lower of NOP (protected 1-4) and MIL (protected 1-4)",NOP;MIL,,medium
+ATL,2028,"2028 1st swap higher of ATL and lower of CLE and UTA",ATL;CLE;UTA,,medium
+ATL,2027,2027 1st to SAS,SAS,,high
+UTA,2026,2026 1st,,,high
+UTA,2027,"2027 second-highest of UTA, MIN, CLE 1sts",UTA;MIN;CLE,,high
+UTA,2028,"2028 1st swap rights with CLE; MIN top-5 protected; CLE 1sts",UTA;CLE;MIN,,medium
+UTA,2029,"2029 second-highest of UTA, MIN (top-5 protected), CLE 1sts",UTA;MIN;CLE,,medium
+UTA,2026,2026 #2,,,high

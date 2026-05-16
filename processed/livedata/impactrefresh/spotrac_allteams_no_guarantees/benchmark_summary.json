@@ -1,0 +1,9 @@
+{
+    "total_team_elapsed_seconds":  295.58,
+    "teams_requested":  30,
+    "teams_ok":  30,
+    "teams_error":  0,
+    "rows_long":  3400,
+    "rows_wide":  680,
+    "guarantee_policy":  "not captured; Spotrac guarantee percentages are hover-only tooltips"
+}
