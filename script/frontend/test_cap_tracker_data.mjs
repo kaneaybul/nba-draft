@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   canonicalContractRowId,
   cbaCapHoldAmount,
@@ -10,6 +12,8 @@ import {
   parseGuaranteeFromNotes,
   statusBandForAmount
 } from "./cap_tracker_rules.mjs";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 testContractSourceDeduping();
 testDeadMoneyDeduping();
@@ -74,7 +78,7 @@ function testPartialGuaranteeParsing() {
 }
 
 function testGeneratedPayloadInvariants() {
-  const payload = JSON.parse(fs.readFileSync("frontend/public/data/cap_tracker.json", "utf8"));
+  const payload = JSON.parse(fs.readFileSync(path.join(root, "frontend", "public", "data", "cap_tracker.json"), "utf8"));
   assert.equal(payload.schema_version, 2);
   assert.deepEqual(payload.seasons.map((season) => season.year), [2027, 2028, 2029, 2030, 2031]);
   assert.equal(payload.teams.length, 30);

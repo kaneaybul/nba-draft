@@ -3799,6 +3799,17 @@ with_frontend_timing(
   paste0(nrow(manifest_rows), " datasets")
 )
 
+static_manifest_script <- file.path(base_dir, "script", "frontend", "build_static_data_manifest.mjs")
+if (file.exists(static_manifest_script) && nzchar(node_bin)) {
+  with_frontend_timing(
+    base_dir,
+    "frontend_export_write",
+    "write_static_data_manifest",
+    system2(node_bin, static_manifest_script, stdout = TRUE, stderr = TRUE),
+    "season shards and deploy manifest"
+  )
+}
+
 message("Frontend data export complete: ", out_dir)
 message("Rows: players=", nrow(players), ", teams=", nrow(teams), ", draft=", nrow(draft))
 if (!identical(tolower(Sys.getenv("FRONTEND_REFRESH_SUPPRESS_EXPORT_SUMMARY", "false")), "true")) {

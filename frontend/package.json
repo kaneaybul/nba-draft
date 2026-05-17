@@ -4,9 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "powershell -NoProfile -Command \"& 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\vite\\bin\\vite.js' --host 127.0.0.1\"",
-    "build": "powershell -NoProfile -Command \"& 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\typescript\\bin\\tsc'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; & 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\vite\\bin\\vite.js' build\"",
-    "preview": "powershell -NoProfile -Command \"& 'C:\\Program Files\\nodejs\\node.exe' '.\\node_modules\\vite\\bin\\vite.js' preview --host 127.0.0.1\"",
+    "dev": "node ./node_modules/vite/bin/vite.js --host 127.0.0.1",
+    "build": "node ./node_modules/typescript/bin/tsc && node ./node_modules/vite/bin/vite.js build",
+    "preview": "node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1",
+    "shard:data": "node ../script/frontend/build_static_data_manifest.mjs",
+    "validate:data": "node ../script/frontend/validate_frontend_data.mjs",
+    "test:cap-tracker": "node ../script/frontend/test_cap_tracker_data.mjs",
     "test:offseason-market": "node ../script/frontend/run_offseason_market_regression.mjs",
     "test:cap-sandbox": "node ../script/frontend/run_cap_sandbox_regression.mjs"
   },

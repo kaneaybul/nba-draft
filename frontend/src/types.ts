@@ -2,6 +2,35 @@ export type Manifest = {
   generated_at: string;
   note: string;
   datasets: Array<{ dataset: string; rows: number; file: string }>;
+  static_data?: StaticDataManifest;
+};
+
+export type StaticDataShard = {
+  key: string;
+  year?: number;
+  rows: number;
+  file: string;
+  bytes: number;
+  sha256: string;
+};
+
+export type StaticDataDataset = {
+  strategy: "season" | "singleton";
+  rows: number;
+  file?: string;
+  bytes?: number;
+  sha256?: string;
+  shards?: StaticDataShard[];
+};
+
+export type StaticDataManifest = {
+  schema_version: number;
+  generated_at: string;
+  max_asset_bytes: number;
+  seasons: number[];
+  draft_years: number[];
+  initial_view: string;
+  datasets: Record<string, StaticDataDataset>;
 };
 
 export type PlayerImpact = {

@@ -404,6 +404,12 @@ input:focus {
   line-height: 1.25;
 }
 
+.table-limit-note {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .modebar {
   display: flex;
   align-items: center;

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { AppData, CapReviewData, CapReviewRow, CapSandboxDecisionAction, CapSandboxScenario, CapTrackerContractCell, CapTrackerContractRow, CapTrackerData, CapTrackerTeamSeason } from "./types";
 import { applyApprovedCapReviewRows, getRefreshStatus, refreshSalaryResolution, updateCapReviewStatus } from "./capReviewApi";
 import { actionLabel, clearDecision, defaultScenario, deriveSandbox, loadSandboxScenarios, saveSandboxScenarios, supportedActions, upsertDecision } from "./capSandbox";
+import { isLocalRefreshEnabled } from "./runtime";
 import { cls, formatMoney, formatSignedMoney } from "./utils";
 
 type HoldTreatment = "include" | "renounce";
@@ -352,6 +353,7 @@ export function CapTrackerWorkspace({ data }: { data: AppData }) {
 }
 
 function CapReviewPanel({ initialReview, moneyDisplay }: { initialReview?: CapReviewData; moneyDisplay: MoneyDisplay }) {
+  const reviewActionsEnabled = isLocalRefreshEnabled();
   const [review, setReview] = useState<CapReviewData | undefined>(initialReview);
   const [activeStatus, setActiveStatus] = useState("pending_review");
   const [busy, setBusy] = useState(false);
@@ -448,8 +450,9 @@ function CapReviewPanel({ initialReview, moneyDisplay }: { initialReview?: CapRe
     <section className="cap-side-panel cap-review-panel">
       <div className="panel-heading">
         <h2>Cap Review</h2>
-        <button onClick={refresh} disabled={busy}>Refresh</button>
+        {reviewActionsEnabled && <button onClick={refresh} disabled={busy}>Refresh</button>}
       </div>
+      {!reviewActionsEnabled && <p className="cap-review-note">Public read-only mode. Review actions run through the local refresh server or scheduled CI.</p>}
       <div className="cap-review-tabs">
         {["pending_review", "needs_research", "approved", "rejected", "applied"].map((status) => (
           <button key={status} className={cls(activeStatus === status && "active")} onClick={() => setActiveStatus(status)}>
@@ -477,7 +480,7 @@ function CapReviewPanel({ initialReview, moneyDisplay }: { initialReview?: CapRe
       </div>
       <div className="cap-side-body">
         {note && <p className="cap-review-note">{note}</p>}
-        {pendingDeadMoney > 0 && (
+        {reviewActionsEnabled && pendingDeadMoney > 0 && (
           <button className="cap-apply-button" onClick={applyApproved} disabled={busy}>
             Apply approved dead money ({pendingDeadMoney})
           </button>
@@ -505,6 +508,7 @@ function CapReviewPanel({ initialReview, moneyDisplay }: { initialReview?: CapRe
                   <input
                     value={amountValue}
                     inputMode="numeric"
+                    disabled={!reviewActionsEnabled}
                     onChange={(event) => setDraftAmounts((current) => ({ ...current, [row.transaction_key]: event.target.value }))}
                     placeholder={row.suggested_amount ? String(row.suggested_amount) : "required if applying"}
                   />
@@ -517,11 +521,13 @@ function CapReviewPanel({ initialReview, moneyDisplay }: { initialReview?: CapRe
                 {row.reference_url && <a href={row.reference_url} target="_blank" rel="noreferrer">Reference</a>}
                 {row.salary_source_url && <a href={row.salary_source_url} target="_blank" rel="noreferrer">Salary</a>}
               </div>
-              <div className="cap-review-actions">
-                <button onClick={() => updateStatus(row, "approved")} disabled={busy}>Approve</button>
-                <button onClick={() => updateStatus(row, "needs_research")} disabled={busy}>Research</button>
-                <button onClick={() => updateStatus(row, "rejected")} disabled={busy}>Reject</button>
-              </div>
+              {reviewActionsEnabled && (
+                <div className="cap-review-actions">
+                  <button onClick={() => updateStatus(row, "approved")} disabled={busy}>Approve</button>
+                  <button onClick={() => updateStatus(row, "needs_research")} disabled={busy}>Research</button>
+                  <button onClick={() => updateStatus(row, "rejected")} disabled={busy}>Reject</button>
+                </div>
+              )}
             </article>
           );
         })}

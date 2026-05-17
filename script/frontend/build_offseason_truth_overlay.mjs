@@ -17,7 +17,7 @@ const capBenchmarks = new Map([
   ["CHI", { maximum_cap_space: 69985479, source: "Spotrac Bulls 2026-27 cap-space benchmark" }]
 ]);
 
-const players = JSON.parse(fs.readFileSync(playersPath, "utf8"));
+const players = readPlayers();
 const contracts = parseCsv(fs.readFileSync(contractsPath, "utf8"));
 const brefContracts = fs.existsSync(brefContractsPath) ? parseCsv(fs.readFileSync(brefContractsPath, "utf8")) : [];
 const rosters = fs.existsSync(rosterPath) ? parseCsv(fs.readFileSync(rosterPath, "utf8")) : [];
@@ -90,6 +90,20 @@ const overlay = {
 fs.writeFileSync(outPath, `${JSON.stringify(overlay, null, 2)}\n`);
 console.log(`Wrote ${outPath}`);
 console.log(`Players: ${Object.keys(truths).length}; team caps: ${teamCaps.length}; conflicts: ${conflicts.length}`);
+
+function readPlayers() {
+  if (fs.existsSync(playersPath)) {
+    return JSON.parse(fs.readFileSync(playersPath, "utf8"));
+  }
+  const manifestPath = path.join(dataDir, "manifest.json");
+  if (!fs.existsSync(manifestPath)) return [];
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  const shards = manifest.static_data?.datasets?.impact_players?.shards ?? [];
+  return shards.flatMap((shard) => {
+    const shardPath = path.join(dataDir, shard.file);
+    return fs.existsSync(shardPath) ? JSON.parse(fs.readFileSync(shardPath, "utf8")) : [];
+  });
+}
 
 function buildTruth(player, contract, roster, brefContract) {
   const key = playerKey(player);

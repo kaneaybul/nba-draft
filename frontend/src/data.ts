@@ -1,32 +1,146 @@
 import type {
   AppData,
+  CapReviewData,
+  CapTrackerData,
   DraftProspect,
   DraftTrackerBoardScore,
   DraftTrackerBoardSummary,
   DraftTrackerProspectScore,
   Manifest,
   ModelSummary,
-  CapReviewData,
-  CapTrackerData,
   OffseasonTruthData,
   PickAsset,
   PlayerImpact,
+  StaticDataDataset,
   TeamLineupRow,
-  TeamScheduleGame,
-  TeamProjection
+  TeamProjection,
+  TeamScheduleGame
 } from "./types";
 
+const jsonCache = new Map<string, Promise<unknown>>();
+
 async function loadJson<T>(path: string, cacheBust?: string): Promise<T> {
-  const response = await fetch(cacheBust ? `${path}?v=${cacheBust}` : path, { cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Could not load ${path}: ${response.status}`);
+  const cacheKey = cacheBust ? `${path}?v=${cacheBust}` : path;
+  if (!cacheBust && jsonCache.has(cacheKey)) {
+    return jsonCache.get(cacheKey) as Promise<T>;
   }
-  return response.json() as Promise<T>;
+
+  const request = fetch(cacheKey, { cache: cacheBust ? "no-store" : path.endsWith("manifest.json") ? "no-cache" : "force-cache" }).then((response) => {
+    if (!response.ok) {
+      throw new Error(`Could not load ${path}: ${response.status}`);
+    }
+    return response.json() as Promise<T>;
+  });
+
+  if (!cacheBust) jsonCache.set(cacheKey, request);
+  return request;
 }
 
 export async function loadAppData(cacheBust?: string): Promise<AppData> {
-  const [manifest, players, teams, lineups, schedules, picks, prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview] = await Promise.all([
-    loadJson<Manifest>("/data/manifest.json", cacheBust),
+  const manifest = await loadJson<Manifest>("/data/manifest.json", cacheBust);
+  if (isStaticManifest(manifest)) {
+    return loadStaticInitialData(manifest, cacheBust);
+  }
+  return loadLegacyAppData(manifest, cacheBust);
+}
+
+export async function loadDataForView(data: AppData, view: string, season: number, cacheBust?: string): Promise<AppData> {
+  if (!isStaticManifest(data.manifest)) return data;
+  let next = data;
+
+  const loadPlayers = async () => {
+    if (hasSeasonRows(next.players, "year", season)) return;
+    next = { ...next, players: replaceSeasonRows(next.players, await loadSeasonDataset<PlayerImpact>(next.manifest, "impact_players", season, cacheBust), "year", season) };
+  };
+  const loadTeams = async () => {
+    if (hasSeasonRows(next.teams, "year", season)) return;
+    next = { ...next, teams: replaceSeasonRows(next.teams, await loadSeasonDataset<TeamProjection>(next.manifest, "team_projections", season, cacheBust), "year", season) };
+  };
+  const loadLineups = async () => {
+    if (hasSeasonRows(next.lineups, "year", season)) return;
+    next = { ...next, lineups: replaceSeasonRows(next.lineups, await loadSeasonDataset<TeamLineupRow>(next.manifest, "team_lineups", season, cacheBust), "year", season) };
+  };
+  const loadSchedules = async () => {
+    if (hasSeasonRows(next.schedules, "season", season)) return;
+    next = { ...next, schedules: replaceSeasonRows(next.schedules, await loadSeasonDataset<TeamScheduleGame>(next.manifest, "team_schedules", season, cacheBust), "season", season) };
+  };
+  const loadPicks = async () => {
+    if (next.picks.length > 0) return;
+    next = { ...next, picks: await loadSingletonDataset<PickAsset>(next.manifest, "pick_assets", cacheBust) };
+  };
+  const loadProspects = async () => {
+    if (next.prospects.length > 0) return;
+    next = { ...next, prospects: await loadSingletonDataset<DraftProspect>(next.manifest, "draft_prospects", cacheBust) };
+  };
+  const loadTracker = async () => {
+    if (next.trackerBoardSummary.length > 0 || next.trackerProspectScores.length > 0) return;
+    const [trackerBoardSummary, trackerBoardScores, trackerProspectScores] = await Promise.all([
+      loadSingletonDataset<DraftTrackerBoardSummary>(next.manifest, "draft_tracker_board_summary", cacheBust),
+      loadSingletonDataset<DraftTrackerBoardScore>(next.manifest, "draft_tracker_board_scores", cacheBust),
+      loadSingletonDataset<DraftTrackerProspectScore>(next.manifest, "draft_tracker_prospect_scores", cacheBust)
+    ]);
+    next = { ...next, trackerBoardSummary, trackerBoardScores, trackerProspectScores };
+  };
+  const loadModelSummary = async () => {
+    if (next.modelSummary.length > 0) return;
+    next = { ...next, modelSummary: await loadSingletonDataset<ModelSummary>(next.manifest, "draft_model_summary", cacheBust) };
+  };
+  const loadOffseasonTruth = async () => {
+    if (next.offseasonTruth) return;
+    next = { ...next, offseasonTruth: await loadOptionalSingleton<OffseasonTruthData>(next.manifest, "offseason_truth", cacheBust) };
+  };
+  const loadCap = async () => {
+    if (next.capTracker && next.capReview) return;
+    const [capTracker, capReview] = await Promise.all([
+      next.capTracker ? Promise.resolve(next.capTracker) : loadOptionalSingleton<CapTrackerData>(next.manifest, "cap_tracker", cacheBust),
+      next.capReview ? Promise.resolve(next.capReview) : loadOptionalSingleton<CapReviewData>(next.manifest, "cap_transaction_review", cacheBust)
+    ]);
+    next = { ...next, capTracker, capReview };
+  };
+
+  if (["impact", "lineups"].includes(view)) {
+    await loadPlayers();
+  } else if (view === "teams") {
+    await Promise.all([loadPlayers(), loadTeams(), loadSchedules()]);
+  } else if (view === "startingLineups") {
+    await Promise.all([loadPlayers(), loadTeams(), loadLineups()]);
+  } else if (view === "trade") {
+    await Promise.all([loadPlayers(), loadTeams(), loadPicks()]);
+  } else if (view === "offseason") {
+    await Promise.all([loadPlayers(), loadTeams(), loadPicks(), loadProspects(), loadOffseasonTruth()]);
+  } else if (view === "capTracker") {
+    await loadCap();
+  } else if (view === "draft" || view === "draftElo") {
+    await Promise.all([loadProspects(), loadModelSummary()]);
+  } else if (view === "tracker") {
+    await loadTracker();
+  }
+
+  return next;
+}
+
+export function manifestSeasons(manifest: Manifest, players: PlayerImpact[] = []): number[] {
+  const seasons = isStaticManifest(manifest) ? manifest.static_data.seasons : [];
+  const fallback = players.map((player) => player.year).filter(Number.isFinite);
+  return Array.from(new Set([...seasons, ...fallback])).sort((a, b) => b - a);
+}
+
+export function latestManifestSeason(manifest: Manifest, players: PlayerImpact[] = []): number | null {
+  return manifestSeasons(manifest, players)[0] ?? null;
+}
+
+function isStaticManifest(manifest: Manifest): manifest is Manifest & { static_data: NonNullable<Manifest["static_data"]> } {
+  return Boolean(manifest.static_data && manifest.static_data.schema_version >= 2);
+}
+
+async function loadStaticInitialData(manifest: Manifest & { static_data: NonNullable<Manifest["static_data"]> }, cacheBust?: string): Promise<AppData> {
+  const season = latestManifestSeason(manifest) ?? new Date().getFullYear();
+  const players = await loadSeasonDataset<PlayerImpact>(manifest, "impact_players", season, cacheBust);
+  return emptyAppData(manifest, { players });
+}
+
+async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promise<AppData> {
+  const [players, teams, lineups, schedules, picks, prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview] = await Promise.all([
     loadJson<PlayerImpact[]>("/data/impact_players.json", cacheBust),
     loadJson<TeamProjection[]>("/data/team_projections.json", cacheBust),
     loadJson<TeamLineupRow[]>("/data/team_lineups.json", cacheBust).catch(() => []),
@@ -44,6 +158,62 @@ export async function loadAppData(cacheBust?: string): Promise<AppData> {
 
   const normalized = applyOffseasonTruth(players, lineups, offseasonTruth);
   return { manifest, players: normalized.players, teams, lineups: normalized.lineups, schedules, picks, prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview };
+}
+
+function emptyAppData(manifest: Manifest, values: Partial<AppData> = {}): AppData {
+  return {
+    manifest,
+    players: [],
+    teams: [],
+    lineups: [],
+    schedules: [],
+    picks: [],
+    prospects: [],
+    trackerBoardSummary: [],
+    trackerBoardScores: [],
+    trackerProspectScores: [],
+    modelSummary: [],
+    ...values
+  };
+}
+
+async function loadSeasonDataset<T>(manifest: Manifest, datasetName: string, season: number, cacheBust?: string): Promise<T[]> {
+  const dataset = manifest.static_data?.datasets[datasetName];
+  const shard = dataset?.shards?.find((item) => Number(item.year) === season || Number(item.key) === season);
+  if (shard) return loadJson<T[]>(`/data/${shard.file}`, cacheBust);
+  return loadSingletonDataset<T>(manifest, datasetName, cacheBust).catch(() => []);
+}
+
+async function loadSingletonDataset<T>(manifest: Manifest, datasetName: string, cacheBust?: string): Promise<T[]> {
+  const dataset = manifest.static_data?.datasets[datasetName];
+  const file = singletonFile(dataset) ?? legacyFile(manifest, datasetName);
+  if (!file) return [];
+  return loadJson<T[]>(`/data/${file}`, cacheBust);
+}
+
+async function loadOptionalSingleton<T>(manifest: Manifest, datasetName: string, cacheBust?: string): Promise<T | undefined> {
+  const dataset = manifest.static_data?.datasets[datasetName];
+  const file = singletonFile(dataset) ?? legacyFile(manifest, datasetName);
+  if (!file) return undefined;
+  return loadJson<T>(`/data/${file}`, cacheBust).catch(() => undefined);
+}
+
+function singletonFile(dataset: StaticDataDataset | undefined): string | undefined {
+  if (!dataset) return undefined;
+  if (dataset.strategy === "singleton" && dataset.file) return dataset.file;
+  return undefined;
+}
+
+function legacyFile(manifest: Manifest, datasetName: string): string | undefined {
+  return manifest.datasets.find((item) => item.dataset === datasetName)?.file;
+}
+
+function hasSeasonRows<T extends Record<string, unknown>>(rows: T[], key: keyof T, season: number): boolean {
+  return rows.some((row) => Number(row[key]) === season);
+}
+
+function replaceSeasonRows<T extends Record<string, unknown>>(current: T[], incoming: T[], key: keyof T, season: number): T[] {
+  return [...current.filter((row) => Number(row[key]) !== season), ...incoming];
 }
 
 function applyOffseasonTruth(players: PlayerImpact[], lineups: TeamLineupRow[], truth?: OffseasonTruthData): { players: PlayerImpact[]; lineups: TeamLineupRow[] } {

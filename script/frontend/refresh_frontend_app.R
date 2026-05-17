@@ -158,10 +158,18 @@ run_node_script <- function(base_dir, label, relative_path) {
 }
 
 base_dir <- resolve_base_dir()
-if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY"))) {
-  Sys.setenv(REFRESH_FULL_SWITCH_HISTORY = "false")
+refresh_mode <- tolower(trimws(Sys.getenv("FRONTEND_REFRESH_MODE", "quick")))
+if (!refresh_mode %in% c("quick", "full")) {
+  stop("FRONTEND_REFRESH_MODE must be 'quick' or 'full'.")
 }
 
+if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY")) && refresh_mode == "quick") {
+  Sys.setenv(REFRESH_FULL_SWITCH_HISTORY = "false")
+} else if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY")) && refresh_mode == "full") {
+  Sys.setenv(REFRESH_FULL_SWITCH_HISTORY = "true")
+}
+
+message("Frontend refresh mode: ", refresh_mode)
 run_script(base_dir, "Refresh backend outputs", file.path("script", "refresh_outputs_2026.txt"))
 run_script(base_dir, "Refresh Basketball-Reference availability data", file.path("script", "data", "pull_bref_player_seasons.R"))
 run_script(base_dir, "Refresh contract data", file.path("script", "data", "pull_contracts_databallr.R"))

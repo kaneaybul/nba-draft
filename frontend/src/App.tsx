@@ -1,9 +1,11 @@
-import { type CSSProperties, type ChangeEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
-import { loadAppData } from "./data";
-import { CapTrackerWorkspace } from "./CapTracker";
-import { OffseasonSimulatorWorkspace } from "./OffseasonSimulator";
+import { type CSSProperties, type ChangeEvent, lazy, type MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { latestManifestSeason, loadAppData, loadDataForView, manifestSeasons } from "./data";
+import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
 import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
+
+const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
+const OffseasonSimulatorWorkspace = lazy(() => import("./OffseasonSimulator").then((module) => ({ default: module.OffseasonSimulatorWorkspace })));
 
 type View = "impact" | "teams" | "startingLineups" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
@@ -168,6 +170,7 @@ const lineupSkills: LineupSkill[] = [
 const LINEUP_SUGGESTIONS_PER_PAGE = 8;
 const LINEUP_SUGGESTION_PAGE_COUNT = 3;
 const LINEUP_MAX_SUGGESTIONS = LINEUP_SUGGESTIONS_PER_PAGE * LINEUP_SUGGESTION_PAGE_COUNT;
+const MAX_VISIBLE_TABLE_ROWS = 500;
 const DRAFT_ELO_INITIAL_RATING = 1500;
 const DRAFT_ELO_K = 32;
 const DRAFT_ELO_DB_NAME = "nba-impact-lab-draft-elo";
@@ -439,16 +442,39 @@ function App() {
   const [view, setView] = useState<View>("impact");
   const [season, setSeason] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingViewData, setLoadingViewData] = useState(false);
   const [refreshNote, setRefreshNote] = useState<string | null>(null);
+  const localRefreshEnabled = isLocalRefreshEnabled();
 
   useEffect(() => {
     loadAppData()
       .then((loaded) => {
         setData(loaded);
-        setSeason(latestPlayerSeason(loaded.players));
+        setSeason(latestManifestSeason(loaded.manifest, loaded.players));
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, []);
+
+  useEffect(() => {
+    if (!data || season === null) return;
+    let active = true;
+    setLoadingViewData(true);
+    loadDataForView(data, view, season)
+      .then((loaded) => {
+        if (!active) return;
+        if (loaded !== data) setData(loaded);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        if (active) setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (active) setLoadingViewData(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [data, season, view]);
 
   const reloadData = async () => {
     setRefreshing(true);
@@ -457,8 +483,9 @@ function App() {
       const loaded = await loadAppData(String(Date.now()));
       setData(loaded);
       setError(null);
-      const latest = latestPlayerSeason(loaded.players);
-      setSeason((current) => (current !== null && loaded.players.some((player) => player.year === current) ? current : latest));
+      const seasons = manifestSeasons(loaded.manifest, loaded.players);
+      const latest = seasons[0] ?? latestPlayerSeason(loaded.players);
+      setSeason((current) => (current !== null && seasons.includes(current) ? current : latest));
       setRefreshNote("Data reloaded");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
@@ -468,6 +495,7 @@ function App() {
   };
 
   const refreshBackend = async () => {
+    if (!localRefreshEnabled) return;
     setRefreshing(true);
     setRefreshNote("Starting refresh");
     try {
@@ -503,7 +531,7 @@ function App() {
     );
   }
 
-  const seasons = Array.from(new Set(data.players.map((player) => player.year))).sort((a, b) => b - a);
+  const seasons = manifestSeasons(data.manifest, data.players);
 
   if (season === null) {
     return (
@@ -542,10 +570,14 @@ function App() {
           <button className="refresh-button hdr-btn" onClick={reloadData} disabled={refreshing}>
             {refreshing ? "Reloading" : "Reload data"}
           </button>
-          <button className="refresh-button hdr-btn primary" onClick={refreshBackend} disabled={refreshing}>
-            Refresh latest
-          </button>
-          {refreshNote && <div className="refresh-note">{refreshNote}</div>}
+          {localRefreshEnabled && (
+            <button className="refresh-button hdr-btn primary" onClick={refreshBackend} disabled={refreshing}>
+              Refresh latest
+            </button>
+          )}
+          {(refreshNote || loadingViewData || isPublicReadOnlyMode()) && (
+            <div className="refresh-note">{loadingViewData ? "Loading view data" : refreshNote ?? "Public read-only"}</div>
+          )}
         </div>
       </header>
 
@@ -569,16 +601,18 @@ function App() {
         ))}
       </nav>
 
-      {view === "impact" && <ImpactWorkspace data={data} season={season} />}
-      {view === "teams" && <TeamWorkspace data={data} season={season} />}
-      {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
-      {view === "trade" && <TradeWorkspace data={data} season={season} />}
-      {view === "offseason" && <OffseasonSimulatorWorkspace data={data} season={season} />}
-      {view === "capTracker" && <CapTrackerWorkspace data={data} />}
-      {view === "draft" && <DraftWorkspace data={data} />}
-      {view === "draftElo" && <DraftEloWorkspace data={data} />}
-      {view === "lineups" && <LineupWorkspace data={data} season={season} />}
-      {view === "tracker" && <TrackerWorkspace data={data} />}
+      <Suspense fallback={<main className="loading"><p>Loading workspace</p></main>}>
+        {view === "impact" && <ImpactWorkspace data={data} season={season} />}
+        {view === "teams" && <TeamWorkspace data={data} season={season} />}
+        {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
+        {view === "trade" && <TradeWorkspace data={data} season={season} />}
+        {view === "offseason" && <OffseasonSimulatorWorkspace data={data} season={season} />}
+        {view === "capTracker" && <CapTrackerWorkspace data={data} />}
+        {view === "draft" && <DraftWorkspace data={data} />}
+        {view === "draftElo" && <DraftEloWorkspace data={data} />}
+        {view === "lineups" && <LineupWorkspace data={data} season={season} />}
+        {view === "tracker" && <TrackerWorkspace data={data} />}
+      </Suspense>
     </div>
   );
 }
@@ -843,9 +877,12 @@ function PlayerTable({
     </button>
   );
   const activeSkill = getActiveSkillSort(sortKey);
+  const visiblePlayers = players.slice(0, MAX_VISIBLE_TABLE_ROWS);
+  const hiddenCount = Math.max(0, players.length - visiblePlayers.length);
 
   return (
     <div className="table-wrap">
+      {hiddenCount > 0 && <p className="table-limit-note">Showing first {visiblePlayers.length.toLocaleString()} of {players.length.toLocaleString()} rows. Tighten filters to inspect the rest.</p>}
       <table className="data-table player-table editorial-player-table">
         <colgroup>
           <col className="cg-rank" />
@@ -927,7 +964,7 @@ function PlayerTable({
           </tr>
         </thead>
         <tbody>
-          {players.map((player, index) => (
+          {visiblePlayers.map((player, index) => (
             <tr key={`${player.year}-${player.nba_id}`} style={rowAccentStyle(player)}>
               <td className="rank-cell">{index + 1}</td>
               <td className="sticky-player">
@@ -2336,9 +2373,12 @@ function ProspectTable({
     </button>
   );
   const activeSkill = draftSortSkill(sortKey);
+  const visibleProspects = prospects.slice(0, MAX_VISIBLE_TABLE_ROWS);
+  const hiddenCount = Math.max(0, prospects.length - visibleProspects.length);
 
   return (
     <div className="table-wrap">
+      {hiddenCount > 0 && <p className="table-limit-note">Showing first {visibleProspects.length.toLocaleString()} of {prospects.length.toLocaleString()} rows. Tighten filters to inspect the rest.</p>}
       <table className="data-table draft-model-table">
         <colgroup>
           <col className="cg-draft-rank" />
@@ -2399,7 +2439,7 @@ function ProspectTable({
           </tr>
         </thead>
         <tbody>
-          {prospects.map((prospect, index) => (
+          {visibleProspects.map((prospect, index) => (
             <tr key={`${prospect.draft_year}-${prospect.player}`} style={draftRowAccentStyle(prospect)}>
               <td className="rank-cell align-center">{index + 1}</td>
               <td className="sticky-player">

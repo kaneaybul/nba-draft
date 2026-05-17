@@ -1,0 +1,84 @@
+name: Refresh data and deploy
+
+on:
+  schedule:
+    - cron: "17 0,12,18 * * *"
+  workflow_dispatch:
+    inputs:
+      refresh_mode:
+        description: "Refresh mode"
+        required: true
+        default: "quick"
+        type: choice
+        options:
+          - quick
+          - full
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FRONTEND_REFRESH_MODE: ${{ inputs.refresh_mode || 'quick' }}
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          repos <- c(CRAN = "https://cloud.r-project.org")
+          pkgs <- c(
+            "data.table", "dplyr", "httr", "jsonlite", "openxlsx", "purrr",
+            "ranger", "readr", "rpart", "rvest", "tibble", "tidyr",
+            "tidyverse", "xml2"
+          )
+          missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repos)
+
+      - name: Refresh generated data
+        shell: bash
+        run: Rscript script/frontend/refresh_frontend_app.R
+
+      - name: Validate frontend data contract
+        run: npm run validate:data
+        working-directory: frontend
+
+      - name: Run frontend regressions
+        run: |
+          npm run test:offseason-market
+          npm run test:cap-sandbox
+          npm run test:cap-tracker
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.ref_name }}
