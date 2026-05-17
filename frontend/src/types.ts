@@ -141,6 +141,16 @@ export type PlayerImpact = {
   projection_defense_y3?: number | null;
   projection_defense_y4?: number | null;
   projection_defense_y5?: number | null;
+  projection_skill_model_off_y1?: number | null;
+  projection_skill_model_off_y2?: number | null;
+  projection_skill_model_off_y3?: number | null;
+  projection_skill_model_off_y4?: number | null;
+  projection_skill_model_off_y5?: number | null;
+  projection_skill_model_def_y1?: number | null;
+  projection_skill_model_def_y2?: number | null;
+  projection_skill_model_def_y3?: number | null;
+  projection_skill_model_def_y4?: number | null;
+  projection_skill_model_def_y5?: number | null;
   projection_timin_y1?: number | null;
   projection_timin_y2?: number | null;
   projection_timin_y3?: number | null;

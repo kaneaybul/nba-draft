@@ -9,7 +9,8 @@ const OffseasonSimulatorWorkspace = lazy(() => import("./OffseasonSimulator").th
 
 type View = "impact" | "teams" | "startingLineups" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
-type ImpactSkillSortKey = SkillKey | "skill_total";
+type SkillAggregateSortKey = "skill_total" | "skill_off" | "skill_def";
+type ImpactSkillSortKey = SkillKey | SkillAggregateSortKey;
 type SortKey =
   | "player_name"
   | "team"
@@ -32,6 +33,8 @@ type SortKey =
   | "future_value_4y"
   | "future_scale_4y"
   | "skill_total"
+  | "skill_off"
+  | "skill_def"
   | "Minutes"
   | SkillKey;
 type SortDirection = "asc" | "desc";
@@ -222,6 +225,16 @@ const skillLabels: Record<SkillKey, string> = {
   DPM: "Def. Playmaking",
   RIMPRO: "Rim Protection"
 };
+const skillAggregateSorts: Array<{ key: SkillAggregateSortKey; label: string; title: string }> = [
+  { key: "skill_total", label: "Total", title: "skill model Total" },
+  { key: "skill_off", label: "Off", title: "skill model Off" },
+  { key: "skill_def", label: "Def", title: "skill model Def" }
+];
+const draftSkillAggregateSorts: Array<{ key: DraftSortKey; label: string; title: string }> = [
+  { key: "TOTAL_pred", label: "Total", title: "projected Total" },
+  { key: "OFF_pred", label: "Off", title: "projected Off" },
+  { key: "DEF_pred", label: "Def", title: "projected Def" }
+];
 const NBA_HEADSHOT_URL = "https://cdn.nba.com/headshots/nba/latest/260x190";
 const BRENDAN_MODEL_BOARD = "Brendan Model";
 const BRENDAN_BASE_BOARD = "Brendan Base";
@@ -252,6 +265,8 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "future_value_4y", label: "4Y Value", type: "number" },
   { key: "future_scale_4y", label: "4Y Scale", type: "number" },
   { key: "skill_total", label: "Skill Total", type: "number" },
+  { key: "skill_off", label: "Skill Off", type: "number" },
+  { key: "skill_def", label: "Skill Def", type: "number" },
   ...skillKeys.map((key) => ({ key, label: key, type: "number" as const }))
 ];
 const numericOperators: Array<{ value: FilterOperator; label: string }> = [
@@ -279,7 +294,7 @@ const draftFilterFields: Array<{ key: DraftFilterKey; label: string; type: Filte
   { key: "TOTAL_pred", label: "Total", type: "number" },
   { key: "timin", label: "TIMIN", type: "number" },
   { key: "draft_age", label: "Age", type: "number" },
-  { key: "scv_draft", label: "SCV", type: "number" },
+  { key: "scv_draft", label: "Model", type: "number" },
   { key: "similarity_score", label: "Comp Score", type: "number" },
   ...skillKeys.map((key) => ({ key: `${key}_pred` as DraftFilterKey, label: key, type: "number" as const }))
 ];
@@ -577,7 +592,7 @@ function App() {
   if (!data) {
     return (
       <main className="loading">
-        <div className="mark">NBA</div>
+        <img className="mark" src="/logo.svg" alt="" aria-hidden="true" />
         <p>Loading impact lab</p>
       </main>
     );
@@ -599,7 +614,7 @@ function App() {
     <div className="app" data-variant="editorial">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-eye">SCV Analytics</div>
+          <img className="brand-logo" src="/logo.svg" alt="" aria-hidden="true" />
           <h1 className="brand-name">
             <span className="brand-accent">NBA</span> Impact Lab
           </h1>
@@ -1001,14 +1016,17 @@ function PlayerTable({
                   Skills{activeSkill && <small>{skillSortLabel(activeSkill)} {sortDirection === "desc" ? "v" : "^"}</small>}
                 </button>
                 <div className="skills-sort-strip" aria-label="Sort by skill">
-                  <button
-                    className={cls("skills-sort-btn", activeSkill === "skill_total" && "active")}
-                    onClick={() => onSort("skill_total")}
-                    title="Sort by skill model Total"
-                  >
-                    Total
-                    {activeSkill === "skill_total" && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
-                  </button>
+                  {skillAggregateSorts.map((item) => (
+                    <button
+                      key={item.key}
+                      className={cls("skills-sort-btn aggregate", activeSkill === item.key && "active")}
+                      onClick={() => onSort(item.key)}
+                      title={`Sort by ${item.title}`}
+                    >
+                      {item.label}
+                      {activeSkill === item.key && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
+                    </button>
+                  ))}
                   {skillKeys.map((key) => (
                     <button
                       key={key}
@@ -1077,7 +1095,18 @@ function PlayerTable({
                 </div>
               </td>
               <td className="skill-fingerprint-cell">
-                <SkillFingerprint player={player} activeSkill={activeSkill} />
+                <SkillLedger
+                  aggregates={playerSkillAggregates(player)}
+                  skills={skillKeys.map((key) => ({
+                    key,
+                    label: key,
+                    title: skillLabels[key],
+                    value: Number(player[key] ?? 0),
+                    sortKey: key
+                  }))}
+                  activeKey={activeSkill}
+                  onSort={(key) => onSort(key as SortKey)}
+                />
               </td>
             </tr>
           ))}
@@ -1088,12 +1117,13 @@ function PlayerTable({
 }
 
 function getActiveSkillSort(sortKey: SortKey): ImpactSkillSortKey | null {
-  if (sortKey === "skill_total") return sortKey;
+  if (skillAggregateSorts.some((item) => item.key === sortKey)) return sortKey as SkillAggregateSortKey;
   return skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null;
 }
 
 function skillSortLabel(key: ImpactSkillSortKey): string {
-  return key === "skill_total" ? "Total" : key;
+  const aggregate = skillAggregateSorts.find((item) => item.key === key);
+  return aggregate ? aggregate.label : key;
 }
 
 function faStatusLabel(player: PlayerImpact): FaStatusFilter {
@@ -2449,7 +2479,7 @@ function ProspectTable({
       {sortKey === key && <span className="sort-arr">{sortDirection === "desc" ? "v" : "^"}</span>}
     </button>
   );
-  const activeSkill = draftSortSkill(sortKey);
+  const activeSkill = draftSkillSortKey(sortKey);
   const visibleProspects = prospects.slice(0, MAX_VISIBLE_TABLE_ROWS);
   const hiddenCount = Math.max(0, prospects.length - visibleProspects.length);
 
@@ -2485,7 +2515,7 @@ function ProspectTable({
             <th className="sticky-player">{sortableHeader("player", "Player")}</th>
             <th className="align-center">{sortableHeader("position", "Pos")}</th>
             <th className="align-center">{sortableHeader("draft_age", "Age")}</th>
-            <th className="align-center">{sortableHeader("scv_draft", "SCV")}</th>
+            <th className="align-center">{sortableHeader("scv_draft", "Model")}</th>
             <th className="align-right">{sortableHeader("OFF_pred", "Off")}</th>
             <th className="align-right">{sortableHeader("DEF_pred", "Def")}</th>
             <th className="align-right">{sortableHeader("TOTAL_pred", "Total")}</th>
@@ -2496,9 +2526,20 @@ function ProspectTable({
               <div className="skills-head">
                 <button className={cls("skills-main-sort", activeSkill && "active")} onClick={() => onSort("TOTAL_pred")}>
                   Skills
-                  {activeSkill && <small>{activeSkill}</small>}
+                  {activeSkill && <small>{draftSkillSortLabel(activeSkill)}</small>}
                 </button>
-                <div className="skills-sort-strip">
+                <div className="skills-sort-strip" aria-label="Sort by prospect skill">
+                  {draftSkillAggregateSorts.map((item) => (
+                    <button
+                      key={item.key}
+                      className={cls("skills-sort-btn aggregate", sortKey === item.key && "active")}
+                      onClick={() => onSort(item.key)}
+                      title={`Sort by ${item.title}`}
+                    >
+                      {item.label}
+                      {sortKey === item.key && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
+                    </button>
+                  ))}
                   {skillKeys.map((key) => (
                     <button
                       key={key}
@@ -2553,7 +2594,22 @@ function ProspectTable({
                 <span className="timin-value">{formatNumber(prospect.timin, 0)}</span>
               </td>
               <td className="skill-fingerprint-cell">
-                <ProspectSkillFingerprint prospect={prospect} activeSkill={activeSkill} />
+                <SkillLedger
+                  aggregates={[
+                    { key: "TOTAL_pred", label: "Total", title: "Projected Total", value: prospect.TOTAL_pred, sortKey: "TOTAL_pred" },
+                    { key: "OFF_pred", label: "Off", title: "Projected Off", value: prospect.OFF_pred, sortKey: "OFF_pred" },
+                    { key: "DEF_pred", label: "Def", title: "Projected Def", value: prospect.DEF_pred, sortKey: "DEF_pred" }
+                  ]}
+                  skills={skillKeys.map((key) => ({
+                    key,
+                    label: key,
+                    title: skillLabels[key],
+                    value: getProspectSkillValue(prospect, key),
+                    sortKey: `${key}_pred` as DraftSortKey
+                  }))}
+                  activeKey={activeSkill}
+                  onSort={(key) => onSort(key as DraftSortKey)}
+                />
               </td>
               <td className="draft-comp-cell">
                 <DraftSimilarityComp prospect={prospect} />
@@ -2594,6 +2650,18 @@ function draftSortSkill(key: DraftSortKey): SkillKey | null {
   if (!key.endsWith("_pred")) return null;
   const skill = key.replace("_pred", "") as SkillKey;
   return skillKeys.includes(skill) ? skill : null;
+}
+
+function draftSkillSortKey(key: DraftSortKey): DraftSortKey | null {
+  if (draftSkillAggregateSorts.some((item) => item.key === key)) return key;
+  return draftSortSkill(key) ? key : null;
+}
+
+function draftSkillSortLabel(key: DraftSortKey): string {
+  const aggregate = draftSkillAggregateSorts.find((item) => item.key === key);
+  if (aggregate) return aggregate.label;
+  const skill = draftSortSkill(key);
+  return skill ?? "";
 }
 
 function DraftEloWorkspace({ data }: { data: AppData }) {
@@ -4090,102 +4158,104 @@ function ScoreValue({ value, label }: { value: number; label?: string | null }) 
   );
 }
 
-function skillAggregateTotal(player: PlayerImpact): number {
+function skillAggregateOff(player: PlayerImpact): number {
   const off = Number(player.skill_model_off ?? player.skill_off_total);
+  return Number.isFinite(off) ? off : Number(player.offense ?? 0);
+}
+
+function skillAggregateDef(player: PlayerImpact): number {
   const def = Number(player.skill_model_def ?? player.skill_def_total);
+  return Number.isFinite(def) ? def : Number(player.defense ?? 0);
+}
+
+function skillAggregateTotal(player: PlayerImpact): number {
+  const off = skillAggregateOff(player);
+  const def = skillAggregateDef(player);
   if (Number.isFinite(off) && Number.isFinite(def)) return off + def;
   return Number(player.total ?? 0);
 }
 
-function SkillFingerprint({
-  player,
-  activeSkill
-}: {
-  player: PlayerImpact;
-  activeSkill: ImpactSkillSortKey | null;
-}) {
-  const [hoverSkill, setHoverSkill] = useState<string | null>(null);
-  const totalValue = skillAggregateTotal(player);
-  const aggregateBars = [
-    { key: "skill_total", label: "TOTAL", title: "Skill model Total", value: totalValue },
-    { key: "OFF_SKILL", label: "OFF", title: "Skill model Off", value: player.skill_model_off ?? player.skill_off_total },
-    { key: "DEF_SKILL", label: "DEF", title: "Skill model Def", value: player.skill_model_def ?? player.skill_def_total }
+function playerSkillAggregates(player: PlayerImpact): SkillLedgerAggregate[] {
+  const off = skillAggregateOff(player);
+  const def = skillAggregateDef(player);
+  return [
+    { key: "skill_total", label: "Total", title: "Skill model Total", value: off + def, sortKey: "skill_total" },
+    { key: "skill_off", label: "Off", title: "Skill model Off", value: off, sortKey: "skill_off" },
+    { key: "skill_def", label: "Def", title: "Skill model Def", value: def, sortKey: "skill_def" }
   ];
-
-  return (
-    <div className="skill-fingerprint">
-      <div className="skill-bars" onMouseLeave={() => setHoverSkill(null)}>
-        {skillKeys.map((key) => {
-          const value = Number(player[key] ?? 0);
-          const height = Math.max(4, clamp((value + 3) / 6, 0, 1) * 22);
-          return (
-            <span
-              key={key}
-              className={cls("skill-bar", key === "DREB" && "defense-start", activeSkill === key && "active", hoverSkill === key && "open")}
-              onMouseEnter={() => setHoverSkill(key)}
-              title={`${skillLabels[key]}: ${formatSigned(value, 1)}`}
-              style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
-            >
-              <i />
-              <em>{key} {formatSigned(value, 1)}</em>
-            </span>
-          );
-        })}
-        {aggregateBars.map((bar) => {
-          const value = Number(bar.value ?? 0);
-          const height = Math.max(4, clamp((value + 6) / 12, 0, 1) * 22);
-          return (
-            <span
-              key={bar.key}
-              className={cls(
-                "skill-bar",
-                "skill-total-bar",
-                bar.key === "skill_total" && "skill-total-start",
-                activeSkill === bar.key && "active",
-                hoverSkill === bar.key && "open"
-              )}
-              onMouseEnter={() => setHoverSkill(bar.key)}
-              title={`${bar.title}: ${formatSigned(value, 1)}`}
-              style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
-            >
-              <i />
-              <em>{bar.label} {formatSigned(value, 1)}</em>
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
 }
 
-function ProspectSkillFingerprint({
-  prospect,
-  activeSkill
+type SkillLedgerSortKey = SortKey | DraftSortKey;
+
+type SkillLedgerAggregate<TKey extends SkillLedgerSortKey = SkillLedgerSortKey> = {
+  key: string;
+  label: string;
+  title: string;
+  value: number;
+  sortKey: TKey;
+};
+
+type SkillLedgerSkill<TKey extends SkillLedgerSortKey = SkillLedgerSortKey> = {
+  key: SkillKey;
+  label: string;
+  title: string;
+  value: number;
+  sortKey: TKey;
+};
+
+function SkillLedger<TKey extends SkillLedgerSortKey>({
+  aggregates,
+  skills,
+  activeKey,
+  onSort
 }: {
-  prospect: DraftProspect;
-  activeSkill: SkillKey | null;
+  aggregates: SkillLedgerAggregate<TKey>[];
+  skills: SkillLedgerSkill<TKey>[];
+  activeKey: string | null;
+  onSort: (key: TKey) => void;
 }) {
-  const [hoverSkill, setHoverSkill] = useState<SkillKey | null>(null);
+  const offSkills = skills.filter((skill) => ["FTD", "OREB", "PASS", "RIM", "SHOOT"].includes(skill.key));
+  const defSkills = skills.filter((skill) => ["DPM", "DREB", "RIMPRO", "SWITCH"].includes(skill.key));
+  const renderSkill = (skill: SkillLedgerSkill<TKey>) => (
+    <button
+      key={skill.key}
+      type="button"
+      className={cls("skill-chip", activeKey === skill.sortKey && "active")}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSort(skill.sortKey);
+      }}
+      title={`${skill.title}: ${formatSigned(skill.value, 1)}`}
+      style={skillStyle(skill.value)}
+    >
+      <span>{skill.label}</span>
+      <strong>{formatSigned(skill.value, 1)}</strong>
+    </button>
+  );
 
   return (
-    <div className="skill-fingerprint">
-      <div className="skill-bars" onMouseLeave={() => setHoverSkill(null)}>
-        {skillKeys.map((key) => {
-          const value = getProspectSkillValue(prospect, key);
-          const height = Math.max(4, clamp((value + 3) / 6, 0, 1) * 22);
-          return (
-            <span
-              key={key}
-              className={cls("skill-bar", key === "DREB" && "defense-start", activeSkill === key && "active", hoverSkill === key && "open")}
-              onMouseEnter={() => setHoverSkill(key)}
-              title={`${skillLabels[key]}: ${formatSigned(value, 1)}`}
-              style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
-            >
-              <i />
-              <em>{key} {formatSigned(value, 1)}</em>
-            </span>
-          );
-        })}
+    <div className="skill-ledger">
+      <div className="skill-ledger-aggregates" aria-label="Skill model aggregates">
+        {aggregates.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            className={cls("skill-aggregate-pill", activeKey === item.sortKey && "active")}
+            onClick={(event) => {
+              event.stopPropagation();
+              onSort(item.sortKey);
+            }}
+            title={`${item.title}: ${formatSigned(item.value, 1)}`}
+            style={skillStyle(item.value)}
+          >
+            <span>{item.label}</span>
+            <strong>{formatSigned(item.value, 1)}</strong>
+          </button>
+        ))}
+      </div>
+      <div className="skill-ledger-groups" aria-label="Skill dimensions">
+        <div className="skill-chip-group offense">{offSkills.map(renderSkill)}</div>
+        <div className="skill-chip-group defense">{defSkills.map(renderSkill)}</div>
       </div>
     </div>
   );
@@ -4992,6 +5062,8 @@ function getPlayerSortValue(player: PlayerImpact, key: FilterKey): string | numb
   if (key === "future_value_4y") return futureValue4y(player);
   if (key === "future_scale_4y") return futureScale4y(player);
   if (key === "skill_total") return skillAggregateTotal(player);
+  if (key === "skill_off") return skillAggregateOff(player);
+  if (key === "skill_def") return skillAggregateDef(player);
   if (key === "scalability") return currentScale(player);
   if (key === "value_add") return currentValueAdd(player);
   return player[key as keyof PlayerImpact] as string | number | null | undefined;

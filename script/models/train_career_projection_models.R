@@ -21,6 +21,7 @@ clamp <- function(x, lo, hi) pmax(lo, pmin(hi, x))
 coalesce_num <- function(primary, fallback) ifelse(!is.na(primary), primary, fallback)
 skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
 projection_metrics <- c("offense", "defense", skill_names)
+aggregate_skill_metrics <- c("skill_model_off", "skill_model_def")
 
 normalize_name <- function(x) {
   x <- iconv(as.character(x), from = "", to = "ASCII//TRANSLIT")
@@ -311,6 +312,8 @@ build_panel <- function(base_dir) {
   skill$offense <- coalesce_num(skill$FINAL_OFF, skill$OFF)
   skill$defense <- coalesce_num(skill$FINAL_DEF, skill$DEF)
   skill$total <- coalesce_num(skill$FINAL_TOTAL, skill$TOTAL)
+  skill$skill_model_off <- suppressWarnings(as.numeric(skill$OFF))
+  skill$skill_model_def <- suppressWarnings(as.numeric(skill$DEF))
   for (skill_name in skill_names) {
     final_col <- paste0("FINAL_", skill_name)
     if (final_col %in% names(skill)) {
@@ -327,7 +330,7 @@ build_panel <- function(base_dir) {
   names(stats)[names(stats) == "Minutes"] <- "stat_minutes"
 
   panel <- merge(
-    skill[, c("nba_id", "player_name", "year", "offense", "defense", "total", skill_names)],
+    skill[, c("nba_id", "player_name", "year", "offense", "defense", "total", aggregate_skill_metrics, skill_names)],
     stats,
     by = c("nba_id", "year"),
     all.x = TRUE
@@ -397,7 +400,7 @@ build_panel <- function(base_dir) {
 }
 
 make_one_year_rows <- function(panel) {
-  future_metrics <- c(projection_metrics, "total", "games_equiv", "mpg", "minutes_equiv")
+  future_metrics <- c(projection_metrics, aggregate_skill_metrics, "total", "games_equiv", "mpg", "minutes_equiv")
   future <- panel[, c("nba_id", "year", future_metrics), drop = FALSE]
   future$source_year <- future$year - 1
   names(future)[names(future) %in% future_metrics] <-
@@ -406,7 +409,7 @@ make_one_year_rows <- function(panel) {
   names(future)[names(future) == "target_minutes_equiv"] <- "target_minutes"
   out <- merge(
     panel,
-    future[, c("nba_id", "source_year", paste0("target_", projection_metrics), "target_total", "target_games", "target_mpg", "target_minutes"), drop = FALSE],
+    future[, c("nba_id", "source_year", paste0("target_", c(projection_metrics, aggregate_skill_metrics)), "target_total", "target_games", "target_mpg", "target_minutes"), drop = FALSE],
     by.x = c("nba_id", "year"),
     by.y = c("nba_id", "source_year"),
     all.x = TRUE
@@ -420,7 +423,7 @@ make_one_year_rows <- function(panel) {
   out$target_minutes_at_avg3_mpg <- out$target_games * out$avg3_mpg
   out$target_minutes_at_reliable_role_mpg <- out$target_games * out$reliable_role_mpg
   out$target_year <- out$year + 1
-  for (metric in c(projection_metrics, "total")) {
+  for (metric in c(projection_metrics, aggregate_skill_metrics, "total")) {
     target_col <- paste0("target_", metric)
     delta_col <- paste0("target_delta_", metric)
     if (all(c(target_col, metric) %in% names(out))) {
@@ -500,6 +503,12 @@ feature_sets <- list(
     "has_prev", "delta_offense", "delta_defense", "delta_total", "delta_mpg", "delta_games"
   ),
   skill_reference_shape = c("age", "age_sq", "yoe", "total", "avg2_total", "avg3_total", "mpg", "games_equiv", skill_names),
+  aggregate_skill_state = c(
+    "age", "yoe",
+    "total", "offense", "defense",
+    "skill_model_off", "skill_model_def",
+    skill_names
+  ),
   usage_history = c("age", "age_sq", "yoe", "games_equiv", "mpg", "minutes_equiv", "avg2_games_equiv", "avg3_games_equiv", "avg2_mpg", "avg3_mpg", "avg2_minutes_equiv", "avg3_minutes_equiv", "has_prev", "prev_total", "prev_games_equiv", "prev_mpg", "prev_minutes_equiv", "delta_mpg", "delta_games"),
   blended_history = c("age", "age_sq", "yoe", "games_equiv", "mpg", "minutes_equiv", "total", "avg2_total", "avg3_total", "avg2_games_equiv", "avg3_games_equiv", "avg2_mpg", "avg3_mpg", "avg2_minutes_equiv", "avg3_minutes_equiv", "has_prev", "prev_total", "prev_games_equiv", "prev_mpg", "prev_minutes_equiv", "delta_total", "delta_mpg", "delta_games"),
   total_delta_age_curve = c(
@@ -539,6 +548,8 @@ target_feature_sets <- list(
   target_delta_total = c("total_delta_age_curve"),
   target_offense = c("offense_state_curve"),
   target_defense = c("component_reference_shape", "total_reference_shape"),
+  target_skill_model_off = c("aggregate_skill_state"),
+  target_skill_model_def = c("aggregate_skill_state"),
   target_delta_offense = c("component_delta_age_curve"),
   target_delta_defense = c("component_delta_age_curve")
 )
@@ -549,6 +560,7 @@ for (skill_name in skill_names) {
 algorithms <- c("lm", "rpart", "ranger")
 validation_targets <- c(
   "target_role_mpg", "target_minutes", "target_total", "target_delta_total", "target_offense", "target_defense",
+  "target_skill_model_off", "target_skill_model_def",
   "target_delta_offense", "target_delta_defense",
   paste0("target_", skill_names)
 )
@@ -560,7 +572,8 @@ for (target in validation_targets) {
   holdout_years <- holdout_years[holdout_years >= max(min(holdout_years) + 4, complete_target_year - 4) & holdout_years <= complete_target_year]
   for (set_name in target_feature_sets[[target]]) {
     features <- feature_sets[[set_name]]
-    for (algorithm in algorithms) {
+    target_algorithms <- if (target %in% paste0("target_", aggregate_skill_metrics)) "lm" else algorithms
+    for (algorithm in target_algorithms) {
       actual_all <- numeric()
       pred_all <- numeric()
       used_years <- integer()
@@ -744,7 +757,11 @@ if (!is.null(delta_level_validations) && nrow(delta_level_validations)) {
 }
 
 models <- list()
-model_targets <- c("target_games", "target_role_mpg", "target_delta_total", "target_offense", "target_defense", paste0("target_", skill_names))
+model_targets <- c(
+  "target_games", "target_role_mpg", "target_delta_total", "target_offense", "target_defense",
+  paste0("target_", aggregate_skill_metrics),
+  paste0("target_", skill_names)
+)
 for (target in model_targets) {
   target_df <- train_df
   if (target == "target_games") {
@@ -799,6 +816,8 @@ for (horizon in 1:5) {
   reconciled_components <- reconcile_projected_components(component_offense, component_defense, projected_total)
   projected_offense <- reconciled_components$offense
   projected_defense <- reconciled_components$defense
+  projected_skill_model_off <- clamp(predict_model(models$target_skill_model_off$model, state, models$target_skill_model_off$features), -8, 10)
+  projected_skill_model_def <- clamp(predict_model(models$target_skill_model_def$model, state, models$target_skill_model_def$features), -8, 10)
   projected_skills <- lapply(skill_names, function(skill_name) {
     target <- paste0("target_", skill_name)
     clamp(predict_model(models[[target]]$model, state, models[[target]]$features), -5, 5)
@@ -817,6 +836,8 @@ for (horizon in 1:5) {
     projected_total = projected_total,
     projected_offense = projected_offense,
     projected_defense = projected_defense,
+    projected_skill_model_off = projected_skill_model_off,
+    projected_skill_model_def = projected_skill_model_def,
     stringsAsFactors = FALSE
   )
   for (skill_name in skill_names) {
@@ -868,6 +889,8 @@ for (horizon in 1:5) {
   state$total <- projected_total
   state$offense <- projected_offense
   state$defense <- projected_defense
+  state$skill_model_off <- projected_skill_model_off
+  state$skill_model_def <- projected_skill_model_def
   for (skill_name in skill_names) {
     state[[skill_name]] <- projected_skills[[paste0("projected_", tolower(skill_name))]]
   }
@@ -920,7 +943,11 @@ dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(projection_dir, recursive = TRUE, showWarnings = FALSE)
 projection_output <- do.call(rbind, predictions)
 
-model_card_targets <- c("target_games", "target_role_mpg", "target_delta_total", "target_offense", "target_defense", paste0("target_", skill_names))
+model_card_targets <- c(
+  "target_games", "target_role_mpg", "target_delta_total", "target_offense", "target_defense",
+  paste0("target_", aggregate_skill_metrics),
+  paste0("target_", skill_names)
+)
 modeled_card_targets <- model_card_targets
 model_card <- data.frame(
   target = modeled_card_targets,

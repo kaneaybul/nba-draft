@@ -21,6 +21,7 @@ clamp <- function(x, lo, hi) pmax(lo, pmin(hi, x))
 coalesce_num <- function(primary, fallback) ifelse(!is.na(primary), primary, fallback)
 skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
 projection_metrics <- c("offense", "defense", skill_names)
+aggregate_skill_metrics <- c("skill_model_off", "skill_model_def")
 
 if (requireNamespace("ranger", quietly = TRUE)) {
   library(ranger)
@@ -148,6 +149,8 @@ build_panel <- function(base_dir) {
   skill$offense <- coalesce_num(skill$FINAL_OFF, skill$OFF)
   skill$defense <- coalesce_num(skill$FINAL_DEF, skill$DEF)
   skill$total <- coalesce_num(skill$FINAL_TOTAL, skill$TOTAL)
+  skill$skill_model_off <- suppressWarnings(as.numeric(skill$OFF))
+  skill$skill_model_def <- suppressWarnings(as.numeric(skill$DEF))
   for (skill_name in skill_names) {
     final_col <- paste0("FINAL_", skill_name)
     if (final_col %in% names(skill)) {
@@ -173,7 +176,7 @@ build_panel <- function(base_dir) {
   names(stats)[names(stats) == "Minutes"] <- "stat_minutes"
 
   panel <- merge(
-    skill[, c("nba_id", "player_name", "year", "offense", "defense", "total", skill_names)],
+    skill[, c("nba_id", "player_name", "year", "offense", "defense", "total", aggregate_skill_metrics, skill_names)],
     stats,
     by = c("nba_id", "year"),
     all.x = TRUE
@@ -262,7 +265,7 @@ component_targets <- if (has_component_level_models) c("target_offense", "target
 has_total_delta_model <- "target_delta_total" %in% names(models)
 has_total_level_model <- "target_total" %in% names(models)
 total_targets <- if (has_total_delta_model) "target_delta_total" else if (has_total_level_model) "target_total" else character()
-needed_targets <- c("target_games", usage_target, total_targets, component_targets, paste0("target_", skill_names))
+needed_targets <- c("target_games", usage_target, total_targets, component_targets, paste0("target_", aggregate_skill_metrics), paste0("target_", skill_names))
 missing_targets <- setdiff(needed_targets, names(models))
 if (length(missing_targets) > 0) {
   stop("Model artifact is missing targets: ", paste(missing_targets, collapse = ", "))
@@ -361,6 +364,14 @@ for (horizon in 1:5) {
     projected_offense_component
   }
   projected_defense <- projected_total - projected_offense
+  projected_skill_model_off <- clamp(coalesce_num(
+    predict_model(models$target_skill_model_off$model, state, models$target_skill_model_off$features),
+    state$skill_model_off
+  ), -8, 10)
+  projected_skill_model_def <- clamp(coalesce_num(
+    predict_model(models$target_skill_model_def$model, state, models$target_skill_model_def$features),
+    state$skill_model_def
+  ), -8, 10)
   projected_skills <- lapply(skill_names, function(skill_name) {
     target <- paste0("target_", skill_name)
     clamp(coalesce_num(
@@ -382,6 +393,8 @@ for (horizon in 1:5) {
     projected_total = projected_total,
     projected_offense = projected_offense,
     projected_defense = projected_defense,
+    projected_skill_model_off = projected_skill_model_off,
+    projected_skill_model_def = projected_skill_model_def,
     stringsAsFactors = FALSE
   )
   for (skill_name in skill_names) {
@@ -433,6 +446,8 @@ for (horizon in 1:5) {
   state$total <- projected_total
   state$offense <- projected_offense
   state$defense <- projected_defense
+  state$skill_model_off <- projected_skill_model_off
+  state$skill_model_def <- projected_skill_model_def
   for (skill_name in skill_names) {
     state[[skill_name]] <- projected_skills[[paste0("projected_", tolower(skill_name))]]
   }

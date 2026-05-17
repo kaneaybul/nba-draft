@@ -1274,6 +1274,7 @@ shift_future_columns <- function(rows, cap_assumptions) {
   projection_groups <- c(
     "projection_y", "projection_games_y", "projection_mpg_y", "projection_minutes_y",
     "projection_offense_y", "projection_defense_y",
+    "projection_skill_model_off_y", "projection_skill_model_def_y",
     "projection_timin_y", "projection_value_y", "projection_fa_value_y",
     "projection_scalability_y", "projection_contract_y", "projection_effective_contract_y",
     "projection_cap_y", "projection_contract_status_y", "projection_contract_source_y"
@@ -1691,18 +1692,32 @@ calibrated_skill_rollup <- function(rows, reference, skill_cols, target_col) {
 
 recalculate_projected_skill_rollups <- function(rows, reference) {
   if (!nrow(rows)) return(rows)
-  groups <- skill_rollup_groups()
-  off <- calibrated_skill_rollup(rows, reference, groups$off, "skill_model_off")
-  def <- calibrated_skill_rollup(rows, reference, groups$def, "skill_model_def")
-
-  rows$skill_model_off <- coalesce_numeric(off, rows$skill_model_off)
-  rows$skill_model_def <- coalesce_numeric(def, rows$skill_model_def)
+  if (!("skill_model_off" %in% names(rows))) rows$skill_model_off <- NA_real_
+  if (!("skill_model_def" %in% names(rows))) rows$skill_model_def <- NA_real_
+  current_off <- if ("OFF" %in% names(rows)) rows$OFF else rows$skill_model_off
+  current_def <- if ("DEF" %in% names(rows)) rows$DEF else rows$skill_model_def
+  missing_off <- !is.finite(suppressWarnings(as.numeric(rows$skill_model_off)))
+  missing_def <- !is.finite(suppressWarnings(as.numeric(rows$skill_model_def)))
+  if (any(missing_off, na.rm = TRUE)) {
+    rows$skill_model_off[missing_off] <- aggregate_skill_projection_fallback(current_off[missing_off], rows$offense[missing_off])
+  }
+  if (any(missing_def, na.rm = TRUE)) {
+    rows$skill_model_def[missing_def] <- aggregate_skill_projection_fallback(current_def[missing_def], rows$defense[missing_def])
+  }
   rows$skill_off_total <- rows$skill_model_off
   rows$skill_def_total <- rows$skill_model_def
   if ("OFF" %in% names(rows)) rows$OFF <- rows$skill_model_off
   if ("DEF" %in% names(rows)) rows$DEF <- rows$skill_model_def
   if ("TOTAL" %in% names(rows)) rows$TOTAL <- rows$skill_model_off + rows$skill_model_def
   rows
+}
+
+aggregate_skill_projection_fallback <- function(current_skill, projected_impact, rate = 0.15, max_delta = 0.35) {
+  current_skill <- suppressWarnings(as.numeric(current_skill))
+  projected_impact <- suppressWarnings(as.numeric(projected_impact))
+  base <- ifelse(is.finite(current_skill), current_skill, 0)
+  target <- ifelse(is.finite(projected_impact), projected_impact, base)
+  base + clamp((target - base) * rate, -max_delta, max_delta)
 }
 
 build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_year, contract_scale_model = NULL) {
@@ -1761,10 +1776,33 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
       final_col <- paste0("FINAL_", skill_name)
       if (final_col %in% names(vets)) vets[[final_col]] <- vets[[skill_name]]
     }
-    if ("skill_model_off" %in% names(vets)) vets$skill_model_off <- vets$offense
-    if ("skill_model_def" %in% names(vets)) vets$skill_model_def <- vets$defense
-    if ("skill_off_total" %in% names(vets)) vets$skill_off_total <- vets$offense
-    if ("skill_def_total" %in% names(vets)) vets$skill_def_total <- vets$defense
+    projected_skill_off <- if ("projection_skill_model_off_y1" %in% names(original)) {
+      suppressWarnings(as.numeric(original$projection_skill_model_off_y1))
+    } else {
+      rep(NA_real_, nrow(original))
+    }
+    projected_skill_def <- if ("projection_skill_model_def_y1" %in% names(original)) {
+      suppressWarnings(as.numeric(original$projection_skill_model_def_y1))
+    } else {
+      rep(NA_real_, nrow(original))
+    }
+    if ("skill_model_off" %in% names(vets)) {
+      vets$skill_model_off <- coalesce_numeric(
+        projected_skill_off,
+        aggregate_skill_projection_fallback(original$skill_model_off, vets$offense)
+      )
+    }
+    if ("skill_model_def" %in% names(vets)) {
+      vets$skill_model_def <- coalesce_numeric(
+        projected_skill_def,
+        aggregate_skill_projection_fallback(original$skill_model_def, vets$defense)
+      )
+    }
+    if ("skill_off_total" %in% names(vets)) vets$skill_off_total <- vets$skill_model_off
+    if ("skill_def_total" %in% names(vets)) vets$skill_def_total <- vets$skill_model_def
+    if ("OFF" %in% names(vets)) vets$OFF <- vets$skill_model_off
+    if ("DEF" %in% names(vets)) vets$DEF <- vets$skill_model_def
+    if ("TOTAL" %in% names(vets)) vets$TOTAL <- vets$skill_model_off + vets$skill_model_def
     next_contract <- suppressWarnings(as.numeric(original$projection_contract_y1))
     vets$contract <- ifelse(is.finite(next_contract) & next_contract > 0, next_contract, NA_real_)
     next_status <- if ("projection_contract_status_y1" %in% names(original)) as.character(original$projection_contract_status_y1) else NA_character_
@@ -2638,6 +2676,8 @@ build_impact_players <- function(base_dir) {
     x[[paste0("projection_scalability_y", horizon)]] <- NA_real_
     x[[paste0("projection_offense_y", horizon)]] <- NA_real_
     x[[paste0("projection_defense_y", horizon)]] <- NA_real_
+    x[[paste0("projection_skill_model_off_y", horizon)]] <- NA_real_
+    x[[paste0("projection_skill_model_def_y", horizon)]] <- NA_real_
     for (skill_name in impact_skill_names()) {
       x[[paste0("projection_", skill_name, "_y", horizon)]] <- NA_real_
     }
@@ -2678,6 +2718,12 @@ build_impact_players <- function(base_dir) {
         }
         if ("projected_defense" %in% names(ph)) {
           x[[paste0("projection_defense_y", horizon)]][has_projection] <- round(ph$projected_defense[row_match[has_projection]], 2)
+        }
+        if ("projected_skill_model_off" %in% names(ph)) {
+          x[[paste0("projection_skill_model_off_y", horizon)]][has_projection] <- round(ph$projected_skill_model_off[row_match[has_projection]], 3)
+        }
+        if ("projected_skill_model_def" %in% names(ph)) {
+          x[[paste0("projection_skill_model_def_y", horizon)]][has_projection] <- round(ph$projected_skill_model_def[row_match[has_projection]], 3)
         }
         for (skill_name in impact_skill_names()) {
           projected_col <- projection_skill_col(skill_name)
@@ -2779,6 +2825,8 @@ build_impact_players <- function(base_dir) {
     "projection_minutes_y1", "projection_minutes_y2", "projection_minutes_y3", "projection_minutes_y4", "projection_minutes_y5",
     "projection_offense_y1", "projection_offense_y2", "projection_offense_y3", "projection_offense_y4", "projection_offense_y5",
     "projection_defense_y1", "projection_defense_y2", "projection_defense_y3", "projection_defense_y4", "projection_defense_y5",
+    "projection_skill_model_off_y1", "projection_skill_model_off_y2", "projection_skill_model_off_y3", "projection_skill_model_off_y4", "projection_skill_model_off_y5",
+    "projection_skill_model_def_y1", "projection_skill_model_def_y2", "projection_skill_model_def_y3", "projection_skill_model_def_y4", "projection_skill_model_def_y5",
     "projection_timin_y1", "projection_timin_y2", "projection_timin_y3", "projection_timin_y4", "projection_timin_y5",
     "projection_value_y1", "projection_value_y2", "projection_value_y3", "projection_value_y4", "projection_value_y5",
     "projection_fa_value_y1", "projection_fa_value_y2", "projection_fa_value_y3", "projection_fa_value_y4", "projection_fa_value_y5",
