@@ -768,55 +768,58 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </button>
           </div>
-          <div className="rule-builder board-control-row" aria-label="Add filter rule">
-            <label>
-              Filter
-              <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
-                {filterFields.map((field) => (
-                  <option key={field.key} value={field.key}>
-                    {field.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Match
-              <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
-                {availableOperators.map((operator) => (
-                  <option key={operator.value} value={operator.value}>
-                    {operator.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="rule-value">
-              Value
-              <input
-                value={filterValue}
-                onChange={(event) => setFilterValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") addFilterRule();
-                }}
-                placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
-              />
-            </label>
-            {filterOperator === "between" && (
+          <details className="advanced-filter-drawer board-control-row">
+            <summary>Advanced filter</summary>
+            <div className="rule-builder" aria-label="Add filter rule">
+              <label>
+                Filter
+                <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
+                  {filterFields.map((field) => (
+                    <option key={field.key} value={field.key}>
+                      {field.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Match
+                <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                  {availableOperators.map((operator) => (
+                    <option key={operator.value} value={operator.value}>
+                      {operator.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="rule-value">
-                To
+                Value
                 <input
-                  value={filterValueTo}
-                  onChange={(event) => setFilterValueTo(event.target.value)}
+                  value={filterValue}
+                  onChange={(event) => setFilterValue(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") addFilterRule();
                   }}
-                  placeholder="100"
+                  placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
                 />
               </label>
-            )}
-            <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-              Add
-            </button>
-          </div>
+              {filterOperator === "between" && (
+                <label className="rule-value">
+                  To
+                  <input
+                    value={filterValueTo}
+                    onChange={(event) => setFilterValueTo(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") addFilterRule();
+                    }}
+                    placeholder="100"
+                  />
+                </label>
+              )}
+              <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                Add
+              </button>
+            </div>
+          </details>
           {filterRules.length > 0 && (
             <div className="filter-chips" aria-label="Active filter rules">
               {filterRules.map((rule) => (
@@ -1203,6 +1206,13 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   useEffect(() => {
     if (currentTeam && currentTeam.team !== selectedTeam) setSelectedTeam(currentTeam.team);
   }, [currentTeam, selectedTeam, setSelectedTeam]);
+  const teamMeta = useMemo(() => {
+    const map = new Map<string, TeamProjection>();
+    data.teams.forEach((team) => {
+      if (!map.has(team.team)) map.set(team.team, team);
+    });
+    return map;
+  }, [data.teams]);
   if (!currentTeam) {
     return (
       <main className="workspace team-board-workspace">
@@ -1223,13 +1233,6 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
   const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
   const playoffSchedule = schedule.filter((game) => game.season_type === "Playoffs");
-  const teamMeta = useMemo(() => {
-    const map = new Map<string, TeamProjection>();
-    data.teams.forEach((team) => {
-      if (!map.has(team.team)) map.set(team.team, team);
-    });
-    return map;
-  }, [data.teams]);
   const handleSort = (key: TeamSortKey) => {
     if (sortKey === key) {
       setSortDirection(sortDirection === "desc" ? "asc" : "desc");
@@ -2260,55 +2263,58 @@ function DraftWorkspace({ data }: { data: AppData }) {
                 Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
               </button>
             </div>
-            <div className="rule-builder board-control-row" aria-label="Add draft filter rule">
-              <label>
-                Filter
-                <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
-                  {draftFilterFields.map((field) => (
-                    <option key={field.key} value={field.key}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Match
-                <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
-                  {availableOperators.map((operator) => (
-                    <option key={operator.value} value={operator.value}>
-                      {operator.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="rule-value">
-                Value
-                <input
-                  value={filterValue}
-                  onChange={(event) => setFilterValue(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") addFilterRule();
-                  }}
-                  placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
-                />
-              </label>
-              {filterOperator === "between" && (
+            <details className="advanced-filter-drawer board-control-row">
+              <summary>Advanced filter</summary>
+              <div className="rule-builder" aria-label="Add draft filter rule">
+                <label>
+                  Filter
+                  <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
+                    {draftFilterFields.map((field) => (
+                      <option key={field.key} value={field.key}>
+                        {field.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Match
+                  <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                    {availableOperators.map((operator) => (
+                      <option key={operator.value} value={operator.value}>
+                        {operator.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="rule-value">
-                  To
+                  Value
                   <input
-                    value={filterValueTo}
-                    onChange={(event) => setFilterValueTo(event.target.value)}
+                    value={filterValue}
+                    onChange={(event) => setFilterValue(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") addFilterRule();
                     }}
-                    placeholder="100"
+                    placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
                   />
                 </label>
-              )}
-              <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-                Add
-              </button>
-            </div>
+                {filterOperator === "between" && (
+                  <label className="rule-value">
+                    To
+                    <input
+                      value={filterValueTo}
+                      onChange={(event) => setFilterValueTo(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") addFilterRule();
+                      }}
+                      placeholder="100"
+                    />
+                  </label>
+                )}
+                <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                  Add
+                </button>
+              </div>
+            </details>
             {filterRules.length > 0 && (
               <div className="filter-chips" aria-label="Active draft filter rules">
                 {filterRules.map((rule) => (
