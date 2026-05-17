@@ -771,12 +771,44 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   return (
     <main className="workspace impact-grid">
       <div className="impact-sticky-header">
-        <section className="control-strip board-controls">
+        <section className={cls("control-strip board-controls", filterDrawerOpen && "mobile-filters-open")}>
           <div className="quick-filters board-control-row mobile-collapsible-filters">
             <div className="search">
               <span>Find</span>
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Player name" />
             </div>
+            <label className="mobile-drawer-filter">
+              Team
+              <select value={team} onChange={(event) => setTeam(event.target.value)}>
+                {teams.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="mobile-drawer-filter">
+              FA Status
+              <select value={faStatus} onChange={(event) => setFaStatus(event.target.value as FaStatusFilter)}>
+                {faStatuses.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="mobile-drawer-filter">
+              Position
+              <select value={position} onChange={(event) => setPosition(event.target.value)}>
+                {positions.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
+            <label className="mobile-drawer-filter">
+              Tier
+              <select value={tier} onChange={(event) => setTier(event.target.value)}>
+                {tiers.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </label>
             <div className="board-count" aria-live="polite">
               <span>Players</span>
               <strong>{filtered.length.toLocaleString()}</strong>
@@ -784,107 +816,69 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
             <button className="clear-filters" onClick={clearAllFilters} disabled={activeFilterCount === 0}>
               Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </button>
-            <div className={cls("mobile-filter-drawer", filterDrawerOpen && "open")}>
-              <button
-                type="button"
-                className="mobile-filter-trigger"
-                aria-controls="impact-mobile-filter-body"
-                aria-expanded={filterDrawerOpen}
-                onClick={() => setFilterDrawerOpen((open) => !open)}
-              >
-                <span>Filters</span>
-                {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
-              </button>
-              <div id="impact-mobile-filter-body" className="mobile-filter-body">
-                <div className="mobile-core-filters">
-                  <label>
-                    Team
-                    <select value={team} onChange={(event) => setTeam(event.target.value)}>
-                      {teams.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    FA Status
-                    <select value={faStatus} onChange={(event) => setFaStatus(event.target.value as FaStatusFilter)}>
-                      {faStatuses.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Position
-                    <select value={position} onChange={(event) => setPosition(event.target.value)}>
-                      {positions.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    Tier
-                    <select value={tier} onChange={(event) => setTier(event.target.value)}>
-                      {tiers.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <details className="advanced-filter-drawer board-control-row">
-                  <summary>Advanced filter</summary>
-                  <div className="rule-builder" aria-label="Add filter rule">
-                    <label>
-                      Filter
-                      <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
-                        {filterFields.map((field) => (
-                          <option key={field.key} value={field.key}>
-                            {field.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Match
-                      <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
-                        {availableOperators.map((operator) => (
-                          <option key={operator.value} value={operator.value}>
-                            {operator.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="rule-value">
-                      Value
-                      <input
-                        value={filterValue}
-                        onChange={(event) => setFilterValue(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") addFilterRule();
-                        }}
-                        placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
-                      />
-                    </label>
-                    {filterOperator === "between" && (
-                      <label className="rule-value">
-                        To
-                        <input
-                          value={filterValueTo}
-                          onChange={(event) => setFilterValueTo(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") addFilterRule();
-                          }}
-                          placeholder="100"
-                        />
-                      </label>
-                    )}
-                    <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-                      Add
-                    </button>
-                  </div>
-                </details>
-              </div>
-            </div>
+            <button
+              type="button"
+              className="mobile-filter-trigger"
+              aria-controls="impact-mobile-filter-body"
+              aria-expanded={filterDrawerOpen}
+              onClick={() => setFilterDrawerOpen((open) => !open)}
+            >
+              <span>Filters</span>
+              {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
+            </button>
           </div>
+          <details id="impact-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter">
+            <summary>Advanced filter</summary>
+            <div className="rule-builder" aria-label="Add filter rule">
+              <label>
+                Filter
+                <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
+                  {filterFields.map((field) => (
+                    <option key={field.key} value={field.key}>
+                      {field.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Match
+                <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                  {availableOperators.map((operator) => (
+                    <option key={operator.value} value={operator.value}>
+                      {operator.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="rule-value">
+                Value
+                <input
+                  value={filterValue}
+                  onChange={(event) => setFilterValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") addFilterRule();
+                  }}
+                  placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
+                />
+              </label>
+              {filterOperator === "between" && (
+                <label className="rule-value">
+                  To
+                  <input
+                    value={filterValueTo}
+                    onChange={(event) => setFilterValueTo(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") addFilterRule();
+                    }}
+                    placeholder="100"
+                  />
+                </label>
+              )}
+              <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                Add
+              </button>
+            </div>
+          </details>
           {filterRules.length > 0 && (
             <div className="filter-chips" aria-label="Active filter rules">
               {filterRules.map((rule) => (
@@ -2280,12 +2274,48 @@ function DraftWorkspace({ data }: { data: AppData }) {
     <main className="workspace draft-model-grid">
       <section className="draft-board-main">
         <div className="impact-sticky-header">
-          <section className="control-strip board-controls draft-controls">
+          <section className={cls("control-strip board-controls draft-controls", filterDrawerOpen && "mobile-filters-open")}>
             <div className="quick-filters board-control-row mobile-collapsible-filters">
               <div className="search">
                 <span>Find</span>
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Prospect name" />
               </div>
+              {years.length > 0 && <label className="mobile-drawer-filter">
+                Class
+                <select
+                  value={String(year)}
+                  onChange={(event) => setYear(event.target.value === "All" ? "All" : Number(event.target.value))}
+                >
+                  <option value="All">All</option>
+                  {years.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
+              </label>}
+              <label className="mobile-drawer-filter">
+                Position
+                <select value={position} onChange={(event) => setPosition(event.target.value)}>
+                  {positions.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="mobile-drawer-filter">
+                Tier
+                <select value={tier} onChange={(event) => setTier(event.target.value)}>
+                  {tiers.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="mobile-drawer-filter">
+                Pool
+                <select value={pool} onChange={(event) => setPool(event.target.value)}>
+                  {pools.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </select>
+              </label>
               <div className="board-count" aria-live="polite">
                 <span>Prospects</span>
                 <strong>{summary.count.toLocaleString()}</strong>
@@ -2293,111 +2323,69 @@ function DraftWorkspace({ data }: { data: AppData }) {
               <button className="clear-filters" onClick={clearFilters} disabled={activeFilterCount === 0}>
                 Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
               </button>
-              <div className={cls("mobile-filter-drawer", filterDrawerOpen && "open")}>
-                <button
-                  type="button"
-                  className="mobile-filter-trigger"
-                  aria-controls="draft-mobile-filter-body"
-                  aria-expanded={filterDrawerOpen}
-                  onClick={() => setFilterDrawerOpen((open) => !open)}
-                >
-                  <span>Filters</span>
-                  {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
-                </button>
-                <div id="draft-mobile-filter-body" className="mobile-filter-body">
-                  <div className="mobile-core-filters">
-                    {years.length > 0 && <label>
-                      Class
-                      <select
-                        value={String(year)}
-                        onChange={(event) => setYear(event.target.value === "All" ? "All" : Number(event.target.value))}
-                      >
-                        <option value="All">All</option>
-                        {years.map((item) => (
-                          <option key={item} value={item}>{item}</option>
-                        ))}
-                      </select>
-                    </label>}
-                    <label>
-                      Position
-                      <select value={position} onChange={(event) => setPosition(event.target.value)}>
-                        {positions.map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Tier
-                      <select value={tier} onChange={(event) => setTier(event.target.value)}>
-                        {tiers.map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Pool
-                      <select value={pool} onChange={(event) => setPool(event.target.value)}>
-                        {pools.map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  <details className="advanced-filter-drawer board-control-row">
-                    <summary>Advanced filter</summary>
-                    <div className="rule-builder" aria-label="Add draft filter rule">
-                      <label>
-                        Filter
-                        <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
-                          {draftFilterFields.map((field) => (
-                            <option key={field.key} value={field.key}>
-                              {field.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Match
-                        <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
-                          {availableOperators.map((operator) => (
-                            <option key={operator.value} value={operator.value}>
-                              {operator.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="rule-value">
-                        Value
-                        <input
-                          value={filterValue}
-                          onChange={(event) => setFilterValue(event.target.value)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") addFilterRule();
-                          }}
-                          placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
-                        />
-                      </label>
-                      {filterOperator === "between" && (
-                        <label className="rule-value">
-                          To
-                          <input
-                            value={filterValueTo}
-                            onChange={(event) => setFilterValueTo(event.target.value)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter") addFilterRule();
-                            }}
-                            placeholder="100"
-                          />
-                        </label>
-                      )}
-                      <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-                        Add
-                      </button>
-                    </div>
-                  </details>
-                </div>
-              </div>
+              <button
+                type="button"
+                className="mobile-filter-trigger"
+                aria-controls="draft-mobile-filter-body"
+                aria-expanded={filterDrawerOpen}
+                onClick={() => setFilterDrawerOpen((open) => !open)}
+              >
+                <span>Filters</span>
+                {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
+              </button>
             </div>
+            <details id="draft-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter">
+              <summary>Advanced filter</summary>
+              <div className="rule-builder" aria-label="Add draft filter rule">
+                <label>
+                  Filter
+                  <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
+                    {draftFilterFields.map((field) => (
+                      <option key={field.key} value={field.key}>
+                        {field.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Match
+                  <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                    {availableOperators.map((operator) => (
+                      <option key={operator.value} value={operator.value}>
+                        {operator.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="rule-value">
+                  Value
+                  <input
+                    value={filterValue}
+                    onChange={(event) => setFilterValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") addFilterRule();
+                    }}
+                    placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
+                  />
+                </label>
+                {filterOperator === "between" && (
+                  <label className="rule-value">
+                    To
+                    <input
+                      value={filterValueTo}
+                      onChange={(event) => setFilterValueTo(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") addFilterRule();
+                      }}
+                      placeholder="100"
+                    />
+                  </label>
+                )}
+                <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                  Add
+                </button>
+              </div>
+            </details>
             {filterRules.length > 0 && (
               <div className="filter-chips" aria-label="Active draft filter rules">
                 {filterRules.map((rule) => (
