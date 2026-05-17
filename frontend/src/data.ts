@@ -10,6 +10,7 @@ import type {
   ModelSummary,
   OffseasonTruthData,
   PickAsset,
+  PlayerCareerHistoryRow,
   PlayerImpact,
   StaticDataDataset,
   TeamLineupRow,
@@ -117,6 +118,10 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
   }
 
   return next;
+}
+
+export async function loadPlayerCareerHistory(manifest: Manifest, cacheBust?: string): Promise<PlayerCareerHistoryRow[]> {
+  return loadSingletonDataset<PlayerCareerHistoryRow>(manifest, "impact_player_history", cacheBust);
 }
 
 export function manifestSeasons(manifest: Manifest, players: PlayerImpact[] = []): number[] {

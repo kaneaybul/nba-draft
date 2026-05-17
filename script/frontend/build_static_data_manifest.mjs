@@ -16,6 +16,7 @@ const seasonDatasets = [
 ];
 
 const singletonDatasets = [
+  "impact_player_history",
   "pick_assets",
   "draft_prospects",
   "draft_tracker_board_summary",
@@ -52,11 +53,21 @@ async function main() {
     if (!fs.existsSync(sourcePath)) {
       const previous = previousDatasets[spec.dataset];
       if (previous?.strategy === "season" && Array.isArray(previous.shards)) {
+        if (spec.dataset === "impact_players") {
+          const rows = compactImpactPlayerRows(readShards(previous.shards));
+          normalizedPlayers = rows;
+          const shards = writeSeasonShards(rows, spec);
+          const rowCount = rows.length;
+          staticDatasets[spec.dataset] = {
+            strategy: "season",
+            rows: rowCount,
+            shards
+          };
+          manifestRows.push({ dataset: spec.dataset, rows: rowCount, file: `v2/${spec.dir}/{season}.json` });
+          continue;
+        }
         staticDatasets[spec.dataset] = previous;
         manifestRows.push({ dataset: spec.dataset, rows: previous.rows, file: `v2/${spec.dir}/{season}.json` });
-        if (spec.dataset === "impact_players") {
-          normalizedPlayers = readShards(previous.shards);
-        }
       }
       continue;
     }
@@ -69,26 +80,12 @@ async function main() {
     } else if (spec.dataset === "team_lineups" && offseasonTruth && normalizedPlayers) {
       rows = normalizeLineups(rows, normalizedPlayers);
     }
-
-    const shards = [];
-    const groups = groupBy(rows, spec.key);
-    const outDir = path.join(v2Dir, spec.dir);
-    fs.rmSync(outDir, { recursive: true, force: true });
-    fs.mkdirSync(outDir, { recursive: true });
-
-    for (const key of Array.from(groups.keys()).sort((a, b) => Number(a) - Number(b))) {
-      const groupRows = groups.get(key) ?? [];
-      const relativeFile = path.posix.join("v2", spec.dir, `${key}.json`);
-      const info = writeJson(path.join(dataDir, relativeFile), groupRows);
-      shards.push({
-        key: String(key),
-        year: Number.isFinite(Number(key)) ? Number(key) : undefined,
-        rows: groupRows.length,
-        file: relativeFile,
-        bytes: info.bytes,
-        sha256: info.sha256
-      });
+    if (spec.dataset === "impact_players") {
+      rows = compactImpactPlayerRows(rows);
+      normalizedPlayers = rows;
     }
+
+    const shards = writeSeasonShards(rows, spec);
 
     const rowCount = rows.length;
     staticDatasets[spec.dataset] = {
@@ -102,6 +99,12 @@ async function main() {
     if (sourceSize > maxAssetBytes || process.env.FRONTEND_REMOVE_LEGACY_DATA === "true") {
       fs.rmSync(sourcePath, { force: true });
     }
+  }
+
+  if (normalizedPlayers) {
+    const historyRows = buildImpactPlayerHistory(normalizedPlayers);
+    const relativeFile = "impact_player_history.json";
+    writeJson(path.join(dataDir, relativeFile), historyRows);
   }
 
   for (const dataset of singletonDatasets) {
@@ -177,6 +180,30 @@ function groupBy(rows, key) {
   return groups;
 }
 
+function writeSeasonShards(rows, spec) {
+  const shards = [];
+  const groups = groupBy(rows, spec.key);
+  const outDir = path.join(v2Dir, spec.dir);
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir, { recursive: true });
+
+  for (const key of Array.from(groups.keys()).sort((a, b) => Number(a) - Number(b))) {
+    const groupRows = groups.get(key) ?? [];
+    const relativeFile = path.posix.join("v2", spec.dir, `${key}.json`);
+    const info = writeJson(path.join(dataDir, relativeFile), groupRows);
+    shards.push({
+      key: String(key),
+      year: Number.isFinite(Number(key)) ? Number(key) : undefined,
+      rows: groupRows.length,
+      file: relativeFile,
+      bytes: info.bytes,
+      sha256: info.sha256
+    });
+  }
+
+  return shards;
+}
+
 function rowCountFor(dataset, payload) {
   if (Array.isArray(payload)) return payload.length;
   if (dataset === "cap_tracker" && Array.isArray(payload?.team_seasons)) return payload.team_seasons.length;
@@ -205,6 +232,38 @@ function readShards(shards) {
     const filePath = path.join(dataDir, shard.file);
     return fs.existsSync(filePath) ? readJsonIfExists(filePath) ?? [] : [];
   });
+}
+
+function buildImpactPlayerHistory(players) {
+  return players
+    .filter((player) => Number.isFinite(Number(player.nba_id)) && Number.isFinite(Number(player.year)) && Number.isFinite(Number(player.total)))
+    .map((player) => ({
+      nba_id: Number(player.nba_id),
+      player_name: String(player.player_name ?? ""),
+      year: Number(player.year),
+      total: roundNumber(player.total, 3),
+      value_add: finiteOrNull(player.value_add),
+      Minutes: finiteOrNull(player.Minutes)
+    }))
+    .sort((a, b) => a.nba_id - b.nba_id || a.year - b.year || Number(b.Minutes ?? 0) - Number(a.Minutes ?? 0));
+}
+
+function compactImpactPlayerRows(players) {
+  return players.map((player) => {
+    const { source_note, _row, ...compact } = player;
+    return compact;
+  });
+}
+
+function finiteOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? roundNumber(number, 3) : null;
+}
+
+function roundNumber(value, digits) {
+  const number = Number(value);
+  const factor = 10 ** digits;
+  return Number.isFinite(number) ? Math.round(number * factor) / factor : null;
 }
 
 function normalizePlayers(players, truth) {

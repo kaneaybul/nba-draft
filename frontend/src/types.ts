@@ -196,7 +196,16 @@ export type PlayerImpact = {
   lineup_role?: string | null;
   lineup_role_order?: number | null;
   lineup_role_band_minutes?: number | null;
-  source_note: string;
+  source_note?: string;
+};
+
+export type PlayerCareerHistoryRow = {
+  nba_id: number;
+  player_name: string;
+  year: number;
+  total: number;
+  value_add?: number | null;
+  Minutes?: number | null;
 };
 
 export type TeamProjection = {

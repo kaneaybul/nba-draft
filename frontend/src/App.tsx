@@ -1,7 +1,7 @@
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { latestManifestSeason, loadAppData, loadDataForView, manifestSeasons } from "./data";
+import { latestManifestSeason, loadAppData, loadDataForView, loadPlayerCareerHistory, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
-import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
+import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerCareerHistoryRow, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
 const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
@@ -696,6 +696,8 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [detailPlayer, setDetailPlayer] = useState<PlayerImpact | null>(null);
   const [detailPosition, setDetailPosition] = useState({ left: 28, top: 138 });
+  const [careerHistory, setCareerHistory] = useState<PlayerCareerHistoryRow[]>([]);
+  const [careerHistoryError, setCareerHistoryError] = useState<string | null>(null);
 
   const teams = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => playerTeamFilterValue(player)))).sort()], [seasonPlayers]);
   const faStatuses = useMemo(() => {
@@ -771,6 +773,11 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       left: Math.max(16, Math.min(event.clientX + 14, window.innerWidth - width - 16)),
       top: Math.max(16, Math.min(event.clientY - 18, window.innerHeight - visibleHeight - 16))
     });
+    if (careerHistory.length === 0 && !careerHistoryError) {
+      loadPlayerCareerHistory(data.manifest)
+        .then(setCareerHistory)
+        .catch((error: unknown) => setCareerHistoryError(error instanceof Error ? error.message : String(error)));
+    }
   };
   const closeDetail = () => setDetailPlayer(null);
 
@@ -926,7 +933,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
             style={{ ...detailPosition, "--detail-top": `${detailPosition.top}px` } as CSSProperties}
             onClick={(event) => event.stopPropagation()}
           >
-            <PlayerDetail player={detailPlayer} allPlayers={data.players} />
+            <PlayerDetail player={detailPlayer} allPlayers={data.players} careerHistory={careerHistory} careerHistoryError={careerHistoryError} />
           </div>
         </div>
       )}
@@ -1167,8 +1174,8 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-function PlayerDetail({ player, allPlayers }: { player: PlayerImpact; allPlayers: PlayerImpact[] }) {
-  const trajectory = buildCareerTrajectory(player, allPlayers);
+function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }: { player: PlayerImpact; allPlayers: PlayerImpact[]; careerHistory: PlayerCareerHistoryRow[]; careerHistoryError: string | null }) {
+  const trajectory = buildCareerTrajectory(player, allPlayers, careerHistory);
   const scoreVars = scoreStyle(player.score) as CSSProperties & { "--score-fill"?: string };
   const scoreColor = player.score_label === "DNQ" ? "var(--muted)" : scoreVars["--score-fill"] ?? "var(--teal)";
   const detailStyle = {
@@ -1217,7 +1224,7 @@ function PlayerDetail({ player, allPlayers }: { player: PlayerImpact; allPlayers
         <section>
           <div className="dp-section-row">
             <h3 className="dp-section-head">Career Arc</h3>
-            <span>Total impact / bars are Szn VA</span>
+            <span>{careerHistoryError ? "Current row only" : "Total impact / bars are Szn VA"}</span>
           </div>
           <ProjectionChart points={trajectory} currentYear={player.year} />
         </section>
@@ -4458,11 +4465,12 @@ function projectedValueAdd(player: PlayerImpact, seasonIndex: number): number | 
   return value !== null && contract !== null ? value - contract : null;
 }
 
-function buildCareerTrajectory(player: PlayerImpact, allPlayers: PlayerImpact[]): CareerChartPoint[] {
-  const actual = allPlayers
+function buildCareerTrajectory(player: PlayerImpact, allPlayers: PlayerImpact[], careerHistory: PlayerCareerHistoryRow[] = []): CareerChartPoint[] {
+  const historyRows = careerHistory.length > 0 ? careerHistory : allPlayers;
+  const actual = historyRows
     .filter((row) => row.nba_id === player.nba_id && row.year <= player.year && Number.isFinite(row.total))
     .sort((a, b) => a.year - b.year)
-    .reduce<PlayerImpact[]>((rows, row) => {
+    .reduce<Array<PlayerImpact | PlayerCareerHistoryRow>>((rows, row) => {
       const existingIndex = rows.findIndex((item) => item.year === row.year);
       const resolvedRow = row.year === player.year ? player : row;
       if (existingIndex >= 0) {
