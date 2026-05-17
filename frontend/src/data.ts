@@ -222,11 +222,15 @@ function applyOffseasonTruth(players: PlayerImpact[], lineups: TeamLineupRow[], 
   const normalizedPlayers = players.map((player) => {
     const row = truth.players[playerKey(player)];
     if (!row) return player;
-    const status = normalizeTruthStatus(row.contract_status, row.current_roster_team);
     const currentTeam = cleanTeam(row.current_roster_team);
     const rightsTeam = cleanTeam(row.rights_team);
     const isActiveRoster = currentTeam !== "FA";
-    const isContractControlled = status === "Signed" || status === "Player Option" || status === "Team Option" || status === "Non-Guaranteed";
+    const truthStatus = normalizeTruthStatus(row.contract_status, row.current_roster_team);
+    const seasonContract = numberValue(player.contract);
+    const hasSeasonContract = isActiveRoster && seasonContract !== null && seasonContract > 0;
+    const status = hasSeasonContract ? normalizeSeasonContractStatus(player.contract_status, currentTeam) : truthStatus;
+    const isContractControlled = isContractControlledStatus(status);
+    const contract = hasSeasonContract ? seasonContract : (isContractControlled ? numberValue(row.guaranteed_salary) ?? 0 : player.contract ?? null);
     const normalized: PlayerImpact = {
       ...player,
       current_roster_team: currentTeam,
@@ -242,10 +246,10 @@ function applyOffseasonTruth(players: PlayerImpact[], lineups: TeamLineupRow[], 
       incumbent_team: rightsTeam !== "FA" ? rightsTeam : currentTeam,
       market_team: isActiveRoster ? currentTeam : "FA",
       team_projection_base: isActiveRoster ? currentTeam : "FA",
-      projection_roster_status: isContractControlled ? "signed" : status === "RFA" ? "restricted" : "open_market",
+      projection_roster_status: projectionRosterStatus(status, contract),
       contract_status: status,
-      contract: isContractControlled ? row.guaranteed_salary : player.contract ?? null,
-      projection_effective_contract_y1: isContractControlled ? row.guaranteed_salary : player.projection_effective_contract_y1
+      contract,
+      projection_effective_contract_y1: isContractControlled && !hasSeasonContract ? contract : player.projection_effective_contract_y1
     };
     playersByIdYear.set(`${normalized.year}-${normalized.nba_id}`, normalized);
     return normalized;
@@ -278,4 +282,28 @@ function normalizeTruthStatus(status: string | null | undefined, currentTeam: st
   const value = String(status ?? "").trim();
   if (["Signed", "UFA", "RFA", "Player Option", "Team Option", "Non-Guaranteed", "Rookie FA"].includes(value)) return value;
   return cleanTeam(currentTeam) === "FA" ? "UFA" : "Signed";
+}
+
+function normalizeSeasonContractStatus(status: string | null | undefined, currentTeam: string): PlayerImpact["contract_status"] {
+  const value = String(status ?? "").trim();
+  if (["Player Option", "Team Option", "Non-Guaranteed"].includes(value)) return value;
+  if (cleanTeam(currentTeam) === "FA") return value === "RFA" || value === "Rookie FA" ? value : "UFA";
+  return "Signed";
+}
+
+function isContractControlledStatus(status: string | null | undefined): boolean {
+  return ["Signed", "Player Option", "Team Option", "Non-Guaranteed"].includes(String(status ?? "").trim());
+}
+
+function projectionRosterStatus(status: PlayerImpact["contract_status"], contract: number | null | undefined): PlayerImpact["projection_roster_status"] {
+  if (isContractControlledStatus(status) && numberValue(contract) !== null && Number(contract) > 0) return "signed";
+  if (status === "RFA") return "restricted";
+  if (status === "Rookie FA") return "rookie_fa";
+  return "open_market";
+}
+
+function numberValue(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined || String(value).trim() === "") return null;
+  const parsed = Number(String(value).replace(/[$,%]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
 }

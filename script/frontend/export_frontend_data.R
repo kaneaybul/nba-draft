@@ -2005,6 +2005,20 @@ load_contract_option_reference <- function(base_dir) {
   refs[!duplicated(paste(refs$impact_year, refs$nba_id, refs$name_key, refs$team_key)), , drop = FALSE]
 }
 
+option_note_exercised_for_year <- function(contracts, impact_year) {
+  notes <- if ("contract_notes" %in% names(contracts)) as.character(contracts$contract_notes) else rep("", nrow(contracts))
+  label <- paste0(impact_year - 1L, "-", substr(as.character(impact_year), 3, 4))
+  typo_label <- paste0(impact_year - 1L, "-", substr(as.character(impact_year - 1L), 3, 4))
+  vapply(notes, function(note) {
+    if (is.na(note) || !nzchar(note) || (!grepl(label, note, fixed = TRUE) && !grepl(typo_label, note, fixed = TRUE))) return(FALSE)
+    parts <- strsplit(note, "\\s*\\|\\s*")[[1]]
+    any(
+      (grepl(label, parts, fixed = TRUE) | grepl(typo_label, parts, fixed = TRUE)) &
+        grepl("\\bexercised\\b", parts, ignore.case = TRUE)
+    )
+  }, logical(1))
+}
+
 load_contract_reference <- function(base_dir) {
   contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
   current_files <- list.files(contract_dir, pattern = "^contracts_[0-9]{4}_current\\.csv$", full.names = TRUE)
@@ -2045,16 +2059,17 @@ load_contract_reference <- function(base_dir) {
 
     options <- option_reference[option_reference$impact_year == contract_year + horizon, , drop = FALSE]
     if (!nrow(options)) return(out)
+    exercised_option <- option_note_exercised_for_year(contracts, contract_year + horizon)
 
     id_match <- match(contracts$nba_id, options$nba_id)
-    has_id_match <- !is.na(id_match) & !is.na(contracts$nba_id)
+    has_id_match <- !is.na(id_match) & !is.na(contracts$nba_id) & !exercised_option
     out[has_id_match] <- options$contract_status[id_match[has_id_match]]
 
     needs_name_match <- is.na(out) | out == "Signed"
     contract_key <- paste(normalize_name(contracts$player_name), normalize_team(contracts$team), sep = "||")
     option_key <- paste(options$name_key, options$team_key, sep = "||")
     name_match <- match(contract_key, option_key)
-    has_name_match <- needs_name_match & !is.na(name_match)
+    has_name_match <- needs_name_match & !is.na(name_match) & !exercised_option
     out[has_name_match] <- options$contract_status[name_match[has_name_match]]
     out
   }
@@ -2599,12 +2614,13 @@ build_impact_players <- function(base_dir) {
   x$contract <- ifelse(has_year_contract, year_contract, ifelse(x$year == contract_year, x$contract, NA_real_))
   x$contract_status <- ifelse(!is.na(year_status) & nzchar(trimws(year_status)), year_status, x$contract_status)
   x$team <- ifelse(has_year_contract & !is.na(year_team) & nzchar(trimws(year_team)) & x$year == contract_year, year_team, x$team)
+  contract_status_fallback <- ifelse(has_year_contract, year_status, x$contract_status)
   x$contract_status <- contract_status_from_salary(
     x$contract,
     x$yoe,
     x$age,
     x$team,
-    x$contract_status,
+    contract_status_fallback,
     x$year,
     x$draft_year,
     x$overall_pick
