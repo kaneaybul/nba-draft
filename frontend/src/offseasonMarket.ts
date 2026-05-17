@@ -42,6 +42,13 @@ type MarketPlayer = {
   rightsSource: string;
   capHold: number;
   capHoldType: string;
+  holdAction?: "retained" | "renounced" | "none" | string;
+  holdActionReason?: string;
+  rightsValue?: number;
+  holdRetainScore?: number;
+  scarcityScore?: number;
+  expectedMarketMinutes?: number;
+  marketMinutesSource?: string;
   guaranteedSalary: number;
   deadCap: number;
   total: number;
@@ -59,14 +66,23 @@ type MarketTeam<TPlayer extends MarketPlayer> = {
   team: string;
   name: string;
   mode: TeamMode;
+  capPath?: "retained_rights" | "cap_room" | string;
+  capPathReason?: string;
   projectedWins: number;
   projectedRank: number;
   roster: TPlayer[];
+  rosterCountAdjustment?: number;
+  minimumRosterCharge?: number;
   payroll: number;
   activeSalary: number;
   guaranteedSalary: number;
+  activeSalaryAdjustment?: number;
+  guaranteedSalaryAdjustment?: number;
   deadCap: number;
   capHolds: number;
+  initialCapHolds?: number;
+  holdsRetained?: number;
+  holdsRenounced?: number;
   rosterCharges: number;
   heldCapSpace: number;
   capSpace: number;
@@ -81,6 +97,7 @@ type MarketTeam<TPlayer extends MarketPlayer> = {
   premiumPickCount: number;
   willingness: number;
   exceptions: MarketTool[];
+  toolLedger?: Array<{ player: string; tool: MarketToolKind; amount: number; remaining: number; reason: string }>;
   explanations: string[];
 };
 
@@ -109,6 +126,7 @@ export type TeamBidPlan<TPlayer extends MarketPlayer, TTeam extends MarketTeam<T
   redundancy: number;
   affordability: number;
   alternatives: number;
+  toolReason: string;
 };
 
 export type PlayerChoice<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>> = {
@@ -159,7 +177,18 @@ export type MarketFreeAgentSigning<TPlayer extends MarketPlayer = MarketPlayer> 
     legalMax: number;
     playerMarket: number;
     limiter: string;
+    capPath?: string;
+    toolReason?: string;
+    holdAction?: string;
+    rightsValue?: number;
+    holdRetainScore?: number;
+    scarcityScore?: number;
+    expectedMarketMinutes?: number;
+    marketMinutesSource?: string;
+    postToolRemaining?: number;
     preCapSpace: number;
+    preHeldCapSpace?: number;
+    preRenouncedCapSpace?: number;
     preTaxRoom: number;
     preFirstApronRoom: number;
     preSecondApronRoom: number;
@@ -293,12 +322,133 @@ export function simulateFreeAgencyMarket<TPlayer extends MarketPlayer, TTeam ext
     }
   }
 
+  const fallbackSignings = resolveRfaFallbackOffers(freeAgents, unsigned, teams, assumptions, rng, ledger, resolutions, audit);
+  fallbackSignings.forEach((signing) => signings.push(signing));
+
   freeAgents
     .filter((player) => unsigned.has(player.id))
     .forEach((player) => recordUnresolved(player, marketTiers.length, "Unresolved market", "No acceptable legal offer before market closed", ledger, resolutions));
 
   refreshTeamPayrolls(teams, assumptions);
   return { signings, bids, ledger, resolutions, audit };
+}
+
+function resolveRfaFallbackOffers<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  freeAgents: TPlayer[],
+  unsigned: Set<string>,
+  teams: Map<string, TTeam>,
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  ledger: MarketLedgerRow[],
+  resolutions: MarketResolution[],
+  audit: LegacyAuditRow[]
+): MarketFreeAgentSigning<TPlayer>[] {
+  const signings: MarketFreeAgentSigning<TPlayer>[] = [];
+  freeAgents
+    .filter((player) => unsigned.has(player.id))
+    .filter((player) => player.status === "RFA" && player.rights !== "None" && player.holdAction !== "renounced")
+    .sort((a, b) => b.marketValue - a.marketValue)
+    .forEach((player) => {
+      const incumbent = teams.get(player.rightsTeam);
+      if (!incumbent) return;
+      const plan = buildRfaFallbackOffer(incumbent, player, freeAgents, assumptions, rng, marketTiers.length, "RFA fallback", ledger.length);
+      if (!plan || !canHonorOffer(plan, assumptions)) return;
+      ledger.push(ledgerFromBid(plan.bid, "submitted", "Incumbent submitted proactive RFA fallback after no acceptable outside offer sheet"));
+      audit.push(auditFromBid(plan.bid, player, "offer", "Submitted proactive RFA fallback"));
+      const choice = choosePlayerOffer(player, [plan], 0.18);
+      if (!choice) return;
+      const signing = resolveAcceptedOffer(choice, teams, assumptions, marketTiers.length, "RFA fallback", ledger, resolutions, audit, rng);
+      signing.marketResolution.clearingRule = "proactive RFA fallback";
+      signing.context.selectionMethod = "Incumbent used restricted-rights leverage after no outside offer sheet became acceptable.";
+      signing.context.toolReason = "Proactive RFA fallback with retained Bird/RFA rights; no cap room or exception was consumed.";
+      signing.explanation = `${incumbent.team} retained ${player.name} with a proactive RFA offer after the market did not produce an acceptable outside offer sheet.`;
+      unsigned.delete(player.id);
+      signings.push(signing);
+    });
+  return signings;
+}
+
+function buildRfaFallbackOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  marketPlayers: TPlayer[],
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  round: number,
+  tier: string,
+  pass: number
+): TeamBidPlan<TPlayer, TTeam> | null {
+  refreshTeamPayroll(team, assumptions);
+  const tool = bestSpendingTool(team, player, assumptions);
+  if (!tool || tool.kind !== "bird") return null;
+  const maxOffer = maxLegalOffer(team, player, assumptions, tool.kind);
+  const legalMax = Math.min(tool.amount, maxOffer.legalMax);
+  const minSalary = minimumSalary(player);
+  if (legalMax < minSalary) return null;
+  const needFit = needFitScore(team, player.position, player.skills);
+  const timeline = timelineFit(team, player);
+  const taxPain = taxPainScore(team, Math.min(legalMax, player.marketValue), assumptions);
+  const redundancy = rosterRedundancyPenalty(team, player);
+  const alternatives = countAlternatives(team, player, marketPlayers);
+  const teamPriority = teamPriorityForPlayer(team, player, legalMax, assumptions, needFit, timeline, taxPain, redundancy, alternatives);
+  const rightsBoost = clamp((player.holdRetainScore ?? 0) * 0.18 + (player.scarcityScore ?? 0) * 0.12, 0, 0.22);
+  if (teamPriority + rightsBoost < (player.marketValue >= 8_000_000 ? 0.42 : 0.3)) return null;
+  const years = player.age <= 26 && player.marketValue >= 8_000_000 ? 4 : player.marketValue >= 5_000_000 ? 3 : 2;
+  const leverageDiscount = player.marketValue >= 18_000_000 ? 0.82 : player.marketValue >= 8_000_000 ? 0.76 : 0.68;
+  const targetMultiplier = Math.min(0.96, leverageDiscount + teamPriority * 0.11 + needFit * 0.04 + rightsBoost - taxPain * 0.08 + centeredRandom(rng, assumptions.variance) * 0.015);
+  const salary = clamp(player.marketValue * targetMultiplier, minSalary, legalMax);
+  if (salary < Math.min(player.marketValue * 0.55, 7_000_000) && player.marketValue > 10_000_000) return null;
+  const components = playerChoiceComponents(team, player, salary, years, needFit, 0.18, true);
+  const score = makeScore({
+    needFit,
+    value: valueScore(player, salary),
+    timeline,
+    urgency: urgencyScore(team),
+    taxPain,
+    assetValue: player.tradeValue / Math.max(assumptions.cap, 1),
+    replacement: player.replaceability,
+    upsideRisk: player.upside - player.declineRisk,
+    incumbency: 1,
+    randomness: 0
+  });
+  const bid: MarketBid = {
+    id: `${round}-${pass}-${team.team}-${player.id}-rfa-fallback`,
+    round,
+    tier,
+    team: team.team,
+    playerId: player.id,
+    player: player.name,
+    tool: tool.name,
+    toolKind: tool.kind,
+    submittedAav: salary,
+    years,
+    legalMax,
+    teamPriority,
+    teamUtility: clamp(teamPriority + rightsBoost + valueScore(player, salary) * 0.14 - taxPain * 0.12, 0, 1.25),
+    playerUtility: components.total,
+    components,
+    capSnapshot: {
+      capSpace: team.capSpace,
+      heldCapSpace: team.heldCapSpace,
+      renouncedCapSpace: team.renouncedCapSpace,
+      taxRoom: team.taxRoom,
+      firstApronRoom: team.firstApronRoom,
+      secondApronRoom: team.secondApronRoom,
+      toolAmount: tool.amount,
+      toolRemaining: tool.amount
+    },
+    capPath: team.capPath ?? "retained_rights",
+    toolReason: "Proactive RFA fallback after no acceptable outside offer sheet; retained rights preserve cap room and exceptions.",
+    holdAction: player.holdAction ?? "retained",
+    rightsValue: player.rightsValue,
+    holdRetainScore: player.holdRetainScore,
+    scarcityScore: player.scarcityScore,
+    expectedMarketMinutes: player.expectedMarketMinutes,
+    marketMinutesSource: player.marketMinutesSource,
+    limiter: maxOffer.limiter,
+    reason: `RFA fallback: rights value ${formatNumber(player.rightsValue ?? 0, 2)}, scarcity ${formatNumber(player.scarcityScore ?? 0, 2)}, no outside sheet cleared.`
+  };
+  return { bid, team, player, salary, years, tool: { ...tool, amount: legalMax }, score, needFit, timeline, taxPain, redundancy, affordability: clamp(legalMax / Math.max(player.marketValue, 1), 0, 1.35), alternatives, toolReason: bid.toolReason ?? "" };
 }
 
 export function buildTeamBidPlan<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
@@ -344,10 +494,14 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
     if (recordRejections) recordRejectedOffer(team, player, round, tier, reason, toolName, offer, legalMax, ledger, audit);
     return null;
   };
+  if (player.status === "RFA" && player.rightsTeam === team.team && player.rights !== "None" && tier !== "RFA fallback") {
+    return reject("Incumbent is preserving RFA match leverage rather than bidding against itself before offer sheets");
+  }
   const tool = bestSpendingTool(team, player, assumptions);
   if (!tool) {
     return reject("No cap room, rights, or usable exception");
   }
+  const toolReason = spendingToolReason(team, player, tool);
 
   const maxOffer = maxLegalOffer(team, player, assumptions, tool.kind);
   const legalMax = Math.min(tool.amount, maxOffer.legalMax);
@@ -428,15 +582,26 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
     components,
     capSnapshot: {
       capSpace: team.capSpace,
+      heldCapSpace: team.heldCapSpace,
+      renouncedCapSpace: team.renouncedCapSpace,
       taxRoom: team.taxRoom,
       firstApronRoom: team.firstApronRoom,
       secondApronRoom: team.secondApronRoom,
-      toolAmount: tool.amount
+      toolAmount: tool.amount,
+      toolRemaining: tool.amount
     },
+    capPath: team.capPath ?? "retained_rights",
+    toolReason,
+    holdAction: player.holdAction ?? "none",
+    rightsValue: player.rightsValue,
+    holdRetainScore: player.holdRetainScore,
+    scarcityScore: player.scarcityScore,
+    expectedMarketMinutes: player.expectedMarketMinutes,
+    marketMinutesSource: player.marketMinutesSource,
     limiter: maxOffer.limiter,
     reason: `Team bid plan: need ${formatNumber(needFit, 2)}, timeline ${formatNumber(timeline, 2)}, alternatives ${alternatives}, tax drag ${formatNumber(taxPain, 2)}`
   };
-  return { bid, team, player, salary, years, tool: { ...tool, amount: legalMax }, score, needFit, timeline, taxPain, redundancy, affordability, alternatives };
+  return { bid, team, player, salary, years, tool: { ...tool, amount: legalMax }, score, needFit, timeline, taxPain, redundancy, affordability, alternatives, toolReason };
 }
 
 export function choosePlayerOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
@@ -583,7 +748,8 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
   player.status = "Signed";
   signingTeam.roster.push(player);
   releaseCapHold(teams, player);
-  consumeSpendingTool(signingTeam, signingTool, chosen.salary);
+  const postToolRemaining = consumeSpendingTool(signingTeam, signingTool, chosen.salary);
+  recordToolUse(signingTeam, player, signingTool, chosen.salary, postToolRemaining, matched ? "Matched offer sheet with retained rights." : chosen.toolReason);
   signingTeam.explanations.push(`${player.name} signed for ${formatMoney(chosen.salary)} AAV`);
   refreshTeamPayroll(signingTeam, assumptions);
   refreshTeamNeeds(signingTeam);
@@ -602,6 +768,8 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
   const teamLogic = [
     `Team bid logic: need ${formatNumber(chosen.needFit, 2)}, timeline ${formatNumber(chosen.timeline, 2)}, alternatives ${chosen.alternatives}, redundancy ${formatNumber(chosen.redundancy, 2)}`,
     `Ability to pay: ${chosen.bid.tool} up to ${formatMoney(chosen.bid.legalMax)}; pre-offer cap ${formatMoney(chosen.bid.capSnapshot.capSpace)}, A1 room ${formatMoney(chosen.bid.capSnapshot.firstApronRoom)}`,
+    `Tool path: ${chosen.bid.capPath ?? "retained_rights"}; ${chosen.bid.toolReason ?? chosen.toolReason}`,
+    player.holdActionReason ? `Hold planning: ${player.holdActionReason}` : `Market role: ${formatNumber(player.expectedMarketMinutes ?? 0, 0)} minutes from ${player.marketMinutesSource ?? "player projection"}`,
     `Tax/apron drag ${formatNumber(chosen.taxPain, 2)} and affordability ${formatNumber(chosen.affordability, 2)} shaped the bid amount, not the player choice`
   ];
   const explanation = matched
@@ -628,7 +796,18 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
       legalMax: chosen.bid.legalMax,
       playerMarket: player.marketValue,
       limiter: chosen.bid.limiter,
+      capPath: matched ? incumbentCapPath(teams, player.rightsTeam) : chosen.bid.capPath,
+      toolReason: matched ? "Matched with retained Bird/RFA rights; cap room and exceptions are not consumed." : chosen.bid.toolReason,
+      holdAction: player.holdAction ?? "none",
+      rightsValue: player.rightsValue,
+      holdRetainScore: player.holdRetainScore,
+      scarcityScore: player.scarcityScore,
+      expectedMarketMinutes: player.expectedMarketMinutes,
+      marketMinutesSource: player.marketMinutesSource,
+      postToolRemaining,
       preCapSpace: chosen.bid.capSnapshot.capSpace,
+      preHeldCapSpace: chosen.bid.capSnapshot.heldCapSpace,
+      preRenouncedCapSpace: chosen.bid.capSnapshot.renouncedCapSpace,
       preTaxRoom: chosen.bid.capSnapshot.taxRoom,
       preFirstApronRoom: chosen.bid.capSnapshot.firstApronRoom,
       preSecondApronRoom: chosen.bid.capSnapshot.secondApronRoom,
@@ -675,7 +854,7 @@ function canHonorOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TP
   if (offer.tool.kind === "room") {
     const tool = offer.team.exceptions.find((candidate) => candidate.kind === "room");
     const remaining = tool ? tool.amount - tool.used : 0;
-    return offer.team.capSpace > 0 && offer.salary <= remaining + 100_000;
+    return (offer.team.capPath ?? "retained_rights") === "cap_room" && offer.salary <= remaining + 100_000;
   }
   const tool = offer.team.exceptions.find((candidate) => candidate.kind === "minimum");
   const remaining = tool ? tool.amount - tool.used : minimumSalary(offer.player);
@@ -768,17 +947,20 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
 
 function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): MarketTool | null {
   refreshTeamPayroll(team, assumptions);
+  const capPath = team.capPath ?? (team.capSpace > minimumSalary(player) ? "cap_room" : "retained_rights");
   const rightsAmount = birdRightsAmount(team, player);
   const tools: MarketTool[] = [];
-  if (team.capSpace > minimumSalary(player)) tools.push({ name: "Cap Space", amount: Math.max(team.capSpace, 0), used: 0, kind: "cap" });
   if (player.rightsTeam === team.team && player.rights !== "None" && rightsAmount > minimumSalary(player)) {
     tools.push({ name: player.rights, amount: rightsAmount, used: 0, kind: "bird" });
+  }
+  if (capPath === "cap_room" && team.capSpace > minimumSalary(player)) {
+    tools.push({ name: "Cap Space", amount: Math.max(team.capSpace, 0), used: 0, kind: "cap" });
   }
   team.exceptions.forEach((tool) => {
     const remaining = tool.amount - tool.used;
     if (remaining <= minimumSalary(player)) return;
-    if (tool.kind === "room" && team.renouncedCapSpace <= 0) return;
-    if (tool.kind === "mle" && team.secondApronRoom <= 0) return;
+    if (tool.kind === "room" && capPath !== "cap_room") return;
+    if (tool.kind === "mle" && (capPath !== "retained_rights" || team.secondApronRoom <= 0)) return;
     const apronLimitedAmount = tool.kind === "mle" ? Math.min(remaining, Math.max(0, team.firstApronRoom)) : remaining;
     if (apronLimitedAmount > minimumSalary(player)) tools.push({ ...tool, amount: apronLimitedAmount });
   });
@@ -795,8 +977,21 @@ function maxLegalOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TP
     : { legalMax: 0, limiter: `No Bird rights held by ${team.team}` };
   if (toolKind === "cap") return { legalMax: Math.min(Math.max(0, team.capSpace), individualMax), limiter: "cap room and individual max" };
   if (toolKind === "mle") return { legalMax: Math.min(assumptions.cap * 0.075, Math.max(0, team.firstApronRoom), individualMax), limiter: "mid-level exception and first apron hard cap" };
-  if (toolKind === "room") return { legalMax: Math.min(assumptions.cap * 0.04, Math.max(0, team.capSpace), individualMax), limiter: "room exception and cap-room path" };
+  if (toolKind === "room") return { legalMax: Math.min(assumptions.cap * 0.04, individualMax), limiter: "room exception after cap-room path" };
   return { legalMax: Math.min(minimumSalary(player), individualMax), limiter: "minimum exception" };
+}
+
+function spendingToolReason<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, tool: MarketTool): string {
+  const capPath = team.capPath ?? "retained_rights";
+  if (tool.kind === "bird") return `${player.rights} rights retained for own free agent; preserves cap room and exceptions.`;
+  if (tool.kind === "cap") return `Cap-room path after modeled renouncements; ${team.capPathReason ?? "team opened room before outside bidding"}`;
+  if (tool.kind === "room") return "Room exception is available only after the cap-room path.";
+  if (tool.kind === "mle") return "Over-cap exception path with retained rights, subject to apron limits.";
+  return capPath === "cap_room" ? "Minimum exception after cap-room spending." : "Minimum exception while retaining rights.";
+}
+
+function incumbentCapPath<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(teams: Map<string, TTeam>, team: string): string {
+  return teams.get(team)?.capPath ?? "retained_rights";
 }
 
 function individualMaxSalary<TPlayer extends MarketPlayer>(player: TPlayer, assumptions: MarketAssumptions): number {
@@ -840,13 +1035,14 @@ function teamPriorityForPlayer<TPlayer extends MarketPlayer, TTeam extends Marke
 
 function teamSpendingPower<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): number {
   refreshTeamPayroll(team, assumptions);
+  const capPath = team.capPath ?? "retained_rights";
   const exceptionPower = team.exceptions.reduce((total, tool) => {
-    if (tool.kind === "mle" && team.secondApronRoom <= 0) return total;
-    if (tool.kind === "room" && team.capSpace <= 0) return total;
+    if (tool.kind === "mle" && (capPath !== "retained_rights" || team.secondApronRoom <= 0)) return total;
+    if (tool.kind === "room" && capPath !== "cap_room") return total;
     return total + Math.max(0, Math.min(tool.amount - tool.used, team.firstApronRoom > 0 ? tool.amount : 0));
   }, 0);
-  const capPower = Math.max(0, team.capSpace);
-  const rightsPower = Math.min(assumptions.cap * 0.35, Math.max(0, team.renouncedCapSpace - team.capSpace));
+  const capPower = capPath === "cap_room" ? Math.max(0, team.capSpace) : 0;
+  const rightsPower = capPath === "retained_rights" ? Math.min(assumptions.cap * 0.35, Math.max(0, team.renouncedCapSpace - team.capSpace)) : 0;
   return Math.max(capPower, exceptionPower, rightsPower * 0.45);
 }
 
@@ -855,14 +1051,14 @@ function refreshTeamPayrolls<TPlayer extends MarketPlayer, TTeam extends MarketT
 }
 
 function refreshTeamPayroll<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions) {
-  team.activeSalary = sum(team.roster.map((player) => player.salary));
-  team.guaranteedSalary = sum(team.roster.map((player) => player.guaranteedSalary || player.salary));
+  team.activeSalary = sum(team.roster.map((player) => player.salary)) + (team.activeSalaryAdjustment ?? 0);
+  team.guaranteedSalary = sum(team.roster.map((player) => player.guaranteedSalary || player.salary)) + (team.guaranteedSalaryAdjustment ?? 0);
   team.payroll = team.activeSalary + team.deadCap;
-  team.rosterCharges = Math.max(0, 12 - team.roster.length) * assumptions.cap * 0.008;
+  team.rosterCharges = Math.max(0, 12 - (team.roster.length + (team.rosterCountAdjustment ?? 0))) * (team.minimumRosterCharge ?? assumptions.cap * 0.008);
   team.maximumCapSpace = assumptions.cap - team.payroll - team.rosterCharges;
   team.heldCapSpace = team.maximumCapSpace - team.capHolds;
-  const shouldRenounceForRoom = team.maximumCapSpace > assumptions.cap * 0.09 && team.heldCapSpace < team.maximumCapSpace - assumptions.cap * 0.03;
-  team.capSpace = shouldRenounceForRoom ? team.maximumCapSpace : team.heldCapSpace;
+  const capPath = team.capPath ?? (team.maximumCapSpace > assumptions.cap * 0.09 && team.heldCapSpace < team.maximumCapSpace - assumptions.cap * 0.03 ? "cap_room" : "retained_rights");
+  team.capSpace = capPath === "cap_room" ? Math.max(0, team.heldCapSpace) : team.heldCapSpace;
   team.renouncedCapSpace = team.maximumCapSpace;
   team.taxRoom = assumptions.tax - team.payroll;
   team.firstApronRoom = assumptions.firstApron - team.payroll;
@@ -883,14 +1079,23 @@ function refreshTeamNeeds<TPlayer extends MarketPlayer, TTeam extends MarketTeam
 function releaseCapHold<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(teams: Map<string, TTeam>, player: TPlayer) {
   const incumbent = teams.get(player.rightsTeam);
   if (!incumbent) return;
-  incumbent.capHolds = Math.max(0, incumbent.capHolds - capHoldForPlayer(player));
+  const hold = capHoldForPlayer(player);
+  incumbent.capHolds = Math.max(0, incumbent.capHolds - hold);
+  if (typeof incumbent.holdsRetained === "number") incumbent.holdsRetained = Math.max(0, incumbent.holdsRetained - hold);
 }
 
-function consumeSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, kind: MarketToolKind, salary: number) {
-  if (kind === "cap" || kind === "bird") return;
+function consumeSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, kind: MarketToolKind, salary: number): number {
+  if (kind === "cap") return Math.max(0, team.capSpace - salary);
+  if (kind === "bird") return 0;
   const tool = team.exceptions.find((candidate) => candidate.kind === kind && candidate.amount - candidate.used > 0);
-  if (!tool) return;
+  if (!tool) return 0;
   tool.used = Math.min(tool.amount, tool.used + salary);
+  return Math.max(0, tool.amount - tool.used);
+}
+
+function recordToolUse<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, kind: MarketToolKind, salary: number, remaining: number, reason: string) {
+  if (!team.toolLedger) team.toolLedger = [];
+  team.toolLedger.push({ player: player.name, tool: kind, amount: salary, remaining, reason });
 }
 
 function makeScore(parts: Omit<MarketScore, "total">): MarketScore {
@@ -928,7 +1133,15 @@ function ledgerFromBid(bid: MarketBid, status: MarketLedgerRow["status"], reason
     teamUtility: bid.teamUtility,
     teamPriority: bid.teamPriority,
     needFit: bid.components.roleFit,
-    capHoldType: bid.limiter
+    capHoldType: bid.limiter,
+    capPath: bid.capPath,
+    toolReason: bid.toolReason,
+    holdAction: bid.holdAction,
+    rightsValue: bid.rightsValue,
+    holdRetainScore: bid.holdRetainScore,
+    scarcityScore: bid.scarcityScore,
+    expectedMarketMinutes: bid.expectedMarketMinutes,
+    marketMinutesSource: bid.marketMinutesSource
   };
 }
 

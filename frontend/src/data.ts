@@ -108,7 +108,7 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
   } else if (view === "trade") {
     await Promise.all([loadPlayers(), loadTeams(), loadPicks()]);
   } else if (view === "offseason") {
-    await Promise.all([loadPlayers(), loadTeams(), loadPicks(), loadProspects(), loadOffseasonTruth()]);
+    await Promise.all([loadPlayers(), loadTeams(), loadPicks(), loadProspects(), loadOffseasonTruth(), loadCap()]);
   } else if (view === "capTracker") {
     await loadCap();
   } else if (view === "draft" || view === "draftElo") {

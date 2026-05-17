@@ -1,14 +1,55 @@
 import { useEffect, useMemo, useState } from "react";
 import { simulateFreeAgencyMarket } from "./offseasonMarket";
-import type { MarketBid, MarketComponentBreakdown, MarketLedgerRow, MarketResolution, AppData, DraftProspect, OffseasonPlayerTruth, OffseasonTeamCapSheet, OffseasonTruthData, PickAsset, PlayerImpact, TeamProjection } from "./types";
+import type {
+  MarketBid,
+  MarketComponentBreakdown,
+  MarketLedgerRow,
+  MarketResolution,
+  AppData,
+  CapTrackerContractCell,
+  CapTrackerContractRow,
+  CapTrackerData,
+  CapTrackerSeason,
+  CapTrackerTeamSeason,
+  DraftProspect,
+  OffseasonPlayerTruth,
+  OffseasonTeamCapSheet,
+  OffseasonTruthData,
+  PickAsset,
+  PlayerImpact,
+  TeamProjection
+} from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
 type TeamMode = "rebuilding" | "rising" | "playoff hopeful" | "contender" | "tax-sensitive contender";
-type OffseasonTab = "warRoom" | "league" | "draft" | "options" | "freeAgency" | "trades" | "teams" | "markets" | "overrides";
+type OffseasonTab = "dashboard" | "warRoom" | "league" | "draft" | "options" | "freeAgency" | "trades" | "teams" | "markets" | "overrides";
 type DecisionKind = "draft" | "option" | "ufa" | "rfa" | "trade";
 type ContractStatus = "Signed" | "UFA" | "RFA" | "Player Option" | "Team Option" | "Non-Guaranteed" | "Rookie FA";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type BirdRight = "Bird" | "Early Bird" | "Non-Bird" | "None";
+type CapPath = "retained_rights" | "cap_room";
+type HoldAction = "retained" | "renounced" | "none";
+
+type ToolLedgerEntry = {
+  player: string;
+  tool: SpendingTool["kind"];
+  amount: number;
+  remaining: number;
+  reason: string;
+};
+
+type CapTrackerIndex = {
+  capYear: number;
+  season?: CapTrackerSeason;
+  teams: Map<string, CapTrackerTeamSeason>;
+  cellsByNbaId: Map<string, CapTrackerMatchedCell>;
+  cellsByNameTeam: Map<string, CapTrackerMatchedCell>;
+};
+
+type CapTrackerMatchedCell = {
+  row: CapTrackerContractRow;
+  cell: CapTrackerContractCell;
+};
 
 type SimulatorAssumptions = {
   seed: number;
@@ -51,19 +92,35 @@ type TeamState = {
   team: string;
   name: string;
   mode: TeamMode;
+  capYear: number;
+  capPath: CapPath;
+  capPathReason: string;
   projectedWins: number;
   projectedRank: number;
   roster: SimPlayer[];
+  rosterCountAdjustment: number;
+  minimumRosterCharge: number;
+  activeRosterCountBase: number;
   payroll: number;
   activeSalary: number;
   guaranteedSalary: number;
+  activeSalaryAdjustment: number;
+  guaranteedSalaryAdjustment: number;
   deadCap: number;
   capHolds: number;
+  initialCapHolds: number;
+  holdsRetained: number;
+  holdsRenounced: number;
   rosterCharges: number;
   heldCapSpace: number;
   capSpace: number;
   renouncedCapSpace: number;
   maximumCapSpace: number;
+  capRoomWithHolds: number;
+  capRoomRenounced: number;
+  statusBand?: string;
+  statusBandWithHolds?: string;
+  statusBandRenounced?: string;
   taxRoom: number;
   firstApronRoom: number;
   secondApronRoom: number;
@@ -73,6 +130,7 @@ type TeamState = {
   premiumPickCount: number;
   willingness: number;
   exceptions: SpendingTool[];
+  toolLedger: ToolLedgerEntry[];
   explanations: string[];
 };
 
@@ -93,6 +151,16 @@ type SimPlayer = {
   capHoldType: string;
   guaranteedSalary: number;
   deadCap: number;
+  capTrackerTeam?: string;
+  capTrackerKind?: string;
+  capTrackerStatus?: string;
+  holdAction: HoldAction;
+  holdActionReason?: string;
+  rightsValue: number;
+  holdRetainScore: number;
+  scarcityScore: number;
+  expectedMarketMinutes: number;
+  marketMinutesSource: string;
   waivedDate?: string | null;
   rosterStatusSource: string;
   total: number;
@@ -194,7 +262,18 @@ type OfferContext = {
   legalMax: number;
   playerMarket: number;
   limiter: string;
+  capPath?: CapPath | string;
+  toolReason?: string;
+  holdAction?: HoldAction | string;
+  rightsValue?: number;
+  holdRetainScore?: number;
+  scarcityScore?: number;
+  expectedMarketMinutes?: number;
+  marketMinutesSource?: string;
+  postToolRemaining?: number;
   preCapSpace: number;
+  preHeldCapSpace?: number;
+  preRenouncedCapSpace?: number;
   preTaxRoom: number;
   preFirstApronRoom: number;
   preSecondApronRoom: number;
@@ -261,6 +340,9 @@ type TeamSummary = {
   team: string;
   name: string;
   mode: TeamMode;
+  capYear: number;
+  capPath: CapPath;
+  capPathReason: string;
   rosterCount: number;
   rosterCore: string[];
   payroll: number;
@@ -268,11 +350,19 @@ type TeamSummary = {
   guaranteedSalary: number;
   deadCap: number;
   capHolds: number;
+  initialCapHolds: number;
+  holdsRetained: number;
+  holdsRenounced: number;
   rosterCharges: number;
   heldCapSpace: number;
   capSpace: number;
   renouncedCapSpace: number;
   maximumCapSpace: number;
+  capRoomWithHolds: number;
+  capRoomRenounced: number;
+  statusBand?: string;
+  statusBandWithHolds?: string;
+  statusBandRenounced?: string;
   taxRoom: number;
   firstApronRoom: number;
   secondApronRoom: number;
@@ -280,12 +370,16 @@ type TeamSummary = {
   pickAssets: number;
   pickCount: number;
   premiumPickCount: number;
+  toolLedger: ToolLedgerEntry[];
   majorMoves: string[];
 };
 
 type SimulationRun = {
   id: string;
   seed: number;
+  season: number;
+  capYear: number;
+  draftYear: number;
   draft: DraftSelection[];
   options: OptionDecision[];
   freeAgency: FreeAgentSigning[];
@@ -362,7 +456,7 @@ type OfficialDraftPick = {
 
 const skillKeys: SkillKey[] = ["FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH"];
 const defaultOverrides: SimulatorOverrides = { teams: {}, players: {}, prospects: {} };
-const OFFSEASON_TAB_STORAGE_KEY = "offseason:activeTab:v1";
+const OFFSEASON_TAB_STORAGE_KEY = "offseason:activeTab:v2";
 const OFFSEASON_TEAM_STORAGE_KEY = "offseason:selectedTeam:v1";
 const OFFSEASON_PRESET_STORAGE_KEY = "offseason:preset:v1";
 let offseasonRunCache: { data: AppData; key: string; run: SimulationRun } | null = null;
@@ -463,7 +557,8 @@ const OFFICIAL_2026_DRAFT_ORDER: OfficialDraftPick[] = [
 ];
 
 export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; season: number }) {
-  const baseCapSettings = useMemo(() => capSettingsForSeason(season), [season]);
+  const capYear = useMemo(() => capYearForSeason(season, data.capTracker), [data.capTracker, season]);
+  const baseCapSettings = useMemo(() => capSettingsForSeason(capYear, data.capTracker), [capYear, data.capTracker]);
   const [assumptions, setAssumptions] = useState<SimulatorAssumptions>(() => ({
     seed: 2701,
     variance: 0.42,
@@ -479,7 +574,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   }));
   const [overrides, setOverrides] = useState<SimulatorOverrides>(defaultOverrides);
   const [activeTab, setActiveTab] = useState<OffseasonTab>(() => readStoredOffseasonTab());
-  const [run, setRun] = useState<SimulationRun | null>(() => readCachedSimulationRun(data, simulationCacheKey(season, assumptions, overrides)));
+  const [run, setRun] = useState<SimulationRun | null>(() => readCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides)));
   const [isSimulating, setIsSimulating] = useState(() => run === null);
   const [runOffset, setRunOffset] = useState(0);
   const [multiRun, setMultiRun] = useState<MultiRunSummary | null>(null);
@@ -510,7 +605,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   const overrideStats = useMemo(() => summarizeOverrides(overrides), [overrides]);
 
   useEffect(() => {
-    const key = simulationCacheKey(season, assumptions, overrides);
+    const key = simulationCacheKey(season, capYear, assumptions, overrides);
     const cached = readCachedSimulationRun(data, key);
     if (cached) {
       setRun(cached);
@@ -523,7 +618,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
     setIsSimulating(true);
     let cancelled = false;
     const runTask = () => {
-      const next = runSimulation(data, season, assumptions, overrides, 0);
+      const next = runSimulation(data, season, capYear, assumptions, overrides, 0);
       writeCachedSimulationRun(data, key, next);
       if (!cancelled) {
         setRun(next);
@@ -535,7 +630,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
       cancelled = true;
       cancelIdleWork(handle);
     };
-  }, [data, season]);
+  }, [data, season, capYear]);
 
   useEffect(() => {
     if (!teams.includes(selectedTeam)) setSelectedTeam("All");
@@ -564,8 +659,8 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
 
   const runOne = () => {
     const nextOffset = runOffset + 1;
-    const next = runSimulation(data, season, assumptions, overrides, nextOffset);
-    writeCachedSimulationRun(data, simulationCacheKey(season, assumptions, overrides), next);
+    const next = runSimulation(data, season, capYear, assumptions, overrides, nextOffset);
+    writeCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides), next);
     setRunOffset(nextOffset);
     setRun(next);
     setMultiRun(null);
@@ -573,9 +668,9 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
 
   const runMany = () => {
     const runs = Array.from({ length: clamp(Math.round(assumptions.runCount), 2, 500) }, (_, index) =>
-      runSimulation(data, season, assumptions, overrides, index)
+      runSimulation(data, season, capYear, assumptions, overrides, index)
     );
-    writeCachedSimulationRun(data, simulationCacheKey(season, assumptions, overrides), runs[0]);
+    writeCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides), runs[0]);
     setRunOffset((current) => current + runs.length);
     setRun(runs[0]);
     setMultiRun(summarizeRuns(runs));
@@ -608,6 +703,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
           {run && headline ? (
             <OffseasonCommandBar
               season={season}
+              capYear={capYear}
               draftYear={draftYear}
               run={run}
               headline={headline}
@@ -630,6 +726,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
             <>
           <div className="offseason-tabs" role="tablist" aria-label="Offseason simulator sections">
             {[
+              ["dashboard", "Dashboard"],
               ["warRoom", "War Room"],
               ["league", "League Board"],
               ["draft", "Draft"],
@@ -645,6 +742,10 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
               </button>
             ))}
           </div>
+
+          {activeTab === "dashboard" && (
+            <DashboardView run={run} selectedTeam={selectedTeam} multiRun={multiRun} />
+          )}
 
           {activeTab === "warRoom" && (
             <div className="offseason-stack">
@@ -694,12 +795,14 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   );
 }
 
-function runSimulation(data: AppData, season: number, assumptions: SimulatorAssumptions, overrides: SimulatorOverrides, runIndex: number): SimulationRun {
+function runSimulation(data: AppData, season: number, capYear: number, assumptions: SimulatorAssumptions, overrides: SimulatorOverrides, runIndex: number): SimulationRun {
   const rng = mulberry32((Math.round(assumptions.seed) + runIndex * 9973) >>> 0);
   const teamMeta = buildTeamMeta(data.teams, season);
-  const players = buildSimPlayers(data.players.filter((player) => player.year === season), overrides, data.offseasonTruth);
-  const prospects = buildSimProspects(data.prospects.filter((prospect) => prospect.draft_year === inferDraftYear(data.prospects, season)), overrides);
-  const teams = initializeTeams(teamMeta, players, data.picks, assumptions, overrides, data.offseasonTruth, season);
+  const capIndex = buildCapTrackerIndex(data.capTracker, season, capYear);
+  const players = buildSimPlayers(data.players.filter((player) => player.year === season), overrides, data.offseasonTruth, capIndex);
+  const draftYear = inferDraftYear(data.prospects, season);
+  const prospects = buildSimProspects(data.prospects.filter((prospect) => prospect.draft_year === draftYear), overrides);
+  const teams = initializeTeams(teamMeta, players, data.picks, assumptions, overrides, data.offseasonTruth, season, capIndex);
   const explanations: SimulationRun["explanations"] = [];
   const tradeDiagnostics: string[] = [];
 
@@ -724,6 +827,8 @@ function runSimulation(data: AppData, season: number, assumptions: SimulatorAssu
     score: selection.score,
     plausibility: selection.plausibility
   }));
+
+  applyCapPathDecisions(teams, players, assumptions);
 
   const preMarketTrades = simulateTrades(teams, assumptions, rng, tradeDiagnostics, "pre-fa");
   const market = simulateFreeAgencyMarket(players, teams, assumptions, rng);
@@ -758,6 +863,9 @@ function runSimulation(data: AppData, season: number, assumptions: SimulatorAssu
   return {
     id: `run-${assumptions.seed}-${runIndex}`,
     seed: Math.round(assumptions.seed) + runIndex * 9973,
+    season,
+    capYear,
+    draftYear,
     draft,
     options,
     freeAgency,
@@ -779,7 +887,7 @@ function OffseasonLoadingPanel({ season, draftYear, isSimulating }: { season: nu
       <div className="panel-heading compact-heading">
         <div>
           <h2>Preparing Offseason Sandbox</h2>
-          <p>{`Building an isolated ${season} simulation with the ${draftYear} draft class. Player Impact data stays read-only.`}</p>
+          <p>{`Building an isolated ${season} roster/value season with the ${draftYear} draft class. Player Impact data stays read-only.`}</p>
         </div>
       </div>
       <div className="loading-state-card">
@@ -808,9 +916,10 @@ function cancelIdleWork(handle: IdleWorkHandle) {
   else window.clearTimeout(handle.id);
 }
 
-function simulationCacheKey(season: number, assumptions: SimulatorAssumptions, overrides: SimulatorOverrides): string {
+function simulationCacheKey(season: number, capYear: number, assumptions: SimulatorAssumptions, overrides: SimulatorOverrides): string {
   return JSON.stringify({
     season,
+    capYear,
     seed: Math.round(assumptions.seed),
     variance: assumptions.variance,
     draftFitWeight: assumptions.draftFitWeight,
@@ -1135,7 +1244,8 @@ function initializeTeams(
   assumptions: SimulatorAssumptions,
   overrides: SimulatorOverrides,
   truthData: OffseasonTruthData | undefined,
-  season: number
+  season: number,
+  capIndex: CapTrackerIndex
 ): Map<string, TeamState> {
   const teams = new Map<string, TeamState>();
   const slotPickValue = picks.reduce((sum, pick) => sum + (pick.round === 1 ? pick.value : pick.value * 0.35), 0) / 30;
@@ -1155,25 +1265,49 @@ function initializeTeams(
     const override = overrides.teams[projection.team];
     const pickCache = officialPickCache[projection.team] ?? { count: 0, premium: 0, value: 0 };
     const capTruth = capByTeam.get(projection.team);
-    const deadCap = capTruth?.dead_cap ?? sum(players.filter((player) => player.rightsTeam === projection.team || player.team === projection.team).map((player) => player.deadCap));
-    const capHolds = capTruth?.cap_holds ?? sum(players.filter((player) => player.rightsTeam === projection.team && player.status !== "Signed").map(capHoldForPlayer));
+    const trackerTeam = capIndex.teams.get(projection.team);
+    const signedSalary = sum(signedRoster.map((player) => player.salary));
+    const signedGuaranteed = sum(signedRoster.map((player) => player.guaranteedSalary || player.salary));
+    const trackerActiveSalary = trackerTeam?.active_salary ?? capTruth?.active_salary;
+    const trackerGuaranteedSalary = trackerTeam?.guaranteed_salary ?? capTruth?.guaranteed_salary;
+    const deadCap = trackerTeam?.dead_money ?? capTruth?.dead_cap ?? sum(players.filter((player) => player.rightsTeam === projection.team || player.team === projection.team).map((player) => player.deadCap));
+    const capHolds = trackerTeam?.cap_holds ?? capTruth?.cap_holds ?? sum(players.filter((player) => player.rightsTeam === projection.team && player.status !== "Signed").map(capHoldForPlayer));
+    const activeRosterCountBase = trackerTeam?.roster_count ?? signedRoster.length;
+    const rosterCountAdjustment = Math.max(0, activeRosterCountBase - signedRoster.length);
+    const minimumRosterCharge = capIndex.season?.minimum_roster_charge ?? assumptions.cap * 0.008;
     const team: TeamState = {
       team: projection.team,
       name: projection.team_name,
       mode: override?.mode ?? baseMode,
+      capYear: capIndex.capYear,
+      capPath: "retained_rights",
+      capPathReason: "Retained holds by default while preserving own-player rights.",
       projectedWins: projection.projected_wins,
       projectedRank: projection.rank,
       roster: [...signedRoster],
-      payroll: sum(signedRoster.map((player) => player.salary)),
-      activeSalary: sum(signedRoster.map((player) => player.salary)),
-      guaranteedSalary: capTruth?.guaranteed_salary ?? sum(signedRoster.map((player) => player.guaranteedSalary || player.salary)),
+      rosterCountAdjustment,
+      minimumRosterCharge,
+      activeRosterCountBase,
+      payroll: trackerActiveSalary ?? signedSalary,
+      activeSalary: trackerActiveSalary ?? signedSalary,
+      guaranteedSalary: trackerGuaranteedSalary ?? signedGuaranteed,
+      activeSalaryAdjustment: Math.max(0, (trackerActiveSalary ?? signedSalary) - signedSalary),
+      guaranteedSalaryAdjustment: Math.max(0, (trackerGuaranteedSalary ?? signedGuaranteed) - signedGuaranteed),
       deadCap,
       capHolds,
+      initialCapHolds: capHolds,
+      holdsRetained: capHolds,
+      holdsRenounced: 0,
       rosterCharges: capTruth?.roster_charges ?? 0,
       heldCapSpace: 0,
       capSpace: 0,
       renouncedCapSpace: 0,
       maximumCapSpace: 0,
+      capRoomWithHolds: trackerTeam?.cap_room_with_holds ?? capTruth?.practical_cap_space ?? 0,
+      capRoomRenounced: trackerTeam?.cap_room_renounced ?? capTruth?.maximum_cap_space ?? 0,
+      statusBand: trackerTeam?.status_band,
+      statusBandWithHolds: trackerTeam?.status_band_with_holds,
+      statusBandRenounced: trackerTeam?.status_band_renounced,
       taxRoom: 0,
       firstApronRoom: 0,
       secondApronRoom: 0,
@@ -1187,6 +1321,7 @@ function initializeTeams(
         { name: "Room", amount: assumptions.cap * 0.04, used: 0, kind: "room" },
         { name: "Minimum", amount: assumptions.cap * 0.012, used: 0, kind: "minimum" }
       ],
+      toolLedger: [],
       explanations: []
     };
     refreshTeamPayroll(team, assumptions);
@@ -1195,21 +1330,245 @@ function initializeTeams(
   return teams;
 }
 
+function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer[], assumptions: SimulatorAssumptions) {
+  teams.forEach((team) => {
+    refreshTeamPayroll(team, assumptions);
+    const ownFreeAgents = players.filter((player) =>
+      (player.status === "UFA" || player.status === "RFA") &&
+      player.rightsTeam === team.team &&
+      player.rights !== "None" &&
+      capHoldForPlayer(player) > 0
+    );
+    const usableMaxRoom = Math.max(0, team.maximumCapSpace);
+    const outsideTargets = players.filter((player) =>
+      (player.status === "UFA" || player.status === "RFA") &&
+      player.rightsTeam !== team.team &&
+      player.marketValue >= minimumSalary(player) &&
+      usableMaxRoom >= roomThresholdForCapPath(assumptions) &&
+      player.marketValue <= Math.max(usableMaxRoom * 1.35, assumptions.cap * 0.08)
+    );
+    const holdPlans = ownFreeAgents.map((player) => ownHoldPlan(team, player, assumptions));
+    const outsidePriorities = outsideTargets.map((player) => ({ player, priority: capPathPlayerPriority(team, player, assumptions, false) }));
+    const bestOwn = holdPlans.slice().sort((a, b) => b.retainScore - a.retainScore)[0];
+    const bestOutside = outsidePriorities.sort((a, b) => b.priority - a.priority)[0];
+    const roomGain = Math.max(0, team.renouncedCapSpace - team.heldCapSpace);
+    const roomThreshold = roomThresholdForCapPath(assumptions);
+    const shouldOpenRoom = usableMaxRoom >= roomThreshold && roomGain >= roomThreshold && (bestOutside?.priority ?? 0) > (bestOwn?.retainScore ?? 0) + 0.12;
+    const matchedHoldTotal = sum(holdPlans.map((plan) => plan.hold));
+    const unmatchedHolds = Math.max(0, team.initialCapHolds - matchedHoldTotal);
+
+    if (shouldOpenRoom) {
+      team.capPath = "cap_room";
+      const targetRoom = Math.min(team.maximumCapSpace, Math.max(roomThreshold, (bestOutside?.player.marketValue ?? roomThreshold) * 0.85));
+      const retainedIds = new Set(holdPlans.map((plan) => plan.player.id));
+      let retainedMatchedHolds = matchedHoldTotal;
+      let modeledRoom = team.maximumCapSpace - retainedMatchedHolds;
+      holdPlans
+        .slice()
+        .sort((a, b) => a.retainScore - b.retainScore || b.hold - a.hold)
+        .forEach((plan) => {
+          if (modeledRoom >= targetRoom) return;
+          const canRenounceProtected = !isContenderMode(team.mode) &&
+            (bestOutside?.priority ?? 0) > plan.retainScore + 0.16 &&
+            plan.scarcity < 0.72;
+          const canRenounce = !plan.protectedHold || canRenounceProtected;
+          if (!canRenounce) return;
+          retainedIds.delete(plan.player.id);
+          retainedMatchedHolds = Math.max(0, retainedMatchedHolds - plan.hold);
+          modeledRoom += plan.hold;
+        });
+
+      const renouncedPlayers: SimPlayer[] = [];
+      holdPlans.forEach((plan) => {
+        const retain = retainedIds.has(plan.player.id);
+        applyHoldPlanToPlayer(plan, retain, bestOutside?.player.name);
+        if (!retain) renouncedPlayers.push(plan.player);
+      });
+
+      team.capPathReason = `Opened selective cap room because low-value holds created ${formatMoney(Math.max(0, modeledRoom - team.heldCapSpace))}; ${bestOutside?.player.name ?? "outside market"} cleared the outside-target threshold.`;
+      team.holdsRetained = retainedMatchedHolds;
+      team.holdsRenounced = Math.max(0, team.initialCapHolds - retainedMatchedHolds);
+      team.capHolds = retainedMatchedHolds;
+      if (unmatchedHolds > 0) {
+        team.explanations.push(`Renounced ${formatMoney(unmatchedHolds)} in unmatched tracker holds to open room`);
+      }
+      renouncedPlayers.slice(0, 3).forEach((player) => team.explanations.push(`Renounced ${player.name} hold`));
+    } else {
+      team.capPath = "retained_rights";
+      team.capPathReason = bestOwn
+        ? `Kept retained-rights path because ${bestOwn.player.name} has the highest rights option value.`
+        : "Kept retained-rights path because outside cap-room gains did not clear the threshold.";
+      team.holdsRetained = team.initialCapHolds;
+      team.holdsRenounced = 0;
+      team.capHolds = team.initialCapHolds;
+      holdPlans.forEach((plan) => applyHoldPlanToPlayer(plan, true, bestOutside?.player.name));
+    }
+
+    refreshTeamPayroll(team, assumptions);
+  });
+}
+
+type OwnHoldPlan = {
+  player: SimPlayer;
+  hold: number;
+  priority: number;
+  rightsValue: number;
+  scarcity: number;
+  retainScore: number;
+  protectedHold: boolean;
+};
+
+function roomThresholdForCapPath(assumptions: SimulatorAssumptions): number {
+  return Math.max(8_000_000, assumptions.cap * 0.05);
+}
+
+function ownHoldPlan(team: TeamState, player: SimPlayer, assumptions: SimulatorAssumptions): OwnHoldPlan {
+  const hold = capHoldForPlayer(player);
+  const priority = capPathPlayerPriority(team, player, assumptions, true);
+  const scarcity = positionalScarcityScore(team, player);
+  const rightsValue = rightsOptionValue(team, player, assumptions, hold, scarcity);
+  const retainScore = clamp(priority * 0.42 + rightsValue * 0.38 + scarcity * 0.2 + (player.status === "RFA" ? 0.08 : 0), 0, 1.25);
+  const protectedHold = player.status === "RFA"
+    ? retainScore >= 0.5 || scarcity >= 0.62 || player.marketValue >= 10_000_000
+    : retainScore >= 0.66 || player.marketValue >= assumptions.cap * 0.12 || ["MVP", "Superstar", "All-Star", "Starter"].includes(player.tier);
+  player.rightsValue = rightsValue;
+  player.holdRetainScore = retainScore;
+  player.scarcityScore = scarcity;
+  return { player, hold, priority, rightsValue, scarcity, retainScore, protectedHold };
+}
+
+function applyHoldPlanToPlayer(plan: OwnHoldPlan, retain: boolean, targetName?: string) {
+  const player = plan.player;
+  player.rightsValue = plan.rightsValue;
+  player.holdRetainScore = plan.retainScore;
+  player.scarcityScore = plan.scarcity;
+  if (retain) {
+    player.holdAction = "retained";
+    player.holdActionReason = player.status === "RFA"
+      ? `Retained RFA rights: option value ${formatNumber(plan.rightsValue, 2)}, scarcity ${formatNumber(plan.scarcity, 2)}, hold score ${formatNumber(plan.retainScore, 2)}.`
+      : `Hold retained: rights value ${formatNumber(plan.rightsValue, 2)} and retain score ${formatNumber(plan.retainScore, 2)}.`;
+    return;
+  }
+  player.holdAction = "renounced";
+  player.holdActionReason = `Renounced for selective cap-room path toward ${targetName ?? "outside market"}; hold score ${formatNumber(plan.retainScore, 2)} did not justify ${formatMoney(plan.hold)}.`;
+  player.rights = "None";
+  if (player.status === "RFA") player.status = "UFA";
+  player.capHold = 0;
+  player.capHoldType = "Renounced cap hold";
+  player.rightsSource = "renounced by simulator cap-room path";
+}
+
+function rightsOptionValue(team: TeamState, player: SimPlayer, assumptions: SimulatorAssumptions, hold: number, scarcity: number): number {
+  const holdEfficiency = hold > 0 ? clamp((player.marketValue / Math.max(hold, minimumSalary(player)) - 0.65) / 1.35, 0, 0.45) : 0;
+  const matchOption = player.status === "RFA" ? 0.24 : player.rights === "Bird" ? 0.14 : player.rights === "Early Bird" ? 0.08 : 0.03;
+  const ageTimeline = player.age <= 25 ? 0.14 : player.age <= 28 ? 0.09 : player.age <= 31 ? 0.04 : 0;
+  const marketWeight = clamp(player.marketValue / Math.max(assumptions.cap * 0.16, 1), 0, 1) * 0.12;
+  const teamTimeline = timelineFit(team, player) * 0.12;
+  return clamp(holdEfficiency + matchOption + ageTimeline + marketWeight + teamTimeline + scarcity * 0.22, 0, 1.15);
+}
+
+function positionalScarcityScore(team: TeamState, player: SimPlayer): number {
+  const primary = primaryPosition(player.position);
+  const signed = team.roster.filter((candidate) => candidate.status === "Signed" && candidate.id !== player.id);
+  const samePosition = signed.filter((candidate) => primaryPosition(candidate.position) === primary && credibleRosterPlayer(candidate)).length;
+  const topSkills = Object.entries(player.skills)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([skill]) => skill as SkillKey);
+  const skillNeed = topSkills.some((skill) => team.needs.includes(skill)) ? 0.18 : 0;
+  if (primary === "C") {
+    const rimCoverage = signed.filter((candidate) => (primaryPosition(candidate.position) === "C" || candidate.skills.RIMPRO >= 1.1) && credibleRosterPlayer(candidate)).length;
+    if (samePosition === 0) return clamp(0.82 + (player.skills.RIMPRO > 1.4 ? 0.16 : 0) + skillNeed, 0, 1);
+    if (rimCoverage === 0 && player.skills.RIMPRO > 1.4) return clamp(0.72 + skillNeed, 0, 1);
+    if (samePosition === 1 && player.score >= 65) return clamp(0.42 + skillNeed, 0, 0.82);
+    return clamp(0.12 + skillNeed, 0, 0.5);
+  }
+  if (samePosition === 0) return clamp(0.62 + skillNeed, 0, 0.92);
+  if (samePosition === 1 && player.score >= 68) return clamp(0.32 + skillNeed, 0, 0.7);
+  return clamp(0.08 + skillNeed, 0, 0.46);
+}
+
+function credibleRosterPlayer(player: SimPlayer): boolean {
+  return player.score >= 55 || player.marketValue >= 8_000_000 || player.salary >= 8_000_000 || player.expectedMarketMinutes >= 1200;
+}
+
+function primaryPosition(position: string): "G" | "F" | "C" | "U" {
+  const value = position.toUpperCase();
+  if (value.includes("C")) return "C";
+  if (value.includes("PG") || value.includes("SG") || value.includes("G")) return "G";
+  if (value.includes("SF") || value.includes("PF") || value.includes("F")) return "F";
+  return "U";
+}
+
+function capPathPlayerPriority(team: TeamState, player: SimPlayer, assumptions: SimulatorAssumptions, incumbent: boolean): number {
+  const need = needFitScore(team, player.position, player.skills);
+  const timeline = timelineFit(team, player);
+  const quality = clamp(player.score / 100, 0, 1.1);
+  const marketFit = clamp(player.marketValue / Math.max(assumptions.cap * 0.14, 1), 0, 1.2);
+  const taxDrag = taxPainScore(team, player.marketValue, assumptions);
+  return clamp(need * 0.24 + timeline * 0.2 + quality * 0.24 + marketFit * 0.12 + team.willingness * 0.08 + (incumbent ? 0.14 : 0) - taxDrag * 0.12, 0, 1.25);
+}
+
+function isContenderMode(mode: TeamMode): boolean {
+  return mode === "contender" || mode === "tax-sensitive contender";
+}
+
+function expectedMarketMinutesForPlayer(player: PlayerImpact, status: ContractStatus, marketValue: number): { minutes: number; source: string } {
+  const candidates: Array<[string, number | null | undefined]> = [
+    ["selected-season FA value", player.fa_value && marketValue > 0 ? player.projection_minutes_y1 : undefined],
+    ["expected FA role band", player.lineup_role_band_minutes],
+    ["expected FA lineup minutes", player.lineup_adjusted_minutes],
+    ["career projection", player.projection_minutes_y1],
+    ["current role estimate", player.raw_minutes],
+    ["listed minutes", player.Minutes]
+  ];
+  for (const [source, value] of candidates) {
+    const minutes = finitePositive(value);
+    if (minutes) return { minutes, source };
+  }
+  const isMarketPlayer = status === "UFA" || status === "RFA" || status === "Player Option" || status === "Team Option" || status === "Non-Guaranteed";
+  if (!isMarketPlayer) return { minutes: 0, source: "no market-minute adjustment" };
+  if (marketValue >= 20_000_000) return { minutes: 1800, source: "median starter FA role from market value" };
+  if (marketValue >= 10_000_000) return { minutes: 1450, source: "median rotation FA role from market value" };
+  if (marketValue >= 4_000_000) return { minutes: 850, source: "median bench FA role from market value" };
+  return { minutes: 420, source: "deep bench FA role from market value" };
+}
+
+function marketPlanningScore(player: PlayerImpact, status: ContractStatus, marketValue: number, expectedMinutes: number): number {
+  const currentScore = finiteNumber(player.score, 50);
+  const isMarketPlayer = status === "UFA" || status === "RFA" || status === "Player Option" || status === "Team Option" || status === "Non-Guaranteed";
+  if (!isMarketPlayer || currentScore > 20) return currentScore;
+  const projectedScore = marketScoreFromValue(marketValue);
+  const minuteRole = clamp(expectedMinutes / 2200, 0, 1);
+  const impactRole = clamp((finiteNumber(player.projection_y1, player.total, 0) + 2.4) / 5.2, 0, 1);
+  return Math.max(currentScore, Math.round((projectedScore * 0.72 + (42 + minuteRole * 28 + impactRole * 18) * 0.28) * 10) / 10);
+}
+
+function marketScoreFromValue(marketValue: number): number {
+  if (marketValue >= 30_000_000) return 86;
+  if (marketValue >= 20_000_000) return 78;
+  if (marketValue >= 12_000_000) return 68;
+  if (marketValue >= 6_000_000) return 56;
+  if (marketValue >= 3_000_000) return 44;
+  return 34;
+}
+
 function refreshTeamPayrolls(teams: Map<string, TeamState>, assumptions: SimulatorAssumptions) {
   teams.forEach((team) => refreshTeamPayroll(team, assumptions));
 }
 
 function refreshTeamPayroll(team: TeamState, assumptions: SimulatorAssumptions) {
-  team.activeSalary = sum(team.roster.map((player) => player.salary));
-  team.guaranteedSalary = sum(team.roster.map((player) => player.guaranteedSalary || player.salary));
+  team.activeSalary = sum(team.roster.map((player) => player.salary)) + team.activeSalaryAdjustment;
+  team.guaranteedSalary = sum(team.roster.map((player) => player.guaranteedSalary || player.salary)) + team.guaranteedSalaryAdjustment;
   team.payroll = team.activeSalary + team.deadCap;
   const rosterCharges = incompleteRosterCharge(team, assumptions);
   team.rosterCharges = rosterCharges;
   team.maximumCapSpace = assumptions.cap - team.payroll - rosterCharges;
   team.heldCapSpace = team.maximumCapSpace - team.capHolds;
-  const shouldRenounceForRoom = team.maximumCapSpace > assumptions.cap * 0.09 && team.heldCapSpace < team.maximumCapSpace - assumptions.cap * 0.03;
-  team.capSpace = shouldRenounceForRoom ? team.maximumCapSpace : team.heldCapSpace;
+  team.capSpace = team.capPath === "cap_room" ? Math.max(0, team.heldCapSpace) : team.heldCapSpace;
   team.renouncedCapSpace = team.maximumCapSpace;
+  team.capRoomWithHolds = team.heldCapSpace;
+  team.capRoomRenounced = team.maximumCapSpace;
   team.taxRoom = assumptions.tax - team.payroll;
   team.firstApronRoom = assumptions.firstApron - team.payroll;
   team.secondApronRoom = assumptions.secondApron - team.payroll;
@@ -1226,18 +1585,36 @@ function buildTeamMeta(teams: TeamProjection[], season: number): TeamProjection[
   return Array.from(byTeam.values()).sort((a, b) => a.team.localeCompare(b.team));
 }
 
-function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, truthData?: OffseasonTruthData): SimPlayer[] {
+function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, truthData?: OffseasonTruthData, capIndex?: CapTrackerIndex): SimPlayer[] {
   return rows.map((player) => {
     const override = overrides.players[playerKey(player)];
     const truth = playerTruth(player, truthData);
-    const status = override?.status ?? normalizeStatus(truth?.contract_status ?? player.contract_status);
+    const tracker = capTrackerCellForPlayer(player, capIndex);
+    const trackerStatus = contractStatusFromCapCell(tracker?.cell);
+    const status = override?.status ?? trackerStatus ?? normalizeStatus(truth?.contract_status ?? player.contract_status);
     const marketValue = override?.marketValue ?? finiteNumber(player.fa_value, player.value, player.contract, 2_500_000);
-    const guaranteedSalary = finiteNumber(truth?.guaranteed_salary, player.guaranteed_salary, status === "Signed" ? player.projection_effective_contract_y1 : undefined, status === "Signed" ? player.contract : undefined);
-    const salary = status === "Signed" ? finiteNumber(guaranteedSalary, player.contract, player.projection_effective_contract_y1, marketValue) : finiteNumber(player.contract, player.projection_effective_contract_y1, marketValue);
-    const currentRosterTeam = cleanTeam(override?.status === "Signed" ? override.incumbentTeam ?? truth?.current_roster_team ?? player.current_roster_team ?? player.team : truth?.current_roster_team ?? player.current_roster_team ?? player.team);
-    const rightsTeam = cleanTeam(override?.incumbentTeam ?? truth?.rights_team ?? player.rights_team ?? player.incumbent_team ?? player.team);
+    const marketMinutes = expectedMarketMinutesForPlayer(player, status, marketValue);
+    const planningScore = marketPlanningScore(player, status, marketValue, marketMinutes.minutes);
+    const planningTier = planningScore > finiteNumber(player.score, 50) && (player.tier === "DNQ" || finiteNumber(player.score, 50) < 20)
+      ? tierFromScore(planningScore)
+      : player.tier || "Bench";
+    const trackerAmount = tracker?.cell.amount && tracker.cell.kind !== "empty" ? tracker.cell.amount : undefined;
+    const guaranteedSalary = finiteNumber(
+      tracker?.cell.kind === "guaranteed" || tracker?.cell.kind === "partial_guarantee" ? trackerAmount : undefined,
+      truth?.guaranteed_salary,
+      player.guaranteed_salary,
+      status === "Signed" ? player.projection_effective_contract_y1 : undefined,
+      status === "Signed" ? player.contract : undefined
+    );
+    const salary = status === "Signed"
+      ? finiteNumber(guaranteedSalary, trackerAmount, player.contract, player.projection_effective_contract_y1, marketValue)
+      : finiteNumber(tracker?.cell.kind === "cap_hold" ? undefined : trackerAmount, player.contract, player.projection_effective_contract_y1, marketValue);
+    const trackerTeam = tracker?.row.team ? cleanTeam(tracker.row.team) : undefined;
+    const currentRosterTeam = cleanTeam(override?.status === "Signed" ? override.incumbentTeam ?? trackerTeam ?? truth?.current_roster_team ?? player.current_roster_team ?? player.team : status === "Signed" ? trackerTeam ?? truth?.current_roster_team ?? player.current_roster_team ?? player.team : truth?.current_roster_team ?? player.current_roster_team ?? player.team);
+    const rightsTeam = cleanTeam(override?.incumbentTeam ?? trackerTeam ?? truth?.rights_team ?? player.rights_team ?? player.incumbent_team ?? player.team);
     const rosterStatusSource = truth?.roster_status_source ?? player.roster_status_source ?? "impact row fallback";
     const rights = normalizeBirdRight(truth?.bird_rights ?? player.bird_rights ?? rightsForPlayer(player, status));
+    const trackerHold = tracker?.cell.kind === "cap_hold" ? tracker.cell.amount : undefined;
     return {
       id: playerKey(player),
       name: player.player_name,
@@ -1250,16 +1627,25 @@ function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, tr
       salary,
       marketValue,
       rights,
-      rightsSource: truth?.signed_using ?? player.roster_status_source ?? rosterStatusSource,
-      capHold: finiteNumber(truth?.cap_hold, player.cap_hold, 0),
-      capHoldType: truth?.cap_hold_type ?? player.cap_hold_type ?? (rights === "None" ? "No retained cap hold" : `${status} ${rights} cap hold`),
+      rightsSource: tracker ? `cap tracker ${capIndex?.capYear}` : truth?.signed_using ?? player.roster_status_source ?? rosterStatusSource,
+      capHold: finiteNumber(trackerHold, truth?.cap_hold, player.cap_hold, 0),
+      capHoldType: tracker?.cell.kind === "cap_hold" ? `Cap tracker ${tracker.cell.status || status} hold` : truth?.cap_hold_type ?? player.cap_hold_type ?? (rights === "None" ? "No retained cap hold" : `${status} ${rights} cap hold`),
       guaranteedSalary,
       deadCap: finiteNumber(truth?.dead_cap, player.dead_cap, 0),
+      capTrackerTeam: trackerTeam,
+      capTrackerKind: tracker?.cell.kind,
+      capTrackerStatus: tracker?.cell.status,
+      holdAction: "none",
+      rightsValue: 0,
+      holdRetainScore: 0,
+      scarcityScore: 0,
+      expectedMarketMinutes: marketMinutes.minutes,
+      marketMinutesSource: marketMinutes.source,
       waivedDate: truth?.waived_date ?? player.waived_date ?? null,
       rosterStatusSource,
       total: finiteNumber(player.total, 0),
-      score: finiteNumber(player.score, 50),
-      tier: player.tier || "Bench",
+      score: planningScore,
+      tier: planningTier,
       tradeValue: finiteNumber(player.trade_value, player.value, marketValue),
       upside: upsideScore(player),
       declineRisk: declineRisk(player),
@@ -1297,11 +1683,15 @@ function buildSimProspects(rows: DraftProspect[], overrides: SimulatorOverrides)
 }
 
 function teamSummary(team: TeamState): TeamSummary {
+  const rosterCount = team.roster.length + team.rosterCountAdjustment;
   return {
     team: team.team,
     name: team.name,
     mode: team.mode,
-    rosterCount: team.roster.length,
+    capYear: team.capYear,
+    capPath: team.capPath,
+    capPathReason: team.capPathReason,
+    rosterCount,
     rosterCore: team.roster
       .slice()
       .sort((a, b) => b.salary - a.salary || b.score - a.score)
@@ -1312,11 +1702,19 @@ function teamSummary(team: TeamState): TeamSummary {
     guaranteedSalary: team.guaranteedSalary,
     deadCap: team.deadCap,
     capHolds: team.capHolds,
+    initialCapHolds: team.initialCapHolds,
+    holdsRetained: team.holdsRetained,
+    holdsRenounced: team.holdsRenounced,
     rosterCharges: team.rosterCharges,
     heldCapSpace: team.heldCapSpace,
     capSpace: team.capSpace,
     renouncedCapSpace: team.renouncedCapSpace,
     maximumCapSpace: team.maximumCapSpace,
+    capRoomWithHolds: team.capRoomWithHolds,
+    capRoomRenounced: team.capRoomRenounced,
+    statusBand: team.statusBand,
+    statusBandWithHolds: team.statusBandWithHolds,
+    statusBandRenounced: team.statusBandRenounced,
     taxRoom: team.taxRoom,
     firstApronRoom: team.firstApronRoom,
     secondApronRoom: team.secondApronRoom,
@@ -1324,6 +1722,7 @@ function teamSummary(team: TeamState): TeamSummary {
     pickAssets: team.pickAssets,
     pickCount: team.pickCount,
     premiumPickCount: team.premiumPickCount,
+    toolLedger: [...team.toolLedger],
     majorMoves: team.explanations.slice(-5)
   };
 }
@@ -1331,7 +1730,9 @@ function teamSummary(team: TeamState): TeamSummary {
 function releaseCapHold(teams: Map<string, TeamState>, player: SimPlayer) {
   const incumbent = teams.get(player.rightsTeam);
   if (!incumbent) return;
-  incumbent.capHolds = Math.max(0, incumbent.capHolds - capHoldForPlayer(player));
+  const hold = capHoldForPlayer(player);
+  incumbent.capHolds = Math.max(0, incumbent.capHolds - hold);
+  incumbent.holdsRetained = Math.max(0, incumbent.holdsRetained - hold);
 }
 
 function capHoldForPlayer(player: SimPlayer): number {
@@ -1344,8 +1745,8 @@ function capHoldForPlayer(player: SimPlayer): number {
 }
 
 function incompleteRosterCharge(team: TeamState, assumptions: SimulatorAssumptions): number {
-  const openSpots = Math.max(0, 12 - team.roster.length);
-  return openSpots * assumptions.cap * 0.008;
+  const openSpots = Math.max(0, 12 - (team.roster.length + team.rosterCountAdjustment));
+  return openSpots * (team.minimumRosterCharge || assumptions.cap * 0.008);
 }
 
 function buildWarRoomPlans(run: SimulationRun, assumptions: SimulatorAssumptions): TeamWarRoomPlan[] {
@@ -1688,6 +2089,7 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 
 function OffseasonCommandBar({
   season,
+  capYear,
   draftYear,
   run,
   headline,
@@ -1704,6 +2106,7 @@ function OffseasonCommandBar({
   onPreset
 }: {
   season: number;
+  capYear: number;
   draftYear: number;
   run: SimulationRun;
   headline: ReturnType<typeof buildRunHeadline>;
@@ -1723,7 +2126,7 @@ function OffseasonCommandBar({
   return (
     <section className="offseason-command-panel war-room-command">
       <div className="offseason-command-copy">
-        <span>{`Run ${run.seed} / ${season} roster / ${draftYear} draft`}</span>
+        <span>{`Run ${run.seed} / ${season} roster-value season / ${capYear} cap / ${draftYear} draft`}</span>
         <h2>{focusTeam ? `${focusTeam.team} Front Office War Room` : "Leaguewide Offseason War Room"}</h2>
         <p>
           {focusTeam
@@ -1777,6 +2180,200 @@ function OffseasonCommandBar({
       </div>
     </section>
   );
+}
+
+function DashboardView({ run, selectedTeam, multiRun }: { run: SimulationRun; selectedTeam: string; multiRun: MultiRunSummary | null }) {
+  const scopedSignings = selectedTeam === "All" ? run.freeAgency : run.freeAgency.filter((item) => item.toTeam === selectedTeam || item.fromTeam === selectedTeam);
+  const topPlayerOutcomes = scopedSignings
+    .slice()
+    .sort((a, b) => Math.max(b.annualSalary, b.player.marketValue) - Math.max(a.annualSalary, a.player.marketValue))
+    .slice(0, 14);
+  const teams = selectedTeam === "All" ? run.teams : run.teams.filter((team) => team.team === selectedTeam);
+  const moveGroups = dashboardMoveGroups(run, selectedTeam);
+  return (
+    <section className="offseason-stack dashboard-stack">
+      <section className="offseason-panel dashboard-hero-panel">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>{`League Dashboard / ${run.season} Roster-Value Season`}</h2>
+            <p>{`${run.capYear} cap, ${run.draftYear} draft, ${run.freeAgency.length} signings, ${run.draft.length} picks, ${run.options.length} option calls. Trades are modeled but parked outside this view.`}</p>
+          </div>
+          <div className="dashboard-pill-row">
+            <span>{`${run.teams.filter((team) => team.capPath === "cap_room").length} cap-room teams`}</span>
+            <span>{`${run.teams.filter((team) => team.capPath === "retained_rights").length} retained-rights teams`}</span>
+            {multiRun && <span>{`${multiRun.runs} run distribution loaded`}</span>}
+          </div>
+        </div>
+        <div className="dashboard-grid">
+          <div className="dashboard-table-card dashboard-player-outcomes">
+            <h3>Top Player Outcomes</h3>
+            <div className="dashboard-table-wrap">
+              <table className="dashboard-table">
+                <thead><tr><th>Player</th><th>Final</th><th>Incumbent</th><th>AAV</th><th>Tool</th><th>Path</th><th>Reason</th><th>Runner-up</th></tr></thead>
+                <tbody>
+                  {topPlayerOutcomes.map((signing) => (
+                    <tr key={`${signing.player.id}-${signing.toTeam}`}>
+                      <td><strong>{signing.player.name}</strong><span>{`${signing.status} / ${formatNumber(signing.context.expectedMarketMinutes ?? signing.player.expectedMarketMinutes, 0)} min`}</span></td>
+                      <td>{signing.toTeam}</td>
+                      <td>{signing.fromTeam}</td>
+                      <td>{formatMoney(signing.annualSalary)}</td>
+                      <td>{signing.context.toolName}</td>
+                      <td>{capPathLabel(signing.context.capPath)}</td>
+                      <td>{shortSigningReason(signing)}</td>
+                      <td>{marketChaserLabel(signing)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <TeamToolLedgerPanel teams={teams} />
+        </div>
+      </section>
+      <DashboardDraftBoard selections={run.draft} selectedTeam={selectedTeam} />
+      <section className="offseason-panel dashboard-move-tape">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>Move Tape</h2>
+            <p>Grouped offseason ledger before trade cleanup.</p>
+          </div>
+        </div>
+        <div className="move-tape-grid">
+          {moveGroups.map((group) => (
+            <div key={group.title} className="move-tape-group">
+              <h3>{group.title}</h3>
+              {group.items.length === 0 && <p className="mini-empty">No moves</p>}
+              {group.items.slice(0, 12).map((item) => <p key={`${group.title}-${item}`}>{item}</p>)}
+              {group.items.length > 12 && <p>{`+${group.items.length - 12} more`}</p>}
+            </div>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function TeamToolLedgerPanel({ teams }: { teams: TeamSummary[] }) {
+  return (
+    <div className="dashboard-table-card dashboard-tool-ledger">
+      <h3>Cap And Tool Ledger</h3>
+      <div className="dashboard-table-wrap">
+        <table className="dashboard-table">
+          <thead><tr><th>Team</th><th>Path</th><th>Holds</th><th>Room</th><th>Tools Used</th><th>Apron</th></tr></thead>
+          <tbody>
+            {teams
+              .slice()
+              .sort((a, b) => a.capPath.localeCompare(b.capPath) || a.team.localeCompare(b.team))
+              .map((team) => (
+                <tr key={team.team}>
+                  <td><strong>{team.team}</strong><span>{team.statusBand ?? team.mode}</span></td>
+                  <td>{capPathLabel(team.capPath)}</td>
+                  <td>{`${formatMoney(team.holdsRetained)} kept / ${formatMoney(team.holdsRenounced)} cut`}</td>
+                  <td>{`${formatSignedMoney(team.heldCapSpace)} held / ${formatSignedMoney(team.renouncedCapSpace)} max`}</td>
+                  <td>{team.toolLedger.length ? team.toolLedger.slice(0, 2).map((row) => `${row.tool}: ${formatMoney(row.amount)}`).join("; ") : "None"}</td>
+                  <td>{capWarnings(team).join("; ")}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function DashboardDraftBoard({ selections, selectedTeam }: { selections: DraftSelection[]; selectedTeam: string }) {
+  const [query, setQuery] = useState("");
+  const [teamFilter, setTeamFilter] = useState(selectedTeam);
+  const teamOptions = ["All", ...Array.from(new Set(selections.map((selection) => selection.team))).sort()];
+  const activeTeam = selectedTeam !== "All" ? selectedTeam : teamFilter;
+  const normalizedQuery = query.trim().toLowerCase();
+  const rows = selections.filter((selection) =>
+    (activeTeam === "All" || selection.team === activeTeam) &&
+    (!normalizedQuery || selection.prospect.name.toLowerCase().includes(normalizedQuery) || selection.team.toLowerCase().includes(normalizedQuery) || selection.prospect.position.toLowerCase().includes(normalizedQuery))
+  );
+  return (
+    <section className="offseason-panel dashboard-draft-panel">
+      <div className="panel-heading compact-heading">
+        <div>
+          <h2>Final Draft Board</h2>
+          <p>All picks with model, consensus, and range markers.</p>
+        </div>
+        <div className="dashboard-filter-row">
+          <select value={activeTeam} disabled={selectedTeam !== "All"} onChange={(event) => setTeamFilter(event.target.value)}>
+            {teamOptions.map((team) => <option key={team} value={team}>{team}</option>)}
+          </select>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search draft" />
+        </div>
+      </div>
+      <div className="dashboard-table-wrap">
+        <table className="dashboard-table draft-dashboard-table">
+          <thead><tr><th>Pick</th><th>Team</th><th>Player</th><th>Pos</th><th>Tier</th><th>Consensus</th><th>Model</th><th>Marker</th></tr></thead>
+          <tbody>
+            {rows.map((selection) => (
+              <tr key={selection.pick}>
+                <td>{selection.pick}</td>
+                <td>{selection.team}</td>
+                <td><strong>{selection.prospect.name}</strong></td>
+                <td>{selection.prospect.position}</td>
+                <td>{selection.prospect.tier}</td>
+                <td>{formatNumber(selection.consensusRank, 0)}</td>
+                <td>{formatNumber(selection.modelRank, 0)}</td>
+                <td><span className={cls("draft-marker", selection.reachSteal.toLowerCase())}>{selection.reachSteal}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function dashboardMoveGroups(run: SimulationRun, selectedTeam: string): Array<{ title: string; items: string[] }> {
+  const teamFilter = (team: string) => selectedTeam === "All" || team === selectedTeam;
+  return [
+    {
+      title: "Options",
+      items: run.options
+        .filter((item) => teamFilter(item.team))
+        .map((item) => `${item.team}: ${item.decision} ${item.player.name} at ${formatMoney(item.player.salary)}`)
+    },
+    {
+      title: "Draft",
+      items: run.draft
+        .filter((item) => teamFilter(item.team))
+        .map((item) => `${item.pick}. ${item.team}: ${item.prospect.name} (${item.reachSteal})`)
+    },
+    {
+      title: "Own FA",
+      items: run.freeAgency
+        .filter((item) => item.toTeam === item.fromTeam && teamFilter(item.toTeam))
+        .map((item) => `${item.toTeam}: retained ${item.player.name} via ${item.context.toolName} (${formatMoney(item.annualSalary)})`)
+    },
+    {
+      title: "Outside FA",
+      items: run.freeAgency
+        .filter((item) => item.toTeam !== item.fromTeam && (teamFilter(item.toTeam) || teamFilter(item.fromTeam)))
+        .map((item) => `${item.toTeam}: signed ${item.player.name} from ${item.fromTeam} via ${item.context.toolName} (${formatMoney(item.annualSalary)})`)
+    }
+  ];
+}
+
+function capPathLabel(value: string | null | undefined): string {
+  return value === "cap_room" ? "Cap room" : "Retained rights";
+}
+
+function marketChaserLabel(signing: FreeAgentSigning): string {
+  if (signing.offerSheetTeam) return `${signing.offerSheetTeam} sheet ${formatMoney(signing.context.highestBid ?? signing.annualSalary)}`;
+  if (signing.context.runnerUpTeam) return `${signing.context.runnerUpTeam} ${signing.context.runnerUpBid ? formatMoney(signing.context.runnerUpBid) : ""}`;
+  return "-";
+}
+
+function shortSigningReason(signing: FreeAgentSigning): string {
+  if (signing.context.selectionMethod?.includes("restricted-rights leverage")) return "RFA fallback";
+  if (signing.matched) return "Matched sheet";
+  if (signing.context.holdAction === "retained" && signing.toTeam === signing.fromTeam) return "Rights retained";
+  if (signing.context.capPath === "cap_room") return "Cap-room target";
+  return signing.context.toolReason?.split(";")[0] ?? signing.marketResolution?.clearingRule ?? "Market offer";
 }
 
 function WarRoomView({
@@ -2225,6 +2822,11 @@ function SigningResultsTable({ signings, audit, selectedTeam }: { signings: Free
                   <Fact label="Total" value={formatMoney(signing.totalSalary)} />
                   <Fact label="Chosen offer" value={formatMoney(signing.context.originalAsk ?? signing.annualSalary)} />
                   <Fact label="Tool" value={signing.context.toolName || signing.tool} />
+                  <Fact label="Cap path" value={capPathLabel(signing.context.capPath)} />
+                  <Fact label="Hold" value={String(signing.context.holdAction ?? "-")} />
+                  <Fact label="Rights value" value={formatNumber(signing.context.rightsValue ?? signing.player.rightsValue, 2)} />
+                  <Fact label="Scarcity" value={formatNumber(signing.context.scarcityScore ?? signing.player.scarcityScore, 2)} />
+                  <Fact label="Role minutes" value={`${formatNumber(signing.context.expectedMarketMinutes ?? signing.player.expectedMarketMinutes, 0)} / ${signing.context.marketMinutesSource ?? signing.player.marketMinutesSource}`} />
                   <Fact label="Tool max" value={formatMoney(signing.context.toolAmount)} />
                   <Fact label="Legal max" value={formatMoney(signing.context.legalMax)} />
                 </div>
@@ -2234,6 +2836,7 @@ function SigningResultsTable({ signings, audit, selectedTeam }: { signings: Free
                   <CapChip label="Pre A1" value={signing.context.preFirstApronRoom} />
                   <div className="cap-chip ok"><span>Need</span><strong>{formatNumber(signing.context.needFit, 2)}</strong></div>
                 </div>
+                {signing.context.toolReason && <p className="transaction-note">{signing.context.toolReason}</p>}
               </div>
             </div>
             <div className="market-bid-board">
@@ -2788,6 +3391,12 @@ function prospectToPlayer(prospect: SimProspect, team: string, salary: number, p
     capHoldType: "Rookie scale signed",
     guaranteedSalary: salary,
     deadCap: 0,
+    holdAction: "none",
+    rightsValue: 0,
+    holdRetainScore: 0,
+    scarcityScore: 0,
+    expectedMarketMinutes: salary >= 8_000_000 ? 1200 : 600,
+    marketMinutesSource: "rookie role estimate",
     waivedDate: null,
     rosterStatusSource: "draft simulation",
     total: finiteNumber(prospect.original.TOTAL_pred, 0),
@@ -2915,8 +3524,11 @@ function prospectRisk(prospect: DraftProspect): number {
   return clamp(rankVol + ageRisk + (finiteNumber(prospect.similarity_score, 90) < 90 ? 0.12 : 0), 0, 1);
 }
 
-function capSettingsForSeason(season: number): SimulatorAssumptions {
-  const settings = CAP_SETTINGS_BY_SEASON[season] ?? CAP_SETTINGS_BY_SEASON[2027];
+function capSettingsForSeason(season: number, capTracker?: CapTrackerData): SimulatorAssumptions {
+  const trackerSeason = capTracker?.seasons.find((row) => row.year === season);
+  const settings = trackerSeason
+    ? { cap: trackerSeason.salary_cap, tax: trackerSeason.tax_level, firstApron: trackerSeason.first_apron, secondApron: trackerSeason.second_apron }
+    : CAP_SETTINGS_BY_SEASON[season] ?? CAP_SETTINGS_BY_SEASON[2027];
   return {
     seed: 2701,
     variance: 0.42,
@@ -2927,6 +3539,64 @@ function capSettingsForSeason(season: number): SimulatorAssumptions {
     runCount: 50,
     ...settings
   };
+}
+
+export function capYearForSeason(season: number, capTracker?: CapTrackerData): number {
+  const years = (capTracker?.seasons ?? []).map((row) => row.year).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!years.length) return season + 1;
+  if (years.includes(season)) return season;
+  if (years.includes(season + 1)) return season + 1;
+  return years[years.length - 1] ?? season + 1;
+}
+
+function buildCapTrackerIndex(capTracker: CapTrackerData | undefined, season: number, capYear: number): CapTrackerIndex {
+  const index: CapTrackerIndex = {
+    capYear,
+    season: capTracker?.seasons.find((row) => row.year === capYear),
+    teams: new Map((capTracker?.team_seasons ?? []).filter((row) => row.year === capYear).map((row) => [row.team, row])),
+    cellsByNbaId: new Map(),
+    cellsByNameTeam: new Map()
+  };
+  (capTracker?.contracts ?? []).forEach((row) => {
+    const cell = row.cells.find((item) => item.year === capYear);
+    if (!cell || cell.kind === "empty") return;
+    const matched = { row, cell };
+    if (row.nba_id) index.cellsByNbaId.set(`${season}-${row.nba_id}`, matched);
+    index.cellsByNameTeam.set(`${normalizeNameKey(row.player_name)}|${cleanTeam(row.team)}`, matched);
+  });
+  return index;
+}
+
+function capTrackerCellForPlayer(player: PlayerImpact, capIndex?: CapTrackerIndex): CapTrackerMatchedCell | undefined {
+  if (!capIndex) return undefined;
+  const byId = capIndex.cellsByNbaId.get(`${player.year}-${player.nba_id}`);
+  if (byId) return byId;
+  const teams = [
+    player.current_roster_team,
+    player.rights_team,
+    player.incumbent_team,
+    player.team
+  ].map(cleanTeam);
+  const name = normalizeNameKey(player.player_name);
+  for (const team of teams) {
+    const row = capIndex.cellsByNameTeam.get(`${name}|${team}`);
+    if (row) return row;
+  }
+  return undefined;
+}
+
+function contractStatusFromCapCell(cell: CapTrackerContractCell | undefined): ContractStatus | undefined {
+  if (!cell || cell.kind === "empty") return undefined;
+  if (cell.kind === "guaranteed" || cell.kind === "partial_guarantee" || cell.kind === "draft_pick") return "Signed";
+  if (cell.kind === "player_option") return "Player Option";
+  if (cell.kind === "team_option") return "Team Option";
+  if (cell.kind === "non_guaranteed") return "Non-Guaranteed";
+  if (cell.kind === "cap_hold") {
+    const status = String(cell.status ?? "").toUpperCase();
+    if (status.includes("RFA")) return "RFA";
+    return "UFA";
+  }
+  return undefined;
 }
 
 function inferDraftYear(prospects: DraftProspect[], season: number): number {
@@ -3018,6 +3688,15 @@ function cleanTeam(team: string | null | undefined): string {
   return value || "FA";
 }
 
+function normalizeNameKey(value: string | null | undefined): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function readStoredString(key: string, fallback: string): string {
   try {
     return window.localStorage.getItem(key) || fallback;
@@ -3027,12 +3706,12 @@ function readStoredString(key: string, fallback: string): string {
 }
 
 function readStoredOffseasonTab(): OffseasonTab {
-  const value = readStoredString(OFFSEASON_TAB_STORAGE_KEY, "warRoom");
-  return isOffseasonTab(value) ? value : "warRoom";
+  const value = readStoredString(OFFSEASON_TAB_STORAGE_KEY, "dashboard");
+  return isOffseasonTab(value) ? value : "dashboard";
 }
 
 function isOffseasonTab(value: string): value is OffseasonTab {
-  return ["warRoom", "league", "draft", "options", "freeAgency", "trades", "teams", "markets", "overrides"].includes(value);
+  return ["dashboard", "warRoom", "league", "draft", "options", "freeAgency", "trades", "teams", "markets", "overrides"].includes(value);
 }
 
 function parseNeeds(value: string): SkillKey[] {

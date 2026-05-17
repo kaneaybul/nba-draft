@@ -1567,6 +1567,32 @@ expected_free_agent_role_rows <- function(df) {
   out
 }
 
+apply_expected_free_agent_minute_adjustment <- function(rows) {
+  free_agents <- rows[rows$team == "FA" & !is.na(rows$team), , drop = FALSE]
+  fa_roles <- expected_free_agent_role_rows(free_agents)
+  if (is.null(fa_roles) || !nrow(fa_roles)) return(rows)
+  for (i in seq_len(nrow(fa_roles))) {
+    idx <- fa_roles$.lineup_row_id[[i]]
+    original_minutes <- suppressWarnings(as.numeric(rows$Minutes[[idx]]))
+    if (!is.finite(original_minutes)) original_minutes <- 0
+    role_target <- fa_roles$role_band_minutes[[i]]
+    games <- suppressWarnings(as.numeric(rows$games[[idx]]))
+    adjusted <- max(original_minutes, 0.4 * original_minutes + 0.6 * role_target, na.rm = TRUE)
+    adjusted <- clamp(adjusted, 0, 82 * 36)
+    if (!is.finite(games) || games <= 0) games <- ifelse(adjusted > 0, min(82, adjusted / 36), 0)
+    if (adjusted > games * 36) {
+      games <- min(82, adjusted / 36)
+    }
+    rows$Minutes[[idx]] <- round(adjusted, 0)
+    rows$games[[idx]] <- round(games, 1)
+    rows$p_mpg[[idx]] <- round(ifelse(games > 0, rows$Minutes[[idx]] / games, rows$p_mpg[[idx]]), 1)
+    rows$lineup_role[[idx]] <- paste("Expected", fa_roles$role_label[[i]])
+    rows$lineup_role_order[[idx]] <- fa_roles$role_order[[i]]
+    rows$lineup_role_band_minutes[[idx]] <- fa_roles$role_band_minutes[[i]]
+  }
+  rows
+}
+
 apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
   if (!nrow(rows)) return(rows)
   rows$lineup_original_minutes <- suppressWarnings(as.numeric(rows$Minutes))
@@ -1578,6 +1604,10 @@ apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
 
   eligible <- rows[rows$team != "FA" & !is.na(rows$team), , drop = FALSE]
   if (!nrow(eligible)) {
+    if (isTRUE(adjust_free_agents)) {
+      rows <- apply_expected_free_agent_minute_adjustment(rows)
+      rows$lineup_adjusted_minutes <- suppressWarnings(as.numeric(rows$Minutes))
+    }
     rows$.lineup_row_id <- NULL
     return(rows)
   }
@@ -1616,29 +1646,7 @@ apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
   }
 
   if (isTRUE(adjust_free_agents)) {
-    free_agents <- rows[rows$team == "FA" & !is.na(rows$team), , drop = FALSE]
-    fa_roles <- expected_free_agent_role_rows(free_agents)
-    if (!is.null(fa_roles) && nrow(fa_roles)) {
-      for (i in seq_len(nrow(fa_roles))) {
-        idx <- fa_roles$.lineup_row_id[[i]]
-        original_minutes <- suppressWarnings(as.numeric(rows$Minutes[[idx]]))
-        if (!is.finite(original_minutes)) original_minutes <- 0
-        role_target <- fa_roles$role_band_minutes[[i]]
-        games <- suppressWarnings(as.numeric(rows$games[[idx]]))
-        adjusted <- max(original_minutes, 0.4 * original_minutes + 0.6 * role_target, na.rm = TRUE)
-        adjusted <- clamp(adjusted, 0, 82 * 36)
-        if (!is.finite(games) || games <= 0) games <- ifelse(adjusted > 0, min(82, adjusted / 36), 0)
-        if (adjusted > games * 36) {
-          games <- min(82, adjusted / 36)
-        }
-        rows$Minutes[[idx]] <- round(adjusted, 0)
-        rows$games[[idx]] <- round(games, 1)
-        rows$p_mpg[[idx]] <- round(ifelse(games > 0, rows$Minutes[[idx]] / games, rows$p_mpg[[idx]]), 1)
-        rows$lineup_role[[idx]] <- paste("Expected", fa_roles$role_label[[i]])
-        rows$lineup_role_order[[idx]] <- fa_roles$role_order[[i]]
-        rows$lineup_role_band_minutes[[idx]] <- fa_roles$role_band_minutes[[i]]
-      }
-    }
+    rows <- apply_expected_free_agent_minute_adjustment(rows)
   }
 
   for (team in sort(unique(rows$team[rows$team != "FA" & !is.na(rows$team)]))) {

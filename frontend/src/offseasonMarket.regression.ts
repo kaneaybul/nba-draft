@@ -1,4 +1,5 @@
 import { choosePlayerOffer, resolveAcceptedOffer, simulateFreeAgencyMarket, type LegacyAuditRow, type TeamBidPlan } from "./offseasonMarket";
+import { capYearForSeason } from "./OffseasonSimulator";
 import type { MarketBid, MarketLedgerRow, MarketResolution, MarketToolKind } from "./types";
 
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
@@ -37,6 +38,12 @@ export function runOffseasonMarketRegressionTests(): string[] {
     iterativeFallbacksTriggerAfterMiss(),
     spendingToolsCannotBeSpentTwice(),
     birdRightsCanExceedCapRoom(),
+    birdRightsBeatCapRoomForOwnPlayer(),
+    capRoomRequiresCapPath(),
+    roomExceptionRequiresCapPath(),
+    selectedSeasonCapYearWins(),
+    rfaFallbackSignsWhenNoOutsideBid(),
+    rfaFallbackUsesExpectedMarketMinutes(),
     rfaMatchUsesExactOutsideTerms(),
     rfaDeclineUsesExactOutsideTerms(),
     secondApronBlocksMle(),
@@ -138,6 +145,90 @@ function birdRightsCanExceedCapRoom(): string {
   return "Bird rights can exceed cap room";
 }
 
+function birdRightsBeatCapRoomForOwnPlayer(): string {
+  const own = player("p14b", "Own Bird Guard", "AAA", "UFA", 76, 18_000_000, "AAA", "Bird", { holdAction: "retained" });
+  const capTeam = team("AAA", 112_000_000, ["SHOOT"], 0.9, [], { capPath: "cap_room" });
+  const result = simulateFreeAgencyMarket([own], mapTeams([capTeam]), assumptions, fixedRng);
+  expect(result.signings[0]?.tool === "bird", `own Bird FA should use Bird rights before cap room; got ${result.signings[0]?.tool}`);
+  expect(result.signings[0]?.context.capPath === "cap_room", "signing should still report the team's cap-room path");
+  return "Bird rights beat cap room for eligible own players";
+}
+
+function capRoomRequiresCapPath(): string {
+  const target = player("p14c", "Outside Guard", "FA", "UFA", 72, 18_000_000);
+  const retainedTeam = team("AAA", 112_000_000, ["SHOOT"], 0.9, [], { capPath: "retained_rights" });
+  const retainedResult = simulateFreeAgencyMarket([target], mapTeams([retainedTeam]), assumptions, fixedRng);
+  expect(retainedResult.signings.length === 0, "retained-rights team should not use cap room just because it has room");
+
+  const roomTeam = team("BBB", 112_000_000, ["SHOOT"], 0.9, [], { capPath: "cap_room" });
+  const capResult = simulateFreeAgencyMarket([player("p14d", "Outside Wing", "FA", "UFA", 72, 18_000_000)], mapTeams([roomTeam]), assumptions, fixedRng);
+  expect(capResult.signings[0]?.tool === "cap", "cap-room path should be allowed to use cap space");
+  return "cap room is available only on cap-room path";
+}
+
+function roomExceptionRequiresCapPath(): string {
+  const retainedTeam = team("AAA", 156_000_000, ["DPM"], 0.9, [{ name: "Room", amount: 7_000_000, used: 0, kind: "room" }], { capPath: "retained_rights" });
+  const retainedResult = simulateFreeAgencyMarket([player("p14e", "Room Target", "FA", "UFA", 58, 6_000_000)], mapTeams([retainedTeam]), assumptions, fixedRng);
+  expect(retainedResult.signings.length === 0, "retained-rights path should not use room exception");
+
+  const roomTeam = team("BBB", 156_000_000, ["DPM"], 0.9, [{ name: "Room", amount: 7_000_000, used: 0, kind: "room" }], { capPath: "cap_room" });
+  const roomResult = simulateFreeAgencyMarket([player("p14f", "Room Target Two", "FA", "UFA", 58, 6_000_000)], mapTeams([roomTeam]), assumptions, fixedRng);
+  expect(roomResult.signings[0]?.tool === "room", "room exception should be available after cap-room path");
+  return "room exception requires cap-room path";
+}
+
+function selectedSeasonCapYearWins(): string {
+  const capTracker = {
+    seasons: [{ year: 2027 }, { year: 2028 }],
+    team_seasons: [],
+    contracts: []
+  };
+  expect(capYearForSeason(2027, capTracker as never) === 2027, "selected 2027 offseason should use 2027 cap tracker, not 2028");
+  expect(capYearForSeason(2026, capTracker as never) === 2027, "missing selected cap year can still fall forward when needed");
+  return "selected offseason season wins cap tracker resolution";
+}
+
+function rfaFallbackSignsWhenNoOutsideBid(): string {
+  const rfa = player("p14g", "Leverage RFA Center", "AAA", "RFA", 74, 16_000_000, "AAA", "Bird", {
+    age: 24,
+    position: "C",
+    holdAction: "retained",
+    upside: 0.82,
+    skills: { ...skills, RIMPRO: 2.2, DREB: 1.7 }
+  });
+  rfa.rightsValue = 0.8;
+  rfa.holdRetainScore = 0.86;
+  rfa.scarcityScore = 0.92;
+  rfa.expectedMarketMinutes = 1700;
+  rfa.marketMinutesSource = "regression median role";
+  const incumbent = team("AAA", 148_000_000, ["RIMPRO"], 0.7, undefined, { capPath: "retained_rights", mode: "rebuilding" });
+  const result = simulateFreeAgencyMarket([rfa], mapTeams([incumbent]), assumptions, fixedRng);
+  const signing = result.signings[0];
+  expect(signing?.toTeam === "AAA", "incumbent should retain useful RFA when no outside offer sheet arrives");
+  expect(signing?.context.selectionMethod?.includes("restricted-rights leverage") === true, "retention should be marked as proactive RFA fallback");
+  expect(signing?.annualSalary < rfa.marketValue, "fallback should use some RFA leverage below full market");
+  return "RFA fallback signs retained-rights incumbent when no outside bid arrives";
+}
+
+function rfaFallbackUsesExpectedMarketMinutes(): string {
+  const rfa = player("p14h", "Minute Patched RFA", "AAA", "RFA", 8, 12_000_000, "AAA", "Bird", {
+    age: 23,
+    position: "C",
+    holdAction: "retained",
+    skills: { ...skills, RIMPRO: 2.0 }
+  });
+  rfa.rightsValue = 0.72;
+  rfa.holdRetainScore = 0.8;
+  rfa.scarcityScore = 0.88;
+  rfa.expectedMarketMinutes = 1500;
+  rfa.marketMinutesSource = "median-team role fallback";
+  const result = simulateFreeAgencyMarket([rfa], mapTeams([team("AAA", 146_000_000, ["RIMPRO"], 0.75, undefined, { capPath: "retained_rights", mode: "rebuilding" })]), assumptions, fixedRng);
+  const signing = result.signings[0];
+  expect(signing?.context.expectedMarketMinutes === 1500, "market context should carry expected FA minutes");
+  expect(signing?.context.marketMinutesSource === "median-team role fallback", "market context should explain minute source");
+  return "RFA fallback carries expected market minutes context";
+}
+
 function rfaMatchUsesExactOutsideTerms(): string {
   const rfa = player("p15", "Matched RFA", "AAA", "RFA", 78, 18_000_000, "AAA", "Bird", { age: 24, upside: 0.85, declineRisk: 0.05 });
   const outsideTeam = team("BBB", 118_000_000, ["SHOOT"], 0.95);
@@ -226,11 +317,16 @@ function offerPlan(teamRow: TestTeam, target: TestPlayer, salary: number, years:
     },
     capSnapshot: {
       capSpace: 40_000_000,
+      heldCapSpace: 0,
+      renouncedCapSpace: 40_000_000,
       taxRoom: 50_000_000,
       firstApronRoom: 60_000_000,
       secondApronRoom: 70_000_000,
       toolAmount: salary
     },
+    capPath: teamRow.capPath,
+    toolReason: "regression tool",
+    holdAction: target.holdAction,
     limiter: "regression",
     reason: "regression offer"
   };
@@ -259,7 +355,8 @@ function offerPlan(teamRow: TestTeam, target: TestPlayer, salary: number, years:
     taxPain: 0,
     redundancy: 0,
     affordability: 1,
-    alternatives: 0
+    alternatives: 0,
+    toolReason: "regression tool"
   };
 }
 
@@ -291,6 +388,13 @@ function player(
     rightsSource: "regression",
     capHold: rights === "None" ? 0 : marketValue,
     capHoldType: rights === "None" ? "No retained cap hold" : `${rights} hold`,
+    holdAction: overrides.holdAction ?? (rights === "None" ? "none" : "retained"),
+    holdActionReason: "regression",
+    rightsValue: overrides.rightsValue ?? 0,
+    holdRetainScore: overrides.holdRetainScore ?? 0,
+    scarcityScore: overrides.scarcityScore ?? 0,
+    expectedMarketMinutes: overrides.expectedMarketMinutes ?? 1200,
+    marketMinutesSource: overrides.marketMinutesSource ?? "regression",
     guaranteedSalary: 0,
     deadCap: 0,
     total: 0,
@@ -312,6 +416,12 @@ function basePlayerOverrides() {
     upside: 0.6,
     declineRisk: 0.1,
     replaceability: 0.35,
+    holdAction: "none" as "retained" | "renounced" | "none",
+    rightsValue: 0,
+    holdRetainScore: 0,
+    scarcityScore: 0,
+    expectedMarketMinutes: 1200,
+    marketMinutesSource: "regression",
     skills: { ...skills, SHOOT: 1.5, PASS: 1.2, RIMPRO: 1.1 }
   };
 }
@@ -322,13 +432,15 @@ function team(
   needs: SkillKey[],
   willingness: number,
   exceptions?: Array<{ name: string; amount: number; used: number; kind: ToolKind }>,
-  overrides: { mode?: "rebuilding" | "rising" | "playoff hopeful" | "contender" | "tax-sensitive contender"; projectedWins?: number } = {}
+  overrides: { mode?: "rebuilding" | "rising" | "playoff hopeful" | "contender" | "tax-sensitive contender"; projectedWins?: number; capPath?: "retained_rights" | "cap_room" } = {}
 ) {
   const salarySlot = activeSalary > 0 ? [player(`${teamCode}-salary-slot`, `${teamCode} Salary Slot`, teamCode, "Signed", 45, activeSalary)] : [];
   return {
     team: teamCode,
     name: teamCode,
     mode: overrides.mode ?? "playoff hopeful",
+    capPath: overrides.capPath ?? (activeSalary < assumptions.cap - 8_000_000 ? "cap_room" : "retained_rights"),
+    capPathReason: "regression",
     projectedWins: overrides.projectedWins ?? 42,
     projectedRank: 15,
     roster: salarySlot as TestPlayer[],
@@ -355,6 +467,7 @@ function team(
       { name: "Room", amount: 7_000_000, used: 0, kind: "room" as const },
       { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" as const }
     ],
+    toolLedger: [],
     explanations: []
   };
 }

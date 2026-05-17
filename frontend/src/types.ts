@@ -794,11 +794,22 @@ export type MarketBid = {
   components: MarketComponentBreakdown;
   capSnapshot: {
     capSpace: number;
+    heldCapSpace?: number;
+    renouncedCapSpace?: number;
     taxRoom: number;
     firstApronRoom: number;
     secondApronRoom: number;
     toolAmount: number;
+    toolRemaining?: number;
   };
+  capPath?: "retained_rights" | "cap_room" | string;
+  toolReason?: string;
+  holdAction?: "retained" | "renounced" | "none" | string;
+  rightsValue?: number;
+  holdRetainScore?: number;
+  scarcityScore?: number;
+  expectedMarketMinutes?: number;
+  marketMinutesSource?: string;
   limiter: string;
   reason: string;
 };
@@ -840,6 +851,14 @@ export type MarketLedgerRow = {
   needFit?: number;
   rightsSource?: string;
   capHoldType?: string;
+  capPath?: "retained_rights" | "cap_room" | string;
+  toolReason?: string;
+  holdAction?: "retained" | "renounced" | "none" | string;
+  rightsValue?: number;
+  holdRetainScore?: number;
+  scarcityScore?: number;
+  expectedMarketMinutes?: number;
+  marketMinutesSource?: string;
 };
 
 export type AppData = {
