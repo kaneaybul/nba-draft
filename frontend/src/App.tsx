@@ -1,4 +1,4 @@
-import { type CSSProperties, type ChangeEvent, lazy, type MouseEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
 import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
@@ -76,6 +76,39 @@ type FilterRule = {
   value: string;
   valueTo?: string;
 };
+
+const viewLabels: Record<View, string> = {
+  impact: "Player Impact",
+  teams: "Team Projections",
+  startingLineups: "Starting Lineups",
+  trade: "Trade Sandbox",
+  offseason: "Offseason Sim",
+  capTracker: "Cap Tracker",
+  draft: "Draft Board",
+  draftElo: "Draft Elo",
+  lineups: "Lineup Synergy",
+  tracker: "Draft Tracker"
+};
+
+class WorkspaceErrorBoundary extends Component<
+  { children: ReactNode; viewLabel: string; onReset: () => void },
+  { message: string | null }
+> {
+  state: { message: string | null } = { message: null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { message: error instanceof Error ? error.message : String(error) };
+  }
+
+  componentDidCatch(error: unknown, info: ErrorInfo) {
+    console.error("Workspace render failed", error, info.componentStack);
+  }
+
+  render() {
+    if (!this.state.message) return this.props.children;
+    return <WorkspaceErrorPanel title={`${this.props.viewLabel} did not load`} detail={this.state.message} onReset={this.props.onReset} />;
+  }
+}
 type LineupSide = "a" | "b";
 type LineupSlot = PlayerImpact | null;
 type LineupSkill = {
@@ -436,9 +469,26 @@ function latestPlayerSeason(players: PlayerImpact[]): number | null {
   return years.length > 0 ? Math.max(...years) : null;
 }
 
+function WorkspaceErrorPanel({ title, detail, onReset }: { title: string; detail: string; onReset: () => void }) {
+  return (
+    <main className="workspace workspace-error-shell">
+      <section className="table-panel workspace-error-panel">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>{title}</h2>
+            <p>{detail}</p>
+          </div>
+          <button className="hdr-btn primary" onClick={onReset}>Back to Player Impact</button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function App() {
   const [data, setData] = useState<AppData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewError, setViewError] = useState<string | null>(null);
   const [view, setView] = useState<View>("impact");
   const [season, setSeason] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -458,15 +508,17 @@ function App() {
   useEffect(() => {
     if (!data || season === null) return;
     let active = true;
+    setViewError(null);
     setLoadingViewData(true);
     loadDataForView(data, view, season)
       .then((loaded) => {
         if (!active) return;
         if (loaded !== data) setData(loaded);
         setError(null);
+        setViewError(null);
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : String(err));
+        if (active) setViewError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => {
         if (active) setLoadingViewData(false);
@@ -582,18 +634,7 @@ function App() {
       </header>
 
       <nav className="modebar" aria-label="Analysis modes">
-        {[
-          ["impact", "Player Impact"],
-          ["teams", "Team Projections"],
-          ["startingLineups", "Starting Lineups"],
-          ["trade", "Trade Sandbox"],
-          ["offseason", "Offseason Sim"],
-          ["capTracker", "Cap Tracker"],
-          ["draft", "Draft Board"],
-          ["draftElo", "Draft Elo"],
-          ["lineups", "Lineup Synergy"],
-          ["tracker", "Draft Tracker"]
-        ].map(([key, label]) => (
+        {(Object.entries(viewLabels) as [View, string][]).map(([key, label]) => (
           <button key={key} className={cls("modebar-btn", view === key && "active")} onClick={() => setView(key as View)}>
             {label}
             {key === "impact" && <span className="nav-pill">{data.players.filter((player) => player.year === season).length}</span>}
@@ -601,18 +642,24 @@ function App() {
         ))}
       </nav>
 
-      <Suspense fallback={<main className="loading"><p>Loading workspace</p></main>}>
-        {view === "impact" && <ImpactWorkspace data={data} season={season} />}
-        {view === "teams" && <TeamWorkspace data={data} season={season} />}
-        {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
-        {view === "trade" && <TradeWorkspace data={data} season={season} />}
-        {view === "offseason" && <OffseasonSimulatorWorkspace data={data} season={season} />}
-        {view === "capTracker" && <CapTrackerWorkspace data={data} />}
-        {view === "draft" && <DraftWorkspace data={data} />}
-        {view === "draftElo" && <DraftEloWorkspace data={data} />}
-        {view === "lineups" && <LineupWorkspace data={data} season={season} />}
-        {view === "tracker" && <TrackerWorkspace data={data} />}
-      </Suspense>
+      <WorkspaceErrorBoundary key={view} viewLabel={viewLabels[view]} onReset={() => setView("impact")}>
+        {viewError ? (
+          <WorkspaceErrorPanel title={`${viewLabels[view]} data did not load`} detail={viewError} onReset={() => setView("impact")} />
+        ) : (
+          <Suspense fallback={<main className="loading"><p>Loading workspace</p></main>}>
+            {view === "impact" && <ImpactWorkspace data={data} season={season} />}
+            {view === "teams" && <TeamWorkspace data={data} season={season} />}
+            {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
+            {view === "trade" && <TradeWorkspace data={data} season={season} />}
+            {view === "offseason" && <OffseasonSimulatorWorkspace data={data} season={season} />}
+            {view === "capTracker" && <CapTrackerWorkspace data={data} />}
+            {view === "draft" && <DraftWorkspace data={data} />}
+            {view === "draftElo" && <DraftEloWorkspace data={data} />}
+            {view === "lineups" && <LineupWorkspace data={data} season={season} />}
+            {view === "tracker" && <TrackerWorkspace data={data} />}
+          </Suspense>
+        )}
+      </WorkspaceErrorBoundary>
     </div>
   );
 }
@@ -631,6 +678,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [filterOperator, setFilterOperator] = useSessionState<FilterOperator>("impact:filterOperator", "gte");
   const [filterValue, setFilterValue] = useSessionState("impact:filterValue", "");
   const [filterValueTo, setFilterValueTo] = useSessionState("impact:filterValueTo", "");
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [detailPlayer, setDetailPlayer] = useState<PlayerImpact | null>(null);
   const [detailPosition, setDetailPosition] = useState({ left: 28, top: 138 });
 
@@ -698,6 +746,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     setPosition("All");
     setTier("All");
     setFilterRules([]);
+    setFilterDrawerOpen(false);
   };
   const showDetail = (player: PlayerImpact, event: MouseEvent<HTMLButtonElement>) => {
     const width = Math.min(620, window.innerWidth - 32);
@@ -723,43 +772,11 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     <main className="workspace impact-grid">
       <div className="impact-sticky-header">
         <section className="control-strip board-controls">
-          <div className="quick-filters board-control-row">
+          <div className="quick-filters board-control-row mobile-collapsible-filters">
             <div className="search">
               <span>Find</span>
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Player name" />
             </div>
-            <label>
-              Team
-              <select value={team} onChange={(event) => setTeam(event.target.value)}>
-                {teams.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              FA Status
-              <select value={faStatus} onChange={(event) => setFaStatus(event.target.value as FaStatusFilter)}>
-                {faStatuses.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Position
-              <select value={position} onChange={(event) => setPosition(event.target.value)}>
-                {positions.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Tier
-              <select value={tier} onChange={(event) => setTier(event.target.value)}>
-                {tiers.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
             <div className="board-count" aria-live="polite">
               <span>Players</span>
               <strong>{filtered.length.toLocaleString()}</strong>
@@ -767,59 +784,107 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
             <button className="clear-filters" onClick={clearAllFilters} disabled={activeFilterCount === 0}>
               Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
             </button>
-          </div>
-          <details className="advanced-filter-drawer board-control-row">
-            <summary>Advanced filter</summary>
-            <div className="rule-builder" aria-label="Add filter rule">
-              <label>
-                Filter
-                <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
-                  {filterFields.map((field) => (
-                    <option key={field.key} value={field.key}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Match
-                <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
-                  {availableOperators.map((operator) => (
-                    <option key={operator.value} value={operator.value}>
-                      {operator.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="rule-value">
-                Value
-                <input
-                  value={filterValue}
-                  onChange={(event) => setFilterValue(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") addFilterRule();
-                  }}
-                  placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
-                />
-              </label>
-              {filterOperator === "between" && (
-                <label className="rule-value">
-                  To
-                  <input
-                    value={filterValueTo}
-                    onChange={(event) => setFilterValueTo(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") addFilterRule();
-                    }}
-                    placeholder="100"
-                  />
-                </label>
-              )}
-              <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-                Add
+            <div className={cls("mobile-filter-drawer", filterDrawerOpen && "open")}>
+              <button
+                type="button"
+                className="mobile-filter-trigger"
+                aria-controls="impact-mobile-filter-body"
+                aria-expanded={filterDrawerOpen}
+                onClick={() => setFilterDrawerOpen((open) => !open)}
+              >
+                <span>Filters</span>
+                {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
               </button>
+              <div id="impact-mobile-filter-body" className="mobile-filter-body">
+                <div className="mobile-core-filters">
+                  <label>
+                    Team
+                    <select value={team} onChange={(event) => setTeam(event.target.value)}>
+                      {teams.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    FA Status
+                    <select value={faStatus} onChange={(event) => setFaStatus(event.target.value as FaStatusFilter)}>
+                      {faStatuses.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Position
+                    <select value={position} onChange={(event) => setPosition(event.target.value)}>
+                      {positions.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Tier
+                    <select value={tier} onChange={(event) => setTier(event.target.value)}>
+                      {tiers.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <details className="advanced-filter-drawer board-control-row">
+                  <summary>Advanced filter</summary>
+                  <div className="rule-builder" aria-label="Add filter rule">
+                    <label>
+                      Filter
+                      <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as FilterKey)}>
+                        {filterFields.map((field) => (
+                          <option key={field.key} value={field.key}>
+                            {field.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Match
+                      <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                        {availableOperators.map((operator) => (
+                          <option key={operator.value} value={operator.value}>
+                            {operator.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="rule-value">
+                      Value
+                      <input
+                        value={filterValue}
+                        onChange={(event) => setFilterValue(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") addFilterRule();
+                        }}
+                        placeholder={selectedFilterField.type === "number" ? "80, 1.5, 20m" : "contains"}
+                      />
+                    </label>
+                    {filterOperator === "between" && (
+                      <label className="rule-value">
+                        To
+                        <input
+                          value={filterValueTo}
+                          onChange={(event) => setFilterValueTo(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") addFilterRule();
+                          }}
+                          placeholder="100"
+                        />
+                      </label>
+                    )}
+                    <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                      Add
+                    </button>
+                  </div>
+                </details>
+              </div>
             </div>
-          </details>
+          </div>
           {filterRules.length > 0 && (
             <div className="filter-chips" aria-label="Active filter rules">
               {filterRules.map((rule) => (
@@ -2134,6 +2199,7 @@ function DraftWorkspace({ data }: { data: AppData }) {
   const [filterOperator, setFilterOperator] = useSessionState<FilterOperator>("draft:filterOperator", "gte");
   const [filterValue, setFilterValue] = useSessionState("draft:filterValue", "");
   const [filterValueTo, setFilterValueTo] = useSessionState("draft:filterValueTo", "");
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   const yearProspects = useMemo(
     () => year === "All" ? data.prospects : data.prospects.filter((prospect) => prospect.draft_year === year),
@@ -2207,6 +2273,7 @@ function DraftWorkspace({ data }: { data: AppData }) {
     setTier("All");
     setPool("All");
     setFilterRules([]);
+    setFilterDrawerOpen(false);
   };
 
   return (
@@ -2214,47 +2281,11 @@ function DraftWorkspace({ data }: { data: AppData }) {
       <section className="draft-board-main">
         <div className="impact-sticky-header">
           <section className="control-strip board-controls draft-controls">
-            <div className="quick-filters board-control-row">
+            <div className="quick-filters board-control-row mobile-collapsible-filters">
               <div className="search">
                 <span>Find</span>
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Prospect name" />
               </div>
-              {years.length > 0 && <label>
-                Class
-                <select
-                  value={String(year)}
-                  onChange={(event) => setYear(event.target.value === "All" ? "All" : Number(event.target.value))}
-                >
-                  <option value="All">All</option>
-                  {years.map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
-              </label>}
-              <label>
-                Position
-                <select value={position} onChange={(event) => setPosition(event.target.value)}>
-                  {positions.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Tier
-                <select value={tier} onChange={(event) => setTier(event.target.value)}>
-                  {tiers.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Pool
-                <select value={pool} onChange={(event) => setPool(event.target.value)}>
-                  {pools.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
               <div className="board-count" aria-live="polite">
                 <span>Prospects</span>
                 <strong>{summary.count.toLocaleString()}</strong>
@@ -2262,59 +2293,111 @@ function DraftWorkspace({ data }: { data: AppData }) {
               <button className="clear-filters" onClick={clearFilters} disabled={activeFilterCount === 0}>
                 Clear{activeFilterCount ? ` (${activeFilterCount})` : ""}
               </button>
-            </div>
-            <details className="advanced-filter-drawer board-control-row">
-              <summary>Advanced filter</summary>
-              <div className="rule-builder" aria-label="Add draft filter rule">
-                <label>
-                  Filter
-                  <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
-                    {draftFilterFields.map((field) => (
-                      <option key={field.key} value={field.key}>
-                        {field.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Match
-                  <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
-                    {availableOperators.map((operator) => (
-                      <option key={operator.value} value={operator.value}>
-                        {operator.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="rule-value">
-                  Value
-                  <input
-                    value={filterValue}
-                    onChange={(event) => setFilterValue(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") addFilterRule();
-                    }}
-                    placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
-                  />
-                </label>
-                {filterOperator === "between" && (
-                  <label className="rule-value">
-                    To
-                    <input
-                      value={filterValueTo}
-                      onChange={(event) => setFilterValueTo(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") addFilterRule();
-                      }}
-                      placeholder="100"
-                    />
-                  </label>
-                )}
-                <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-                  Add
+              <div className={cls("mobile-filter-drawer", filterDrawerOpen && "open")}>
+                <button
+                  type="button"
+                  className="mobile-filter-trigger"
+                  aria-controls="draft-mobile-filter-body"
+                  aria-expanded={filterDrawerOpen}
+                  onClick={() => setFilterDrawerOpen((open) => !open)}
+                >
+                  <span>Filters</span>
+                  {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
                 </button>
+                <div id="draft-mobile-filter-body" className="mobile-filter-body">
+                  <div className="mobile-core-filters">
+                    {years.length > 0 && <label>
+                      Class
+                      <select
+                        value={String(year)}
+                        onChange={(event) => setYear(event.target.value === "All" ? "All" : Number(event.target.value))}
+                      >
+                        <option value="All">All</option>
+                        {years.map((item) => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                      </select>
+                    </label>}
+                    <label>
+                      Position
+                      <select value={position} onChange={(event) => setPosition(event.target.value)}>
+                        {positions.map((item) => (
+                          <option key={item}>{item}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Tier
+                      <select value={tier} onChange={(event) => setTier(event.target.value)}>
+                        {tiers.map((item) => (
+                          <option key={item}>{item}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Pool
+                      <select value={pool} onChange={(event) => setPool(event.target.value)}>
+                        {pools.map((item) => (
+                          <option key={item}>{item}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <details className="advanced-filter-drawer board-control-row">
+                    <summary>Advanced filter</summary>
+                    <div className="rule-builder" aria-label="Add draft filter rule">
+                      <label>
+                        Filter
+                        <select value={filterKey} onChange={(event) => handleFilterKeyChange(event.target.value as DraftFilterKey)}>
+                          {draftFilterFields.map((field) => (
+                            <option key={field.key} value={field.key}>
+                              {field.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Match
+                        <select value={filterOperator} onChange={(event) => setFilterOperator(event.target.value as FilterOperator)}>
+                          {availableOperators.map((operator) => (
+                            <option key={operator.value} value={operator.value}>
+                              {operator.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="rule-value">
+                        Value
+                        <input
+                          value={filterValue}
+                          onChange={(event) => setFilterValue(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") addFilterRule();
+                          }}
+                          placeholder={selectedFilterField.type === "number" ? "90, 1.5, 20m" : "contains"}
+                        />
+                      </label>
+                      {filterOperator === "between" && (
+                        <label className="rule-value">
+                          To
+                          <input
+                            value={filterValueTo}
+                            onChange={(event) => setFilterValueTo(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") addFilterRule();
+                            }}
+                            placeholder="100"
+                          />
+                        </label>
+                      )}
+                      <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
+                        Add
+                      </button>
+                    </div>
+                  </details>
+                </div>
               </div>
-            </details>
+            </div>
             {filterRules.length > 0 && (
               <div className="filter-chips" aria-label="Active draft filter rules">
                 {filterRules.map((rule) => (
