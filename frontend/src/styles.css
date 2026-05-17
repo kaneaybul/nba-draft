@@ -1634,44 +1634,44 @@ input:focus {
 
 .draft-model-table {
   width: 100%;
-  min-width: 1660px;
+  min-width: 1360px;
   table-layout: fixed;
 }
 
 .draft-model-table .cg-draft-rank {
-  width: 40px;
+  width: 34px;
 }
 
 .draft-model-table .cg-draft-player {
-  width: 220px;
+  width: 190px;
 }
 
 .draft-model-table .cg-draft-meta {
-  width: 64px;
+  width: 50px;
 }
 
 .draft-model-table .cg-draft-score {
-  width: 64px;
+  width: 50px;
 }
 
 .draft-model-table .cg-draft-tier {
-  width: 122px;
+  width: 92px;
 }
 
 .draft-model-table .cg-draft-rate {
-  width: 76px;
+  width: 56px;
 }
 
 .draft-model-table .cg-draft-timin {
-  width: 86px;
+  width: 72px;
 }
 
 .draft-model-table .cg-draft-skills {
-  width: 340px;
+  width: 360px;
 }
 
 .draft-model-table .cg-draft-comp {
-  width: 245px;
+  width: 210px;
 }
 
 .draft-model-table tr.group-row th {
@@ -4091,66 +4091,70 @@ input:focus {
 
 /* Sample-faithful player board and popout */
 .editorial-player-table {
-  width: max(100%, 1600px);
-  min-width: 1600px;
+  width: max(100%, 1360px);
+  min-width: 1360px;
   table-layout: fixed;
 }
 
 .editorial-player-table .cg-rank {
-  width: 36px;
+  width: 26px;
 }
 
 .editorial-player-table .cg-player {
-  width: 200px;
+  width: 190px;
 }
 
 .editorial-player-table .cg-age {
-  width: 46px;
+  width: 34px;
 }
 
 .editorial-player-table .cg-min {
-  width: 62px;
+  width: 46px;
 }
 
 .editorial-player-table .cg-rate {
-  width: 5.2%;
+  width: 42px;
 }
 
 .editorial-player-table .cg-score {
-  width: 56px;
+  width: 48px;
 }
 
 .editorial-player-table .cg-delta {
-  width: 54px;
+  width: 38px;
 }
 
 .editorial-player-table .cg-tier {
-  width: 104px;
+  width: 76px;
 }
 
 .editorial-player-table .cg-money {
-  width: 7.2%;
+  width: 64px;
 }
 
 .editorial-player-table .cg-va {
-  width: 7.2%;
+  width: 68px;
 }
 
 .editorial-player-table .cg-scale {
-  width: 58px;
+  width: 42px;
 }
 
 .editorial-player-table .cg-current-money,
 .editorial-player-table .cg-current-va {
-  width: 6.8%;
+  width: 64px;
 }
 
 .editorial-player-table .cg-current-scale {
-  width: 52px;
+  width: 42px;
+}
+
+.editorial-player-table .cg-future-scale {
+  width: 54px;
 }
 
 .editorial-player-table .cg-skills {
-  width: 340px;
+  width: 350px;
 }
 
 .editorial-player-table tr.group-row th {
@@ -4194,60 +4198,64 @@ input:focus {
 }
 
 .editorial-player-table .c-rank {
-  width: 36px;
+  width: 26px;
 }
 
 .editorial-player-table .c-player {
-  width: 200px;
+  width: 190px;
 }
 
 .editorial-player-table .c-age {
-  width: 46px;
+  width: 34px;
 }
 
 .editorial-player-table .c-min {
-  width: 62px;
+  width: 46px;
 }
 
 .editorial-player-table .c-rate {
-  width: 5.2%;
+  width: 42px;
 }
 
 .editorial-player-table .c-score {
-  width: 56px;
+  width: 48px;
 }
 
 .editorial-player-table .c-delta {
-  width: 54px;
+  width: 38px;
 }
 
 .editorial-player-table .c-tier {
-  width: 104px;
+  width: 76px;
 }
 
 .editorial-player-table .c-money {
-  width: 7.2%;
+  width: 64px;
 }
 
 .editorial-player-table .c-va {
-  width: 7.2%;
+  width: 68px;
 }
 
 .editorial-player-table .c-scale {
-  width: 58px;
+  width: 42px;
 }
 
 .editorial-player-table .c-current-money,
 .editorial-player-table .c-current-va {
-  width: 6.8%;
+  width: 64px;
 }
 
 .editorial-player-table .c-current-scale {
-  width: 52px;
+  width: 42px;
+}
+
+.editorial-player-table .c-future-scale {
+  width: 54px;
 }
 
 .editorial-player-table .c-skills {
-  width: 340px;
+  width: 350px;
 }
 
 .editorial-player-table .sticky-player {
@@ -4454,37 +4462,50 @@ input:focus {
 .skill-ledger {
   display: grid;
   align-content: center;
-  gap: 2px;
   min-width: 0;
   height: 100%;
-  padding: 1px 8px;
+  padding: 2px 7px;
 }
 
-.skill-ledger-aggregates,
 .skill-ledger-groups,
+.skill-ledger-section,
 .skill-chip-group {
-  display: flex;
   min-width: 0;
-}
-
-.skill-ledger-aggregates {
-  gap: 3px;
 }
 
 .skill-ledger-groups {
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
-  align-items: center;
-  gap: 6px;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) 48px;
+  align-items: stretch;
+  gap: 5px;
+  height: 100%;
+}
+
+.skill-ledger-section {
+  display: grid;
+  grid-template-rows: 16px 18px;
+  gap: 2px;
+  align-content: center;
 }
 
 .skill-chip-group {
+  display: flex;
   gap: 2px;
 }
 
 .skill-chip-group.defense {
-  padding-left: 6px;
-  border-left: 1px solid color-mix(in srgb, var(--muted) 32%, transparent);
+  padding-left: 0;
+  border-left: 0;
+}
+
+.skill-ledger-section.defense {
+  padding-left: 5px;
+  border-left: 1px solid color-mix(in srgb, var(--muted) 30%, transparent);
+}
+
+.skill-total-rail {
+  display: flex;
+  min-width: 0;
 }
 
 .skill-aggregate-pill,
@@ -4501,12 +4522,12 @@ input:focus {
 
 .skill-aggregate-pill {
   display: grid;
-  grid-template-columns: minmax(26px, 1fr) minmax(28px, auto);
+  grid-template-columns: minmax(22px, 1fr) minmax(25px, auto);
   align-items: center;
   gap: 2px;
-  flex: 1 1 0;
-  height: 17px;
-  padding: 0 4px;
+  width: 100%;
+  height: 16px;
+  padding: 0 5px;
 }
 
 .skill-chip {
@@ -4515,14 +4536,22 @@ input:focus {
   justify-items: center;
   flex: 1 1 0;
   height: 18px;
-  padding: 1px 2px;
+  padding: 1px 3px;
+}
+
+.skill-aggregate-pill.total {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr;
+  justify-items: center;
+  height: 36px;
+  padding: 2px 3px;
 }
 
 .skill-aggregate-pill span,
 .skill-chip span {
   overflow: hidden;
   color: color-mix(in srgb, currentColor 76%, var(--muted));
-  font-size: 0.5rem;
+  font-size: 0.48rem;
   font-weight: 850;
   letter-spacing: 0;
   line-height: 1;
@@ -4534,7 +4563,7 @@ input:focus {
 .skill-aggregate-pill strong,
 .skill-chip strong {
   color: currentColor;
-  font-size: 0.5rem;
+  font-size: 0.49rem;
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1;
@@ -7682,12 +7711,12 @@ body,
 
   .editorial-player-table .cg-player,
   .editorial-player-table .c-player {
-    width: 172px;
+    width: 190px;
   }
 
   .editorial-player-table .cg-skills,
   .editorial-player-table .c-skills {
-    width: 300px;
+    width: 350px;
   }
 
   .player-table .sticky-player,
@@ -7714,8 +7743,8 @@ body,
   }
 
   .draft-model-table {
-    width: max(100%, 1160px);
-    min-width: 1160px;
+    width: max(100%, 1360px);
+    min-width: 1360px;
   }
 
   .draft-model-table .cg-draft-player {

@@ -4216,6 +4216,26 @@ function SkillLedger<TKey extends SkillLedgerSortKey>({
 }) {
   const offSkills = skills.filter((skill) => ["FTD", "OREB", "PASS", "RIM", "SHOOT"].includes(skill.key));
   const defSkills = skills.filter((skill) => ["DPM", "DREB", "RIMPRO", "SWITCH"].includes(skill.key));
+  const findAggregate = (match: string) => aggregates.find((item) => String(item.sortKey).toLowerCase().includes(match));
+  const offAggregate = findAggregate("off");
+  const defAggregate = findAggregate("def");
+  const totalAggregate = findAggregate("total");
+  const renderAggregate = (item: SkillLedgerAggregate<TKey>, variant?: "total") => (
+    <button
+      key={item.key}
+      type="button"
+      className={cls("skill-aggregate-pill", variant === "total" && "total", activeKey === item.sortKey && "active")}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSort(item.sortKey);
+      }}
+      title={`${item.title}: ${formatSigned(item.value, 1)}`}
+      style={skillStyle(item.value)}
+    >
+      <span>{item.label}</span>
+      <strong>{formatSigned(item.value, 1)}</strong>
+    </button>
+  );
   const renderSkill = (skill: SkillLedgerSkill<TKey>) => (
     <button
       key={skill.key}
@@ -4235,27 +4255,20 @@ function SkillLedger<TKey extends SkillLedgerSortKey>({
 
   return (
     <div className="skill-ledger">
-      <div className="skill-ledger-aggregates" aria-label="Skill model aggregates">
-        {aggregates.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={cls("skill-aggregate-pill", activeKey === item.sortKey && "active")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onSort(item.sortKey);
-            }}
-            title={`${item.title}: ${formatSigned(item.value, 1)}`}
-            style={skillStyle(item.value)}
-          >
-            <span>{item.label}</span>
-            <strong>{formatSigned(item.value, 1)}</strong>
-          </button>
-        ))}
-      </div>
       <div className="skill-ledger-groups" aria-label="Skill dimensions">
-        <div className="skill-chip-group offense">{offSkills.map(renderSkill)}</div>
-        <div className="skill-chip-group defense">{defSkills.map(renderSkill)}</div>
+        <div className="skill-ledger-section offense">
+          {offAggregate && renderAggregate(offAggregate)}
+          <div className="skill-chip-group offense">{offSkills.map(renderSkill)}</div>
+        </div>
+        <div className="skill-ledger-section defense">
+          {defAggregate && renderAggregate(defAggregate)}
+          <div className="skill-chip-group defense">{defSkills.map(renderSkill)}</div>
+        </div>
+        {totalAggregate && (
+          <div className="skill-total-rail">
+            {renderAggregate(totalAggregate, "total")}
+          </div>
+        )}
       </div>
     </div>
   );
