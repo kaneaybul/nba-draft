@@ -9,6 +9,7 @@ import type {
   CapTrackerContractCell,
   CapTrackerContractRow,
   CapTrackerData,
+  CapTrackerException,
   CapTrackerSeason,
   CapTrackerTeamSeason,
   DraftProspect,
@@ -38,10 +39,21 @@ type ToolLedgerEntry = {
   reason: string;
 };
 
+type BiddingHealth = {
+  totalBidsSubmitted: number;
+  capBidsSubmitted: number;
+  capDollarsOffered: number;
+  capDollarsSpent: number;
+  unusedCapRoom: number;
+  availableTools: string[];
+  warning: string;
+};
+
 type CapTrackerIndex = {
   capYear: number;
   season?: CapTrackerSeason;
   teams: Map<string, CapTrackerTeamSeason>;
+  exceptionsByTeam: Map<string, CapTrackerException[]>;
   cellsByNbaId: Map<string, CapTrackerMatchedCell>;
   cellsByNameTeam: Map<string, CapTrackerMatchedCell>;
 };
@@ -195,7 +207,9 @@ type SpendingTool = {
   name: string;
   amount: number;
   used: number;
-  kind: "cap" | "bird" | "mle" | "room" | "minimum";
+  kind: "cap" | "bird" | "non_taxpayer_mle" | "taxpayer_mle" | "room_exception" | "bi_annual" | "minimum";
+  path?: "retained" | "renounced" | "either" | string;
+  source?: string;
 };
 
 type DecisionScore = {
@@ -371,6 +385,7 @@ type TeamSummary = {
   pickCount: number;
   premiumPickCount: number;
   toolLedger: ToolLedgerEntry[];
+  biddingHealth: BiddingHealth;
   majorMoves: string[];
 };
 
@@ -857,7 +872,7 @@ function runSimulation(data: AppData, season: number, capYear: number, assumptio
 
   refreshTeamPayrolls(teams, assumptions);
   const teamSummaries = Array.from(teams.values())
-    .map(teamSummary)
+    .map((team) => teamSummary(team, market.bids))
     .sort((a, b) => b.payroll - a.payroll);
 
   return {
@@ -1316,11 +1331,7 @@ function initializeTeams(
       pickCount: pickCache.count,
       premiumPickCount: pickCache.premium,
       willingness: override?.willingness ?? willingnessForMode(baseMode),
-      exceptions: [
-        { name: "Mid-Level", amount: projection.projected_wins >= 46 ? assumptions.cap * 0.075 : assumptions.cap * 0.065, used: 0, kind: "mle" },
-        { name: "Room", amount: assumptions.cap * 0.04, used: 0, kind: "room" },
-        { name: "Minimum", amount: assumptions.cap * 0.012, used: 0, kind: "minimum" }
-      ],
+      exceptions: buildSpendingToolsForTeam(projection.team, trackerTeam, capIndex, assumptions),
       toolLedger: [],
       explanations: []
     };
@@ -1328,6 +1339,91 @@ function initializeTeams(
     teams.set(projection.team, team);
   });
   return teams;
+}
+
+const TAXPAYER_MLE_BASE_2024 = 5_000_000;
+const TAXPAYER_MLE_BASE_CAP_2024 = 136_021_000;
+
+function buildSpendingToolsForTeam(team: string, trackerTeam: CapTrackerTeamSeason | undefined, capIndex: CapTrackerIndex, assumptions: SimulatorAssumptions): SpendingTool[] {
+  const trackerTools = (capIndex.exceptionsByTeam.get(team) ?? [])
+    .map((row) => spendingToolFromCapException(row))
+    .filter((tool): tool is SpendingTool => Boolean(tool));
+  const tools = trackerTools.length ? trackerTools : modeledExceptionTools(trackerTeam, assumptions);
+  const byKind = new Map<SpendingTool["kind"], SpendingTool>();
+  [...tools, { name: "Minimum", amount: minimumExceptionAmount(assumptions), used: 0, kind: "minimum" as const, path: "either", source: "modeled minimum exception" }]
+    .forEach((tool) => {
+      const prior = byKind.get(tool.kind);
+      if (!prior || tool.amount > prior.amount) byKind.set(tool.kind, { ...tool, amount: Math.round(tool.amount), used: tool.used ?? 0 });
+    });
+  return Array.from(byKind.values()).sort((a, b) => spendingToolSort(a.kind) - spendingToolSort(b.kind));
+}
+
+function spendingToolFromCapException(row: CapTrackerException): SpendingTool | null {
+  const kind = exceptionKindFromName(row.name);
+  if (!kind || row.amount <= 0) return null;
+  return {
+    name: row.name,
+    amount: row.amount,
+    used: 0,
+    kind,
+    path: row.path,
+    source: row.source_quality === "override" ? "cap tracker override" : "cap tracker projection"
+  };
+}
+
+function modeledExceptionTools(trackerTeam: CapTrackerTeamSeason | undefined, assumptions: SimulatorAssumptions): SpendingTool[] {
+  const tools: SpendingTool[] = [];
+  const roomWithHolds = trackerTeam?.room_if_holds_retained ?? trackerTeam?.cap_room_with_holds ?? 0;
+  const firstApronWithHolds = trackerTeam?.first_apron_room_with_holds ?? trackerTeam?.first_apron_room ?? 0;
+  const secondApronWithHolds = trackerTeam?.second_apron_room_with_holds ?? trackerTeam?.second_apron_room ?? 0;
+  const roomIfRenounced = trackerTeam?.room_if_renounced ?? trackerTeam?.cap_room_renounced ?? 0;
+  if (roomWithHolds <= 0) {
+    if (firstApronWithHolds > minimumExceptionAmount(assumptions)) {
+      tools.push({ name: "Non-Taxpayer MLE", amount: exceptionAmount("non_taxpayer_mle", assumptions), used: 0, kind: "non_taxpayer_mle", path: "retained", source: "modeled from cap tracker apron room" });
+      tools.push({ name: "Bi-Annual", amount: exceptionAmount("bi_annual", assumptions), used: 0, kind: "bi_annual", path: "retained", source: "modeled from cap tracker apron room" });
+    } else if (secondApronWithHolds > minimumExceptionAmount(assumptions)) {
+      tools.push({ name: "Taxpayer MLE", amount: exceptionAmount("taxpayer_mle", assumptions), used: 0, kind: "taxpayer_mle", path: "retained", source: "modeled from cap tracker apron room" });
+    }
+  }
+  if (roomIfRenounced > roomThresholdForCapPath(assumptions)) {
+    tools.push({ name: "Room Exception", amount: exceptionAmount("room_exception", assumptions), used: 0, kind: "room_exception", path: "renounced", source: "modeled from cap tracker renounced room" });
+  }
+  return tools;
+}
+
+function exceptionKindFromName(name: string): SpendingTool["kind"] | null {
+  const value = name.toLowerCase();
+  if (value.includes("non-taxpayer") || value.includes("non taxpayer")) return "non_taxpayer_mle";
+  if (value.includes("taxpayer")) return "taxpayer_mle";
+  if (value.includes("room")) return "room_exception";
+  if (value.includes("annual") || value.includes("bae")) return "bi_annual";
+  if (value.includes("minimum")) return "minimum";
+  if (value.includes("cap")) return "cap";
+  if (value.includes("bird")) return "bird";
+  return null;
+}
+
+function exceptionAmount(kind: SpendingTool["kind"], assumptions: SimulatorAssumptions): number {
+  if (kind === "non_taxpayer_mle") return assumptions.cap * 0.0912;
+  if (kind === "bi_annual") return assumptions.cap * 0.0353;
+  if (kind === "room_exception") return assumptions.cap * 0.05678;
+  if (kind === "taxpayer_mle") return TAXPAYER_MLE_BASE_2024 * (assumptions.cap / TAXPAYER_MLE_BASE_CAP_2024);
+  if (kind === "minimum") return minimumExceptionAmount(assumptions);
+  return 0;
+}
+
+function minimumExceptionAmount(assumptions: SimulatorAssumptions): number {
+  return Math.max(2_500_000, assumptions.cap * 0.012);
+}
+
+function spendingToolSort(kind: SpendingTool["kind"]): number {
+  if (kind === "cap") return 0;
+  if (kind === "bird") return 1;
+  if (kind === "non_taxpayer_mle") return 2;
+  if (kind === "taxpayer_mle") return 3;
+  if (kind === "bi_annual") return 4;
+  if (kind === "room_exception") return 5;
+  return 6;
 }
 
 function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer[], assumptions: SimulatorAssumptions) {
@@ -1340,43 +1436,29 @@ function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer
       capHoldForPlayer(player) > 0
     );
     const usableMaxRoom = Math.max(0, team.maximumCapSpace);
-    const outsideTargets = players.filter((player) =>
-      (player.status === "UFA" || player.status === "RFA") &&
-      player.rightsTeam !== team.team &&
-      player.marketValue >= minimumSalary(player) &&
-      usableMaxRoom >= roomThresholdForCapPath(assumptions) &&
-      player.marketValue <= Math.max(usableMaxRoom * 1.35, assumptions.cap * 0.08)
-    );
     const holdPlans = ownFreeAgents.map((player) => ownHoldPlan(team, player, assumptions));
-    const outsidePriorities = outsideTargets.map((player) => ({ player, priority: capPathPlayerPriority(team, player, assumptions, false) }));
+    const outsideBoard = buildCapRoomTargetBoard(team, players, assumptions, usableMaxRoom);
     const bestOwn = holdPlans.slice().sort((a, b) => b.retainScore - a.retainScore)[0];
-    const bestOutside = outsidePriorities.sort((a, b) => b.priority - a.priority)[0];
+    const bestOutside = outsideBoard[0];
     const roomGain = Math.max(0, team.renouncedCapSpace - team.heldCapSpace);
     const roomThreshold = roomThresholdForCapPath(assumptions);
-    const shouldOpenRoom = usableMaxRoom >= roomThreshold && roomGain >= roomThreshold && (bestOutside?.priority ?? 0) > (bestOwn?.retainScore ?? 0) + 0.12;
     const matchedHoldTotal = sum(holdPlans.map((plan) => plan.hold));
     const unmatchedHolds = Math.max(0, team.initialCapHolds - matchedHoldTotal);
+    const lowEfficiencyHoldTotal = sum(holdPlans
+      .filter((plan) => lowEfficiencyHold(plan, assumptions))
+      .map((plan) => plan.hold));
+    const retainedRightsScore = retainedRightsProgramScore(team, holdPlans, lowEfficiencyHoldTotal, assumptions);
+    const capRoomProgram = buildCapRoomProgram(team, holdPlans, outsideBoard, assumptions);
+    const shouldOpenRoom = usableMaxRoom >= roomThreshold &&
+      roomGain >= roomThreshold &&
+      outsideBoard.length > 0 &&
+      capRoomProgram.score >= retainedRightsScore + 0.04;
 
     if (shouldOpenRoom) {
       team.capPath = "cap_room";
-      const targetRoom = Math.min(team.maximumCapSpace, Math.max(roomThreshold, (bestOutside?.player.marketValue ?? roomThreshold) * 0.85));
-      const retainedIds = new Set(holdPlans.map((plan) => plan.player.id));
-      let retainedMatchedHolds = matchedHoldTotal;
-      let modeledRoom = team.maximumCapSpace - retainedMatchedHolds;
-      holdPlans
-        .slice()
-        .sort((a, b) => a.retainScore - b.retainScore || b.hold - a.hold)
-        .forEach((plan) => {
-          if (modeledRoom >= targetRoom) return;
-          const canRenounceProtected = !isContenderMode(team.mode) &&
-            (bestOutside?.priority ?? 0) > plan.retainScore + 0.16 &&
-            plan.scarcity < 0.72;
-          const canRenounce = !plan.protectedHold || canRenounceProtected;
-          if (!canRenounce) return;
-          retainedIds.delete(plan.player.id);
-          retainedMatchedHolds = Math.max(0, retainedMatchedHolds - plan.hold);
-          modeledRoom += plan.hold;
-        });
+      const retainedIds = capRoomProgram.retainedIds;
+      const retainedMatchedHolds = capRoomProgram.retainedHoldTotal;
+      const modeledRoom = Math.max(0, team.maximumCapSpace - retainedMatchedHolds);
 
       const renouncedPlayers: SimPlayer[] = [];
       holdPlans.forEach((plan) => {
@@ -1385,19 +1467,22 @@ function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer
         if (!retain) renouncedPlayers.push(plan.player);
       });
 
-      team.capPathReason = `Opened selective cap room because low-value holds created ${formatMoney(Math.max(0, modeledRoom - team.heldCapSpace))}; ${bestOutside?.player.name ?? "outside market"} cleared the outside-target threshold.`;
+      team.capPathReason = `Opened cap-room program: ${formatMoney(modeledRoom)} usable room after selective holds; outside board led by ${bestOutside?.player.name ?? "outside market"} beat retained-rights score ${formatNumber(retainedRightsScore, 2)}.`;
       team.holdsRetained = retainedMatchedHolds;
       team.holdsRenounced = Math.max(0, team.initialCapHolds - retainedMatchedHolds);
       team.capHolds = retainedMatchedHolds;
       if (unmatchedHolds > 0) {
         team.explanations.push(`Renounced ${formatMoney(unmatchedHolds)} in unmatched tracker holds to open room`);
       }
+      if (lowEfficiencyHoldTotal > roomThreshold) {
+        team.explanations.push(`Identified ${formatMoney(lowEfficiencyHoldTotal)} in low-efficiency holds before cap-room bidding`);
+      }
       renouncedPlayers.slice(0, 3).forEach((player) => team.explanations.push(`Renounced ${player.name} hold`));
     } else {
       team.capPath = "retained_rights";
       team.capPathReason = bestOwn
         ? `Kept retained-rights path because ${bestOwn.player.name} has the highest rights option value.`
-        : "Kept retained-rights path because outside cap-room gains did not clear the threshold.";
+        : "Kept retained-rights path because the outside cap-room board did not clear the program threshold.";
       team.holdsRetained = team.initialCapHolds;
       team.holdsRenounced = 0;
       team.capHolds = team.initialCapHolds;
@@ -1408,6 +1493,17 @@ function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer
   });
 }
 
+type CapRoomTarget = {
+  player: SimPlayer;
+  priority: number;
+};
+
+type CapRoomProgram = {
+  score: number;
+  retainedIds: Set<string>;
+  retainedHoldTotal: number;
+};
+
 type OwnHoldPlan = {
   player: SimPlayer;
   hold: number;
@@ -1417,6 +1513,83 @@ type OwnHoldPlan = {
   retainScore: number;
   protectedHold: boolean;
 };
+
+function buildCapRoomTargetBoard(team: TeamState, players: SimPlayer[], assumptions: SimulatorAssumptions, usableMaxRoom: number): CapRoomTarget[] {
+  if (usableMaxRoom < roomThresholdForCapPath(assumptions)) return [];
+  return players
+    .filter((player) =>
+      (player.status === "UFA" || player.status === "RFA") &&
+      player.rightsTeam !== team.team &&
+      player.marketValue >= minimumSalary(player) &&
+      player.marketValue <= Math.max(usableMaxRoom * 1.45, assumptions.cap * 0.09)
+    )
+    .map((player) => ({
+      player,
+      priority: capPathPlayerPriority(team, player, assumptions, false) +
+        clamp(player.marketValue / Math.max(usableMaxRoom, 1), 0, 0.16) +
+        clamp((usableMaxRoom - player.marketValue) / Math.max(assumptions.cap, 1), -0.04, 0.08)
+    }))
+    .filter((row) => row.priority >= 0.34 || row.player.marketValue >= assumptions.cap * 0.055)
+    .sort((a, b) => b.priority - a.priority || b.player.marketValue - a.player.marketValue)
+    .slice(0, 18);
+}
+
+function retainedRightsProgramScore(team: TeamState, holdPlans: OwnHoldPlan[], lowEfficiencyHoldTotal: number, assumptions: SimulatorAssumptions): number {
+  const bestOwn = holdPlans.slice().sort((a, b) => b.retainScore - a.retainScore)[0];
+  const protectedValue = sum(holdPlans
+    .filter((plan) => plan.protectedHold)
+    .map((plan) => plan.retainScore * Math.min(plan.hold, assumptions.cap * 0.16) / assumptions.cap));
+  const contenderBias = isContenderMode(team.mode) ? 0.08 : 0;
+  const lowHoldDrag = clamp(lowEfficiencyHoldTotal / Math.max(assumptions.cap * 0.7, 1), 0, 0.34);
+  return clamp((bestOwn?.retainScore ?? 0) * 0.72 + protectedValue * 0.6 + contenderBias - lowHoldDrag, 0, 1.2);
+}
+
+function buildCapRoomProgram(team: TeamState, holdPlans: OwnHoldPlan[], outsideBoard: CapRoomTarget[], assumptions: SimulatorAssumptions): CapRoomProgram {
+  const roomThreshold = roomThresholdForCapPath(assumptions);
+  const retainedIds = new Set<string>();
+  let retainedHoldTotal = 0;
+  const boardScore = outsideBoard
+    .slice(0, 6)
+    .reduce((total, row, index) => total + row.priority * (1 - index * 0.09) * 0.18, outsideBoard[0]?.priority ?? 0);
+  const lowHoldRoomGain = sum(holdPlans.filter((plan) => lowEfficiencyHold(plan, assumptions)).map((plan) => plan.hold));
+  const roomBonus = clamp(team.maximumCapSpace / Math.max(assumptions.cap, 1), 0, 0.28);
+  const lowHoldBonus = clamp(lowHoldRoomGain / Math.max(assumptions.cap, 1), 0, 0.28);
+  const retainable = holdPlans
+    .filter((plan) => valuableHoldForCapRoom(plan, assumptions))
+    .sort((a, b) => b.retainScore - a.retainScore || a.hold - b.hold);
+
+  retainable.forEach((plan) => {
+    const roomAfterRetain = team.maximumCapSpace - retainedHoldTotal - plan.hold;
+    const keepUsefulRoom = roomAfterRetain >= roomThreshold &&
+      (!outsideBoard[0] || roomAfterRetain >= Math.min(outsideBoard[0].player.marketValue * 0.72, assumptions.cap * 0.18));
+    const keepWithoutRoom = outsideBoard.length === 0 && plan.retainScore >= 0.82;
+    if (!keepUsefulRoom && !keepWithoutRoom) return;
+    retainedIds.add(plan.player.id);
+    retainedHoldTotal += plan.hold;
+  });
+
+  const protectedLossPenalty = holdPlans
+    .filter((plan) => plan.protectedHold && !retainedIds.has(plan.player.id))
+    .reduce((total, plan) => total + plan.retainScore * (plan.player.status === "RFA" ? 0.16 : 0.1), 0);
+  return {
+    score: clamp(boardScore + roomBonus + lowHoldBonus - protectedLossPenalty, 0, 1.25),
+    retainedIds,
+    retainedHoldTotal
+  };
+}
+
+function valuableHoldForCapRoom(plan: OwnHoldPlan, assumptions: SimulatorAssumptions): boolean {
+  if (plan.hold <= 0) return false;
+  const efficiency = plan.player.marketValue / Math.max(plan.hold, minimumSalary(plan.player));
+  if (plan.player.status === "RFA") return plan.retainScore >= 0.46 || plan.scarcity >= 0.62 || efficiency >= 0.72;
+  return plan.retainScore >= 0.7 && (efficiency >= 0.62 || plan.player.marketValue >= assumptions.cap * 0.12);
+}
+
+function lowEfficiencyHold(plan: OwnHoldPlan, assumptions: SimulatorAssumptions): boolean {
+  const efficiency = plan.player.marketValue / Math.max(plan.hold, minimumSalary(plan.player));
+  if (plan.player.status === "RFA" && (plan.retainScore >= 0.58 || plan.scarcity >= 0.72)) return false;
+  return plan.hold >= assumptions.cap * 0.035 && (efficiency < 0.72 || plan.retainScore < 0.46);
+}
 
 function roomThresholdForCapPath(assumptions: SimulatorAssumptions): number {
   return Math.max(8_000_000, assumptions.cap * 0.05);
@@ -1682,8 +1855,9 @@ function buildSimProspects(rows: DraftProspect[], overrides: SimulatorOverrides)
   });
 }
 
-function teamSummary(team: TeamState): TeamSummary {
+function teamSummary(team: TeamState, bids: MarketBid[]): TeamSummary {
   const rosterCount = team.roster.length + team.rosterCountAdjustment;
+  const teamBids = bids.filter((bid) => bid.team === team.team);
   return {
     team: team.team,
     name: team.name,
@@ -1723,8 +1897,51 @@ function teamSummary(team: TeamState): TeamSummary {
     pickCount: team.pickCount,
     premiumPickCount: team.premiumPickCount,
     toolLedger: [...team.toolLedger],
+    biddingHealth: biddingHealthForTeam(team, teamBids),
     majorMoves: team.explanations.slice(-5)
   };
+}
+
+function biddingHealthForTeam(team: TeamState, bids: MarketBid[]): BiddingHealth {
+  const capBids = bids.filter((bid) => bid.toolKind === "cap");
+  const capDollarsSpent = sum(team.toolLedger.filter((row) => row.tool === "cap").map((row) => row.amount));
+  const unusedCapRoom = team.capPath === "cap_room" ? Math.max(0, team.capSpace) : 0;
+  const significantRoom = 20_000_000;
+  const availableTools = availableToolLabels(team);
+  let warning = "Healthy";
+  if (team.capPath === "cap_room" && Math.max(0, team.maximumCapSpace) >= significantRoom && capBids.length === 0) {
+    warning = "No cap bids despite room";
+  } else if (team.capPath === "cap_room" && unusedCapRoom >= 12_000_000 && capDollarsSpent === 0) {
+    warning = "Cap room untouched";
+  } else if (team.capPath === "cap_room" && unusedCapRoom >= 12_000_000) {
+    warning = "Unused cap room";
+  } else if (team.capPath === "retained_rights" && team.renouncedCapSpace >= 20_000_000) {
+    warning = "Passed on room for rights";
+  }
+  return {
+    totalBidsSubmitted: bids.length,
+    capBidsSubmitted: capBids.length,
+    capDollarsOffered: sum(capBids.map((bid) => bid.submittedAav)),
+    capDollarsSpent,
+    unusedCapRoom,
+    availableTools,
+    warning
+  };
+}
+
+function availableToolLabels(team: TeamState): string[] {
+  const labels: string[] = [];
+  if (team.capPath === "cap_room" && team.capSpace > 1_500_000) labels.push("Cap");
+  team.exceptions
+    .filter((tool) => tool.amount - tool.used > 1_000_000)
+    .filter((tool) => {
+      if (tool.kind === "room_exception") return team.capPath === "cap_room";
+      if (tool.kind === "non_taxpayer_mle" || tool.kind === "bi_annual") return team.capPath === "retained_rights" && team.firstApronRoom > 0;
+      if (tool.kind === "taxpayer_mle") return team.capPath === "retained_rights" && team.secondApronRoom > 0;
+      return true;
+    })
+    .forEach((tool) => labels.push(toolKindLabel(tool.kind)));
+  return Array.from(new Set(labels));
 }
 
 function releaseCapHold(teams: Map<string, TeamState>, player: SimPlayer) {
@@ -2230,6 +2447,7 @@ function DashboardView({ run, selectedTeam, multiRun }: { run: SimulationRun; se
           <TeamToolLedgerPanel teams={teams} />
         </div>
       </section>
+      <BiddingHealthPanel teams={teams} />
       <DashboardDraftBoard selections={run.draft} selectedTeam={selectedTeam} />
       <section className="offseason-panel dashboard-move-tape">
         <div className="panel-heading compact-heading">
@@ -2270,7 +2488,7 @@ function TeamToolLedgerPanel({ teams }: { teams: TeamSummary[] }) {
                   <td>{capPathLabel(team.capPath)}</td>
                   <td>{`${formatMoney(team.holdsRetained)} kept / ${formatMoney(team.holdsRenounced)} cut`}</td>
                   <td>{`${formatSignedMoney(team.heldCapSpace)} held / ${formatSignedMoney(team.renouncedCapSpace)} max`}</td>
-                  <td>{team.toolLedger.length ? team.toolLedger.slice(0, 2).map((row) => `${row.tool}: ${formatMoney(row.amount)}`).join("; ") : "None"}</td>
+                  <td>{team.toolLedger.length ? team.toolLedger.slice(0, 2).map((row) => `${toolKindLabel(row.tool)}: ${formatMoney(row.amount)}`).join("; ") : "None"}</td>
                   <td>{capWarnings(team).join("; ")}</td>
                 </tr>
               ))}
@@ -2279,6 +2497,52 @@ function TeamToolLedgerPanel({ teams }: { teams: TeamSummary[] }) {
       </div>
     </div>
   );
+}
+
+function BiddingHealthPanel({ teams }: { teams: TeamSummary[] }) {
+  const rows = teams
+    .slice()
+    .sort((a, b) =>
+      warningRank(a.biddingHealth.warning) - warningRank(b.biddingHealth.warning) ||
+      b.biddingHealth.unusedCapRoom - a.biddingHealth.unusedCapRoom ||
+      a.team.localeCompare(b.team)
+    );
+  return (
+    <section className="offseason-panel dashboard-bidding-panel">
+      <div className="panel-heading compact-heading">
+        <div>
+          <h2>Bidding Health</h2>
+          <p>Cap-room usage, active bid pressure, available tools, and idle-room warnings by team.</p>
+        </div>
+      </div>
+      <div className="dashboard-table-wrap">
+        <table className="dashboard-table bidding-health-table">
+          <thead><tr><th>Team</th><th>Path</th><th>Cap Bids</th><th>Cap Offered</th><th>Cap Spent</th><th>Unused Room</th><th>Tools</th><th>Warning</th></tr></thead>
+          <tbody>
+            {rows.map((team) => (
+              <tr key={`${team.team}-bidding-health`}>
+                <td><strong>{team.team}</strong><span>{team.capPathReason}</span></td>
+                <td>{capPathLabel(team.capPath)}</td>
+                <td>{`${team.biddingHealth.capBidsSubmitted} / ${team.biddingHealth.totalBidsSubmitted}`}</td>
+                <td>{formatMoney(team.biddingHealth.capDollarsOffered)}</td>
+                <td>{formatMoney(team.biddingHealth.capDollarsSpent)}</td>
+                <td>{formatMoney(team.biddingHealth.unusedCapRoom)}</td>
+                <td>{team.biddingHealth.availableTools.join(", ") || "None"}</td>
+                <td><span className={cls("bidding-warning", warningRank(team.biddingHealth.warning) <= 1 && "hot")}>{team.biddingHealth.warning}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function warningRank(value: string): number {
+  if (value.includes("No cap bids") || value.includes("untouched")) return 0;
+  if (value.includes("Unused")) return 1;
+  if (value.includes("Passed")) return 2;
+  return 3;
 }
 
 function DashboardDraftBoard({ selections, selectedTeam }: { selections: DraftSelection[]; selectedTeam: string }) {
@@ -2360,6 +2624,17 @@ function dashboardMoveGroups(run: SimulationRun, selectedTeam: string): Array<{ 
 
 function capPathLabel(value: string | null | undefined): string {
   return value === "cap_room" ? "Cap room" : "Retained rights";
+}
+
+function toolKindLabel(value: SpendingTool["kind"] | string): string {
+  if (value === "cap") return "Cap";
+  if (value === "bird") return "Bird";
+  if (value === "non_taxpayer_mle") return "NTMLE";
+  if (value === "taxpayer_mle") return "Tax MLE";
+  if (value === "room_exception") return "Room Ex";
+  if (value === "bi_annual") return "BAE";
+  if (value === "minimum") return "Min";
+  return value;
 }
 
 function marketChaserLabel(signing: FreeAgentSigning): string {
@@ -3554,6 +3829,7 @@ function buildCapTrackerIndex(capTracker: CapTrackerData | undefined, season: nu
     capYear,
     season: capTracker?.seasons.find((row) => row.year === capYear),
     teams: new Map((capTracker?.team_seasons ?? []).filter((row) => row.year === capYear).map((row) => [row.team, row])),
+    exceptionsByTeam: groupCapTrackerExceptions(capTracker?.exceptions ?? [], capYear),
     cellsByNbaId: new Map(),
     cellsByNameTeam: new Map()
   };
@@ -3565,6 +3841,19 @@ function buildCapTrackerIndex(capTracker: CapTrackerData | undefined, season: nu
     index.cellsByNameTeam.set(`${normalizeNameKey(row.player_name)}|${cleanTeam(row.team)}`, matched);
   });
   return index;
+}
+
+function groupCapTrackerExceptions(rows: CapTrackerException[], capYear: number): Map<string, CapTrackerException[]> {
+  const byTeam = new Map<string, CapTrackerException[]>();
+  rows
+    .filter((row) => row.year === capYear)
+    .forEach((row) => {
+      const team = cleanTeam(row.team);
+      const list = byTeam.get(team) ?? [];
+      list.push(row);
+      byTeam.set(team, list);
+    });
+  return byTeam;
 }
 
 function capTrackerCellForPlayer(player: PlayerImpact, capIndex?: CapTrackerIndex): CapTrackerMatchedCell | undefined {

@@ -3,7 +3,7 @@ import { capYearForSeason } from "./OffseasonSimulator";
 import type { MarketBid, MarketLedgerRow, MarketResolution, MarketToolKind } from "./types";
 
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
-type ToolKind = "cap" | "bird" | "mle" | "room" | "minimum";
+type ToolKind = "cap" | "bird" | "non_taxpayer_mle" | "taxpayer_mle" | "room_exception" | "bi_annual" | "minimum";
 type TestPlayer = ReturnType<typeof player>;
 type TestTeam = ReturnType<typeof team>;
 
@@ -41,6 +41,10 @@ export function runOffseasonMarketRegressionTests(): string[] {
     birdRightsBeatCapRoomForOwnPlayer(),
     capRoomRequiresCapPath(),
     roomExceptionRequiresCapPath(),
+    capRoomTeamsSubmitMultipleCapBids(),
+    capRoomUsesCapBeforeRoomException(),
+    explicitExceptionInventoriesAreRespected(),
+    teamsCanRebidInLaterWaves(),
     selectedSeasonCapYearWins(),
     rfaFallbackSignsWhenNoOutsideBid(),
     rfaFallbackUsesExpectedMarketMinutes(),
@@ -77,7 +81,7 @@ function lowerAavWinsOnlyInsideCloseThreshold(): string {
 
 function teamTaxAndTimelineStayTeamSide(): string {
   const target = player("p3", "Tax Test", "FA", "UFA", 74, 16_000_000);
-  const highTaxTeam = team("AAA", 188_000_000, ["SHOOT"], 0.25, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }], { mode: "tax-sensitive contender" });
+  const highTaxTeam = team("AAA", 188_000_000, ["SHOOT"], 0.25, [{ name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" }], { mode: "tax-sensitive contender" });
   const roomTeam = team("BBB", 118_000_000, ["SHOOT"], 0.85, undefined, { mode: "rising" });
   const result = simulateFreeAgencyMarket([target], mapTeams([highTaxTeam, roomTeam]), assumptions, fixedRng);
   const bids = result.bids.filter((bid) => bid.playerId === target.id);
@@ -96,7 +100,7 @@ function iterativeFallbacksTriggerAfterMiss(): string {
     firstTarget,
     fallback
   ], mapTeams([
-    team("AAA", 168_000_000, ["SHOOT"], 0.7, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }]),
+    team("AAA", 168_000_000, ["SHOOT"], 0.7, [{ name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" }]),
     team("BBB", 115_000_000, ["SHOOT"], 0.95)
   ]), assumptions, fixedRng);
   expect(result.signings.some((row) => row.player.id === firstTarget.id && row.toTeam === "BBB"), "stronger bidder should win first target");
@@ -107,7 +111,7 @@ function iterativeFallbacksTriggerAfterMiss(): string {
 }
 
 function spendingToolsCannotBeSpentTwice(): string {
-  const mleTeam = team("MLE", 168_000_000, ["SHOOT"], 0.9, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }]);
+  const mleTeam = team("MLE", 168_000_000, ["SHOOT"], 0.9, [{ name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" }]);
   const mleResult = simulateFreeAgencyMarket([
     player("p6", "MLE One", "FA", "UFA", 62, 9_000_000),
     player("p7", "MLE Two", "FA", "UFA", 61, 9_000_000)
@@ -121,7 +125,7 @@ function spendingToolsCannotBeSpentTwice(): string {
   ], mapTeams([capTeam]), assumptions, fixedRng);
   expect(capResult.signings.filter((row) => row.toTeam === "CAP").length === 1, "cap room should refresh after a signing and prevent double-spend");
 
-  const roomTeam = team("ROM", 143_900_000, ["DPM"], 0.9, [{ name: "Room", amount: 7_000_000, used: 0, kind: "room" }]);
+  const roomTeam = team("ROM", 143_900_000, ["DPM"], 0.9, [{ name: "Room Exception", amount: 7_000_000, used: 0, kind: "room_exception" }]);
   const roomResult = simulateFreeAgencyMarket([
     player("p10", "Room One", "FA", "UFA", 58, 6_000_000),
     player("p11", "Room Two", "FA", "UFA", 57, 6_000_000)
@@ -167,14 +171,63 @@ function capRoomRequiresCapPath(): string {
 }
 
 function roomExceptionRequiresCapPath(): string {
-  const retainedTeam = team("AAA", 156_000_000, ["DPM"], 0.9, [{ name: "Room", amount: 7_000_000, used: 0, kind: "room" }], { capPath: "retained_rights" });
+  const retainedTeam = team("AAA", 156_000_000, ["DPM"], 0.9, [{ name: "Room Exception", amount: 7_000_000, used: 0, kind: "room_exception" }], { capPath: "retained_rights" });
   const retainedResult = simulateFreeAgencyMarket([player("p14e", "Room Target", "FA", "UFA", 58, 6_000_000)], mapTeams([retainedTeam]), assumptions, fixedRng);
   expect(retainedResult.signings.length === 0, "retained-rights path should not use room exception");
 
-  const roomTeam = team("BBB", 156_000_000, ["DPM"], 0.9, [{ name: "Room", amount: 7_000_000, used: 0, kind: "room" }], { capPath: "cap_room" });
+  const roomTeam = team("BBB", 156_000_000, ["DPM"], 0.9, [{ name: "Room Exception", amount: 7_000_000, used: 0, kind: "room_exception" }], { capPath: "cap_room" });
   const roomResult = simulateFreeAgencyMarket([player("p14f", "Room Target Two", "FA", "UFA", 58, 6_000_000)], mapTeams([roomTeam]), assumptions, fixedRng);
-  expect(roomResult.signings[0]?.tool === "room", "room exception should be available after cap-room path");
+  expect(roomResult.signings[0]?.tool === "room_exception", "room exception should be available after cap-room path");
   return "room exception requires cap-room path";
+}
+
+function capRoomTeamsSubmitMultipleCapBids(): string {
+  const capTeam = team("CHI", 92_000_000, ["SHOOT", "PASS"], 0.95, [
+    { name: "Room Exception", amount: 9_000_000, used: 0, kind: "room_exception" }
+  ], { capPath: "cap_room", mode: "rising" });
+  const result = simulateFreeAgencyMarket([
+    player("p14i", "Cap Wing", "FA", "UFA", 72, 18_000_000, "FA", "None", { position: "F" }),
+    player("p14j", "Cap Guard", "FA", "UFA", 70, 17_000_000, "FA", "None", { position: "G" }),
+    player("p14k", "Cap Center", "FA", "UFA", 68, 16_000_000, "FA", "None", { position: "C" })
+  ], mapTeams([capTeam]), assumptions, fixedRng);
+  const capBids = result.bids.filter((bid) => bid.team === "CHI" && bid.toolKind === "cap");
+  expect(capBids.length >= 2, `cap-room team should carry multiple conditional cap bids; got ${capBids.length}`);
+  expect(result.signings.some((row) => row.toTeam === "CHI" && row.tool === "cap"), "cap-room team should convert at least one cap bid into a cap signing");
+  return "cap-room teams submit multiple conditional cap bids";
+}
+
+function capRoomUsesCapBeforeRoomException(): string {
+  const capTeam = team("CAP", 118_000_000, ["DPM"], 0.9, [
+    { name: "Room Exception", amount: 9_000_000, used: 0, kind: "room_exception" }
+  ], { capPath: "cap_room" });
+  const result = simulateFreeAgencyMarket([player("p14l", "Affordable Room Target", "FA", "UFA", 58, 6_000_000)], mapTeams([capTeam]), assumptions, fixedRng);
+  expect(result.signings[0]?.tool === "cap", `cap room should be used before room exception; got ${result.signings[0]?.tool}`);
+  return "cap-room teams use cap before room exception";
+}
+
+function explicitExceptionInventoriesAreRespected(): string {
+  const ntmleTeam = team("NTM", 182_000_000, ["SHOOT"], 0.95, [{ name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" }], { capPath: "retained_rights" });
+  const ntmleResult = simulateFreeAgencyMarket([player("p14m", "NTMLE Target", "FA", "UFA", 62, 8_000_000)], mapTeams([ntmleTeam]), assumptions, fixedRng);
+  expect(ntmleResult.signings[0]?.tool === "non_taxpayer_mle", `non-taxpayer MLE should be explicit; got ${ntmleResult.signings[0]?.tool}`);
+
+  const taxpayerTeam = team("TAX", 202_000_000, ["SHOOT"], 0.95, [{ name: "Taxpayer MLE", amount: 7_000_000, used: 0, kind: "taxpayer_mle" }], { capPath: "retained_rights" });
+  const taxpayerResult = simulateFreeAgencyMarket([player("p14n", "Tax MLE Target", "FA", "UFA", 58, 5_500_000)], mapTeams([taxpayerTeam]), assumptions, fixedRng);
+  expect(taxpayerResult.signings[0]?.tool === "taxpayer_mle", `taxpayer MLE should be explicit; got ${taxpayerResult.signings[0]?.tool}`);
+
+  const baeTeam = team("BAE", 182_000_000, ["PASS"], 0.95, [{ name: "Bi-Annual", amount: 5_500_000, used: 0, kind: "bi_annual" }], { capPath: "retained_rights" });
+  const baeResult = simulateFreeAgencyMarket([player("p14o", "BAE Target", "FA", "UFA", 55, 4_000_000)], mapTeams([baeTeam]), assumptions, fixedRng);
+  expect(baeResult.signings[0]?.tool === "bi_annual", `bi-annual exception should be explicit; got ${baeResult.signings[0]?.tool}`);
+  return "explicit exception inventories are respected";
+}
+
+function teamsCanRebidInLaterWaves(): string {
+  const target = player("p14p", "Too Pricey Star", "FA", "UFA", 88, 160_000_000, "FA", "None", { position: "G" });
+  const capTeam = team("REB", 88_000_000, ["SHOOT"], 0.95, [], { capPath: "cap_room" });
+  const result = simulateFreeAgencyMarket([target], mapTeams([capTeam]), assumptions, fixedRng);
+  const bids = result.bids.filter((bid) => bid.team === "REB" && bid.playerId === target.id);
+  expect(bids.length >= 2, `team should be able to rebid in later waves when the market remains unresolved; got ${bids.length}`);
+  expect(new Set(bids.map((bid) => bid.round)).size >= 1, "rebids should be tracked as submitted bids rather than permanently suppressed");
+  return "teams can rebid in later waves";
 }
 
 function selectedSeasonCapYearWins(): string {
@@ -272,7 +325,7 @@ function rfaDeclineUsesExactOutsideTerms(): string {
 }
 
 function secondApronBlocksMle(): string {
-  const mleTeam = team("AAA", 212_000_000, ["SHOOT"], 0.9, [{ name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" }]);
+  const mleTeam = team("AAA", 212_000_000, ["SHOOT"], 0.9, [{ name: "Taxpayer MLE", amount: 7_000_000, used: 0, kind: "taxpayer_mle" }]);
   const result = simulateFreeAgencyMarket([player("p17", "Apron Target", "FA", "UFA", 63, 8_000_000)], mapTeams([mleTeam]), assumptions, fixedRng);
   expect(result.signings.length === 0, "second-apron team should not use MLE");
   return "second apron blocks MLE";
@@ -463,8 +516,8 @@ function team(
     premiumPickCount: 0,
     willingness,
     exceptions: exceptions ?? [
-      { name: "Mid-Level", amount: 12_000_000, used: 0, kind: "mle" as const },
-      { name: "Room", amount: 7_000_000, used: 0, kind: "room" as const },
+      { name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" as const },
+      { name: "Room Exception", amount: 7_000_000, used: 0, kind: "room_exception" as const },
       { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" as const }
     ],
     toolLedger: [],

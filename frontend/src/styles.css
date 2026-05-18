@@ -6369,6 +6369,19 @@ input:focus {
   padding: 0 12px 12px;
 }
 
+.dashboard-bidding-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-bidding-panel .dashboard-table-wrap {
+  padding: 0 12px 12px;
+}
+
+.bidding-health-table {
+  min-width: 900px;
+}
+
 .dashboard-table-card,
 .move-tape-group {
   min-width: 0;
@@ -6456,6 +6469,21 @@ input:focus {
 
 .draft-marker.steal {
   background: color-mix(in srgb, var(--green) 18%, var(--bg));
+}
+
+.bidding-warning {
+  display: inline-block !important;
+  margin: 0 !important;
+  padding: 4px 7px;
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--green) 13%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--green) 20%, var(--line));
+  border-radius: var(--r);
+}
+
+.bidding-warning.hot {
+  background: color-mix(in srgb, var(--red) 16%, var(--bg));
+  border-color: color-mix(in srgb, var(--red) 28%, var(--line));
 }
 
 .move-tape-group {

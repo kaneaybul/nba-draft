@@ -748,7 +748,14 @@ export type CapReviewData = {
   rows: CapReviewRow[];
 };
 
-export type MarketToolKind = "cap" | "bird" | "mle" | "room" | "minimum";
+export type MarketToolKind =
+  | "cap"
+  | "bird"
+  | "non_taxpayer_mle"
+  | "taxpayer_mle"
+  | "room_exception"
+  | "bi_annual"
+  | "minimum";
 
 export type MarketLedgerStatus =
   | "submitted"

@@ -5,6 +5,7 @@ import {
   CAP_TRACKER_SCHEMA_VERSION,
   canonicalContractRowId,
   cleanTeam,
+  exceptionAmount,
   normalizeName,
   numberValue,
   projectedFirstApron,
@@ -85,7 +86,7 @@ export function buildSpotracCapTrackerData() {
   const contractRows = buildContractRows(spotracRows, teamMeta, guaranteeOverrides);
   const deadMoney = buildDeadMoneyRows(spotracRows);
   const teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
-  const exceptions = buildOverrideExceptions(readCsvFile(exceptionOverridePath));
+  const exceptions = buildExceptions(teamSeasons, seasons, readCsvFile(exceptionOverridePath));
   const picks = buildOverridePicks(readCsvFile(pickOverridePath));
   const maxContracts = buildMaxContracts(seasons);
   const discrepancyRows = buildDataballrDiscrepancies(contractRows, readCsvFile(contractsPath));
@@ -469,6 +470,28 @@ function buildRosterChargeMap(rows) {
   return out;
 }
 
+function buildExceptions(teamSeasons, seasonRows, overrideRows) {
+  const seasonByYear = new Map(seasonRows.map((season) => [season.year, season]));
+  const generated = [];
+  for (const teamSeason of teamSeasons) {
+    const season = seasonByYear.get(teamSeason.year);
+    if (!season) continue;
+    if (teamSeason.room_if_holds_retained <= 0) {
+      if (teamSeason.first_apron_room_with_holds > 0) {
+        generated.push(exceptionRow(teamSeason.team, teamSeason.year, "Non-Taxpayer MLE", exceptionAmount("non_taxpayer_mle", season), "retained", "Over-cap path with holds retained; projected non-taxpayer mid-level exception"));
+        generated.push(exceptionRow(teamSeason.team, teamSeason.year, "Bi-Annual", exceptionAmount("bi_annual", season), "retained", "Over-cap path with holds retained; projected bi-annual exception"));
+      } else if (teamSeason.second_apron_room_with_holds > 0) {
+        generated.push(exceptionRow(teamSeason.team, teamSeason.year, "Taxpayer MLE", exceptionAmount("taxpayer_mle", season), "retained", "Over-cap/tax path with holds retained; projected taxpayer mid-level exception"));
+      }
+    }
+    if (teamSeason.room_if_renounced > 0) {
+      generated.push(exceptionRow(teamSeason.team, teamSeason.year, "Room Exception", exceptionAmount("room_mle", season), "renounced", "Room path after renouncing holds; projected room exception"));
+    }
+  }
+  return [...generated, ...buildOverrideExceptions(overrideRows)]
+    .sort((a, b) => a.team.localeCompare(b.team) || a.year - b.year || a.name.localeCompare(b.name));
+}
+
 function buildOverrideExceptions(rows) {
   return rows.map((row, index) => {
     const amount = numberValue(row.amount);
@@ -488,6 +511,21 @@ function buildOverrideExceptions(rows) {
       source_quality: "override"
     });
   }).filter(Boolean);
+}
+
+function exceptionRow(team, year, name, amount, pathName, note) {
+  return cleanObject({
+    id: `exception-${team}-${year}-${pathName}-${normalizeName(name)}`,
+    team,
+    year,
+    name,
+    amount: Math.round(amount),
+    path: pathName,
+    expires: null,
+    note,
+    source: `${SOURCE}; projected from local CBA ratios`,
+    source_quality: "projected"
+  });
 }
 
 function buildOverridePicks(rows) {
