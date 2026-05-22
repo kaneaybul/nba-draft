@@ -130,6 +130,7 @@ build_results_table <- function(fit, style = c("off", "def")) {
 
 base_dir <- resolve_base_dir()
 source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+source(file.path(base_dir, "script", "nbamodel", "perimeter_defense_features.R"), local = TRUE)
 processed_dir <- file.path(base_dir, "processed")
 livedata_dir <- get_live_data_dir(base_dir, create = TRUE)
 results_dir <- file.path(processed_dir, "modelresults")
@@ -181,6 +182,7 @@ if (!"off_dep" %in% names(off_hist) || !"def_dep" %in% names(def_hist)) {
 }
 
 off_terms <- extract_model_terms(skillmap, "Offense?")
+def_hist <- add_perimeter_alloc_residual(def_hist, base_dir)
 def_terms <- extract_model_terms(skillmap, "Defense?")
 
 if (length(off_terms) == 0) stop("No offense model terms were found in skillmap.csv.")

@@ -27,6 +27,7 @@ resolve_base_dir <- function() {
 
 base_dir      <- resolve_base_dir()
 source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+source(file.path(base_dir, "script", "nbamodel", "perimeter_defense_features.R"), local = TRUE)
 processed_dir <- file.path(base_dir, "processed")
 livedata_dir  <- get_live_data_dir(base_dir, create = TRUE)
 results_dir   <- file.path(processed_dir, "modelresults")
@@ -222,6 +223,11 @@ def_raw  <- read_csv(def_path, show_col_types = FALSE)
 
 off_hist <- add_alias_columns(off_hist)
 def_hist <- add_alias_columns(def_hist)
+def_hist <- add_perimeter_alloc_residual(def_hist, base_dir)
+if ("nba_id" %in% names(off_hist)) off_hist$nba_id <- as.character(off_hist$nba_id)
+if ("nba_id" %in% names(def_hist)) def_hist$nba_id <- as.character(def_hist$nba_id)
+if ("year" %in% names(off_hist)) off_hist$year <- as.integer(off_hist$year)
+if ("year" %in% names(def_hist)) def_hist$year <- as.integer(def_hist$year)
 
 # =========================================================
 # BASIC CHECKS
