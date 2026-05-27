@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T05:09:13Z",
+  "generated_at": "2026-05-27T05:27:57Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -34,7 +34,7 @@
     },
     {
       "dataset": "draft_prospects",
-      "rows": 493,
+      "rows": 491,
       "file": "draft_prospects.json"
     },
     {
@@ -80,7 +80,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-05-27T05:09:13.815Z",
+    "generated_at": "2026-05-27T05:27:57.468Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -208,8 +208,8 @@
             "year": 2027,
             "rows": 419,
             "file": "v2/impact_players/2027.json",
-            "bytes": 1784762,
-            "sha256": "2f696b48d74ccb3da8f1305a11a38cb9956a7af6eae9ae1bfb78a1407729a2e5"
+            "bytes": 1784267,
+            "sha256": "86bae16e0006f01e45fc2d11108bfec3949a2fde10fbccc23f0d82f7897c125d"
           }
         ]
       },
@@ -412,8 +412,8 @@
             "year": 2027,
             "rows": 765,
             "file": "v2/team_lineups/2027.json",
-            "bytes": 496849,
-            "sha256": "00e3bbab8a3db38c17a519822ecf8ff6c7565da0f368d559c4fca2a9d73ee871"
+            "bytes": 496837,
+            "sha256": "ca4ebad6c9673d8aaaa2843b3bbcc8147e832498623f87df76bf5dc7d102db29"
           }
         ]
       },
@@ -515,8 +515,8 @@
         "strategy": "singleton",
         "rows": 4389,
         "file": "impact_player_history.json",
-        "bytes": 466433,
-        "sha256": "4030c9c9d9e2759aecb2f15c38afe43977f9ee1eb626542eb782c5a5870dc92c"
+        "bytes": 466430,
+        "sha256": "84462a1a62c12213d8f8679cbbde5a043ca0db1076da5665579475409768004c"
       },
       "pick_assets": {
         "strategy": "singleton",
@@ -527,24 +527,24 @@
       },
       "draft_prospects": {
         "strategy": "singleton",
-        "rows": 493,
+        "rows": 491,
         "file": "draft_prospects.json",
-        "bytes": 885545,
-        "sha256": "b2d8092905738404776d1270f9c7827c5fb9c9252bd161b17572675cd3dc65b4"
+        "bytes": 879201,
+        "sha256": "49b78486a2a91c4563ab3f0c877ab38434e0202417db073a0ac5d97fd8ea40cf"
       },
       "draft_tracker_board_summary": {
         "strategy": "singleton",
         "rows": 7,
         "file": "draft_tracker_board_summary.json",
-        "bytes": 702,
-        "sha256": "04157ef9e4dea24008db746a1d6961f7cafecead01ba957cef9d357051495d6a"
+        "bytes": 704,
+        "sha256": "d6a75f3be380ee20d2324a96603f9376d6ffa35300a143355172f9abb8310804"
       },
       "draft_tracker_board_scores": {
         "strategy": "singleton",
         "rows": 49,
         "file": "draft_tracker_board_scores.json",
-        "bytes": 5480,
-        "sha256": "82c586fdf744aef20fa9e7429c1e656220070983920f14a9aa1341c2c6bfb668"
+        "bytes": 5468,
+        "sha256": "92cdde9520b351affa0946ad065e7477475082af9a3c875e4cd98cdba94e3b34"
       },
       "draft_tracker_prospect_scores": {
         "strategy": "singleton",
@@ -572,14 +572,14 @@
         "rows": 379,
         "file": "offseason_truth.json",
         "bytes": 263081,
-        "sha256": "5e4ff894874bc12015bfa72727e51fd7358c669c318995aa6e586e41f9e0687f"
+        "sha256": "763f8eb794665001a69fac42fbdf38704e2064a7b86b2e74daf3489d2f681348"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
         "bytes": 1614268,
-        "sha256": "bd379043159bd4cbb15aa04bb9c1c4ad49e5ab7b00884a2baa6bfc6b1f260cbd"
+        "sha256": "e7fcb0395c7eb5bbf07c452dea7cc9c2d782896e42ab24163ba570ec3a566407"
       },
       "cap_transaction_review": {
         "strategy": "singleton",
