@@ -185,7 +185,7 @@ function emptyAppData(manifest: Manifest, values: Partial<AppData> = {}): AppDat
 async function loadSeasonDataset<T>(manifest: Manifest, datasetName: string, season: number, cacheBust?: string): Promise<T[]> {
   const dataset = manifest.static_data?.datasets[datasetName];
   const shard = dataset?.shards?.find((item) => Number(item.year) === season || Number(item.key) === season);
-  if (shard) return loadJson<T[]>(`/data/${shard.file}`, cacheBust);
+  if (shard) return loadJson<T[]>(`/data/${shard.file}`, cacheBust ?? shard.sha256);
   return loadSingletonDataset<T>(manifest, datasetName, cacheBust).catch(() => []);
 }
 
@@ -193,14 +193,14 @@ async function loadSingletonDataset<T>(manifest: Manifest, datasetName: string, 
   const dataset = manifest.static_data?.datasets[datasetName];
   const file = singletonFile(dataset) ?? legacyFile(manifest, datasetName);
   if (!file) return [];
-  return loadJson<T[]>(`/data/${file}`, cacheBust);
+  return loadJson<T[]>(`/data/${file}`, cacheBust ?? dataset?.sha256);
 }
 
 async function loadOptionalSingleton<T>(manifest: Manifest, datasetName: string, cacheBust?: string): Promise<T | undefined> {
   const dataset = manifest.static_data?.datasets[datasetName];
   const file = singletonFile(dataset) ?? legacyFile(manifest, datasetName);
   if (!file) return undefined;
-  return loadJson<T>(`/data/${file}`, cacheBust).catch(() => undefined);
+  return loadJson<T>(`/data/${file}`, cacheBust ?? dataset?.sha256).catch(() => undefined);
 }
 
 function singletonFile(dataset: StaticDataDataset | undefined): string | undefined {
