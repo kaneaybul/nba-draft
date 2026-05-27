@@ -1,492 +1,494 @@
 player,draft_year,similarity_comp_player,similarity_comp_year,similarity_score,similarity_distance,similarity_comp_total,similarity_comp_off,similarity_comp_def,similarity_comp_minutes
-AJ Dybantsa,2026,Jaylen Brown,2026,97.3,0.2324,2.701,3.046,-0.345,3610.8
-Aday Mara,2026,Trayce Jackson-Davis,2024,96.8,0.2538,-0.367,0.02,-0.387,1780
-Alex Karaban,2026,Keegan Murray,2024,98.1,0.196,1.224,0.855,0.369,3647.2
-Allen Graves,2026,Paul Millsap,2021,97.4,0.2289,1.683,0.233,1.449,2990.9
-Amari Allen,2026,DeMarre Carroll,2018,98.3,0.186,0.725,0.439,0.285,3545
-Bennett Stirtz,2026,Ryan Rollins,2026,97.3,0.2329,1.397,1.19,0.208,3060
-Braden Smith,2026,Mike Conley,2025,97.6,0.2208,0.464,0.031,0.433,3429.4
-Brayden Burries,2026,Donovan Mitchell,2018,97.8,0.2104,1.981,1.59,0.39,3288
-Caleb Wilson,2026,Paul Millsap,2022,93.7,0.3603,-1.227,-1.622,0.395,2460.5
-Cameron Boozer,2026,Bam Adebayo,2026,89.9,0.462,3.487,1.887,1.6,3591.2
-Cameron Carr,2026,Nikola Jovic,2026,98.6,0.1664,-0.864,-1.104,0.24,2265.1
-Chris Cenac Jr,2026,Daniel Theis,2023,98.4,0.1796,-0.85,-1.162,0.312,2296.2
-Christian Anderson,2026,Terry Rozier,2023,98.6,0.1702,0.09,0.915,-0.825,3555.2
-Dailyn Swain,2026,Blake Griffin,2023,97.4,0.2309,0.142,-1.065,1.207,2171.2
-Darius Acuff Jr.,2026,Goran Dragic,2020,96.7,0.2601,1.472,1.817,-0.346,3163.4
-Darryn Peterson,2026,Gordon Hayward,2016,93.3,0.3727,2.466,2.092,0.375,2893
-Ebuka Okorie,2026,DeAaron Fox,2025,96.3,0.2761,0.966,1.62,-0.653,3560.2
-Flory Bidunga,2026,Taj Gibson,2017,96.8,0.2566,-0.197,-0.82,0.623,3441
-Hannes Steinbach,2026,Wendell Carter Jr.,2025,97.7,0.214,0.785,-0.991,1.775,3282.8
-Henri Veesaar,2026,Nassir Little,2022,97.8,0.2102,-0.763,-0.154,-0.609,1890.3
-Isaiah Evans,2026,Lonnie Walker IV,2023,97.6,0.2194,-2.436,-0.833,-1.603,3119.7
-Jayden Quaintance,2026,Taj Gibson,2017,96,0.2864,-0.197,-0.82,0.623,3441
-Jeremy Fears Jr.,2026,Dennis Schroder,2025,97.7,0.2169,-0.847,-0.209,-0.638,3526.5
-Joshua Jefferson,2026,Blake Griffin,2023,96.4,0.2692,0.142,-1.065,1.207,2171.2
-Karim Lopez,2026,DeMarre Carroll,2018,95.6,0.3008,0.725,0.439,0.285,3545
-Keaton Wagler,2026,Cameron Johnson,2025,96.1,0.2806,1.36,1.992,-0.632,3337.3
-Kingston Flemings,2026,Dennis Schroder,2017,98,0.1998,-0.362,0.725,-1.087,3621.2
-Koa Peat,2026,Keita Bates-Diop,2024,97.7,0.216,-1.342,-1.302,-0.039,2395.1
-Labaron Philon,2026,Jamal Murray,2020,98.4,0.1792,2.528,3.055,-0.527,3476
-Luigi Suigo,2026,Thon Maker,2021,97.2,0.238,-1.839,-1.709,-0.13,1727
-Meleek Thomas,2026,Josh Richardson,2023,98.7,0.1627,-0.998,-1.248,0.25,3219.4
-Mikel Brown Jr.,2026,Walter Clayton Jr.,2026,98,0.2004,-2.232,-0.822,-1.41,2061
-Milan Momcilovic,2026,Allen Crabbe,2018,96.7,0.2577,0.109,0.958,-0.849,3548
-Milos Uzan,2026,Tyler Johnson,2021,98.4,0.1784,-1.936,-0.786,-1.151,2530.6
-Morez Johnson Jr.,2026,Wendell Carter Jr.,2025,97.3,0.2345,0.785,-0.991,1.775,3282.8
-Nate Ament,2026,Keldon Johnson,2022,98.4,0.1821,0.572,1.136,-0.564,3598
-Richie Saunders,2026,Otto Porter Jr.,2021,97.7,0.2179,0.584,0.237,0.347,2383.8
-Sergio De Larrea,2026,John Wall,2023,97,0.2484,-1.759,-1.314,-0.445,1479.5
-Tarris Reed Jr.,2026,Trayce Jackson-Davis,2024,96.8,0.2542,-0.367,0.02,-0.387,1780
-Tounde Yessoufou,2026,Kelly Oubre Jr.,2024,97.5,0.2246,0.05,-0.273,0.323,3439.3
-Tyler Tanner,2026,Jose Alvarado,2025,95.3,0.311,0.613,0.093,0.52,2998.8
-Yaxel Lendeborg,2026,Kelly Olynyk,2023,96.4,0.2723,0.577,0.152,0.425,3242.9
-Zuby Ejiofor,2026,David West,2017,95.5,0.3022,-0.198,-1.946,1.748,1907
-Ace Bailey,2025,DeMarre Carroll,2019,97,0.2454,-0.306,-0.247,-0.058,3403.8
-Adou Thiero,2025,Kelly Oubre Jr.,2025,98.2,0.1889,-0.493,-0.507,0.014,3519.5
-Asa Newell,2025,Dario Saric,2021,98.2,0.1923,0.246,0.329,-0.083,2937.1
-Ben Saraf,2025,Cory Joseph,2023,98.4,0.1806,-1.183,-0.448,-0.736,3086.8
-Bogoljub Markovic,2025,Dario Saric,2025,97.6,0.2197,-2.134,-1.821,-0.314,1486.9
-Carter Bryant,2025,Kelly Oubre Jr.,2025,96.9,0.251,-0.493,-0.507,0.014,3519.5
-Cedric Coward,2025,Cedric Coward,2026,98.1,0.198,0.837,0.979,-0.141,2248
-Chaz Lanier,2025,Grayson Allen,2024,98.4,0.1777,0.766,0.868,-0.102,3628.2
-Collin Murray-Boyles,2025,Scottie Barnes,2022,98.1,0.1951,0.378,0.028,0.35,3267
-Cooper Flagg,2025,Scottie Barnes,2025,93.7,0.3604,1.528,0.358,1.17,3533.5
-Danny Wolf,2025,Danny Wolf,2026,96.7,0.2607,-1.189,-1.153,-0.036,1837
-Derik Queen,2025,Pascal Siakam,2019,97.7,0.2144,1.87,0.829,1.041,3637
-Drake Powell,2025,Drake Powell,2026,100,0.0298,-3.099,-2.299,-0.801,1970
-Dylan Harper,2025,Anthony Edwards,2024,95.3,0.3114,3.72,2.907,0.812,3692.5
-Egor Demin,2025,Dennis Schroder,2017,98.2,0.1882,-0.362,0.725,-1.087,3621.2
-Hugo Gonzalez,2025,Jabari Parker,2022,97.3,0.2339,-1.163,-1.292,0.128,1480.2
-Jase Richardson,2025,Jamal Murray,2019,99.2,0.1241,1.52,2.314,-0.794,3611.8
-Jeremiah Fears,2025,DeAaron Fox,2025,97.2,0.2378,0.966,1.62,-0.653,3560.2
-Joan Beringer,2025,Wendell Carter Jr.,2019,93.5,0.3674,-1.099,-1.768,0.669,1760
-Johni Broome,2025,Nikola Vucevic,2016,96.1,0.2807,0.469,0.3,0.169,2037
-Kam Jones,2025,Dennis Smith Jr.,2018,96.2,0.2771,-1.317,-0.443,-0.873,2699
-Kasparas Jakucionis,2025,Nicolas Batum,2018,97.7,0.2154,0.489,0.942,-0.453,3495.2
-Khaman Maluach,2025,LaMarcus Aldridge,2017,94.3,0.3418,1.133,0.342,0.791,3583.8
-Kon Knueppel,2025,Brandon Miller,2024,98.4,0.179,-1.396,-0.06,-1.336,3033
-Liam McNeeley,2025,Simone Fontecchio,2026,99.5,0.1025,0.34,0.503,-0.163,2994.7
-Maxime Raynaud,2025,Mike Muscala,2018,96.7,0.2603,-0.096,-0.136,0.041,2305.6
-Nique Clifford,2025,Blake Griffin,2022,96.4,0.2696,-0.513,-0.52,0.006,2702.8
-Noa Essengue,2025,Oshae Brissett,2023,96.6,0.2642,-0.86,-0.528,-0.332,2604.9
-Noah Penda,2025,Olivier-Maxence Prosper,2026,96.8,0.2532,-0.114,0.107,-0.221,1611
-Nolan Traore,2025,D.J. Augustin,2019,96.1,0.283,-0.03,0.865,-0.896,3567.2
-Rasheer Fleming,2025,Mike Muscala,2018,95.3,0.309,-0.096,-0.136,0.041,2305.6
-Rocco Zikarsky,2025,Onyeka Okongwu,2021,96.8,0.2556,-1.751,-1.722,-0.029,1251
-Ryan Kalkbrenner,2025,Daniel Theis,2021,96.9,0.2509,0.387,-0.698,1.085,3244.1
-Thomas Sorber,2025,David West,2018,96.9,0.2515,-0.16,-1.594,1.434,2429.2
-Tre Johnson,2025,Tre Johnson,2026,99.6,0.0857,-2.001,-0.627,-1.374,2093
-V.J. Edgecombe,2025,Kelly Oubre Jr.,2023,95.7,0.2959,-0.487,-0.039,-0.448,3302.1
-Walter Clayton Jr.,2025,Walter Clayton Jr.,2026,100,0.0314,-2.232,-0.822,-1.41,2061
-Will Riley,2025,RJ Barrett,2021,97.7,0.217,-0.212,-0.148,-0.064,3627.8
-Yang Hansen,2025,Tim Duncan,2016,96.7,0.2592,2.767,-0.83,3.597,1537
-Adem Bona,2024,Brandon Clarke,2021,96.8,0.2559,0.611,-0.262,0.873,2390
-Ajay Mitchell,2024,Dennis Smith Jr.,2019,97.9,0.208,-1.793,-1.209,-0.583,3044.8
-Alex Sarr,2024,Jalen Smith,2026,94.4,0.3409,1.599,0.923,0.675,2783.4
-Baylor Scheierman,2024,Cameron Johnson,2022,97.3,0.2334,0.547,0.443,0.105,3276.3
-Bobi Klintman,2024,Matt Barnes,2016,97.1,0.2422,-0.511,-0.237,-0.273,2190
-Carlton Carrington,2024,Dennis Schroder,2020,97.8,0.2095,0.815,0.734,0.081,3499.8
-Cody Williams,2024,Drake Powell,2026,98.5,0.1744,-3.099,-2.299,-0.801,1970
-DaRon Holmes II,2024,Naz Reid,2021,97.7,0.2143,-1.353,-0.53,-0.824,1718.2
-Dalton Knecht,2024,Nikola Jovic,2026,97.5,0.2267,-0.864,-1.104,0.24,2265.1
-Devin Carter,2024,Jeremy Lamb,2021,96.9,0.2504,0.26,0.346,-0.086,2826.8
-Dillon Jones,2024,Brandin Podziemski,2025,98.8,0.1548,0.824,-0.242,1.067,3192
-Donovan Clingan,2024,Daniel Theis,2020,96.2,0.2787,1.377,-0.51,1.887,2773.5
-Harrison Ingram,2024,Naji Marshall,2024,97,0.2466,-0.336,-1.255,0.919,3105.6
-Isaiah Collier,2024,Jerian Grant,2018,98,0.2006,-0.834,-0.162,-0.673,3168.6
-Ja'Kobe Walter,2024,Quentin Grimes,2025,98.9,0.1507,-0.126,1.248,-1.374,3322.9
-Jared McCain,2024,Jamal Murray,2019,97.7,0.2164,1.52,2.314,-0.794,3611.8
-Jaylon Tyson,2024,Khris Middleton,2026,98.4,0.1806,-1.066,-0.511,-0.555,3005.1
-Johnny Furphy,2024,Jae Crowder,2018,98.9,0.1459,-0.556,-0.502,-0.053,3522.5
-Jonathan Mogbo,2024,Jonathan Mogbo,2025,96.3,0.2743,-2.138,-2.446,0.307,1936
-KJ Simpson,2024,Terry Rozier,2023,97.9,0.205,0.09,0.915,-0.825,3555.2
-Kel'el Ware,2024,Wendell Carter Jr.,2019,97.2,0.2376,-1.099,-1.768,0.669,1760
-Kyle Filipowski,2024,P.J. Washington,2020,96.3,0.2753,-1.281,-1.325,0.044,2409
-Kyshawn George,2024,Justin Holiday,2018,98.4,0.1823,-0.05,-0.329,0.279,3548.2
-Matas Buzelis,2024,Mike Muscala,2018,96.2,0.2796,-0.096,-0.136,0.041,2305.6
-Melvin Ajinca,2024,Jordan Hawkins,2026,97.2,0.2402,-3.681,-1.906,-1.775,2335.8
-Nikola Djurisic,2024,Isaiah Whitehead,2017,97.4,0.2309,-1.683,-1.55,-0.133,2294
-Nikola Topic,2024,Dennis Schroder,2023,95.6,0.2999,0.256,-0.246,0.502,3463.3
-Oso Ighodaro,2024,Oso Ighodaro,2025,95.6,0.2993,-1.77,-2.518,0.747,1695
-Pacome Dadiet,2024,Timothe Luwawu-Cabarrot,2019,97.8,0.2111,-3.237,-1.949,-1.288,1943.6
-Reed Sheppard,2024,Jalen Suggs,2026,96,0.2871,2.177,0.19,1.987,3126.5
-Rob Dillingham,2024,Jamal Murray,2020,98.3,0.1857,2.528,3.055,-0.527,3476
-Ron Holland,2024,Jalen Suggs,2023,94.4,0.339,-0.555,-1.5,0.945,2226.2
-Ryan Dunn,2024,Michael Kidd-Gilchrist,2017,96.5,0.2674,1.034,-0.858,1.891,2503.8
-Stephon Castle,2024,Kelly Oubre Jr.,2021,96.1,0.2831,-1.218,-1.184,-0.035,3350.5
-Terrence Shannon Jr.,2024,Tim Hardaway Jr.,2018,97.5,0.2263,0.328,0.928,-0.6,3471.2
-Tidjane Salaun,2024,Chris Duarte,2024,98.6,0.1663,-1.698,-1.534,-0.164,2258.6
-Tristan da Silva,2024,Julian Champagnie,2025,99.2,0.1291,-0.502,-0.037,-0.465,3213
-Tristen Newton,2024,Devin Vassell,2025,96.5,0.2677,-0.742,0.159,-0.901,3495.8
-Tyler Kolek,2024,Fred VanVleet,2019,98.8,0.1565,0.796,0.301,0.494,3065.4
-Tyler Smith,2024,DeMarre Carroll,2018,97,0.2476,0.725,0.439,0.285,3545
-Yves Missi,2024,Jaxson Hayes,2020,97.6,0.2182,-0.299,-0.6,0.301,1730
-Zaccharie Risacher,2024,DeMarre Carroll,2018,98,0.202,0.725,0.439,0.285,3545
-Zach Edey,2024,Daniel Theis,2020,94.1,0.3487,1.377,-0.51,1.887,2773.5
-Amari Bailey,2023,Talen Horton-Tucker,2023,97.5,0.2238,-0.39,-0.219,-0.171,3107.8
-Amen Thompson,2023,Kevin Porter Jr.,2026,94,0.3519,1.16,0.262,0.898,2902.8
-Andre Jackson Jr.,2023,Andre Iguodala,2017,97.3,0.2333,1.702,0.35,1.352,3297
-Anthony Black,2023,Caris LeVert,2018,97.4,0.2304,-1.033,-0.581,-0.452,2791.8
-Ausar Thompson,2023,Kevin Porter Jr.,2026,91.7,0.416,1.16,0.262,0.898,2902.8
-Ben Sheppard,2023,Chris Duarte,2022,99.3,0.1154,-1.107,-0.882,-0.224,2191
-Bilal Coulibaly,2023,Jake LaRavia,2025,97.5,0.2229,-0.987,-1.125,0.138,2186.4
-Brandin Podziemski,2023,Jeremy Lamb,2021,96.3,0.273,0.26,0.346,-0.086,2826.8
-Brandon Miller,2023,Jayson Tatum,2020,95.4,0.3083,4.336,2.481,1.855,3566.2
-Brice Sensabaugh,2023,Saddiq Bey,2022,96.3,0.2739,-0.954,0.193,-1.147,3676
-Cam Whitmore,2023,Kelly Oubre Jr.,2019,97.7,0.2144,-0.514,-0.214,-0.299,3480.8
-Cason Wallace,2023,Victor Oladipo,2016,97.3,0.2338,1.579,0.565,1.014,2379
-Colby Jones,2023,Caris LeVert,2017,98.2,0.1917,-0.153,0.059,-0.211,1887
-Dariq Whitehead,2023,Josh Richardson,2022,98.9,0.1471,-0.471,-0.208,-0.263,3286.6
-Dereck Lively II,2023,Daniel Theis,2020,96.3,0.2732,1.377,-0.51,1.887,2773.5
-Emoni Bates,2023,Marcus Morris,2018,98,0.2025,-1.225,-0.86,-0.365,3360.5
-Gradey Dick,2023,Brandon Miller,2024,97.8,0.2105,-1.396,-0.06,-1.336,3033
-Gregory Jackson,2023,Jaylen Brown,2017,97.2,0.2391,-2.293,-1.654,-0.639,1991
-Hunter Tyson,2023,Simone Fontecchio,2026,98.1,0.1941,0.34,0.503,-0.163,2994.7
-Jaime Jaquez Jr.,2023,Vince Williams Jr.,2026,95.8,0.2943,-0.548,-0.891,0.343,2045.3
-Jalen Hood-Schifino,2023,Cory Joseph,2024,98.5,0.1746,-1.709,-1.08,-0.629,2486.2
-Jalen Pickett,2023,Dylan Harper,2026,94.5,0.336,1.247,0.702,0.545,2208
-James Nnaji,2023,Jahlil Okafor,2016,96.4,0.2691,-2.502,-1.082,-1.42,1591
-Jarace Walker,2023,Kelly Oubre Jr.,2021,94.7,0.3305,-1.218,-1.184,-0.035,3350.5
-Jaylen Clark,2023,Cody Martin,2024,97.2,0.2369,-0.709,-1.648,0.939,2261.3
-Jett Howard,2023,Brandon Miller,2024,98.3,0.187,-1.396,-0.06,-1.336,3033
-Jordan Hawkins,2023,Brandon Miller,2025,98.3,0.184,-0.472,0.366,-0.839,2711.2
-Jordan Walsh,2023,Drake Powell,2026,98.3,0.1859,-3.099,-2.299,-0.801,1970
-Julian Phillips,2023,Terance Mann,2023,98.2,0.1929,0.024,0.3,-0.276,3468
-Julian Strawther,2023,Simone Fontecchio,2026,99.2,0.1271,0.34,0.503,-0.163,2994.7
-Keyonte George,2023,Anthony Edwards,2022,96.9,0.2528,1.844,1.83,0.015,3616.5
-Kobe Brown,2023,Kelly Olynyk,2022,96.5,0.2665,0.781,0.539,0.242,2958.7
-Kobe Bufkin,2023,George Hill,2018,98,0.2025,0.872,1.078,-0.207,3332.2
-Kris Murray,2023,Aaron Gordon,2019,97.4,0.2292,1.026,0.219,0.807,3658.2
-Leonard Miller,2023,Maxime Raynaud,2026,94.9,0.3245,-1.872,-0.783,-1.09,2614
-Marcus Sasser,2023,Terry Rozier,2023,97.4,0.2281,0.09,0.915,-0.825,3555.2
-Maxwell Lewis,2023,Tristan da Silva,2026,98.1,0.1978,-0.54,-0.67,0.129,3120.8
-Mouhamed Gueye,2023,Nikola Vucevic,2016,96.6,0.2649,0.469,0.3,0.169,2037
-Nick Smith Jr.,2023,Shake Milton,2021,98.8,0.1535,-1.192,-0.134,-1.058,2215.5
-Noah Clowney,2023,Nassir Little,2022,98.3,0.1855,-0.763,-0.154,-0.609,1890.3
-Olivier-Maxence Prosper,2023,Zaccharie Risacher,2026,99.2,0.1273,-1.998,-1.44,-0.558,2885.2
-Rayan Rupert,2023,Aaron Wiggins,2022,96.9,0.2502,-2.441,-1.237,-1.204,1859
-Scoot Henderson,2023,Dennis Smith Jr.,2020,97.3,0.234,-2.639,-1.966,-0.673,2767.7
-Seth Lundy,2023,Simone Fontecchio,2026,99.6,0.0892,0.34,0.503,-0.163,2994.7
-Sidy Cissoko,2023,Amir Coffey,2023,96.8,0.2566,-2.622,-1.892,-0.73,2089
-Taylor Hendricks,2023,P.J. Washington,2020,97.8,0.2109,-1.281,-1.325,0.044,2409
-Toumani Camara,2023,Guerschon Yabusele,2025,97.1,0.2421,-0.076,0.475,-0.551,1896
-Trayce Jackson-Davis,2023,Nic Claxton,2026,96.2,0.2768,-0.401,-0.759,0.358,3442.5
-Victor Wembanyama,2023,Pau Gasol,2016,91.5,0.422,1.503,0.401,1.102,2292
-AJ Griffin,2022,Keldon Johnson,2023,97.5,0.225,-0.623,0.885,-1.509,3515.8
-Andrew Nembhard,2022,Ryan Rollins,2026,97.9,0.2049,1.397,1.19,0.208,3060
-Bennedict Mathurin,2022,Moses Moody,2025,98.2,0.1929,0.262,-0.188,0.45,3135
-Blake Wesley,2022,George Hill,2018,98.8,0.1581,0.872,1.078,-0.207,3332.2
-Bryce McGowens,2022,Bojan Bogdanovic,2019,98.2,0.1912,-0.067,0.435,-0.503,3643.2
-Caleb Houstan,2022,Shaedon Sharpe,2024,97.8,0.2124,-2.111,-0.781,-1.33,2393.2
-Chet Holmgren,2022,Alex Sarr,2026,94.1,0.3476,-0.829,-0.338,-0.491,2665.5
-Christian Braun,2022,Tobias Harris,2026,98.4,0.1804,1.556,0.543,1.013,3436.2
-Christian Koloko,2022,Trayce Jackson-Davis,2024,97,0.2451,-0.367,0.02,-0.387,1780
-Dalen Terry,2022,Caris LeVert,2018,98.4,0.1819,-1.033,-0.581,-0.452,2791.8
-David Roddy,2022,Kelly Olynyk,2024,97.9,0.2077,-0.612,-0.359,-0.253,3383.7
-Dyson Daniels,2022,Blake Griffin,2023,95.3,0.3093,0.142,-1.065,1.207,2171.2
-E.J. Liddell,2022,Aaron Gordon,2021,97.2,0.2402,0.256,0.04,0.216,3233.7
-Isaiah Mobley,2022,Aaron Gordon,2021,97,0.2487,0.256,0.04,0.216,3233.7
-Jabari Smith,2022,Kelly Olynyk,2023,96.3,0.2763,0.577,0.152,0.425,3242.9
-Jabari Walker,2022,Miles Bridges,2020,97.6,0.2205,-1.341,-0.499,-0.842,3267
-Jaden Hardy,2022,Marco Belinelli,2018,97.5,0.2235,-1.192,0.353,-1.545,3435
-Jaden Ivey,2022,Cade Cunningham,2022,98.8,0.154,-0.426,-0.259,-0.167,2738
-Jake LaRavia,2022,Bruce Brown,2023,96.8,0.2545,0.167,-0.46,0.627,3570
-Jalen Duren,2022,Mason Plumlee,2017,96.9,0.2515,0.461,-0.01,0.472,3537
-Jalen Williams,2022,Tyler Johnson,2018,98,0.203,-0.067,-0.101,0.034,3513
-Jaylin Williams,2022,P.J. Washington,2020,97.8,0.2086,-1.281,-1.325,0.044,2409
-Jeremy Sochan,2022,Paul Millsap,2022,96.6,0.2639,-1.227,-1.622,0.395,2460.5
-Johnny Davis,2022,Blake Griffin,2022,97.3,0.2343,-0.513,-0.52,0.006,2702.8
-Josh Minott,2022,Keita Bates-Diop,2024,98.3,0.1854,-1.342,-1.302,-0.039,2395.1
-Keegan Murray,2022,Kelly Olynyk,2023,94,0.3533,0.577,0.152,0.425,3242.9
-Kendall Brown,2022,Jaime Jaquez Jr.,2024,98.7,0.1636,-0.641,-0.89,0.249,2763
-Kennedy Chandler,2022,Jerian Grant,2019,97.1,0.2442,-1.758,-1.368,-0.39,2928.1
-Malaki Branham,2022,Quentin Grimes,2026,97.9,0.2065,-0.633,-0.334,-0.3,3551.5
-MarJon Beauchamp,2022,JaeSean Tate,2026,96.7,0.2578,-1.638,-1.991,0.353,1712
-Mark Williams,2022,Daniel Theis,2020,97.5,0.2237,1.377,-0.51,1.887,2773.5
-Max Christie,2022,Marcus Morris,2017,98.9,0.1514,-1.167,-0.335,-0.832,3641.2
-Moussa Diabate,2022,Daniel Theis,2024,96.7,0.2578,-1.692,-1.518,-0.174,2321.7
-Nikola Jovic,2022,Frank Kaminsky,2017,97.2,0.2404,-0.885,-0.175,-0.71,3235
-Ochai Agbaji,2022,AJ Griffin,2023,98.7,0.1633,-1.036,-0.344,-0.691,2051
-Ousmane Dieng,2022,Saddiq Bey,2021,97.8,0.2097,-0.395,0.022,-0.416,2559
-Paolo Banchero,2022,Paul Millsap,2018,93.6,0.3643,1.875,0.291,1.583,3189.8
-Patrick Baldwin Jr.,2022,P.J. Washington,2023,99.3,0.1143,-0.373,-0.575,0.202,3595
-Peyton Watson,2022,Kris Murray,2024,97.2,0.2392,-0.933,-1.392,0.459,1998
-Ryan Rollins,2022,Terry Rozier,2025,96.8,0.2563,-2.331,-1.339,-0.991,3357.9
-Tari Eason,2022,Justin Champagnie,2026,95.7,0.2958,0.77,0.587,0.183,2514.2
-Trevor Keels,2022,Furkan Korkmaz,2024,98.1,0.1942,-1.938,-1.592,-0.345,1808.2
-Tyty Washington Jr.,2022,Dennis Smith Jr.,2019,98.5,0.1747,-1.793,-1.209,-0.583,3044.8
-Vince Williams Jr.,2022,Caris LeVert,2018,96.6,0.2628,-1.033,-0.581,-0.452,2791.8
-Walker Kessler,2022,Daniel Theis,2020,97.7,0.2151,1.377,-0.51,1.887,2773.5
-Wendell Moore Jr.,2022,George Hill,2019,97.9,0.2075,1.069,0.598,0.471,3159.4
-Aaron Wiggins,2021,Aaron Wiggins,2026,99.5,0.0999,0.425,-0.277,0.701,3195.6
-Alperen Sengun,2021,Derik Queen,2026,97.2,0.2398,-0.944,-0.912,-0.032,2673
-Ayo Dosunmu,2021,Talen Horton-Tucker,2025,98.8,0.1521,-0.692,-0.263,-0.429,2621.8
-Cade Cunningham,2021,Kawhi Leonard,2023,97.8,0.2111,5.112,3.69,1.422,2947.4
-Cameron Thomas,2021,Norman Powell,2025,97.5,0.2249,0.97,1.116,-0.146,3479.8
-Charles Bassey,2021,Aron Baynes,2020,96.3,0.273,-0.1,-0.423,0.322,2705.7
-Chris Duarte,2021,Kyshawn George,2026,96.6,0.2622,-0.347,-0.6,0.253,2742.5
-Corey Kispert,2021,Brandon Miller,2024,98.5,0.1718,-1.396,-0.06,-1.336,3033
-Davion Mitchell,2021,Dennis Smith Jr.,2021,96.2,0.277,-1.469,-1.534,0.065,2318.6
-Day'Ron Sharpe,2021,Khem Birch,2021,97,0.245,-0.314,-0.797,0.483,2826
-Evan Mobley,2021,Evan Mobley,2025,97.7,0.2177,3.01,1.531,1.479,3485.3
-Franz Wagner,2021,Kelly Olynyk,2023,96.8,0.2531,0.577,0.152,0.425,3242.9
-Greg Brown III,2021,P.J. Washington,2020,98.6,0.1668,-1.281,-1.325,0.044,2409
-Herbert Jones,2021,Bruce Brown,2023,96.3,0.2747,0.167,-0.46,0.627,3570
-Isaiah Jackson,2021,Amir Johnson,2019,98.4,0.1774,-0.7,-1.21,0.51,2603.4
-Isaiah Livers,2021,Nikola Jovic,2025,97.2,0.237,-0.306,-0.501,0.195,1942.8
-JT Thor,2021,Jerami Grant,2019,97.6,0.2225,0.202,-0.587,0.789,3653
-Jaden Springer,2021,Caris LeVert,2018,98.8,0.1545,-1.033,-0.581,-0.452,2791.8
-Jalen Green,2021,Trey Murphy III,2023,98.6,0.1704,1.06,1.296,-0.237,3096
-Jalen Johnson,2021,Jalen Johnson,2025,96.7,0.2578,1.353,0.069,1.284,3165.9
-Jalen Suggs,2021,Victor Oladipo,2016,96.6,0.2635,1.579,0.565,1.014,2379
-James Bouknight,2021,Khris Middleton,2026,96.8,0.2551,-1.066,-0.511,-0.555,3005.1
-Jared Butler,2021,Shabazz Napier,2020,97.4,0.2298,0.337,-0.027,0.365,3002.9
-Jason Preston,2021,Goran Dragic,2016,96,0.2853,1.242,1.319,-0.077,2363
-Jeremiah Robinson-Earl,2021,Aaron Gordon,2017,98.2,0.1889,0.244,0.724,-0.479,3574.5
-Jonathan Kuminga,2021,Keldon Johnson,2022,96.6,0.2645,0.572,1.136,-0.564,3598
-Josh Christopher,2021,Quentin Grimes,2026,98,0.2001,-0.633,-0.334,-0.3,3551.5
-Josh Giddey,2021,Josh Giddey,2025,97.8,0.2132,1.112,1.167,-0.055,3529.2
-Joshua Primo,2021,Jae Crowder,2018,98.1,0.195,-0.556,-0.502,-0.053,3522.5
-Kai Jones,2021,Jerami Grant,2019,97.6,0.2191,0.202,-0.587,0.789,3653
-Keon Johnson,2021,Talen Horton-Tucker,2023,98.6,0.1682,-0.39,-0.219,-0.171,3107.8
-Kessler Edwards,2021,Nassir Little,2024,98.8,0.1563,-2.807,-1.669,-1.138,2072
-Luka Garza,2021,Wendell Carter Jr.,2025,96.8,0.2564,0.785,-0.991,1.775,3282.8
-Miles McBride,2021,Ty Jerome,2025,97.4,0.2305,1.902,2.138,-0.236,2189.9
-Moses Moody,2021,Brandon Miller,2024,98.2,0.1886,-1.396,-0.06,-1.336,3033
-Nah'Shon Hyland,2021,Walter Clayton Jr.,2026,98.7,0.1635,-2.232,-0.822,-1.41,2061
-Neemias Queta,2021,Trayce Jackson-Davis,2024,97.7,0.2166,-0.367,0.02,-0.387,1780
-Quentin Grimes,2021,Quentin Grimes,2025,98.2,0.192,-0.126,1.248,-1.374,3322.9
-Sandro Mamukelashvili,2021,Nemanja Bjelica,2022,97.8,0.2132,-1.319,-1.583,0.264,2826.3
-Santi Aldama,2021,Santi Aldama,2024,98.6,0.1701,-1.203,-1.101,-0.102,3082
-Scottie Barnes,2021,Scottie Barnes,2026,95,0.3217,3.35,1.255,2.095,3670.2
-Tre Mann,2021,Jamal Murray,2019,97.7,0.2175,1.52,2.314,-0.794,3611.8
-Trey Murphy III,2021,Brandon Miller,2025,97.5,0.2245,-0.472,0.366,-0.839,2711.2
-Usman Garuba,2021,Jeremiah Robinson-Earl,2022,98,0.1996,-1.811,-1.3,-0.511,1737
-Ziaire Williams,2021,Jae Crowder,2020,98,0.2007,0.385,0.256,0.128,3468.8
-Aaron Nesmith,2020,Kyshawn George,2026,98,0.2025,-0.347,-0.6,0.253,2742.5
-Aleksej Pokusevski,2020,Marvin Williams,2016,88.4,0.496,1.221,0.583,0.638,2338
-Anthony Edwards,2020,Anthony Edwards,2024,95.7,0.2968,3.72,2.907,0.812,3692.5
-CJ Elleby,2020,DeMarre Carroll,2018,97.4,0.2277,0.725,0.439,0.285,3545
-Cole Anthony,2020,Tyreke Evans,2019,98.1,0.1975,-0.239,-0.523,0.284,3136.1
-Daniel Oturu,2020,Aron Baynes,2020,97.9,0.2084,-0.1,-0.423,0.322,2705.7
-Deni Avdija,2020,Aaron Gordon,2021,96.8,0.2543,0.256,0.04,0.216,3233.7
-Desmond Bane,2020,Khris Middleton,2025,96.5,0.2687,0.372,0.624,-0.253,2775.4
-Devin Vassell,2020,Kyshawn George,2026,97,0.2454,-0.347,-0.6,0.253,2742.5
-Elijah Hughes,2020,Amir Coffey,2022,97.7,0.2172,-0.747,-0.107,-0.64,1951.9
-Immanuel Quickley,2020,Jamal Murray,2019,98.7,0.1648,1.52,2.314,-0.794,3611.8
-Isaac Okoro,2020,Franz Wagner,2022,97.3,0.2354,-0.234,-0.083,-0.152,3079
-Isaiah Joe,2020,Furkan Korkmaz,2021,98.9,0.1458,0.42,0.239,0.181,2646.9
-Isaiah Stewart,2020,Aron Baynes,2020,96.4,0.2693,-0.1,-0.423,0.322,2705.7
-Jaden McDaniels,2020,Jerami Grant,2020,98.4,0.179,-0.642,-0.328,-0.314,3473
-Jahmi'us Ramsey,2020,Caris LeVert,2017,97.4,0.2317,-0.153,0.059,-0.211,1887
-Jalen Smith,2020,Jalen Smith,2024,96.3,0.2742,-0.343,0.394,-0.737,2591.8
-Jordan Nwora,2020,Simone Fontecchio,2026,97.7,0.2158,0.34,0.503,-0.163,2994.7
-Josh Green,2020,Nique Clifford,2026,98.5,0.175,-1.322,-1.5,0.178,2532
-Killian Hayes,2020,Killian Hayes,2023,95.2,0.313,-2.632,-1.959,-0.674,3501.2
-Kira Lewis Jr.,2020,Jamal Murray,2020,97.8,0.2091,2.528,3.055,-0.527,3476
-LaMelo Ball,2020,LaMelo Ball,2023,96.2,0.2792,1.638,1.998,-0.359,3258.9
-Leandro Bolmaro,2020,Kyle Lowry,2025,97.4,0.2274,-1.43,-2.01,0.58,2855.2
-Malachi Flynn,2020,Terry Rozier,2023,97.7,0.2167,0.09,0.915,-0.825,3555.2
-Nick Richards,2020,Richaun Holmes,2024,97.7,0.2146,-1.406,-1.346,-0.06,2170.9
-Nico Mannion,2020,Jalen Brunson,2019,98.2,0.1901,-0.873,0.114,-0.986,2241
-Obi Toppin,2020,Cedric Coward,2026,98.3,0.1825,0.837,0.979,-0.141,2248
-Onyeka Okongwu,2020,Derrick Favors,2017,98,0.1991,0.864,-0.687,1.551,2673.2
-Patrick Williams,2020,Kelly Oubre Jr.,2021,97.9,0.2061,-1.218,-1.184,-0.035,3350.5
-Paul Reed,2020,Amir Johnson,2019,94.5,0.3352,-0.7,-1.21,0.51,2603.4
-Payton Pritchard,2020,Terry Rozier,2023,98.8,0.1551,0.09,0.915,-0.825,3555.2
-Precious Achiuwa,2020,Precious Achiuwa,2024,96.3,0.2762,-1.24,-1.743,0.503,3174.2
-R.J. Hampton,2020,Kyle Anderson,2021,95.3,0.3108,1.628,-0.087,1.715,3324.9
-Robert Woodard II,2020,Bilal Coulibaly,2025,97.9,0.2051,-2.48,-2.064,-0.416,3234.2
-Saben Lee,2020,Jerian Grant,2020,98.2,0.1898,-1.523,-1.175,-0.349,2166.3
-Saddiq Bey,2020,Simone Fontecchio,2026,97.5,0.2262,0.34,0.503,-0.163,2994.7
-Sam Merrill,2020,Landry Shamet,2024,98.3,0.1877,-1.474,-0.783,-0.69,2574.1
-Skylar Mays,2020,Nickeil Alexander-Walker,2023,97.8,0.2122,-1.215,-1.508,0.294,2799.3
-Theo Maledon,2020,Derrick Rose,2016,97.7,0.2145,-1.579,-0.018,-1.561,2098
-Tre Jones,2020,Jerian Grant,2018,99.2,0.1304,-0.834,-0.162,-0.673,3168.6
-Tyler Bey,2020,Justise Winslow,2022,97.4,0.2292,-0.333,-1.56,1.227,2180.1
-Tyrell Terry,2020,Terry Rozier,2020,98.2,0.1897,-1.804,-0.688,-1.116,3532.6
-Tyrese Haliburton,2020,LaMelo Ball,2022,96.6,0.2612,2.137,1.974,0.163,3523.8
-Tyrese Maxey,2020,Goran Dragic,2022,98.7,0.164,-1.378,-0.856,-0.522,2647.4
-Udoka Azubuike,2020,Richaun Holmes,2022,97.7,0.2166,-0.052,-0.487,0.435,3054
-Vernon Carey Jr.,2020,Jabari Walker,2024,96.9,0.2506,-2.805,-1.761,-1.044,2165.2
-Vit Krejci,2020,Glenn Robinson III,2019,97.5,0.2228,-1.99,-1.576,-0.414,1880.5
-Xavier Tillman,2020,Michael Kidd-Gilchrist,2017,96,0.2839,1.034,-0.858,1.891,2503.8
-Zeke Nnaji,2020,Daniel Theis,2019,97.6,0.2206,-0.663,-0.693,0.03,1610
-Admiral Schofield,2019,Will Barton,2021,98.7,0.1639,-0.273,0.177,-0.45,3368.8
-Bol Bol,2019,Zach Collins,2023,97.3,0.2358,-0.136,-0.529,0.393,1939.8
-Brandon Clarke,2019,Brandon Clarke,2022,97.6,0.2209,1.228,0.245,0.984,3038.5
-Bruno Fernando,2019,Daniel Theis,2020,97,0.2471,1.377,-0.51,1.887,2773.5
-Cam Reddish,2019,Victor Oladipo,2017,97.5,0.2264,0.831,-0.059,0.89,3555.8
-Cameron Johnson,2019,Cameron Johnson,2023,97.5,0.2249,1.78,0.965,0.815,3099.4
-Carsen Edwards,2019,Terry Rozier,2023,98.2,0.1917,0.09,0.915,-0.825,3555.2
-Chuma Okeke,2019,Kelly Oubre Jr.,2025,96.3,0.2731,-0.493,-0.507,0.014,3519.5
-Coby White,2019,Dennis Schroder,2020,97.6,0.2206,0.815,0.734,0.081,3499.8
-Cody Martin,2019,Caris LeVert,2018,97.8,0.2119,-1.033,-0.581,-0.452,2791.8
-Daniel Gafford,2019,Richaun Holmes,2021,97.7,0.214,1.508,0.807,0.701,3262.5
-Darius Garland,2019,Jamal Murray,2020,97.3,0.2338,2.528,3.055,-0.527,3476
-De'Andre Hunter,2019,Keldon Johnson,2022,97.5,0.2249,0.572,1.136,-0.564,3598
-Dylan Windler,2019,Kelly Oubre Jr.,2022,95.3,0.3093,-0.444,0.387,-0.831,3440.9
-Eric Paschall,2019,P.J. Washington,2023,98.8,0.1561,-0.373,-0.575,0.202,3595
-Goga Bitadze,2019,Wendell Carter Jr.,2019,95.9,0.288,-1.099,-1.768,0.669,1760
-Isaiah Roby,2019,James Johnson,2021,97.8,0.2133,-1.729,-1.919,0.191,2660.5
-Ja Morant,2019,John Wall,2021,91.5,0.4205,0.754,0.909,-0.155,2503.8
-Jalen McDaniels,2019,Miles Bridges,2019,97.8,0.2096,-0.934,-0.636,-0.299,2346
-Jarrell Brantley,2019,Caleb Martin,2024,98.5,0.1717,-0.149,-0.789,0.64,3407.9
-Jarrett Culver,2019,Kawhi Leonard,2024,95,0.319,4.893,3.271,1.622,3582.5
-Jaxson Hayes,2019,Evan Mobley,2023,93.9,0.3553,1.464,-0.311,1.776,3678.8
-Jaylen Nowell,2019,Eric Bledsoe,2022,98.7,0.1619,-0.68,-0.796,0.116,3241.2
-Jordan Poole,2019,Furkan Korkmaz,2022,98,0.2003,-1.196,-0.637,-0.559,3067.8
-Justin James,2019,Nicolas Batum,2018,96,0.2852,0.489,0.942,-0.453,3495.2
-KZ Okpala,2019,T.J. Warren,2023,99,0.1428,-1.329,-1.534,0.205,1681.8
-Keldon Johnson,2019,Tobias Harris,2017,97.7,0.216,0.211,0.436,-0.225,3641.5
-Kevin Porter Jr.,2019,Gordon Hayward,2023,97.2,0.2372,-0.267,-0.62,0.354,3233.2
-Luka Samanic,2019,Trey Lyles,2018,97.9,0.2073,-0.548,-0.057,-0.491,3036.9
-Matisse Thybulle,2019,Herbert Jones,2026,93.4,0.3694,1.065,-0.45,1.515,3066.2
-Mfiondu Kabengele,2019,Daniel Theis,2021,97.3,0.2357,0.387,-0.698,1.085,3244.1
-Nassir Little,2019,P.J. Washington,2020,98.4,0.1812,-1.281,-1.325,0.044,2409
-Nickeil Alexander-Walker,2019,Tyler Johnson,2018,97,0.2476,-0.067,-0.101,0.034,3513
-Nicolas Claxton,2019,Daniel Theis,2021,96.1,0.2827,0.387,-0.698,1.085,3244.1
-PJ Washington,2019,Jeremy Sochan,2023,95.4,0.3057,-1.548,-1.018,-0.529,2108
-Quinndary Weatherspoon,2019,Josh Richardson,2023,97.4,0.2298,-0.998,-1.248,0.25,3219.4
-R.J. Barrett,2019,Pascal Siakam,2021,97.3,0.2324,2.006,1.446,0.56,3501.5
-Romeo Langford,2019,Gordon Hayward,2023,98.5,0.1723,-0.267,-0.62,0.354,3233.2
-Rui Hachimura,2019,P.J. Washington,2020,98.1,0.1949,-1.281,-1.325,0.044,2409
-Sekou Doumbouya,2019,Justin Anderson,2019,98.1,0.197,-1.354,-0.991,-0.363,1815.4
-Talen Horton-Tucker,2019,Caris LeVert,2018,98.4,0.1808,-1.033,-0.581,-0.452,2791.8
-Terance Mann,2019,Terance Mann,2023,98.6,0.1687,0.024,0.3,-0.276,3468
-Ty Jerome,2019,Dennis Smith Jr.,2019,97.9,0.2068,-1.793,-1.209,-0.583,3044.8
-Tyler Herro,2019,Lonnie Walker IV,2025,97.8,0.2108,-1.876,-0.628,-1.248,2477.4
-Zion Williamson,2019,Anthony Davis,2021,90,0.4598,4.22,2.038,2.182,3157.9
-Aaron Holiday,2018,Fred VanVleet,2019,98,0.2022,0.796,0.301,0.494,3065.4
-Bruce Brown Jr.,2018,Bruce Brown,2023,98.9,0.1476,0.167,-0.46,0.627,3570
-Chandler Hutchison,2018,Brandin Podziemski,2024,97.3,0.2345,-0.458,-0.694,0.236,2618
-Chimezie Metu,2018,Keita Bates-Diop,2022,97.9,0.2064,-1.76,-1.777,0.017,1770.5
-Collin Sexton,2018,Goran Dragic,2017,99.3,0.1208,1.549,1.967,-0.418,3615
-De'Anthony Melton,2018,DeAnthony Melton,2021,97.4,0.2305,0.843,-0.71,1.553,2473.8
-Deandre Ayton,2018,Wendell Carter Jr.,2022,95.5,0.3032,1.213,-0.183,1.396,3318.1
-Devonte' Graham,2018,Devonte Graham,2024,97.8,0.2107,-0.941,-0.176,-0.766,2611.5
-Donte DiVincenzo,2018,VJ Edgecombe,2026,98.4,0.1788,0.438,0.352,0.086,2623
-Dzanan Musa,2018,Cam Whitmore,2024,98.5,0.1749,-0.563,0.234,-0.797,1530
-Elie Okobo,2018,Reggie Jackson,2023,98.3,0.1862,-1.819,-1.17,-0.649,3413.1
-Gary Trent Jr.,2018,Furkan Korkmaz,2021,99.1,0.1381,0.42,0.239,0.181,2646.9
-Grayson Allen,2018,Cedi Osman,2022,98.1,0.197,-2.111,-0.883,-1.228,3172.9
-Hamidou Diallo,2018,Christian Braun,2023,98.6,0.1688,-1.683,-2.067,0.384,1831
-Jacob Evans III,2018,Josh Richardson,2021,97,0.2457,-1.147,-0.413,-0.734,3352.8
-Jalen Brunson,2018,Dennis Schroder,2019,98.3,0.1838,-0.887,-0.125,-0.762,3578.5
-Jaren Jackson Jr.,2018,Naz Reid,2022,97.5,0.2245,-0.464,-0.906,0.441,2503.7
-Jarred Vanderbilt,2018,Precious Achiuwa,2025,97.3,0.2346,-1.436,-1.886,0.45,3057.1
-Jerome Robinson,2018,Grayson Allen,2024,98.4,0.1797,0.766,0.868,-0.102,3628.2
-Jevon Carter,2018,Jose Alvarado,2026,98,0.2006,0.802,-0.039,0.841,3072.3
-Josh Okogie,2018,Caleb Martin,2024,97.2,0.2383,-0.149,-0.789,0.64,3407.9
-Keita Bates-Diop,2018,P.J. Washington,2020,97.9,0.205,-1.281,-1.325,0.044,2409
-Kevin Huerter,2018,Will Barton,2022,98.8,0.1539,-0.764,-0.159,-0.605,3569
-Kevin Knox,2018,Max Christie,2025,98.4,0.1789,-1.808,-1.033,-0.775,3123
-Khyri Thomas,2018,Tyler Johnson,2018,98,0.1999,-0.067,-0.101,0.034,3513
-Landry Shamet,2018,CJ McCollum,2018,98,0.2011,1.18,1.624,-0.443,3730.8
-Lonnie Walker IV,2018,Grayson Allen,2024,98.4,0.1804,0.766,0.868,-0.102,3628.2
-Luka Doncic,2018,Khris Middleton,2024,96.1,0.2829,1.791,1.628,0.163,3050.8
-Marvin Bagley III,2018,Marvin Bagley III,2019,96.4,0.2706,-0.782,0.158,-0.94,2217
-Melvin Frazier,2018,Jarrett Culver,2020,96.7,0.2608,-1.341,-1.408,0.066,2156
-Mikal Bridges,2018,Kelly Oubre Jr.,2022,97.2,0.2385,-0.444,0.387,-0.831,3440.9
-Miles Bridges,2018,Andrew Wiggins,2024,97.6,0.2211,-0.116,0.077,-0.193,3313.1
-Mo Bamba,2018,Jalen Smith,2026,96.1,0.2802,1.599,0.923,0.675,2783.4
-Moritz Wagner,2018,Kelly Olynyk,2019,98.5,0.175,1.015,0.24,0.775,3376.3
-Omari Spellman,2018,Jeremiah Robinson-Earl,2022,96.7,0.2581,-1.811,-1.3,-0.511,1737
-Robert Williams,2018,Richaun Holmes,2018,98.5,0.172,-0.247,-0.526,0.279,2035.6
-Shai Gilgeous-Alexander,2018,Caris LeVert,2021,98.2,0.1921,0.149,0.863,-0.714,3131.9
-Shake Milton,2018,Tyler Johnson,2018,98.7,0.161,-0.067,-0.101,0.034,3513
-Trae Young,2018,Damian Lillard,2019,98.2,0.1931,4.458,4.703,-0.245,3709.5
-Troy Brown,2018,Naji Marshall,2024,97.9,0.2059,-0.336,-1.255,0.919,3105.6
-Wendell Carter Jr.,2018,Chris Boucher,2022,95.5,0.3042,1.715,0.763,0.952,3256.5
-Zhaire Smith,2018,Jaime Jaquez Jr.,2025,96.4,0.2702,-1.006,-0.661,-0.345,2952.8
-Alec Peters,2017,Julian Champagnie,2026,97.4,0.2304,1.666,1.071,0.596,3566.5
-Bam Adebayo,2017,Daniel Theis,2022,97.5,0.2241,-0.782,-1.345,0.562,2977.6
-Caleb Swanigan,2017,Nikola Vucevic,2016,96.8,0.2556,0.469,0.3,0.169,2037
-D.J. Wilson,2017,Jerami Grant,2019,95.7,0.298,0.202,-0.587,0.789,3653
-Damyean Dotson,2017,Brandon Miller,2024,98.6,0.1679,-1.396,-0.06,-1.336,3033
-Davon Reed,2017,Cameron Johnson,2022,98.9,0.1519,0.547,0.443,0.105,3276.3
-De'Aaron Fox,2017,Eric Bledsoe,2020,97.3,0.2338,2.466,1.191,1.274,3396.1
-"Dennis Smith, Jr.",2017,Caris LeVert,2021,97.8,0.21,0.149,0.863,-0.714,3131.9
-Derrick White,2017,Caris LeVert,2024,98.4,0.182,-0.023,-0.516,0.493,3489.5
-Dillon Brooks,2017,Josh Richardson,2021,98.6,0.1691,-1.147,-0.413,-0.734,3352.8
-Donovan Mitchell,2017,Donovan Mitchell,2018,96.7,0.2592,1.981,1.59,0.39,3288
-Dwayne Bacon,2017,Will Barton,2022,97.8,0.2126,-0.764,-0.159,-0.605,3569
-Edmond Sumner,2017,Cory Joseph,2022,98.4,0.179,-1.514,-1.314,-0.2,3221.1
-Frank Jackson,2017,Emmanuel Mudiay,2019,98.9,0.1494,-2.831,-0.978,-1.853,3186.3
-Frank Mason III,2017,Dennis Schroder,2019,98,0.2006,-0.887,-0.125,-0.762,3578.5
-Frank Ntilikina,2017,T.J. Warren,2023,97.9,0.2059,-1.329,-1.534,0.205,1681.8
-Harry Giles,2017,Taj Gibson,2017,98,0.2028,-0.197,-0.82,0.623,3441
-Ike Anigbogu,2017,Dereck Lively II,2024,96.6,0.264,1.159,0.165,0.994,1944
-Isaiah Hartenstein,2017,Aaron Gordon,2016,95.5,0.3048,0.976,0.516,0.459,1863
-Ivan Rabb,2017,Daniel Theis,2025,96.5,0.2653,-1.768,-2.09,0.322,1855.7
-Jarrett Allen,2017,Drew Eubanks,2023,97.2,0.2383,-1.244,-1.193,-0.051,3057.2
-Jawun Evans,2017,Darren Collison,2019,96.8,0.2561,1.087,1.026,0.061,3535.8
-Jayson Tatum,2017,Jaylen Brown,2024,96.4,0.2722,2.377,1.995,0.382,3585.8
-John Collins,2017,Bam Adebayo,2018,97.7,0.2149,-0.411,-1.408,0.997,2018
-Jonathan Isaac,2017,Jonathan Isaac,2019,97.1,0.2447,0.264,-0.823,1.087,2397.2
-Jordan Bell,2017,Collin Murray-Boyles,2026,97.1,0.2442,1.338,-0.013,1.352,1896
-Josh Hart,2017,Josh Hart,2018,97,0.246,-0.142,-0.009,-0.133,2110
-Josh Jackson,2017,Kelly Olynyk,2024,96.6,0.264,-0.612,-0.359,-0.253,3383.7
-Justin Patton,2017,Brandon Clarke,2020,97.6,0.2215,0.052,-0.166,0.218,1950
-Kyle Kuzma,2017,Bobby Portis,2018,96.9,0.2512,-0.021,0.475,-0.497,3011.9
-Lauri Markkanen,2017,Lauri Markkanen,2018,97.2,0.2388,-0.628,0.037,-0.665,2670
-Lonzo Ball,2017,Kawhi Leonard,2025,95.3,0.3102,5.05,3.386,1.664,3203.1
-Luke Kennard,2017,Cameron Johnson,2026,98,0.2021,1.349,1.343,0.006,3308.1
-Malik Monk,2017,Jordan Poole,2022,98.9,0.1511,0.827,1.403,-0.575,3434.1
-Markelle Fultz,2017,Stephon Castle,2026,92.9,0.3824,2.439,1.638,0.8,3509.5
-Monte Morris,2017,Fred VanVleet,2019,97.1,0.2425,0.796,0.301,0.494,3065.4
-OG Anunoby,2017,Kelly Oubre Jr.,2025,97.8,0.2087,-0.493,-0.507,0.014,3519.5
-Sasha Vezenkov,2017,Jeff Green,2017,97.1,0.2433,-2.957,-1.75,-1.207,3223.8
-Semi Ojeleye,2017,Simone Fontecchio,2026,97.5,0.2247,0.34,0.503,-0.163,2994.7
-Sindarius Thornwell,2017,Jeremy Lamb,2021,94.9,0.3227,0.26,0.346,-0.086,2826.8
-Sterling Brown,2017,Chuma Okeke,2024,98.2,0.1912,-1.679,-1.956,0.277,2282.3
-TJ Leaf,2017,Aaron Gordon,2017,97.5,0.2271,0.244,0.724,-0.479,3574.5
-Thomas Bryant,2017,Daniel Theis,2023,97.5,0.2239,-0.85,-1.162,0.312,2296.2
-Tony Bradley,2017,Taj Gibson,2016,97.6,0.2197,0.403,-0.451,0.853,1936
-Tyler Dorsey,2017,Tyler Johnson,2021,99.2,0.1248,-1.936,-0.786,-1.151,2530.6
-Tyler Lydon,2017,P.J. Washington,2020,97,0.2464,-1.281,-1.325,0.044,2409
-Vlatko Cancar,2017,Justin Anderson,2018,97.6,0.2182,-1.423,-0.525,-0.899,1803.2
-Wesley Iwundu,2017,Nique Clifford,2026,97.9,0.2076,-1.322,-1.5,0.178,2532
-Zach Collins,2017,Aron Baynes,2020,98.1,0.196,-0.1,-0.423,0.322,2705.7
-A.J. Hammons,2016,Taj Gibson,2016,96.4,0.2695,0.403,-0.451,0.853,1936
-Ben Simmons,2016,Scottie Barnes,2026,93.1,0.3771,3.35,1.255,2.095,3670.2
-Brandon Ingram,2016,Jerami Grant,2022,95.5,0.3018,0.091,0.099,-0.007,3249.2
-Brice Johnson,2016,Wendell Carter Jr.,2025,96.2,0.2779,0.785,-0.991,1.775,3282.8
-Buddy Hield,2016,Desmond Bane,2023,96.9,0.2529,2.778,2.153,0.626,3460.5
-Caris LeVert,2016,Nicolas Batum,2018,97.4,0.2303,0.489,0.942,-0.453,3495.2
-Chinanu Onuaku,2016,Trayce Jackson-Davis,2024,97.9,0.2052,-0.367,0.02,-0.387,1780
-Damian Jones,2016,Thomas Bryant,2019,95.1,0.3165,0.152,0.117,0.035,1550
-DeAndre' Bembry,2016,Bruce Brown,2023,98.6,0.1695,0.167,-0.46,0.627,3570
-Dejounte Murray,2016,Caris LeVert,2019,99.2,0.1253,-0.032,0.22,-0.252,3064.6
-Demetrius Jackson,2016,Terry Rozier,2023,96.5,0.2678,0.09,0.915,-0.825,3555.2
-Denzel Valentine,2016,Khris Middleton,2025,97.4,0.228,0.372,0.624,-0.253,2775.4
-Deyonta Davis,2016,Ivica Zubac,2019,96.5,0.2651,-0.194,-1.306,1.112,1689.1
-Diamond Stone,2016,Jerami Grant,2018,97.1,0.2413,-1.167,-0.991,-0.176,3257.6
-Domantas Sabonis,2016,Wendell Carter Jr.,2025,95.5,0.3037,0.785,-0.991,1.775,3282.8
-Dragan Bender,2016,Alex Sarr,2025,95.6,0.3011,-2.204,-1.353,-0.851,1814
-Furkan Korkmaz,2016,Ochai Agbaji,2023,97.4,0.2315,-1.648,-0.335,-1.313,1859
-Georges Niang,2016,Will Barton,2022,98.9,0.1513,-0.764,-0.159,-0.605,3569
-Guerschon Yabusele,2016,David Nwaba,2020,96.3,0.2765,-0.447,-0.873,0.426,2099.4
-Henry Ellenson,2016,Naz Reid,2021,97.5,0.2257,-1.353,-0.53,-0.824,1718.2
-Isaiah Whitehead,2016,Dennis Schroder,2016,97.6,0.2193,0.363,0.673,-0.31,1621
-Ivica Zubac,2016,Taj Gibson,2016,96.2,0.2773,0.403,-0.451,0.853,1936
-Jake Layman,2016,Jaylen Brown,2017,98.3,0.1846,-2.293,-1.654,-0.639,1991
-Jakob Poeltl,2016,Daniel Theis,2020,97.7,0.2142,1.377,-0.51,1.887,2773.5
-Jamal Murray,2016,Anthony Edwards,2021,96.4,0.2699,0.248,1.479,-1.23,2964
-Jaylen Brown,2016,Nikola Jovic,2026,97.2,0.237,-0.864,-1.104,0.24,2265.1
-Juancho Hernangomez,2016,Marvin Williams,2018,97.2,0.2384,0.486,0.038,0.448,3501.5
-Kris Dunn,2016,Delon Wright,2021,93.9,0.3541,0.303,-0.3,0.603,3309.1
-Malachi Richardson,2016,Tyler Johnson,2019,98.3,0.1844,-1.105,-0.661,-0.444,3303.7
-Malcolm Brogdon,2016,Devin Vassell,2025,99,0.1403,-0.742,0.159,-0.901,3495.8
-Malik Beasley,2016,Quentin Grimes,2025,99.2,0.1272,-0.126,1.248,-1.374,3322.9
-Marquese Chriss,2016,Jerami Grant,2019,97.4,0.2299,0.202,-0.587,0.789,3653
-Michael Gbinije,2016,George Hill,2020,97.3,0.2357,1.463,0.843,0.621,3050.2
-Pascal Siakam,2016,Daniel Theis,2021,97.1,0.2446,0.387,-0.698,1.085,3244.1
-Patrick McCaw,2016,Kentavious Caldwell-Pope,2026,98.2,0.1905,-0.416,-0.847,0.431,3153.3
-Skal Labissiere,2016,Zeke Nnaji,2026,92.6,0.3932,-2.047,-2.425,0.378,1713.1
-Stephen Zimmerman Jr.,2016,Karlo Matkovic,2026,95.1,0.3173,-1.256,-1.35,0.093,1505.2
-Taurean Prince,2016,Kelly Oubre Jr.,2022,97.7,0.2177,-0.444,0.387,-0.831,3440.9
-Timothe Luwawu-Cabarrot,2016,Chris Duarte,2023,98.5,0.1724,-1.902,-1.146,-0.755,2052.8
-Tyler Ulis,2016,Dennis Schroder,2019,98.2,0.192,-0.887,-0.125,-0.762,3578.5
-Wade Baldwin IV,2016,Caris LeVert,2022,98,0.2,-1.132,0.122,-1.254,3307.2
+AJ Dybantsa,2026,Pascal Siakam,2023,97,0.2481,2.21,1.952,0.259,3663
+Aday Mara,2026,Daniel Theis,2020,97.7,0.2147,1.324,-0.569,1.893,2773.5
+Alex Karaban,2026,Kyle Kuzma,2019,97.6,0.2226,-0.206,0.282,-0.489,3578.5
+Allen Graves,2026,Ersan Ilyasova,2021,95.9,0.2903,-0.728,-1.128,0.4,2269.7
+Amari Allen,2026,Caleb Martin,2024,97.7,0.2154,-0.15,-0.802,0.651,3407.9
+Bennett Stirtz,2026,Egor Demin,2026,98.2,0.1883,-0.566,-0.377,-0.189,1958
+Braden Smith,2026,Darren Collison,2018,97.4,0.2277,0.643,1.419,-0.776,3504.5
+Brayden Burries,2026,Jamal Murray,2017,97.6,0.2188,-0.906,0.005,-0.911,2414
+Caleb Wilson,2026,Alperen Sengun,2023,94.2,0.3446,-0.447,-0.223,-0.224,3287.8
+Cameron Boozer,2026,Sandro Mamukelashvili,2026,94.1,0.35,1.849,1.179,0.67,2794.3
+Cameron Carr,2026,Brandon Miller,2024,98.4,0.1777,-1.312,-0.012,-1.299,3033
+Chris Cenac Jr,2026,Daniel Theis,2022,97,0.2484,-0.821,-1.389,0.569,2977.6
+Christian Anderson,2026,Terry Rozier,2024,98.4,0.1808,-0.427,0.514,-0.942,3510
+Dailyn Swain,2026,Kelly Olynyk,2023,95.7,0.2963,0.547,0.151,0.397,3242.9
+Darius Acuff Jr.,2026,Goran Dragic,2021,98.7,0.1612,-0.406,0.316,-0.722,3145.5
+Darryn Peterson,2026,Kawhi Leonard,2023,96.1,0.2838,5.119,3.699,1.42,2947.4
+Ebuka Okorie,2026,Scoot Henderson,2026,98,0.1995,-0.775,-0.227,-0.547,2907.1
+Flory Bidunga,2026,Drew Eubanks,2025,97.3,0.2343,-2.082,-1.906,-0.176,2725.1
+Hannes Steinbach,2026,Aron Baynes,2020,98.3,0.1862,-0.111,-0.427,0.317,2705.7
+Henri Veesaar,2026,Santi Aldama,2023,98.5,0.1752,-0.945,-0.64,-0.305,1952
+Isaiah Evans,2026,Devin Vassell,2026,98,0.1988,1.205,0.809,0.396,3511
+Jayden Quaintance,2026,Drew Eubanks,2023,96.1,0.2808,-1.233,-1.208,-0.025,3057.2
+Jeremy Fears Jr.,2026,Aaron Holiday,2020,98,0.2026,-1.054,-0.8,-0.254,2101.5
+Joshua Jefferson,2026,Nemanja Bjelica,2022,97.7,0.2142,-1.303,-1.592,0.289,2826.3
+Karim Lopez,2026,Christian Braun,2024,97.5,0.223,-1.11,-1.588,0.478,2541.8
+Keaton Wagler,2026,Khris Middleton,2026,96.5,0.266,-1.058,-0.493,-0.565,3005.1
+Kingston Flemings,2026,Jerian Grant,2018,97.4,0.228,-0.884,-0.181,-0.702,3168.6
+Koa Peat,2026,Keita Bates-Diop,2023,96.9,0.2521,-0.118,-0.207,0.088,2620.7
+Labaron Philon,2026,DeAaron Fox,2026,97.8,0.2085,2.952,2.441,0.51,3557.8
+Luigi Suigo,2026,Mo Bamba,2019,93.7,0.361,-2.572,-2.448,-0.124,1416
+Meleek Thomas,2026,Josh Richardson,2023,98,0.2015,-1.023,-1.248,0.225,3219.4
+Mikel Brown Jr.,2026,Jamal Murray,2020,99,0.1384,2.511,3.063,-0.552,3476
+Milan Momcilovic,2026,Jordan Hawkins,2024,96.7,0.2583,-2.026,-0.618,-1.408,1811
+Milos Uzan,2026,Tyler Johnson,2020,98.4,0.1796,-2.082,-0.716,-1.366,2846.9
+Morez Johnson Jr.,2026,Aron Baynes,2020,97.6,0.2189,-0.111,-0.427,0.317,2705.7
+Nate Ament,2026,Tobias Harris,2025,98.5,0.1743,0.784,-0.087,0.872,3576.5
+Richie Saunders,2026,Moses Moody,2026,97.5,0.2261,1.611,0.544,1.067,3232.9
+Sergio De Larrea,2026,John Wall,2023,95.5,0.3027,-1.729,-1.287,-0.442,1479.5
+Tarris Reed Jr.,2026,Amir Johnson,2017,96.8,0.2545,1.719,-0.273,1.992,2958
+Tounde Yessoufou,2026,Ziaire Williams,2025,98.1,0.1948,-1.059,-1.149,0.09,2997.9
+Tyler Tanner,2026,Darren Collison,2019,95.3,0.3097,0.998,0.989,0.009,3535.8
+Yaxel Lendeborg,2026,Santi Aldama,2026,95.2,0.3124,0.255,0.365,-0.11,3085.4
+Zuby Ejiofor,2026,Danny Wolf,2026,96.1,0.2811,-1.075,-1.109,0.034,1837
+Ace Bailey,2025,Kelly Olynyk,2023,99.5,0.0996,0.547,0.151,0.397,3242.9
+Adou Thiero,2025,Bilal Coulibaly,2025,97.9,0.2061,-2.476,-2.069,-0.408,3234.2
+Asa Newell,2025,P.J. Washington,2020,98,0.2021,-1.161,-1.283,0.122,2409
+Ben Saraf,2025,Cory Joseph,2017,98,0.2011,-1.486,-0.792,-0.694,3500.8
+Bogoljub Markovic,2025,Jabari Parker,2022,97.5,0.2232,-1.158,-1.286,0.128,1480.2
+Carter Bryant,2025,Kelly Oubre Jr.,2021,98,0.2029,-1.234,-1.182,-0.052,3350.5
+Cedric Coward,2025,Andrew Wiggins,2023,95.3,0.3087,1.673,0.181,1.492,3207.5
+Chaz Lanier,2025,Luke Kennard,2018,98.7,0.1623,-0.698,-0.512,-0.185,2113
+Collin Murray-Boyles,2025,Scottie Barnes,2022,98.4,0.1793,0.444,0.038,0.406,3267
+Cooper Flagg,2025,Scottie Barnes,2025,94.3,0.3432,1.563,0.369,1.194,3533.5
+Danny Wolf,2025,Danny Wolf,2026,98.3,0.1853,-1.075,-1.109,0.034,1837
+Derik Queen,2025,Aaron Gordon,2017,97.7,0.2167,0.213,0.674,-0.461,3574.5
+Drake Powell,2025,Jalen McDaniels,2024,97.5,0.2267,-2.257,-2.221,-0.036,2752.1
+Dylan Harper,2025,DeMar DeRozan,2019,94.8,0.326,-0.146,0.944,-1.09,3672
+Egor Demin,2025,Talen Horton-Tucker,2024,98.3,0.1852,-0.737,-0.021,-0.717,2914.1
+Hugo Gonzalez,2025,Christian Braun,2023,98.2,0.193,-1.609,-2.051,0.442,1831
+Jase Richardson,2025,Cedi Osman,2022,98.9,0.1468,-2.137,-0.88,-1.257,3172.9
+Jeremiah Fears,2025,Caris LeVert,2021,97.8,0.2115,0.188,0.902,-0.714,3131.9
+Joan Beringer,2025,Dereck Lively II,2025,97.6,0.2196,1.571,-0.015,1.587,1803.5
+Johni Broome,2025,Zach Collins,2026,96.1,0.282,-0.271,-0.856,0.586,2328.7
+Kam Jones,2025,Eric Bledsoe,2022,99.2,0.1254,-0.706,-0.788,0.082,3241.2
+Kasparas Jakucionis,2025,Will Barton,2018,97.9,0.2083,-0.111,0.657,-0.768,3670.8
+Khaman Maluach,2025,Daniel Theis,2020,97,0.2456,1.324,-0.569,1.893,2773.5
+Kon Knueppel,2025,Cameron Johnson,2022,98,0.2027,0.486,0.395,0.091,3276.3
+Liam McNeeley,2025,Simone Fontecchio,2026,98.7,0.1603,0.335,0.494,-0.159,2994.7
+Maxime Raynaud,2025,Santi Aldama,2024,97.5,0.2262,-1.233,-1.119,-0.114,3082
+Nique Clifford,2025,Russell Westbrook,2026,95,0.3193,-1.276,-0.53,-0.746,3452.9
+Noa Essengue,2025,Christian Braun,2024,97.7,0.2168,-1.11,-1.588,0.478,2541.8
+Noah Penda,2025,Christian Braun,2024,96.7,0.2574,-1.11,-1.588,0.478,2541.8
+Nolan Traore,2025,Reggie Jackson,2017,97.1,0.2418,-0.718,0.87,-1.589,3242
+Rasheer Fleming,2025,P.J. Washington,2021,95.8,0.2935,-0.066,-0.775,0.709,3273.2
+Rocco Zikarsky,2025,Drew Eubanks,2026,96.2,0.2796,-1.921,-1.867,-0.054,2415.8
+Ryan Kalkbrenner,2025,Daniel Theis,2021,96.5,0.2672,0.316,-0.758,1.075,3244.1
+Thomas Sorber,2025,Daniel Theis,2021,96.9,0.2529,0.316,-0.758,1.075,3244.1
+Tre Johnson,2025,Brandon Ingram,2021,96.4,0.2697,1.403,2.453,-1.051,3523.2
+V.J. Edgecombe,2025,Jeremy Lamb,2021,92.7,0.3895,0.247,0.349,-0.102,2826.8
+Walter Clayton Jr.,2025,Devin Vassell,2025,98.5,0.1711,-0.79,0.158,-0.948,3495.8
+Will Riley,2025,Will Barton,2020,98.2,0.1916,0.067,0.197,-0.13,3311.2
+Yang Hansen,2025,Daniel Theis,2020,95.9,0.2884,1.324,-0.569,1.893,2773.5
+Adem Bona,2024,Michael Kidd-Gilchrist,2017,96.2,0.2781,0.97,-0.918,1.888,2503.8
+Ajay Mitchell,2024,Jeremy Lin,2019,97.6,0.2208,-2.901,-2.15,-0.751,2641.9
+Alex Sarr,2024,Daniel Theis,2020,93.7,0.3602,1.324,-0.569,1.893,2773.5
+Baylor Scheierman,2024,Cameron Johnson,2022,97.5,0.2268,0.486,0.395,0.091,3276.3
+Bobi Klintman,2024,Markieff Morris,2017,97.6,0.2221,0.587,-0.326,0.912,3593.5
+Carlton Carrington,2024,Shake Milton,2022,97.6,0.2215,-1.887,-1.007,-0.88,2840.6
+Cody Williams,2024,Mikal Bridges,2022,96.9,0.2508,1.493,0.863,0.631,3713.5
+DaRon Holmes II,2024,Danny Wolf,2026,98.7,0.1647,-1.075,-1.109,0.034,1837
+Dalton Knecht,2024,Saddiq Bey,2022,97.1,0.2413,-0.975,0.178,-1.153,3676
+Devin Carter,2024,VJ Edgecombe,2026,98.3,0.1842,0.428,0.344,0.085,2623
+Dillon Jones,2024,Jeremy Lamb,2019,97.1,0.2434,0.863,0.893,-0.03,3562.5
+Donovan Clingan,2024,Daniel Theis,2020,98.2,0.1904,1.324,-0.569,1.893,2773.5
+Harrison Ingram,2024,Naji Marshall,2024,96.4,0.2719,-0.285,-1.238,0.953,3105.6
+Isaiah Collier,2024,DeAaron Fox,2018,97,0.2456,-2.379,-1.317,-1.062,2676
+Ja'Kobe Walter,2024,Taurean Prince,2023,98.1,0.1978,-1.364,-1.331,-0.034,2890.1
+Jared McCain,2024,Furkan Korkmaz,2021,97,0.2476,0.354,0.226,0.128,2646.9
+Jaylon Tyson,2024,Gordon Hayward,2023,97.2,0.2379,-0.264,-0.621,0.357,3233.2
+Johnny Furphy,2024,Jae Crowder,2018,97.4,0.2308,-0.569,-0.54,-0.029,3522.5
+Jonathan Mogbo,2024,Jonathan Mogbo,2025,95.3,0.3087,-1.996,-2.412,0.416,1936
+KJ Simpson,2024,DAngelo Russell,2018,98.4,0.1779,-0.861,0.873,-1.734,3129.4
+Kel'el Ware,2024,Naz Reid,2021,97.4,0.229,-1.386,-0.533,-0.853,1718.2
+Kyle Filipowski,2024,P.J. Washington,2021,98,0.2005,-0.066,-0.775,0.709,3273.2
+Kyshawn George,2024,Quentin Grimes,2025,98.3,0.1834,-0.133,1.236,-1.369,3322.9
+Matas Buzelis,2024,Danny Wolf,2026,98.9,0.1458,-1.075,-1.109,0.034,1837
+Melvin Ajinca,2024,Shaedon Sharpe,2023,98.4,0.1777,-1.925,-0.068,-1.857,1779
+Nikola Djurisic,2024,Kevin Porter Jr.,2021,97.4,0.229,-2.102,-0.431,-1.671,1706.5
+Nikola Topic,2024,Dennis Schroder,2026,97.5,0.2235,-1.46,-0.567,-0.893,3386.9
+Oso Ighodaro,2024,Oso Ighodaro,2025,95.1,0.316,-1.678,-2.499,0.821,1695
+Pacome Dadiet,2024,Jake Layman,2020,98.6,0.1691,-1.372,-1.052,-0.32,1695.3
+Reed Sheppard,2024,Jalen Suggs,2026,98.3,0.1871,2.158,0.204,1.955,3126.5
+Rob Dillingham,2024,Ty Jerome,2025,97.8,0.2097,1.892,2.182,-0.29,2189.9
+Ron Holland,2024,Jake LaRavia,2026,96.8,0.2536,-0.358,-1.044,0.686,3404.6
+Ryan Dunn,2024,Xavier Tillman,2021,98.6,0.168,-0.688,-1.482,0.794,1735
+Stephon Castle,2024,Franz Wagner,2022,97.3,0.2324,-0.163,-0.04,-0.124,3079
+Terrence Shannon Jr.,2024,Cameron Johnson,2026,98.1,0.1951,1.329,1.316,0.013,3308.1
+Tidjane Salaun,2024,Nemanja Bjelica,2017,97,0.2465,-0.406,-0.644,0.238,1995.2
+Tristan da Silva,2024,Moses Moody,2025,98.4,0.1814,0.228,-0.217,0.445,3135
+Tristen Newton,2024,Caris LeVert,2023,98.1,0.195,-0.649,-0.72,0.071,3559.2
+Tyler Kolek,2024,Aaron Holiday,2020,97.5,0.2267,-1.054,-0.8,-0.254,2101.5
+Tyler Smith,2024,Mike Muscala,2018,96.5,0.2653,-0.169,-0.169,0.001,2305.6
+Yves Missi,2024,Taj Gibson,2017,95.8,0.2931,-0.226,-0.843,0.617,3441
+Zaccharie Risacher,2024,Guerschon Yabusele,2026,97.6,0.2186,-1.139,-0.558,-0.582,2429
+Zach Edey,2024,Daniel Theis,2020,95.3,0.3119,1.324,-0.569,1.893,2773.5
+Amari Bailey,2023,George Hill,2023,97.7,0.215,-1.387,-1.56,0.173,2674.7
+Amen Thompson,2023,Ricky Rubio,2018,95.1,0.3162,2.844,0.782,2.062,3563.5
+Andre Jackson Jr.,2023,Blake Griffin,2023,97.5,0.2259,0.122,-1.097,1.219,2171.2
+Anthony Black,2023,Anthony Black,2026,96.7,0.2582,0.654,-0.374,1.029,3439.4
+Ausar Thompson,2023,Kevin Porter Jr.,2026,92,0.4092,1.149,0.278,0.871,2902.8
+Ben Sheppard,2023,Cedi Osman,2022,97.7,0.2165,-2.137,-0.88,-1.257,3172.9
+Bilal Coulibaly,2023,Jake LaRavia,2026,96.4,0.2723,-0.358,-1.044,0.686,3404.6
+Brandin Podziemski,2023,Otto Porter Jr.,2021,97.2,0.2379,0.531,0.205,0.325,2383.8
+Brandon Miller,2023,Jayson Tatum,2020,94.2,0.347,4.362,2.498,1.864,3566.2
+Brice Sensabaugh,2023,Simone Fontecchio,2026,96.2,0.2791,0.335,0.494,-0.159,2994.7
+Cam Whitmore,2023,Josh Jackson,2021,98.1,0.1958,-0.679,-1.295,0.616,2992.3
+Cason Wallace,2023,Caris LeVert,2018,98.1,0.1982,-1.068,-0.576,-0.492,2791.8
+Colby Jones,2023,Caris LeVert,2018,98.1,0.1977,-1.068,-0.576,-0.492,2791.8
+Dariq Whitehead,2023,Taurean Prince,2023,99.4,0.1117,-1.364,-1.331,-0.034,2890.1
+Dereck Lively II,2023,Daniel Theis,2020,97.9,0.2068,1.324,-0.569,1.893,2773.5
+Emoni Bates,2023,Gordon Hayward,2022,98.9,0.1495,0.315,0.553,-0.239,3214.8
+Gradey Dick,2023,Trey Murphy III,2023,98.5,0.1717,0.998,1.248,-0.25,3096
+Gregory Jackson,2023,Jayson Tatum,2019,98.6,0.1682,1.393,0.296,1.097,3613.8
+Hunter Tyson,2023,Saddiq Bey,2021,97.7,0.2169,-0.349,0.049,-0.398,2559
+Jaime Jaquez Jr.,2023,Caleb Martin,2024,96.1,0.2833,-0.15,-0.802,0.651,3407.9
+Jalen Hood-Schifino,2023,Kevin Porter Jr.,2021,98.5,0.1715,-2.102,-0.431,-1.671,1706.5
+Jalen Pickett,2023,DeMar DeRozan,2019,94.8,0.327,-0.146,0.944,-1.09,3672
+James Nnaji,2023,Tarik Black,2017,95.9,0.2884,-0.968,-1.554,0.587,1463
+Jarace Walker,2023,P.J. Washington,2020,96.7,0.2608,-1.161,-1.283,0.122,2409
+Jaylen Clark,2023,Jake LaRavia,2026,96.9,0.2515,-0.358,-1.044,0.686,3404.6
+Jett Howard,2023,Lonnie Walker IV,2024,97.8,0.2116,-1.243,-0.335,-0.907,2924.2
+Jordan Hawkins,2023,Devin Vassell,2026,99,0.1413,1.205,0.809,0.396,3511
+Jordan Walsh,2023,Jalen McDaniels,2024,98.3,0.1843,-2.257,-2.221,-0.036,2752.1
+Julian Phillips,2023,Terance Mann,2023,97.3,0.2357,0.017,0.263,-0.245,3468
+Julian Strawther,2023,Simone Fontecchio,2026,98.6,0.1688,0.335,0.494,-0.159,2994.7
+Keyonte George,2023,Caris LeVert,2022,97.5,0.2233,-1.093,0.163,-1.256,3307.2
+Kobe Brown,2023,Jaylon Tyson,2026,97,0.2473,0.212,0.272,-0.06,2116.8
+Kobe Bufkin,2023,Caris LeVert,2023,98,0.2026,-0.649,-0.72,0.071,3559.2
+Kris Murray,2023,Santi Aldama,2026,98.3,0.184,0.255,0.365,-0.11,3085.4
+Leonard Miller,2023,Al Jefferson,2018,96.4,0.2708,-1.71,-1.478,-0.231,1799.3
+Marcus Sasser,2023,Nickeil Alexander-Walker,2026,97.9,0.2062,1.822,1.47,0.352,3650.8
+Maxwell Lewis,2023,Danuel House Jr.,2023,97.6,0.2188,-1.98,-1.254,-0.725,2523.7
+Mouhamed Gueye,2023,Wendell Carter Jr.,2025,97.7,0.2161,0.72,-1.036,1.756,3282.8
+Nick Smith Jr.,2023,Emmanuel Mudiay,2019,97.4,0.2285,-2.793,-0.931,-1.861,3186.3
+Noah Clowney,2023,Santi Aldama,2023,97.6,0.2198,-0.945,-0.64,-0.305,1952
+Olivier-Maxence Prosper,2023,Cam Whitmore,2024,98.2,0.1919,-0.457,0.287,-0.744,1530
+Rayan Rupert,2023,Jarrett Culver,2021,97.1,0.241,-2.41,-2.324,-0.086,1628.5
+Scoot Henderson,2023,Goran Dragic,2017,98.5,0.175,1.545,1.992,-0.447,3615
+Seth Lundy,2023,Anthony Tolliver,2018,98.9,0.1466,0.222,0.317,-0.096,3295.6
+Sidy Cissoko,2023,T.J. Warren,2023,98.3,0.1861,-1.343,-1.54,0.198,1681.8
+Taylor Hendricks,2023,P.J. Washington,2024,97.1,0.2418,0.195,-0.67,0.866,3555.2
+Toumani Camara,2023,Jeremiah Robinson-Earl,2025,97,0.2474,-1.678,-0.823,-0.855,2406
+Trayce Jackson-Davis,2023,Nic Claxton,2026,96,0.287,-0.421,-0.789,0.368,3442.5
+Victor Wembanyama,2023,Kristaps Porzingis,2022,83.3,0.6055,2.417,1.831,0.586,3146.8
+AJ Griffin,2022,Anthony Tolliver,2018,97.7,0.214,0.222,0.317,-0.096,3295.6
+Andrew Nembhard,2022,Egor Demin,2026,98,0.1999,-0.566,-0.377,-0.189,1958
+Bennedict Mathurin,2022,Moses Moody,2025,98.5,0.1713,0.228,-0.217,0.445,3135
+Blake Wesley,2022,George Hill,2018,97.9,0.2069,0.843,1.068,-0.224,3332.2
+Bryce McGowens,2022,Will Barton,2019,98.5,0.1744,-1.749,-0.856,-0.893,3273.2
+Caleb Houstan,2022,Jae Crowder,2019,97.4,0.2297,0.109,0.038,0.071,3541.5
+Chet Holmgren,2022,Alex Sarr,2026,91.1,0.4328,-0.847,-0.339,-0.507,2665.5
+Christian Braun,2022,Tobias Harris,2026,97.4,0.2294,1.578,0.543,1.035,3436.2
+Christian Koloko,2022,Wendell Carter Jr.,2019,97.7,0.2149,-1.003,-1.737,0.734,1760
+Dalen Terry,2022,Bruce Brown,2025,98.6,0.1675,-2.833,-2.059,-0.773,3002.6
+David Roddy,2022,Aaron Gordon,2019,96.8,0.2541,1.032,0.204,0.828,3658.2
+Dyson Daniels,2022,Dejounte Murray,2020,94.8,0.328,0.177,-0.628,0.805,2802.9
+E.J. Liddell,2022,Maxi Kleber,2020,96.8,0.2569,-0.446,-0.62,0.174,3358.5
+Isaiah Mobley,2022,Danny Wolf,2026,97.8,0.2088,-1.075,-1.109,0.034,1837
+Jabari Smith,2022,Otto Porter Jr.,2020,95.3,0.31,1.753,1.294,0.459,2710.6
+Jabari Walker,2022,Markieff Morris,2019,98.6,0.1685,-1.079,-1.033,-0.046,3175.1
+Jaden Hardy,2022,Jordan Clarkson,2019,98.3,0.1874,-1.437,0.681,-2.118,3553.5
+Jaden Ivey,2022,Dwyane Wade,2019,98,0.2003,-1.526,-0.836,-0.69,3362.7
+Jake LaRavia,2022,Bruce Brown,2023,96.8,0.2539,0.168,-0.486,0.655,3570
+Jalen Duren,2022,Drew Eubanks,2025,97.7,0.216,-2.082,-1.906,-0.176,2725.1
+Jalen Williams,2022,Will Barton,2018,97.3,0.2324,-0.111,0.657,-0.768,3670.8
+Jaylin Williams,2022,Isaiah Roby,2023,98.8,0.1579,-2.369,-2.071,-0.298,1986.6
+Jeremy Sochan,2022,Kelly Olynyk,2017,97.7,0.2166,0.563,-0.088,0.652,2584.2
+Johnny Davis,2022,Blake Griffin,2022,97.2,0.2383,-0.515,-0.532,0.017,2702.8
+Josh Minott,2022,Bruce Brown,2023,95.9,0.2895,0.168,-0.486,0.655,3570
+Keegan Murray,2022,Cedric Coward,2026,91.9,0.4116,0.912,1.006,-0.094,2248
+Kendall Brown,2022,Jaime Jaquez Jr.,2024,98.2,0.1891,-0.559,-0.851,0.291,2763
+Kennedy Chandler,2022,Jerian Grant,2019,97.2,0.2403,-1.839,-1.397,-0.443,2928.1
+Malaki Branham,2022,Quentin Grimes,2026,98,0.1994,-0.625,-0.34,-0.285,3551.5
+MarJon Beauchamp,2022,Troy Brown Jr.,2019,96.1,0.2838,-2.27,-1.433,-0.837,1380
+Mark Williams,2022,Wendell Carter Jr.,2019,98.1,0.1977,-1.003,-1.737,0.734,1760
+Max Christie,2022,Amir Coffey,2025,99,0.1406,-2.783,-1.613,-1.17,3265
+Moussa Diabate,2022,Kenyon Martin Jr.,2022,97.6,0.2205,-1.866,-0.896,-0.97,2457
+Nikola Jovic,2022,Will Barton,2021,97.2,0.24,-0.274,0.18,-0.454,3368.8
+Ochai Agbaji,2022,AJ Griffin,2023,98.5,0.1756,-0.952,-0.302,-0.65,2051
+Ousmane Dieng,2022,Anthony Tolliver,2018,98.2,0.191,0.222,0.317,-0.096,3295.6
+Paolo Banchero,2022,Julius Randle,2026,94.1,0.35,1.193,1.265,-0.072,3652.5
+Patrick Baldwin Jr.,2022,P.J. Washington,2024,97.6,0.2198,0.195,-0.67,0.866,3555.2
+Peyton Watson,2022,Paul Millsap,2022,97.1,0.244,-1.204,-1.633,0.429,2460.5
+Ryan Rollins,2022,Keon Johnson,2025,97.5,0.2237,-1.981,-1.507,-0.474,2452.6
+Tari Eason,2022,Justin Champagnie,2026,96.6,0.2636,0.728,0.534,0.194,2514.2
+Trevor Keels,2022,Furkan Korkmaz,2024,97.8,0.212,-1.961,-1.605,-0.357,1808.2
+Tyty Washington Jr.,2022,George Hill,2022,98,0.1991,-0.1,-0.775,0.676,2811.1
+Vince Williams Jr.,2022,Victor Oladipo,2023,95.8,0.2923,-0.5,-1.321,0.82,2066
+Walker Kessler,2022,Daniel Theis,2020,97.7,0.2162,1.324,-0.569,1.893,2773.5
+Wendell Moore Jr.,2022,VJ Edgecombe,2026,98,0.2025,0.428,0.344,0.085,2623
+Aaron Wiggins,2021,Nique Clifford,2026,98.5,0.1748,-1.249,-1.46,0.21,2532
+Alperen Sengun,2021,Derik Queen,2026,94.8,0.3269,-0.872,-0.87,-0.002,2673
+Ayo Dosunmu,2021,Eric Bledsoe,2021,98.4,0.179,0.183,0.708,-0.524,3482.2
+Cade Cunningham,2021,Kawhi Leonard,2023,93.2,0.3752,5.119,3.699,1.42,2947.4
+Cameron Thomas,2021,Dennis Schroder,2020,98.2,0.1921,0.806,0.764,0.042,3499.8
+Charles Bassey,2021,Isaiah Stewart,2023,97,0.2484,-1.048,-1.019,-0.028,3209.1
+Chris Duarte,2021,Otto Porter Jr.,2020,97,0.2448,1.753,1.294,0.459,2710.6
+Corey Kispert,2021,Saddiq Bey,2021,97.5,0.2245,-0.349,0.049,-0.398,2559
+Davion Mitchell,2021,Aaron Holiday,2020,98.2,0.192,-1.054,-0.8,-0.254,2101.5
+Day'Ron Sharpe,2021,Taj Gibson,2021,97.1,0.2426,-0.697,-1.851,1.154,2802
+Evan Mobley,2021,Evan Mobley,2026,96.6,0.262,2.996,1.562,1.434,3518.5
+Franz Wagner,2021,Cade Cunningham,2022,97.2,0.2386,-0.332,-0.18,-0.152,2738
+Greg Brown III,2021,P.J. Washington,2021,99.2,0.1298,-0.066,-0.775,0.709,3273.2
+Herbert Jones,2021,Caleb Martin,2026,98.1,0.1939,-1.776,-2.612,0.836,2829
+Isaiah Jackson,2021,Amir Johnson,2018,97.5,0.2233,1.203,-0.843,2.047,3063.4
+Isaiah Livers,2021,Marcus Morris Sr.,2024,97.4,0.2297,-3.026,-1.959,-1.067,2949.6
+JT Thor,2021,P.J. Washington,2021,97.3,0.2322,-0.066,-0.775,0.709,3273.2
+Jaden Springer,2021,George Hill,2020,98,0.2012,1.399,0.809,0.59,3050.2
+Jalen Green,2021,Bradley Beal,2018,97.7,0.2153,1.808,2.264,-0.456,3744.2
+Jalen Johnson,2021,Santi Aldama,2026,96,0.2847,0.255,0.365,-0.11,3085.4
+Jalen Suggs,2021,Manu Ginobili,2018,96.4,0.2717,0.23,-0.083,0.313,2905.1
+James Bouknight,2021,Quentin Grimes,2026,97.4,0.2286,-0.625,-0.34,-0.285,3551.5
+Jared Butler,2021,DAngelo Russell,2018,97.3,0.2321,-0.861,0.873,-1.734,3129.4
+Jason Preston,2021,LaMelo Ball,2021,96.4,0.2714,-0.044,0.201,-0.244,1469
+Jeremiah Robinson-Earl,2021,Jon Leuer,2017,98.9,0.1484,-0.876,-0.901,0.025,2885.2
+Jonathan Kuminga,2021,Miles Bridges,2025,95.2,0.3128,0.735,1.146,-0.411,3507.2
+Josh Christopher,2021,Norman Powell,2019,98.2,0.1917,-1.029,-1.039,0.01,2879
+Josh Giddey,2021,Josh Giddey,2025,96.5,0.2663,1.141,1.188,-0.046,3529.2
+Joshua Primo,2021,Danuel House Jr.,2021,97.7,0.2165,-1.68,-1.099,-0.582,2991.7
+Kai Jones,2021,P.J. Washington,2020,97.7,0.2174,-1.161,-1.283,0.122,2409
+Keon Johnson,2021,Talen Horton-Tucker,2023,98.9,0.1479,-0.369,-0.191,-0.178,3107.8
+Kessler Edwards,2021,Ace Bailey,2026,98.5,0.1726,-1.539,-0.412,-1.127,2638
+Luka Garza,2021,Danny Wolf,2026,95.2,0.3121,-1.075,-1.109,0.034,1837
+Miles McBride,2021,Aaron Holiday,2020,98.4,0.1794,-1.054,-0.8,-0.254,2101.5
+Moses Moody,2021,Moses Moody,2024,99.4,0.1121,-0.104,-0.092,-0.012,2110.2
+Nah'Shon Hyland,2021,Terry Rozier,2023,96.8,0.2564,0.048,0.93,-0.882,3555.2
+Neemias Queta,2021,Goga Bitadze,2024,97.9,0.2051,0.266,-0.892,1.157,1946.5
+Quentin Grimes,2021,Quentin Grimes,2025,97.9,0.2065,-0.133,1.236,-1.369,3322.9
+Sandro Mamukelashvili,2021,Nemanja Bjelica,2022,97,0.2454,-1.303,-1.592,0.289,2826.3
+Santi Aldama,2021,Santi Aldama,2024,96.8,0.2568,-1.233,-1.119,-0.114,3082
+Scottie Barnes,2021,Scottie Barnes,2023,95.8,0.2925,0.646,0.133,0.513,3669.5
+Tre Mann,2021,Austin Reaves,2025,96.8,0.2535,1.947,2.647,-0.7,3637.5
+Trey Murphy III,2021,Trey Murphy III,2024,99.3,0.1152,1.547,0.969,0.578,3422.5
+Usman Garuba,2021,Keita Bates-Diop,2022,95.7,0.2954,-1.797,-1.799,0.002,1770.5
+Ziaire Williams,2021,Ziaire Williams,2025,97.6,0.2207,-1.059,-1.149,0.09,2997.9
+Aaron Nesmith,2020,Moses Moody,2026,97.5,0.2261,1.611,0.544,1.067,3232.9
+Aleksej Pokusevski,2020,Nikola Vucevic,2018,95.4,0.3064,0.896,-0.28,1.176,3391.9
+Anthony Edwards,2020,Anthony Edwards,2024,96.8,0.2558,3.751,2.936,0.815,3692.5
+CJ Elleby,2020,Jae Crowder,2020,98.1,0.196,0.346,0.225,0.121,3468.8
+Cole Anthony,2020,Scoot Henderson,2026,98,0.2013,-0.775,-0.227,-0.547,2907.1
+Daniel Oturu,2020,Aron Baynes,2020,97.9,0.2073,-0.111,-0.427,0.317,2705.7
+Deni Avdija,2020,Aaron Gordon,2019,97.9,0.2064,1.032,0.204,0.828,3658.2
+Desmond Bane,2020,Khris Middleton,2026,98,0.2029,-1.058,-0.493,-0.565,3005.1
+Devin Vassell,2020,Otto Porter Jr.,2020,95.9,0.2888,1.753,1.294,0.459,2710.6
+Elijah Hughes,2020,Lonnie Walker IV,2022,98,0.2027,-2.087,-0.518,-1.57,3240.6
+Immanuel Quickley,2020,Devin Vassell,2025,97.9,0.205,-0.79,0.158,-0.948,3495.8
+Isaac Okoro,2020,Mikal Bridges,2021,97.9,0.2046,1.766,0.926,0.84,3587
+Isaiah Joe,2020,Furkan Korkmaz,2021,98.6,0.167,0.354,0.226,0.128,2646.9
+Isaiah Stewart,2020,Isaiah Stewart,2025,96.8,0.2532,-1.139,-2.119,0.981,3144.2
+Jaden McDaniels,2020,Tobias Harris,2025,96.9,0.25,0.784,-0.087,0.872,3576.5
+Jahmi'us Ramsey,2020,Josh Richardson,2021,98.6,0.1666,-1.148,-0.416,-0.732,3352.8
+Jalen Smith,2020,Jalen Smith,2024,96.3,0.2754,-0.395,0.345,-0.741,2591.8
+Jordan Nwora,2020,Simone Fontecchio,2026,97.7,0.2175,0.335,0.494,-0.159,2994.7
+Josh Green,2020,Nique Clifford,2026,98.6,0.1669,-1.249,-1.46,0.21,2532
+Killian Hayes,2020,Kevin Porter Jr.,2026,96.8,0.256,1.149,0.278,0.871,2902.8
+Kira Lewis Jr.,2020,Jerian Grant,2019,98,0.2009,-1.839,-1.397,-0.443,2928.1
+LaMelo Ball,2020,LaMelo Ball,2022,98.7,0.1593,2.126,2.004,0.123,3523.8
+Leandro Bolmaro,2020,George Hill,2018,97.9,0.2064,0.843,1.068,-0.224,3332.2
+Malachi Flynn,2020,Ryan Rollins,2026,98,0.2,1.383,1.207,0.176,3060
+Nick Richards,2020,Richaun Holmes,2024,98.4,0.1772,-1.411,-1.362,-0.048,2170.9
+Nico Mannion,2020,Aaron Holiday,2020,97.8,0.2103,-1.054,-0.8,-0.254,2101.5
+Obi Toppin,2020,Cedric Coward,2026,97.6,0.2226,0.912,1.006,-0.094,2248
+Onyeka Okongwu,2020,Derrick Favors,2018,98.1,0.1946,1.713,-0.195,1.908,3414.3
+Patrick Williams,2020,Aaron Nesmith,2024,97.9,0.2078,0.104,-0.146,0.25,3463.3
+Paul Reed,2020,Gorgui Dieng,2018,95.7,0.298,-1.725,-1.559,-0.166,3330.6
+Payton Pritchard,2020,Kevin Huerter,2024,97.4,0.2288,0.081,0.581,-0.5,3346.4
+Precious Achiuwa,2020,Precious Achiuwa,2024,97,0.2453,-1.248,-1.765,0.518,3174.2
+R.J. Hampton,2020,Evan Turner,2017,97.8,0.2089,-2.02,-2.198,0.178,3362.2
+Robert Woodard II,2020,David Roddy,2025,98,0.1997,-2.554,-1.961,-0.593,2000.4
+Saben Lee,2020,Jerian Grant,2019,97.5,0.2247,-1.839,-1.397,-0.443,2928.1
+Saddiq Bey,2020,Simone Fontecchio,2026,98.1,0.1968,0.335,0.494,-0.159,2994.7
+Sam Merrill,2020,Bogdan Bogdanovic,2026,99,0.1394,-0.396,-0.463,0.067,2700.5
+Skylar Mays,2020,Tyler Johnson,2018,98.3,0.1877,-0.126,-0.114,-0.012,3513
+Theo Maledon,2020,Emmanuel Mudiay,2017,97.8,0.2119,-2.185,-0.662,-1.522,2957
+Tre Jones,2020,Shelvin Mack,2018,98.2,0.1926,-1.044,-0.608,-0.436,2863.9
+Tyler Bey,2020,Caleb Martin,2024,96.8,0.2555,-0.15,-0.802,0.651,3407.9
+Tyrell Terry,2020,Terry Rozier,2023,99,0.1417,0.048,0.93,-0.882,3555.2
+Tyrese Haliburton,2020,Kyle Lowry,2019,96.9,0.2514,3.722,2.008,1.714,3553.2
+Tyrese Maxey,2020,Goran Dragic,2019,98.6,0.1661,0.321,0.835,-0.514,3129.4
+Udoka Azubuike,2020,Trayce Jackson-Davis,2024,98,0.201,-0.29,0.021,-0.311,1780
+Vernon Carey Jr.,2020,Aron Baynes,2020,97.8,0.2098,-0.111,-0.427,0.317,2705.7
+Vit Krejci,2020,Frank Kaminsky,2022,96.8,0.2553,-1.029,-1.167,0.138,1472.8
+Xavier Tillman,2020,Daniel Theis,2022,98.1,0.1946,-0.821,-1.389,0.569,2977.6
+Zeke Nnaji,2020,Aron Baynes,2020,97.3,0.2348,-0.111,-0.427,0.317,2705.7
+Admiral Schofield,2019,Markieff Morris,2020,98.3,0.1828,-1.466,-1.532,0.066,3008.1
+Bol Bol,2019,Naz Reid,2022,94.8,0.3268,-0.514,-0.907,0.394,2503.7
+Brandon Clarke,2019,Brandon Clarke,2022,97.3,0.2357,1.168,0.201,0.967,3038.5
+Bruno Fernando,2019,Aron Baynes,2020,97.5,0.2234,-0.111,-0.427,0.317,2705.7
+Cam Reddish,2019,Victor Oladipo,2017,98.5,0.1765,0.834,-0.051,0.885,3555.8
+Cameron Johnson,2019,Cameron Johnson,2023,98.6,0.1685,1.722,0.922,0.8,3099.4
+Carsen Edwards,2019,Nickeil Alexander-Walker,2026,98.5,0.1727,1.822,1.47,0.352,3650.8
+Chuma Okeke,2019,Caleb Martin,2022,95.9,0.2896,0.135,-0.775,0.91,2163.8
+Coby White,2019,Jamal Murray,2019,99.1,0.1321,1.506,2.333,-0.827,3611.8
+Cody Martin,2019,Talen Horton-Tucker,2023,97.3,0.2361,-0.369,-0.191,-0.178,3107.8
+Daniel Gafford,2019,Drew Eubanks,2026,97.2,0.2387,-1.921,-1.867,-0.054,2415.8
+Darius Garland,2019,Jamal Murray,2020,96.8,0.2555,2.511,3.063,-0.552,3476
+De'Andre Hunter,2019,Andrew Wiggins,2024,97.5,0.2236,-0.081,0.07,-0.151,3313.1
+Dylan Windler,2019,Otto Porter Jr.,2018,97.1,0.2434,2.578,1.518,1.06,3608
+Eric Paschall,2019,Rui Hachimura,2024,97.8,0.2128,-0.553,-0.302,-0.252,3323.8
+Goga Bitadze,2019,Isaiah Stewart,2023,96.4,0.2701,-1.048,-1.019,-0.028,3209.1
+Grant Williams,2019,Miles Bridges,2020,98.5,0.172,-1.3,-0.512,-0.788,3267
+Isaiah Roby,2019,P.J. Washington,2021,98.2,0.1931,-0.066,-0.775,0.709,3273.2
+Ja Morant,2019,Cade Cunningham,2026,91.7,0.4166,4.563,3.578,0.986,3543
+Jalen McDaniels,2019,Luol Deng,2019,98.8,0.1535,-0.365,-0.756,0.391,2116.2
+Jarrell Brantley,2019,Markieff Morris,2019,99.1,0.1377,-1.079,-1.033,-0.046,3175.1
+Jarrett Culver,2019,Blake Griffin,2022,97.2,0.2368,-0.515,-0.532,0.017,2702.8
+Jaxson Hayes,2019,Jerami Grant,2018,94.4,0.3387,-1.195,-1.019,-0.177,3257.6
+Jaylen Nowell,2019,George Hill,2019,98.4,0.1798,1.018,0.578,0.439,3159.4
+Jordan Poole,2019,Luke Kennard,2018,99,0.141,-0.698,-0.512,-0.185,2113
+Justin James,2019,Caris LeVert,2023,97.8,0.2115,-0.649,-0.72,0.071,3559.2
+KZ Okpala,2019,Norman Powell,2018,98.3,0.1854,-1.688,-1.21,-0.477,2494.8
+Keldon Johnson,2019,Rui Hachimura,2022,98.5,0.1736,-2.092,-0.859,-1.234,2999.5
+Kevin Porter Jr.,2019,Gordon Hayward,2022,97.8,0.2128,0.315,0.553,-0.239,3214.8
+Luka Samanic,2019,Domantas Sabonis,2018,97.9,0.204,-0.482,-0.85,0.367,3033.2
+Matisse Thybulle,2019,Jalen Suggs,2024,91.8,0.4139,1.414,-0.081,1.495,3369.6
+Mfiondu Kabengele,2019,Daniel Theis,2021,97.6,0.2186,0.316,-0.758,1.075,3244.1
+Nassir Little,2019,Rui Hachimura,2021,97.6,0.2207,-2,-1.363,-0.636,2880
+Nickeil Alexander-Walker,2019,Victor Oladipo,2017,97.3,0.2322,0.834,-0.051,0.885,3555.8
+Nicolas Claxton,2019,Daniel Theis,2021,97.5,0.2257,0.316,-0.758,1.075,3244.1
+PJ Washington,2019,P.J. Washington,2020,95.2,0.3137,-1.161,-1.283,0.122,2409
+Quinndary Weatherspoon,2019,Jared Dudley,2017,98,0.2001,0.4,-0.578,0.979,2935.5
+R.J. Barrett,2019,Blake Griffin,2022,98,0.2019,-0.515,-0.532,0.017,2702.8
+Romeo Langford,2019,Andrew Wiggins,2020,97.4,0.2293,-0.493,0.572,-1.065,3464.8
+Rui Hachimura,2019,P.J. Washington,2021,98,0.2021,-0.066,-0.775,0.709,3273.2
+Sekou Doumbouya,2019,Carter Bryant,2026,98.4,0.1799,-1.435,-1.567,0.132,1468
+Talen Horton-Tucker,2019,George Hill,2019,97.5,0.2234,1.018,0.578,0.439,3159.4
+Terance Mann,2019,Terance Mann,2023,98,0.1997,0.017,0.263,-0.245,3468
+Ty Jerome,2019,Aaron Holiday,2020,98.1,0.1947,-1.054,-0.8,-0.254,2101.5
+Tyler Herro,2019,Devin Vassell,2025,98,0.1992,-0.79,0.158,-0.948,3495.8
+Zion Williamson,2019,Alperen Sengun,2025,90.4,0.4486,2.52,1.285,1.236,3598.5
+Aaron Holiday,2018,Terry Rozier,2026,97.8,0.211,-1.939,-1.136,-0.803,2518.4
+Bruce Brown Jr.,2018,Bruce Brown,2023,97.5,0.2229,0.168,-0.486,0.655,3570
+Chandler Hutchison,2018,Brandin Podziemski,2024,97,0.2456,-0.414,-0.682,0.268,2618
+Chimezie Metu,2018,Domantas Sabonis,2017,97.1,0.2409,-2.108,-2.517,0.409,2281
+Collin Sexton,2018,Goran Dragic,2018,98.2,0.1891,0.887,1.378,-0.491,3594.5
+De'Anthony Melton,2018,Jalen Suggs,2023,96.4,0.2689,-0.577,-1.475,0.898,2226.2
+Deandre Ayton,2018,Evan Mobley,2025,94.9,0.3233,2.996,1.507,1.489,3485.3
+Devonte' Graham,2018,Devonte Graham,2024,98.2,0.1905,-0.965,-0.183,-0.782,2611.5
+Donte DiVincenzo,2018,VJ Edgecombe,2026,98.2,0.1919,0.428,0.344,0.085,2623
+Dzanan Musa,2018,Frank Kaminsky,2018,97.7,0.2171,-1.568,-0.2,-1.369,3419.2
+Elie Okobo,2018,Shake Milton,2022,97.9,0.2038,-1.887,-1.007,-0.88,2840.6
+Gary Trent Jr.,2018,Furkan Korkmaz,2021,98,0.1985,0.354,0.226,0.128,2646.9
+Grayson Allen,2018,Cedi Osman,2022,98.5,0.1709,-2.137,-0.88,-1.257,3172.9
+Hamidou Diallo,2018,Christian Braun,2023,97.6,0.2189,-1.609,-2.051,0.442,1831
+Jacob Evans III,2018,Josh Richardson,2021,97.3,0.2351,-1.148,-0.416,-0.732,3352.8
+Jalen Brunson,2018,Terry Rozier,2026,98.6,0.1673,-1.939,-1.136,-0.803,2518.4
+Jaren Jackson Jr.,2018,Kristaps Porzingis,2017,93.7,0.3597,1.419,0.136,1.283,3541
+Jarred Vanderbilt,2018,Precious Achiuwa,2025,96.3,0.2738,-1.432,-1.911,0.479,3057.1
+Jerome Robinson,2018,Cedi Osman,2023,97.5,0.2262,-0.869,-0.383,-0.486,3201.4
+Jevon Carter,2018,Miles McBride,2025,97.5,0.2261,0.026,-0.285,0.311,3151.1
+Josh Okogie,2018,Ziaire Williams,2025,98.1,0.1959,-1.059,-1.149,0.09,2997.9
+Keita Bates-Diop,2018,Jabari Smith Jr.,2023,97.8,0.2108,-2.173,-1.234,-0.939,3101
+Kevin Huerter,2018,Grayson Allen,2024,98.2,0.1903,0.761,0.849,-0.088,3628.2
+Kevin Knox,2018,Jae Crowder,2019,97.9,0.2036,0.109,0.038,0.071,3541.5
+Khyri Thomas,2018,Trey Murphy III,2023,98.8,0.1544,0.998,1.248,-0.25,3096
+Landry Shamet,2018,Reggie Jackson,2021,98.4,0.177,1.388,1.82,-0.432,3064.8
+Lonnie Walker IV,2018,Austin Rivers,2018,97.5,0.227,-1.023,0.387,-1.41,3514.2
+Luka Doncic,2018,Brandon Ingram,2025,95.4,0.3081,0.334,0.642,-0.308,2904.6
+Marvin Bagley III,2018,Wendell Carter Jr.,2025,97.2,0.238,0.72,-1.036,1.756,3282.8
+Melvin Frazier,2018,Kent Bazemore,2017,97.9,0.2065,-0.551,-1.21,0.658,3490.8
+Mikal Bridges,2018,Kelly Oubre Jr.,2022,96.5,0.2669,-0.484,0.372,-0.856,3440.9
+Miles Bridges,2018,Lauri Markkanen,2022,97.1,0.2424,0.973,0.919,0.054,3318.6
+Mo Bamba,2018,Mo Bamba,2024,95.6,0.2985,-1.014,-1.877,0.862,2623.8
+Moritz Wagner,2018,Kelly Olynyk,2017,97.9,0.2051,0.563,-0.088,0.652,2584.2
+Omari Spellman,2018,Jabari Smith Jr.,2025,97.9,0.2051,-0.18,-0.519,0.339,3429
+Robert Williams,2018,Mason Plumlee,2018,97.9,0.2047,-0.166,-0.719,0.553,3282.8
+Shai Gilgeous-Alexander,2018,Dwyane Wade,2017,97.9,0.2055,0.125,0.353,-0.228,3448
+Shake Milton,2018,George Hill,2018,98.1,0.1942,0.843,1.068,-0.224,3332.2
+Sviatoslav Mykhailiuk,2018,Grayson Allen,2021,99,0.1414,-0.711,-0.005,-0.706,2031.5
+Trae Young,2018,Jalen Brunson,2025,96.9,0.2492,2.853,4.43,-1.577,3575.2
+Troy Brown,2018,Blake Griffin,2023,97.7,0.2161,0.122,-1.097,1.219,2171.2
+Wendell Carter Jr.,2018,Mo Bamba,2024,94.8,0.3277,-1.014,-1.877,0.862,2623.8
+Zhaire Smith,2018,Caleb Martin,2024,98,0.2023,-0.15,-0.802,0.651,3407.9
+Alec Peters,2017,Kyle Kuzma,2021,97.5,0.2242,-1.275,-1.138,-0.137,3391
+Bam Adebayo,2017,Evan Mobley,2023,96.1,0.2827,1.458,-0.337,1.795,3678.8
+Caleb Swanigan,2017,Wendell Carter Jr.,2024,94,0.3513,1.126,-0.244,1.37,3182
+D.J. Wilson,2017,Jerami Grant,2020,94.9,0.3227,-0.677,-0.361,-0.316,3473
+Damyean Dotson,2017,Saddiq Bey,2021,98.8,0.158,-0.349,0.049,-0.398,2559
+Davon Reed,2017,Trey Murphy III,2023,99.1,0.138,0.998,1.248,-0.25,3096
+De'Aaron Fox,2017,DeAaron Fox,2019,98.3,0.183,0.603,0.486,0.117,3636.5
+"Dennis Smith, Jr.",2017,DeAaron Fox,2019,97,0.2482,0.603,0.486,0.117,3636.5
+Derrick White,2017,Caris LeVert,2024,98.2,0.192,-0.054,-0.504,0.45,3489.5
+Dillon Brooks,2017,Josh Richardson,2021,99.4,0.1122,-1.148,-0.416,-0.732,3352.8
+Donovan Mitchell,2017,Nickeil Alexander-Walker,2026,99.1,0.138,1.822,1.47,0.352,3650.8
+Dwayne Bacon,2017,Amir Coffey,2022,97.8,0.2107,-0.796,-0.139,-0.656,1951.9
+Edmond Sumner,2017,Ayo Dosunmu,2022,97.8,0.211,-2.345,-1.382,-0.964,2760
+Frank Jackson,2017,Austin Rivers,2017,98.1,0.1942,-1.934,-0.352,-1.582,3151.2
+Frank Mason III,2017,George Hill,2017,97.9,0.2062,2.183,1.891,0.292,3386
+Frank Ntilikina,2017,Raul Neto,2019,98.7,0.1599,-0.723,-0.739,0.017,1674.5
+Harry Giles,2017,Taj Gibson,2021,97.7,0.2135,-0.697,-1.851,1.154,2802
+Ike Anigbogu,2017,Ivica Zubac,2019,98.6,0.1658,-0.178,-1.305,1.127,1689.1
+Isaiah Hartenstein,2017,Gorgui Dieng,2017,97.5,0.2256,1.027,-0.722,1.749,3663.2
+Ivan Rabb,2017,JaMychal Green,2018,96.6,0.2649,-0.761,-0.789,0.028,3318.6
+Jarrett Allen,2017,Drew Eubanks,2023,98,0.2002,-1.233,-1.208,-0.025,3057.2
+Jawun Evans,2017,Jeremy Lin,2019,93.7,0.3595,-2.901,-2.15,-0.751,2641.9
+Jayson Tatum,2017,Jayson Tatum,2020,95.3,0.3091,4.362,2.498,1.864,3566.2
+John Collins,2017,Precious Achiuwa,2024,97.3,0.2325,-1.248,-1.765,0.518,3174.2
+Jonathan Isaac,2017,Jonathan Isaac,2019,94.8,0.3276,0.235,-0.844,1.08,2397.2
+Jordan Bell,2017,Brandon Clarke,2024,96.8,0.2563,0.57,-0.466,1.036,2249.3
+Josh Hart,2017,Jae Crowder,2020,98.2,0.1895,0.346,0.225,0.121,3468.8
+Josh Jackson,2017,Kelly Olynyk,2023,96.5,0.2672,0.547,0.151,0.397,3242.9
+Justin Patton,2017,Daniel Theis,2023,99.2,0.1275,-0.889,-1.205,0.316,2296.2
+Kyle Kuzma,2017,Bobby Portis,2018,96.6,0.2619,0.013,0.466,-0.453,3011.9
+Lauri Markkanen,2017,Michael Porter Jr.,2022,97.8,0.2126,1.559,1.229,0.33,2206.9
+Lonzo Ball,2017,Jrue Holiday,2022,98.3,0.1876,3.46,2.274,1.186,3552
+Luke Kennard,2017,Grayson Allen,2025,98.9,0.149,0.142,0.886,-0.744,3386
+Malik Monk,2017,Dennis Schroder,2020,98.6,0.1658,0.806,0.764,0.042,3499.8
+Markelle Fultz,2017,Derrick White,2022,95.2,0.3123,1.201,-0.204,1.405,3411.6
+Monte Morris,2017,Cory Joseph,2023,98.1,0.1953,-1.218,-0.455,-0.763,3086.8
+OG Anunoby,2017,OG Anunoby,2021,97.6,0.2192,1.824,0.597,1.227,3264.3
+Sasha Vezenkov,2017,Glenn Robinson III,2019,98.5,0.1759,-2.037,-1.609,-0.428,1880.5
+Semi Ojeleye,2017,Lauri Markkanen,2022,96.6,0.2645,0.973,0.919,0.054,3318.6
+Sindarius Thornwell,2017,Vince Williams Jr.,2026,96.1,0.2825,-0.53,-0.873,0.343,2045.3
+Sterling Brown,2017,Jae Crowder,2020,98.4,0.1771,0.346,0.225,0.121,3468.8
+TJ Leaf,2017,Jon Leuer,2017,97.7,0.2158,-0.876,-0.901,0.025,2885.2
+Thomas Bryant,2017,Daniel Theis,2023,97.6,0.2189,-0.889,-1.205,0.316,2296.2
+Tony Bradley,2017,Taj Gibson,2017,97.5,0.2271,-0.226,-0.843,0.617,3441
+Tyler Dorsey,2017,Furkan Korkmaz,2023,98.9,0.1477,-1.935,-1.653,-0.282,2504.9
+Tyler Lydon,2017,P.J. Washington,2021,96.6,0.2633,-0.066,-0.775,0.709,3273.2
+Vlatko Cancar,2017,Jalen McDaniels,2022,98.1,0.1962,-1.61,-1.286,-0.324,1737.8
+Wesley Iwundu,2017,Bruce Brown,2026,97.5,0.2258,-2.484,-2.151,-0.332,3296.8
+Zach Collins,2017,Aron Baynes,2020,98.5,0.1737,-0.111,-0.427,0.317,2705.7
+A.J. Hammons,2016,Daniel Theis,2021,97.1,0.2441,0.316,-0.758,1.075,3244.1
+Ben Simmons,2016,Scottie Barnes,2026,91.7,0.4175,3.383,1.262,2.122,3670.2
+Brandon Ingram,2016,Anthony Edwards,2024,93.8,0.358,3.751,2.936,0.815,3692.5
+Brice Johnson,2016,Brandon Clarke,2020,96.4,0.269,0.144,-0.142,0.285,1950
+Buddy Hield,2016,Cameron Johnson,2025,98.3,0.1858,1.317,1.969,-0.653,3337.3
+Caris LeVert,2016,Caris LeVert,2022,97.6,0.2214,-1.093,0.163,-1.256,3307.2
+Chinanu Onuaku,2016,Dereck Lively II,2025,97.4,0.2297,1.571,-0.015,1.587,1803.5
+Damian Jones,2016,Thomas Bryant,2019,95.2,0.3145,0.118,0.066,0.052,1550
+DeAndre' Bembry,2016,Jaime Jaquez Jr.,2025,98.4,0.1799,-0.994,-0.645,-0.35,2952.8
+Dejounte Murray,2016,Caris LeVert,2019,98.1,0.1956,-0.042,0.233,-0.275,3064.6
+Demetrius Jackson,2016,George Hill,2019,98.5,0.1716,1.018,0.578,0.439,3159.4
+Denzel Valentine,2016,Devin Vassell,2025,95.4,0.3057,-0.79,0.158,-0.948,3495.8
+Deyonta Davis,2016,Drew Eubanks,2026,98.2,0.1902,-1.921,-1.867,-0.054,2415.8
+Diamond Stone,2016,Amir Johnson,2017,93.9,0.3549,1.719,-0.273,1.992,2958
+Domantas Sabonis,2016,Wendell Carter Jr.,2025,95.4,0.3079,0.72,-1.036,1.756,3282.8
+Dragan Bender,2016,Mike Muscala,2018,96,0.285,-0.169,-0.169,0.001,2305.6
+Furkan Korkmaz,2016,Tyler Dorsey,2018,97.3,0.233,-2.981,-1.357,-1.624,1624
+Georges Niang,2016,Amir Coffey,2022,98.8,0.1561,-0.796,-0.139,-0.656,1951.9
+Guerschon Yabusele,2016,Keita Bates-Diop,2022,98.8,0.1554,-1.797,-1.799,0.002,1770.5
+Henry Ellenson,2016,Danny Wolf,2026,99,0.1432,-1.075,-1.109,0.034,1837
+Isaiah Whitehead,2016,George Hill,2018,96.4,0.2698,0.843,1.068,-0.224,3332.2
+Ivica Zubac,2016,Taj Gibson,2017,97.2,0.2392,-0.226,-0.843,0.617,3441
+Jake Layman,2016,Ziaire Williams,2024,98.9,0.1473,-2.067,-1.819,-0.248,2215.9
+Jakob Poeltl,2016,Daniel Theis,2020,97.6,0.2216,1.324,-0.569,1.893,2773.5
+Jamal Murray,2016,Cameron Johnson,2025,96.9,0.2495,1.317,1.969,-0.653,3337.3
+Jaylen Brown,2016,Nikola Jovic,2026,97.3,0.2335,-0.817,-1.098,0.281,2265.1
+Juancho Hernangomez,2016,Justin Anderson,2017,97.4,0.2313,-1.295,-0.695,-0.6,1712.2
+Kris Dunn,2016,Jrue Holiday,2017,93.8,0.3572,1.972,0.806,1.166,3547.5
+Malachi Richardson,2016,George Hill,2019,97.7,0.2165,1.018,0.578,0.439,3159.4
+Malcolm Brogdon,2016,Cedi Osman,2023,97,0.2448,-0.869,-0.383,-0.486,3201.4
+Malik Beasley,2016,Chris Duarte,2023,99,0.1404,-1.884,-1.126,-0.758,2052.8
+Marquese Chriss,2016,P.J. Washington,2020,97.8,0.2118,-1.161,-1.283,0.122,2409
+Michael Gbinije,2016,George Hill,2018,98.6,0.1674,0.843,1.068,-0.224,3332.2
+Pascal Siakam,2016,Daniel Theis,2021,97.1,0.2446,0.316,-0.758,1.075,3244.1
+Patrick McCaw,2016,Victor Oladipo,2017,96.8,0.2534,0.834,-0.051,0.885,3555.8
+Skal Labissiere,2016,Jerami Grant,2018,93.2,0.3761,-1.195,-1.019,-0.177,3257.6
+Stephen Zimmerman Jr.,2016,Daniel Theis,2023,96.3,0.2745,-0.889,-1.205,0.316,2296.2
+Taurean Prince,2016,OG Anunoby,2022,97.1,0.2412,1.202,0.422,0.78,3274.7
+Timothe Luwawu-Cabarrot,2016,Cam Whitmore,2026,98,0.2017,-1.504,-0.782,-0.721,1469.2
+Tyler Ulis,2016,Dennis Schroder,2026,97.4,0.2309,-1.46,-0.567,-0.893,3386.9
+Wade Baldwin IV,2016,Eric Bledsoe,2022,98.8,0.1552,-0.706,-0.788,0.082,3241.2

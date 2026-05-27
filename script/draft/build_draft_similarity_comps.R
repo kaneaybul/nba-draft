@@ -102,8 +102,10 @@ dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 
 year_min <- suppressWarnings(as.integer(Sys.getenv("DRAFT_SIMILARITY_YEAR_MIN", "2016")))
 year_max <- suppressWarnings(as.integer(Sys.getenv("DRAFT_SIMILARITY_YEAR_MAX", "2026")))
+comp_year_min <- suppressWarnings(as.integer(Sys.getenv("DRAFT_SIMILARITY_COMP_YEAR_MIN", "2017")))
 if (!is.finite(year_min)) year_min <- 2016L
 if (!is.finite(year_max)) year_max <- 2026L
+if (!is.finite(comp_year_min)) comp_year_min <- 2017L
 
 skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
 
@@ -119,10 +121,10 @@ if (length(missing_draft)) stop("Draft predictions missing columns: ", paste(mis
 
 nba[, year := suppressWarnings(as.integer(year))]
 draft[, draft_year := suppressWarnings(as.integer(draft_year))]
-nba <- nba[is.finite(year) & year >= year_min & year <= year_max]
+nba <- nba[is.finite(year) & year >= max(year_min, comp_year_min) & year <= year_max]
 draft <- draft[is.finite(draft_year) & draft_year >= year_min & draft_year <= year_max]
 
-if (!nrow(nba)) stop("No NBA skill rows found from ", year_min, " to ", year_max, ".")
+if (!nrow(nba)) stop("No NBA comp candidate skill rows found from ", max(year_min, comp_year_min), " to ", year_max, ".")
 if (!nrow(draft)) stop("No draft prediction rows found from ", year_min, " to ", year_max, ".")
 
 for (skill in skill_names) {

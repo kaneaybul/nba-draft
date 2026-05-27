@@ -957,6 +957,7 @@ apply_skill_feature_policy <- function(candidate_cols, skill_name = NULL) {
 
   include_map <- list(
     SHOOT = c("X3PA_100"),
+    PASS = c("ast_pct", "weight_lbs", "scv_draft"),
     RIM = c("rim_pct", "wingspan_in", "three_pct"),
     RIMPRO = c("height_wo_shoes_in")
   )
@@ -979,6 +980,7 @@ get_skill_forced_predictors <- function(skill_name, candidate_cols) {
 
   include_map <- list(
     SHOOT = c("X3PA_100"),
+    PASS = c("ast_pct", "weight_lbs", "scv_draft"),
     RIM = c("rim_pct", "wingspan_in", "three_pct"),
     RIMPRO = c("height_wo_shoes_in")
   )

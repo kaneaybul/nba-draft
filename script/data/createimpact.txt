@@ -37,7 +37,7 @@ out_fp <- file.path(livedata_dir, "impactoutput.csv")
 # =========================
 # Settings
 # =========================
-MIN_MINUTES <- as.numeric(Sys.getenv("IMPACT_MIN_MINUTES", unset = "0"))
+MIN_MINUTES <- as.numeric(Sys.getenv("IMPACT_MIN_MINUTES", unset = "500"))
 
 exclude_years_raw <- trimws(Sys.getenv("IMPACT_EXCLUDE_YEARS", unset = "none"))
 if (!nzchar(exclude_years_raw) || tolower(exclude_years_raw) %in% c("none", "null", "na")) {
@@ -193,7 +193,7 @@ db <- db_raw %>%
     d_dpm = as.numeric(.data[[d_dpm_col]])
   ) %>%
   filter(!year %in% EXCLUDE_YEARS) %>%
-  filter(Minutes >= MIN_MINUTES | darko_dpm_fallback) %>%
+  filter(Minutes >= MIN_MINUTES) %>%
   filter(!is.na(nba_id)) %>%
   distinct(nba_id, year, .keep_all = TRUE)
 

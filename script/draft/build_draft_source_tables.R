@@ -79,6 +79,19 @@ prepare_skill_targets <- function(skill_fp) {
     stop("skilloutput not found: ", skill_fp)
   }
   skill_dt <- fread(skill_fp, na.strings = c("", "NA", "N/A", "NaN"))
+  min_target_minutes <- suppressWarnings(as.numeric(Sys.getenv("DRAFT_TARGET_MIN_MINUTES", "500")))
+  if (is.finite(min_target_minutes) && "SOURCE_MINUTES" %in% names(skill_dt)) {
+    skill_dt <- skill_dt[suppressWarnings(as.numeric(SOURCE_MINUTES)) >= min_target_minutes]
+  } else if (is.finite(min_target_minutes)) {
+    impact_fp <- file.path(dirname(skill_fp), "impactoutput.csv")
+    if (file.exists(impact_fp)) {
+      impact_keys <- fread(impact_fp, select = c("nba_id", "year"))
+      impact_keys[, `:=`(nba_id = as.character(nba_id), year = suppressWarnings(as.integer(year)))]
+      impact_keys <- unique(impact_keys[!is.na(nba_id) & is.finite(year)])
+      skill_dt[, `:=`(nba_id = as.character(nba_id), year = suppressWarnings(as.integer(year)))]
+      skill_dt <- skill_dt[impact_keys, on = .(nba_id, year), nomatch = 0L]
+    }
+  }
   base_skill_cols <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
   raw_skill_cols <- paste0(base_skill_cols, "_raw")
   impact_col <- c("IMPACT_TOTAL", "TOTAL")[c("IMPACT_TOTAL", "TOTAL") %in% names(skill_dt)][1]
@@ -89,6 +102,9 @@ prepare_skill_targets <- function(skill_fp) {
   }
   if (is.na(impact_col) || !nzchar(impact_col)) {
     stop("skilloutput missing IMPACT_TOTAL/TOTAL column needed for target-year selection.")
+  }
+  if (is.finite(min_target_minutes) && !"SOURCE_MINUTES" %in% names(skill_dt)) {
+    skill_dt <- skill_dt[is.finite(suppressWarnings(as.numeric(get(impact_col))))]
   }
   skill_dt[, outcome_year := suppressWarnings(as.integer(year))]
   skill_dt[, join_player := normalize_join_name(player_name)]

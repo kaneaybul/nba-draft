@@ -469,6 +469,25 @@ stats_dt <- fread(stats_file, na.strings = c("", "NA", "N/A", "NaN"))
 stats_dt <- append_manual_no_college_stats(stats_dt, manual_stats_file)
 cohort_dt <- fread(cohort_file, na.strings = c("", "NA", "N/A", "NaN"))
 skill_dt <- fread(skill_file, na.strings = c("", "NA", "N/A", "NaN"))
+min_target_minutes <- suppressWarnings(as.numeric(Sys.getenv(
+  "NO_COLLEGE_TARGET_MIN_MINUTES",
+  Sys.getenv("DRAFT_TARGET_MIN_MINUTES", "500")
+)))
+if (is.finite(min_target_minutes) && "SOURCE_MINUTES" %in% names(skill_dt)) {
+  skill_dt <- skill_dt[suppressWarnings(as.numeric(SOURCE_MINUTES)) >= min_target_minutes]
+} else if (is.finite(min_target_minutes)) {
+  impact_file <- file.path(live_dir, "impactoutput.csv")
+  if (file.exists(impact_file)) {
+    impact_keys <- fread(impact_file, select = c("nba_id", "year"))
+    impact_keys[, `:=`(nba_id = as.character(nba_id), year = suppressWarnings(as.integer(year)))]
+    impact_keys <- unique(impact_keys[!is.na(nba_id) & is.finite(year)])
+    skill_dt[, `:=`(nba_id = as.character(nba_id), year = suppressWarnings(as.integer(year)))]
+    skill_dt <- skill_dt[impact_keys, on = .(nba_id, year), nomatch = 0L]
+  }
+}
+if (is.finite(min_target_minutes) && !"SOURCE_MINUTES" %in% names(skill_dt) && "IMPACT_TOTAL" %in% names(skill_dt)) {
+  skill_dt <- skill_dt[is.finite(suppressWarnings(as.numeric(IMPACT_TOTAL)))]
+}
 databallr_measure_dt <- build_databallr_measurements(base_dir)
 measurement_supplement_dt <- build_measurement_supplement(base_dir)
 prediction_name_filter_dt <- read_prediction_name_filter(prediction_names_file, key_col = "player_key")
@@ -531,6 +550,9 @@ derive_per36_from_pairs(stats_dt, "per36_x3pa", list(
 if (!is.null(databallr_measure_dt)) {
   stats_dt <- merge(stats_dt, databallr_measure_dt, by = "player_key", all.x = TRUE)
 }
+
+if (!"height_wo_shoes_in" %in% names(stats_dt)) stats_dt[, height_wo_shoes_in := NA_real_]
+if (!"wingspan_in" %in% names(stats_dt)) stats_dt[, wingspan_in := NA_real_]
 
 if (!is.null(measurement_supplement_dt)) {
   stats_dt <- merge(stats_dt, measurement_supplement_dt, by = c("player_key", "draft_year"), all.x = TRUE)
