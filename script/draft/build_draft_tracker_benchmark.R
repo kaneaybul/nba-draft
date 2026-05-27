@@ -694,14 +694,21 @@ source(file.path(base_dir, "script", "draft", "name_matching.R"), local = TRUE)
 draft_dir <- file.path(base_dir, "processed", "draft")
 dir.create(draft_dir, recursive = TRUE, showWarnings = FALSE)
 
+parse_year_env <- function(var_name, default_value) {
+  years <- as.integer(strsplit(Sys.getenv(var_name, default_value), ",")[[1]])
+  years[is.finite(years)]
+}
+
 latest_impact_year <- max(fread(file.path(base_dir, "processed", "livedata", "impactrefresh", "impactoutput.csv"), select = "year")$year, na.rm = TRUE)
-fit_years <- as.integer(strsplit(Sys.getenv("DRAFT_TRACKER_FIT_YEARS", "2016,2017,2018,2019,2020,2021,2022"), ",")[[1]])
-fit_years <- fit_years[is.finite(fit_years)]
+fit_years <- parse_year_env("DRAFT_TRACKER_FIT_YEARS", "2016,2017,2018,2019,2020,2021")
+eval_years <- parse_year_env("DRAFT_TRACKER_EVAL_YEARS", paste(c(fit_years, 2022L), collapse = ","))
+eval_years <- sort(unique(eval_years[is.finite(eval_years)]))
+if (!length(eval_years)) eval_years <- fit_years
 
 actual <- build_actual_outcomes(base_dir, latest_impact_year)
 panel <- make_prediction_panel(base_dir)
 
-tracker_boards <- read_tracker_workbook_boards(base_dir, fit_years)
+tracker_boards <- read_tracker_workbook_boards(base_dir, eval_years)
 tracker_boards[, name_key := normalize_name(player)]
 tracker_joined <- merge(
   actual[, .(draft_year, name_key, actual_rank, actual_weight)],
@@ -713,7 +720,7 @@ tracker_joined <- merge(
 )
 external_scores <- tracker_joined[!is.na(board), .(score = score_board_year(.SD, "board_rank")), by = .(draft_year, board)]
 
-actual_pick_scores <- actual[draft_year %in% fit_years, .(score = score_board_year(.SD, "actual_pick")), by = draft_year]
+actual_pick_scores <- actual[draft_year %in% eval_years, .(score = score_board_year(.SD, "actual_pick")), by = draft_year]
 actual_pick_scores[, board := "NBA Draft - Actual"]
 external_scores <- rbindlist(list(external_scores, actual_pick_scores[, .(draft_year, board, score)]), use.names = TRUE, fill = TRUE)
 
@@ -724,7 +731,7 @@ base_joined <- merge(
   all.x = TRUE,
   sort = FALSE
 )
-base_scores <- base_joined[draft_year %in% fit_years, .(score = score_board_year(.SD, "board_rank")), by = draft_year]
+base_scores <- base_joined[draft_year %in% eval_years, .(score = score_board_year(.SD, "board_rank")), by = draft_year]
 base_scores[, board := "SCV Base Model"]
 external_scores <- rbindlist(list(external_scores, base_scores[, .(draft_year, board, score)]), use.names = TRUE, fill = TRUE)
 
@@ -740,7 +747,7 @@ final_joined <- merge(
   all.x = TRUE,
   sort = FALSE
 )
-final_scores <- final_joined[draft_year %in% fit_years, .(score = score_board_year(.SD, "board_rank")), by = draft_year]
+final_scores <- final_joined[draft_year %in% eval_years, .(score = score_board_year(.SD, "board_rank")), by = draft_year]
 final_scores[, board := "SCV Adjusted Model"]
 all_scores <- rbindlist(list(external_scores, final_scores[, .(draft_year, board, score)]), use.names = TRUE, fill = TRUE)
 all_scores[, year_weight := year_weight(draft_year, latest_impact_year)]
@@ -748,7 +755,7 @@ all_scores[, z_score := {
   sig <- stats::sd(score, na.rm = TRUE)
   if (!is.finite(sig) || sig == 0) NA_real_ else (score - mean(score, na.rm = TRUE)) / sig
 }, by = draft_year]
-summary_scores <- all_scores[, .(
+summary_scores <- all_scores[draft_year %in% fit_years, .(
   weighted_score = weighted.mean(score, year_weight, na.rm = TRUE),
   weighted_z = weighted.mean(z_score, year_weight, na.rm = TRUE),
   years = sum(is.finite(score))
@@ -757,6 +764,7 @@ summary_scores <- all_scores[, .(
 adjustment <- data.table(
   version = "tracker_v1_career_epm_dpm_sd_spread",
   fit_years = paste(fit_years, collapse = ","),
+  eval_years = paste(eval_years, collapse = ","),
   latest_impact_year = latest_impact_year,
   penalty_base = 0.97,
   penalty_power = 1.25,
@@ -771,9 +779,9 @@ adjustment <- data.table(
 fwrite(actual, file.path(draft_dir, "draft_tracker_actuals.csv"), na = "")
 fwrite(all_scores[order(board, draft_year)], file.path(draft_dir, "draft_tracker_board_scores.csv"), na = "")
 fwrite(summary_scores, file.path(draft_dir, "draft_tracker_board_summary.csv"), na = "")
-prospect_scores <- build_tracker_prospect_scores(actual, tracker_boards, panel, all_scores, fit_years)
+prospect_scores <- build_tracker_prospect_scores(actual, tracker_boards, panel, all_scores, eval_years)
 fwrite(prospect_scores, file.path(draft_dir, "draft_tracker_prospect_scores.csv"), na = "")
-missing_actuals_audit <- build_missing_actuals_audit(base_dir, actual, prospect_scores, fit_years)
+missing_actuals_audit <- build_missing_actuals_audit(base_dir, actual, prospect_scores, eval_years)
 fwrite(missing_actuals_audit, file.path(draft_dir, "draft_tracker_actuals_audit.csv"), na = "")
 fwrite(
   missing_actuals_audit[is.finite(actual_pick) & missing_reason != "ranked"],
