@@ -821,7 +821,12 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
     const incumbent = teams.get(player.rightsTeam);
     if (incumbent) {
       const match = rfaMatchDecision(incumbent, player, chosen.salary, chosen.years, assumptions, rng);
-      if (match.canMatch && match.score.total > 0.54) {
+      const incumbentAlreadyMetSheet = ranked.some((offer) =>
+        offer.team.team === incumbent.team &&
+        offer.salary >= chosen.salary - 100_000 &&
+        offer.years >= Math.min(chosen.years, 3)
+      );
+      if (match.canMatch && (incumbentAlreadyMetSheet || match.score.total > 0.54)) {
         signingTeam = incumbent;
         signingTool = player.rights === "None" ? "minimum" : "bird";
         score = match.score;
@@ -837,7 +842,9 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
           playerId: player.id,
           player: player.name,
           status: "matched",
-          reason: `Matched exact offer sheet: ${formatMoney(chosen.salary)} AAV, ${chosen.years} years`,
+          reason: incumbentAlreadyMetSheet
+            ? `Matched exact offer sheet after already meeting the outside AAV: ${formatMoney(chosen.salary)} AAV, ${chosen.years} years`
+            : `Matched exact offer sheet: ${formatMoney(chosen.salary)} AAV, ${chosen.years} years`,
           offer: chosen.salary,
           legalMax: match.legalMax,
           tool: player.rights,
@@ -848,7 +855,7 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
           rightsSource: player.rightsSource,
           capHoldType: player.capHoldType
         });
-        audit.push(auditFromMatch(incumbent.team, player, round, "matched", `Matched exact ${offerSheetTeam} offer sheet`, chosen.salary, match.legalMax, match.score));
+        audit.push(auditFromMatch(incumbent.team, player, round, "matched", incumbentAlreadyMetSheet ? `Matched exact ${offerSheetTeam} offer sheet; incumbent had already met the AAV` : `Matched exact ${offerSheetTeam} offer sheet`, chosen.salary, match.legalMax, match.score));
       } else {
         resolution.rfaMatchResult = "declined";
         ledger.push({

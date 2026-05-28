@@ -52,6 +52,7 @@ export function runOffseasonMarketRegressionTests(): string[] {
     rfaFallbackSignsWhenNoOutsideBid(),
     rfaFallbackUsesExpectedMarketMinutes(),
     rfaMatchUsesExactOutsideTerms(),
+    rfaIncumbentEqualBidForcesMatch(),
     rfaDeclineUsesExactOutsideTerms(),
     secondApronBlocksMle(),
     unresolvedMarketsAreExplained()
@@ -334,6 +335,31 @@ function rfaMatchUsesExactOutsideTerms(): string {
   expect(Boolean(signing.context.resolution?.clearingRule === "matched exact offer sheet"), "resolution should state exact matching rule");
   expect(ledger.some((row) => row.status === "matched" && row.reason.includes("Matched exact offer sheet")), "ledger should explain exact match");
   return "RFA match uses exact outside AAV and years";
+}
+
+function rfaIncumbentEqualBidForcesMatch(): string {
+  const rfa = player("p15b", "Equal Bid RFA", "UTA", "RFA", 78, 18_000_000, "UTA", "Bird", { age: 24, upside: 0.72, declineRisk: 0.08 });
+  const outsideTeam = team("LAC", 118_000_000, ["RIMPRO"], 0.95);
+  const incumbent = team("UTA", 150_000_000, ["RIMPRO"], 0.05);
+  const outsideOffer = offerPlan(outsideTeam, rfa, 18_000_000, 4);
+  const incumbentOffer = offerPlan(incumbent, rfa, 18_000_000, 4, "bird");
+  const choice = {
+    chosen: outsideOffer,
+    ranked: [outsideOffer, incumbentOffer],
+    highestMoney: outsideOffer,
+    moneyGap: 0,
+    yearsGap: 0,
+    closeMoneyWin: false,
+    reason: "regression offer sheet"
+  };
+  const ledger: MarketLedgerRow[] = [];
+  const resolutions: MarketResolution[] = [];
+  const audit: LegacyAuditRow[] = [];
+  const signing = resolveAcceptedOffer(choice, mapTeams([incumbent, outsideTeam]), assumptions, 0, "regression", ledger, resolutions, audit, fixedRng);
+  expect(signing.toTeam === "UTA" && signing.matched === true, "incumbent equal bid should force exact RFA match instead of letting player choose outside team");
+  expect(signing.annualSalary === 18_000_000 && signing.years === 4, "matched RFA must keep exact outside offer-sheet terms");
+  expect(ledger.some((row) => row.status === "matched" && row.reason.includes("already meeting the outside AAV")), "ledger should explain revealed incumbent willingness");
+  return "RFA incumbent equal bid forces exact match";
 }
 
 function rfaDeclineUsesExactOutsideTerms(): string {
