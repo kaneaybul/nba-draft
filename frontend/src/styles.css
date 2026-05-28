@@ -6239,6 +6239,32 @@ input:focus {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.quick-run-control {
+  padding: 8px 9px;
+  background: rgba(255, 255, 255, 0.018);
+  border: 1px solid color-mix(in srgb, var(--line) 74%, transparent);
+  border-radius: var(--r);
+}
+
+.quick-run-control .range-field {
+  grid-template-columns: 130px minmax(140px, 1fr) 44px;
+}
+
+.simulation-progress-strip {
+  padding: 8px 10px;
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--green) 24%, var(--line));
+  border-radius: var(--r);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.command-buttons .hdr-btn:disabled {
+  cursor: progress;
+  opacity: 0.58;
+}
+
 .scenario-preset-row,
 .driver-chip-row,
 .cap-warning-strip,
@@ -6336,6 +6362,241 @@ input:focus {
 
 .dashboard-stack {
   gap: 14px;
+}
+
+.result-digest-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
+  gap: 12px;
+  padding: 14px;
+  background:
+    linear-gradient(135deg, rgba(46, 196, 178, 0.08), transparent 42%),
+    var(--panel);
+}
+
+.result-digest-copy {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.result-digest-copy span,
+.result-digest-card span,
+.team-outcome-head span,
+.distribution-bars h3,
+.team-outcome-footer span {
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.result-digest-copy h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-brand);
+  font-size: 1.42rem;
+  font-weight: 900;
+  line-height: 1.06;
+}
+
+.result-digest-copy p,
+.result-digest-card p,
+.team-outcome-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.38;
+}
+
+.result-digest-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.result-digest-card {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 118px;
+  min-width: 0;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.result-digest-card strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1.12;
+  text-overflow: ellipsis;
+}
+
+.result-digest-card.digest-good {
+  border-color: color-mix(in srgb, var(--green) 34%, var(--line));
+}
+
+.result-digest-card.digest-warn {
+  border-color: color-mix(in srgb, var(--gold) 34%, var(--line));
+}
+
+.result-digest-card.digest-bad {
+  border-color: color-mix(in srgb, var(--red) 34%, var(--line));
+}
+
+.distribution-spotlight-panel,
+.team-outcome-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.distribution-spotlight-grid,
+.team-outcome-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+.team-outcome-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.distribution-bars,
+.team-outcome-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.team-outcome-card {
+  border-color: color-mix(in srgb, var(--teal) 18%, var(--line));
+}
+
+.team-outcome-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.team-outcome-head div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.team-outcome-head strong,
+.team-outcome-head b {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.team-outcome-card h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.14;
+}
+
+.team-outcome-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.team-outcome-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+}
+
+.team-outcome-footer strong {
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.distribution-bars h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.distribution-bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px 42px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.distribution-bar-row div {
+  min-width: 0;
+}
+
+.distribution-bar-row span,
+.distribution-bar-row strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.distribution-bar-row span {
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.distribution-bar-row strong {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 750;
+}
+
+.distribution-bar-row i {
+  height: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--line) 58%, transparent);
+  border-radius: 999px;
+}
+
+.distribution-bar-row i b {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--green), var(--teal));
+  border-radius: inherit;
+}
+
+.distribution-bar-row em {
+  color: var(--green);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .dashboard-hero-panel {
@@ -8119,6 +8380,10 @@ body,
   .offseason-kpis,
   .multi-grid,
   .offseason-data-grid,
+  .result-digest-panel,
+  .result-digest-grid,
+  .distribution-spotlight-grid,
+  .team-outcome-grid,
   .cap-card-grid,
   .transaction-grid,
   .market-plan-grid,

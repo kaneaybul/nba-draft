@@ -396,7 +396,7 @@ function buildRfaFallbackOffer<TPlayer extends MarketPlayer, TTeam extends Marke
   const redundancy = rosterRedundancyPenalty(team, player);
   const alternatives = countAlternatives(team, player, marketPlayers);
   const teamPriority = teamPriorityForPlayer(team, player, legalMax, assumptions, needFit, timeline, taxPain, redundancy, alternatives);
-  const rightsBoost = clamp((player.holdRetainScore ?? 0) * 0.18 + (player.scarcityScore ?? 0) * 0.12, 0, 0.22);
+  const rightsBoost = clamp(rightsLeverageScore(team, player, assumptions) * 0.24 + (player.holdRetainScore ?? 0) * 0.12 + (player.scarcityScore ?? 0) * 0.08, 0, 0.34);
   if (teamPriority + rightsBoost < (player.marketValue >= 8_000_000 ? 0.42 : 0.3)) return null;
   const years = player.age <= 26 && player.marketValue >= 8_000_000 ? 4 : player.marketValue >= 5_000_000 ? 3 : 2;
   const leverageDiscount = player.marketValue >= 18_000_000 ? 0.82 : player.marketValue >= 8_000_000 ? 0.76 : 0.68;
@@ -451,7 +451,7 @@ function buildRfaFallbackOffer<TPlayer extends MarketPlayer, TTeam extends Marke
     expectedMarketMinutes: player.expectedMarketMinutes,
     marketMinutesSource: player.marketMinutesSource,
     limiter: maxOffer.limiter,
-    reason: `RFA fallback: rights value ${formatNumber(player.rightsValue ?? 0, 2)}, scarcity ${formatNumber(player.scarcityScore ?? 0, 2)}, no outside sheet cleared.`
+    reason: `RFA fallback: retained match rights, rights value ${formatNumber(player.rightsValue ?? 0, 2)}, scarcity ${formatNumber(player.scarcityScore ?? 0, 2)}, no outside sheet cleared.`
   };
   return { bid, team, player, salary, years, tool: { ...tool, amount: legalMax }, score, needFit, timeline, taxPain, redundancy, affordability: clamp(legalMax / Math.max(player.marketValue, 1), 0, 1.35), alternatives, toolReason: bid.toolReason ?? "" };
 }
@@ -505,7 +505,8 @@ function buildEligibleTeamBoard<TPlayer extends MarketPlayer, TTeam extends Mark
       const timeline = timelineFit(team, player);
       const redundancy = rosterRedundancyPenalty(team, player);
       const ownRights = player.rightsTeam === team.team && player.rights !== "None";
-      const rawPriority = need * 0.34 + timeline * 0.2 + clamp(player.score / 100, 0, 1) * 0.26 + team.willingness * 0.12 + (ownRights ? 0.16 : 0) - redundancy * 0.18;
+      const rightsLeverage = ownRights ? rightsLeverageScore(team, player, assumptions) : 0;
+      const rawPriority = need * 0.3 + timeline * 0.18 + clamp(player.score / 100, 0, 1) * 0.24 + team.willingness * 0.1 + rightsLeverage * 0.22 - redundancy * 0.18;
       const capUrgency = capRoomUrgencyActive(team, assumptions) && player.marketValue >= Math.min(team.capSpace * 0.2, assumptions.cap * 0.08) ? 0.08 : 0;
       return { player, priority: rawPriority + capUrgency + rosterFit.priorityAdjustment, rosterFit };
     })
@@ -659,7 +660,7 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
     assetValue: player.tradeValue / Math.max(assumptions.cap, 1),
     replacement: player.replaceability,
     upsideRisk: player.upside - player.declineRisk,
-    incumbency: player.rightsTeam === team.team ? 0.75 : 0,
+    incumbency: rightsLeverageScore(team, player, assumptions),
     randomness
   });
   const bid: MarketBid = {
@@ -725,10 +726,45 @@ export function choosePlayerOffer<TPlayer extends MarketPlayer, TTeam extends Ma
   const moneyGap = Math.max(0, highestMoney.salary - chosen.salary);
   const yearsGap = chosen.years - highestMoney.years;
   const closeMoneyWin = chosen.team.team !== highestMoney.team.team && moneyGap > 0;
-  const reason = closeMoneyWin
-    ? `Close-money preference win: ${formatMoney(moneyGap)} AAV gap was inside the ${formatMoney(closeThreshold)} close-offer threshold, and years/role/familiarity made up the difference.`
-    : `Highest AAV offer wins: ${chosen.team.team} offered ${formatMoney(chosen.salary)} over ${chosen.years} years.`;
+  const reason = playerChoiceReason(player, chosen, highestMoney, moneyGap, yearsGap, closeThreshold, closeMoneyWin);
   return { chosen, ranked, highestMoney, moneyGap, yearsGap, closeMoneyWin, reason };
+}
+
+function playerChoiceReason<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  player: TPlayer,
+  chosen: TeamBidPlan<TPlayer, TTeam>,
+  highestMoney: TeamBidPlan<TPlayer, TTeam>,
+  moneyGap: number,
+  yearsGap: number,
+  closeThreshold: number,
+  closeMoneyWin: boolean
+): string {
+  const components = chosen.bid.components;
+  const profileLabel = player.score >= 82 || player.marketValue >= 24_000_000
+    ? "prime-money player"
+    : player.age >= 31
+      ? "veteran"
+      : player.age <= 26 && player.upside > 0.35
+        ? "young upside bet"
+        : player.marketValue <= Math.max(minimumSalary(player) * 2.2, 4_000_000)
+          ? "roster-spot player"
+          : "rotation player";
+  const drivers = [
+    { label: "money", value: components.salary },
+    { label: "security", value: Math.max(components.security, components.totalGuarantee) },
+    { label: "role", value: components.roleFit },
+    { label: "familiarity", value: components.familiarity }
+  ].sort((a, b) => b.value - a.value).slice(0, 2).map((row) => row.label).join(" and ");
+  if (closeMoneyWin) {
+    return `Close-money player choice: as a ${profileLabel}, ${player.name} gives up ${formatMoney(moneyGap)} AAV inside the ${formatMoney(closeThreshold)} close-offer band because ${drivers} made ${chosen.team.team} more attractive than ${highestMoney.team.team}.`;
+  }
+  if (chosen.team.team !== highestMoney.team.team) {
+    return `Player choice: ${chosen.team.team} beat the richer raw offer from ${highestMoney.team.team} because ${drivers} outweighed a ${formatMoney(moneyGap)} AAV gap.`;
+  }
+  if (yearsGap > 0) {
+    return `Highest AAV and security win: ${chosen.team.team} offered ${formatMoney(chosen.salary)} over ${chosen.years} years, with ${drivers} supporting the choice.`;
+  }
+  return `Highest AAV offer wins: ${chosen.team.team} offered ${formatMoney(chosen.salary)} over ${chosen.years} years, and the player-choice model still liked the ${drivers} case.`;
 }
 
 export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
@@ -993,19 +1029,22 @@ function playerChoiceComponents<TPlayer extends MarketPlayer, TTeam extends Mark
   closeOfferAdjustment: number,
   isHighestMoney: boolean
 ): MarketComponentBreakdown {
+  const profile = playerPreferenceProfile(player);
   const salaryComponent = clamp(salary / Math.max(player.marketValue, 1), 0, 1.35);
   const totalGuarantee = clamp((salary * years) / Math.max(player.marketValue * 4, 1), 0, 1.35);
   const roleFit = clamp(needFit * 0.72 + (1 - rosterRedundancyPenalty(team, player)) * 0.28, 0, 1);
-  const familiarity = player.rightsTeam === team.team ? 0.92 : 0.22;
+  const familiarity = destinationFamiliarity(team, player);
   const security = clamp(years / 5, 0, 1);
-  const randomness = isHighestMoney ? 0.01 : 0;
+  const scarcity = clamp((player.scarcityScore ?? 0) * 0.5 + clamp(player.marketValue / 34_000_000, 0, 1) * 0.5, 0, 1);
+  const randomness = isHighestMoney ? 0.012 : 0;
   const total = clamp(
-    salaryComponent * 0.48 +
-      totalGuarantee * 0.18 +
-      security * 0.16 +
-      roleFit * 0.12 +
-      familiarity * 0.04 +
-      closeOfferAdjustment * 0.04 +
+    salaryComponent * profile.salary +
+      totalGuarantee * profile.totalGuarantee +
+      security * profile.security +
+      roleFit * profile.role +
+      familiarity * profile.familiarity +
+      scarcity * profile.scarcity +
+      closeOfferAdjustment * profile.closeMoney +
       randomness,
     0,
     1.35
@@ -1018,7 +1057,7 @@ function playerChoiceComponents<TPlayer extends MarketPlayer, TTeam extends Mark
     familiarity,
     willingness: 0,
     taxDrag: 0,
-    scarcity: 0,
+    scarcity,
     security,
     closeOfferAdjustment,
     randomness,
@@ -1039,6 +1078,7 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
   const legalMax = maxLegalOffer(team, player, assumptions, "bird").legalMax;
   const rosterFit = rosterOfferFit(team, player, assumptions);
   const canMatch = player.rightsTeam === team.team && player.rights !== "None" && salary <= legalMax + 100_000 && rosterFit.allowed;
+  const rightsLeverage = rightsLeverageScore(team, player, assumptions);
   const score = makeScore({
     needFit,
     value: clamp(player.marketValue / Math.max(salary, 1), 0, 1.5),
@@ -1047,8 +1087,8 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
     taxPain,
     assetValue: player.tradeValue / Math.max(assumptions.cap, 1),
     replacement: player.replaceability,
-    upsideRisk: player.upside - player.declineRisk - Math.max(0, years - 3) * 0.03,
-    incumbency: 1,
+    upsideRisk: player.upside - player.declineRisk - Math.max(0, years - 3) * 0.025,
+    incumbency: clamp(0.78 + rightsLeverage * 0.3, 0, 1.1),
     randomness: centeredRandom(rng, assumptions.variance)
   });
   return {
@@ -1061,6 +1101,32 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
         ? rosterFit.reason
         : "no matching rights or outside offer exceeds legal max"
   };
+}
+
+function playerPreferenceProfile<TPlayer extends MarketPlayer>(player: TPlayer) {
+  const star = player.score >= 82 || player.marketValue >= 24_000_000;
+  const youngUpside = player.age <= 26 && (player.upside > 0.35 || player.marketValue >= 8_000_000);
+  const veteran = player.age >= 31;
+  const fringe = player.marketValue <= Math.max(minimumSalary(player) * 2.2, 4_000_000) || player.score < 52;
+  if (star) {
+    return { salary: 0.42, totalGuarantee: 0.16, security: 0.12, role: 0.14, familiarity: 0.06, scarcity: 0.04, closeMoney: 0.06 };
+  }
+  if (youngUpside) {
+    return { salary: 0.38, totalGuarantee: 0.19, security: 0.17, role: 0.17, familiarity: 0.04, scarcity: 0.02, closeMoney: 0.04 };
+  }
+  if (veteran) {
+    return { salary: 0.34, totalGuarantee: 0.24, security: 0.19, role: 0.1, familiarity: 0.08, scarcity: 0.02, closeMoney: 0.04 };
+  }
+  if (fringe) {
+    return { salary: 0.39, totalGuarantee: 0.15, security: 0.13, role: 0.2, familiarity: 0.06, scarcity: 0.02, closeMoney: 0.05 };
+  }
+  return { salary: 0.38, totalGuarantee: 0.17, security: 0.15, role: 0.15, familiarity: 0.06, scarcity: 0.03, closeMoney: 0.05 };
+}
+
+function destinationFamiliarity<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer): number {
+  if (player.rightsTeam === team.team) return player.holdAction === "renounced" ? 0.62 : 0.92;
+  if (player.incumbentTeam === team.team) return 0.78;
+  return 0.2;
 }
 
 function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): MarketTool | null {
@@ -1110,7 +1176,7 @@ function maxLegalOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TP
 
 function spendingToolReason<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, tool: MarketTool): string {
   const capPath = team.capPath ?? "retained_rights";
-  if (tool.kind === "bird") return `${player.rights} rights retained for own free agent; preserves cap room and exceptions.`;
+  if (tool.kind === "bird") return `${player.rights}${player.status === "RFA" ? " / RFA match" : ""} rights retained for own free agent; team can exceed cap without spending room or exceptions.`;
   if (tool.kind === "cap") return `Cap-room path after modeled renouncements; ${team.capPathReason ?? "team opened room before outside bidding"}`;
   if (tool.kind === "room_exception") return "Room exception is available only after the cap-room path and after cap room has been used or exhausted.";
   if (tool.kind === "non_taxpayer_mle") return "Non-taxpayer MLE on retained-rights path; hard-capped at the first apron.";
@@ -1142,17 +1208,17 @@ function teamPriorityForPlayer<TPlayer extends MarketPlayer, TTeam extends Marke
 ): number {
   const quality = clamp(player.score / 100, 0, 1);
   const affordability = clamp(legalMax / Math.max(player.marketValue, 1), 0, 1.25);
-  const incumbentEase = player.rightsTeam === team.team ? 0.16 : 0;
+  const rightsLeverage = rightsLeverageScore(team, player, assumptions);
   const spendingPower = Math.max(teamSpendingPower(team, assumptions), minimumSalary(player));
   const maxCommitment = clamp(Math.min(legalMax, player.marketValue) / spendingPower, 0, 1);
   return clamp(
-    need * 0.24 +
-      quality * 0.2 +
-      timeline * 0.17 +
-      affordability * 0.13 +
-      team.willingness * 0.1 +
-      urgencyScore(team) * 0.08 +
-      incumbentEase -
+    need * 0.22 +
+      quality * 0.19 +
+      timeline * 0.15 +
+      affordability * 0.12 +
+      team.willingness * 0.09 +
+      urgencyScore(team) * 0.07 +
+      rightsLeverage * 0.18 -
       redundancy * 0.2 -
       taxPain * 0.12 -
       alternatives * 0.035 -
@@ -1160,6 +1226,17 @@ function teamPriorityForPlayer<TPlayer extends MarketPlayer, TTeam extends Marke
     0,
     1
   );
+}
+
+function rightsLeverageScore<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): number {
+  if (player.rightsTeam !== team.team || player.rights === "None") return 0;
+  const rightType = player.status === "RFA" ? 0.48 : player.rights === "Bird" ? 0.34 : player.rights === "Early Bird" ? 0.2 : 0.08;
+  const matchControl = player.status === "RFA" ? 0.18 : 0;
+  const capBypass = (team.capPath ?? "retained_rights") === "retained_rights" && team.capSpace <= minimumSalary(player) ? 0.2 : 0;
+  const holdScore = clamp(player.holdRetainScore ?? 0, 0, 1) * 0.16;
+  const scarcity = clamp(player.scarcityScore ?? 0, 0, 1) * 0.1;
+  const scale = clamp(player.marketValue / Math.max(assumptions.cap * 0.2, 1), 0, 0.16);
+  return clamp(rightType + matchControl + capBypass + holdScore + scarcity + scale, 0, 1);
 }
 
 type RosterOfferFit = {

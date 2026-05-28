@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { simulateFreeAgencyMarket } from "./offseasonMarket";
 import type {
   MarketBid,
@@ -425,11 +425,27 @@ type MultiRunSummary = {
   tradeTeams: Array<{ team: string; count: number; pct: number }>;
   rfaMatches: Array<{ player: string; matches: number; offers: number; pct: number }>;
   payrolls: Array<{ team: string; avgPayroll: number; highPayroll: number; lowPayroll: number }>;
+  teamOutcomes: Array<{ team: string; outcome: string; count: number; pct: number; avgPayroll: number; avgCapSpace: number; avgTaxRoom: number }>;
   taxOutcomes: OutcomeDistribution[];
   stableDecisions: OutcomeDistribution[];
   volatileDecisions: OutcomeDistribution[];
   unresolvedMarkets: OutcomeDistribution[];
   surprises: Array<{ label: string; detail: string; frequency: number }>;
+};
+
+type MultiRunAccumulator = {
+  runs: number;
+  destinationRows: Map<string, { count: number; salary: number }>;
+  draftRows: Map<string, { count: number; pick: number }>;
+  tradeTeams: Map<string, number>;
+  rfaRows: Map<string, { matches: number; offers: number }>;
+  payrollRows: Map<string, number[]>;
+  teamOutcomeRows: Map<string, { count: number; payroll: number; capSpace: number; taxRoom: number }>;
+  taxRows: Map<string, number>;
+  decisionRows: Map<string, number>;
+  decisionOutcomeCounts: Map<string, Set<string>>;
+  unresolvedRows: Map<string, number>;
+  surpriseRows: Map<string, { detail: string; count: number }>;
 };
 
 type DriverTone = "good" | "warn" | "bad" | "neutral";
@@ -456,6 +472,15 @@ type OutcomeDistribution = {
   avgMoney?: number;
   avgPick?: number;
   detail?: string;
+};
+
+type DigestTone = "good" | "warn" | "bad" | "neutral";
+
+type ResultDigestItem = {
+  label: string;
+  value: string;
+  detail: string;
+  tone: DigestTone;
 };
 
 type TeamWarRoomPlan = {
@@ -602,6 +627,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   const [activeTab, setActiveTab] = useState<OffseasonTab>(() => readStoredOffseasonTab());
   const [run, setRun] = useState<SimulationRun | null>(() => readCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides)));
   const [isSimulating, setIsSimulating] = useState(() => run === null);
+  const [simulationStatus, setSimulationStatus] = useState<string | null>(null);
   const [runOffset, setRunOffset] = useState(0);
   const [multiRun, setMultiRun] = useState<MultiRunSummary | null>(null);
   const [selectedTeam, setSelectedTeam] = useState(() => readStoredString(OFFSEASON_TEAM_STORAGE_KEY, "All"));
@@ -609,6 +635,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [selectedTeamCode, setSelectedTeamCode] = useState("");
   const [selectedProspectId, setSelectedProspectId] = useState("");
+  const activeRunJobRef = useRef(0);
 
   const seasonPlayers = useMemo(() => data.players.filter((player) => player.year === season), [data.players, season]);
   const draftYear = useMemo(() => inferDraftYear(data.prospects, season), [data.prospects, season]);
@@ -636,19 +663,24 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
     if (cached) {
       setRun(cached);
       setIsSimulating(false);
+      setSimulationStatus(null);
       return;
     }
+    const jobId = activeRunJobRef.current + 1;
+    activeRunJobRef.current = jobId;
     setRun(null);
     setMultiRun(null);
     setRunOffset(0);
     setIsSimulating(true);
+    setSimulationStatus("Generating first run...");
     let cancelled = false;
     const runTask = () => {
       const next = runSimulation(data, season, capYear, assumptions, overrides, 0);
       writeCachedSimulationRun(data, key, next);
-      if (!cancelled) {
+      if (!cancelled && activeRunJobRef.current === jobId) {
         setRun(next);
         setIsSimulating(false);
+        setSimulationStatus(null);
       }
     };
     const handle = scheduleIdleWork(runTask);
@@ -684,22 +716,61 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   };
 
   const runOne = () => {
+    const jobId = activeRunJobRef.current + 1;
+    activeRunJobRef.current = jobId;
     const nextOffset = runOffset + 1;
-    const next = runSimulation(data, season, capYear, assumptions, overrides, nextOffset);
-    writeCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides), next);
-    setRunOffset(nextOffset);
-    setRun(next);
+    setIsSimulating(true);
+    setSimulationStatus("Running one simulation...");
     setMultiRun(null);
+    window.setTimeout(() => {
+      if (activeRunJobRef.current !== jobId) return;
+      const next = runSimulation(data, season, capYear, assumptions, overrides, nextOffset);
+      if (activeRunJobRef.current !== jobId) return;
+      writeCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides), next);
+      setRunOffset(nextOffset);
+      setRun(next);
+      setIsSimulating(false);
+      setSimulationStatus(null);
+    }, 16);
   };
 
   const runMany = () => {
-    const runs = Array.from({ length: clamp(Math.round(assumptions.runCount), 2, 500) }, (_, index) =>
-      runSimulation(data, season, capYear, assumptions, overrides, index)
-    );
-    writeCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides), runs[0]);
-    setRunOffset((current) => current + runs.length);
-    setRun(runs[0]);
-    setMultiRun(summarizeRuns(runs));
+    const total = clamp(Math.round(assumptions.runCount), 2, 500);
+    const jobId = activeRunJobRef.current + 1;
+    activeRunJobRef.current = jobId;
+    const accumulator = createMultiRunAccumulator();
+    let completed = 0;
+    let firstRun: SimulationRun | null = null;
+    setIsSimulating(true);
+    setSimulationStatus(`Running 0/${total} simulations...`);
+    setMultiRun(null);
+
+    const step = () => {
+      if (activeRunJobRef.current !== jobId) return;
+      const next = runSimulation(data, season, capYear, assumptions, overrides, completed);
+      if (!firstRun) firstRun = next;
+      addRunToAccumulator(accumulator, next);
+      completed += 1;
+
+      if (completed === 1 || completed % 5 === 0 || completed === total) {
+        setSimulationStatus(`Running ${completed}/${total} simulations...`);
+      }
+
+      if (completed < total) {
+        window.setTimeout(step, 0);
+        return;
+      }
+
+      if (activeRunJobRef.current !== jobId || !firstRun) return;
+      writeCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides), firstRun);
+      setRunOffset((current) => current + total);
+      setRun(firstRun);
+      setMultiRun(finalizeMultiRunAccumulator(accumulator));
+      setIsSimulating(false);
+      setSimulationStatus(null);
+    };
+
+    window.setTimeout(step, 16);
   };
 
   const exportRun = (kind: "json" | "csv") => {
@@ -738,6 +809,8 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
               assumptions={assumptions}
               activePreset={activePreset}
               overrideStats={overrideStats}
+              isSimulating={isSimulating}
+              simulationStatus={simulationStatus}
               onTeamSelect={setSelectedTeam}
               onRunOne={runOne}
               onRunMany={runMany}
@@ -746,7 +819,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
               onPreset={applyPreset}
             />
           ) : (
-            <OffseasonLoadingPanel season={season} draftYear={draftYear} isSimulating={isSimulating} />
+            <OffseasonLoadingPanel season={season} draftYear={draftYear} isSimulating={isSimulating} simulationStatus={simulationStatus} />
           )}
           {run && headline && (
             <>
@@ -907,7 +980,7 @@ function runSimulation(data: AppData, season: number, capYear: number, assumptio
   };
 }
 
-function OffseasonLoadingPanel({ season, draftYear, isSimulating }: { season: number; draftYear: number; isSimulating: boolean }) {
+function OffseasonLoadingPanel({ season, draftYear, isSimulating, simulationStatus }: { season: number; draftYear: number; isSimulating: boolean; simulationStatus: string | null }) {
   return (
     <section className="offseason-panel offseason-loading-panel">
       <div className="panel-heading compact-heading">
@@ -917,7 +990,7 @@ function OffseasonLoadingPanel({ season, draftYear, isSimulating }: { season: nu
         </div>
       </div>
       <div className="loading-state-card">
-        <strong>{isSimulating ? "Generating run..." : "Ready"}</strong>
+        <strong>{simulationStatus ?? (isSimulating ? "Generating run..." : "Ready")}</strong>
         <span>Free agency, trades, options, and draft outcomes are simulated in local copies before the workspace renders.</span>
       </div>
     </section>
@@ -1621,10 +1694,12 @@ function ownHoldPlan(team: TeamState, player: SimPlayer, assumptions: SimulatorA
   const priority = capPathPlayerPriority(team, player, assumptions, true);
   const scarcity = positionalScarcityScore(team, player);
   const rightsValue = rightsOptionValue(team, player, assumptions, hold, scarcity);
-  const retainScore = clamp(priority * 0.42 + rightsValue * 0.38 + scarcity * 0.2 + (player.status === "RFA" ? 0.08 : 0), 0, 1.25);
+  const rfaControlPremium = player.status === "RFA" ? clamp(0.08 + player.upside * 0.08 + (player.age <= 25 ? 0.08 : 0), 0, 0.22) : 0;
+  const birdToolPremium = player.rights === "Bird" && team.heldCapSpace <= 0 ? 0.08 : player.rights === "Early Bird" && team.heldCapSpace <= 0 ? 0.04 : 0;
+  const retainScore = clamp(priority * 0.38 + rightsValue * 0.42 + scarcity * 0.16 + rfaControlPremium + birdToolPremium, 0, 1.3);
   const protectedHold = player.status === "RFA"
-    ? retainScore >= 0.5 || scarcity >= 0.62 || player.marketValue >= 10_000_000
-    : retainScore >= 0.66 || player.marketValue >= assumptions.cap * 0.12 || ["MVP", "Superstar", "All-Star", "Starter"].includes(player.tier);
+    ? retainScore >= 0.44 || scarcity >= 0.58 || player.marketValue >= 7_500_000 || player.age <= 24
+    : retainScore >= 0.64 || (player.rights === "Bird" && player.marketValue >= assumptions.cap * 0.07) || player.marketValue >= assumptions.cap * 0.12 || ["MVP", "Superstar", "All-Star", "Starter"].includes(player.tier);
   player.rightsValue = rightsValue;
   player.holdRetainScore = retainScore;
   player.scarcityScore = scarcity;
@@ -1654,11 +1729,19 @@ function applyHoldPlanToPlayer(plan: OwnHoldPlan, retain: boolean, targetName?: 
 
 function rightsOptionValue(team: TeamState, player: SimPlayer, assumptions: SimulatorAssumptions, hold: number, scarcity: number): number {
   const holdEfficiency = hold > 0 ? clamp((player.marketValue / Math.max(hold, minimumSalary(player)) - 0.65) / 1.35, 0, 0.45) : 0;
-  const matchOption = player.status === "RFA" ? 0.24 : player.rights === "Bird" ? 0.14 : player.rights === "Early Bird" ? 0.08 : 0.03;
+  const matchOption = player.status === "RFA" ? 0.32 : player.rights === "Bird" ? 0.2 : player.rights === "Early Bird" ? 0.1 : 0.03;
+  const restrictedLeverage = player.status === "RFA"
+    ? clamp(player.marketValue / Math.max(assumptions.cap * 0.18, 1), 0, 0.18)
+    : 0;
+  const birdOverCapLeverage = player.rights === "Bird" && team.heldCapSpace <= 0
+    ? clamp(player.marketValue / Math.max(assumptions.cap * 0.2, 1), 0, 0.14)
+    : player.rights === "Early Bird" && team.heldCapSpace <= 0
+      ? clamp(player.marketValue / Math.max(assumptions.cap * 0.26, 1), 0, 0.07)
+      : 0;
   const ageTimeline = player.age <= 25 ? 0.14 : player.age <= 28 ? 0.09 : player.age <= 31 ? 0.04 : 0;
   const marketWeight = clamp(player.marketValue / Math.max(assumptions.cap * 0.16, 1), 0, 1) * 0.12;
   const teamTimeline = timelineFit(team, player) * 0.12;
-  return clamp(holdEfficiency + matchOption + ageTimeline + marketWeight + teamTimeline + scarcity * 0.22, 0, 1.15);
+  return clamp(holdEfficiency + matchOption + restrictedLeverage + birdOverCapLeverage + ageTimeline + marketWeight + teamTimeline + scarcity * 0.22, 0, 1.25);
 }
 
 function positionalScarcityScore(team: TeamState, player: SimPlayer): number {
@@ -1700,7 +1783,19 @@ function capPathPlayerPriority(team: TeamState, player: SimPlayer, assumptions: 
   const quality = clamp(player.score / 100, 0, 1.1);
   const marketFit = clamp(player.marketValue / Math.max(assumptions.cap * 0.14, 1), 0, 1.2);
   const taxDrag = taxPainScore(team, player.marketValue, assumptions);
-  return clamp(need * 0.24 + timeline * 0.2 + quality * 0.24 + marketFit * 0.12 + team.willingness * 0.08 + (incumbent ? 0.14 : 0) - taxDrag * 0.12, 0, 1.25);
+  const rightsLeverage = incumbent ? rightsPlanningLeverage(team, player, assumptions) : 0;
+  return clamp(need * 0.23 + timeline * 0.18 + quality * 0.23 + marketFit * 0.1 + team.willingness * 0.08 + (incumbent ? 0.1 : 0) + rightsLeverage * 0.18 - taxDrag * 0.12, 0, 1.3);
+}
+
+function rightsPlanningLeverage(team: TeamState, player: SimPlayer, assumptions: SimulatorAssumptions): number {
+  if (player.rightsTeam !== team.team || player.rights === "None") return 0;
+  const hold = capHoldForPlayer(player);
+  const holdEfficiency = hold > 0 ? clamp(player.marketValue / Math.max(hold, minimumSalary(player)), 0, 1.5) : 0;
+  const overCapNeed = team.heldCapSpace <= 0 ? 0.26 : 0;
+  const rightType = player.status === "RFA" ? 0.42 : player.rights === "Bird" ? 0.32 : player.rights === "Early Bird" ? 0.18 : 0.06;
+  const teamControl = player.status === "RFA" && player.age <= 26 ? 0.18 : player.status === "RFA" ? 0.1 : 0;
+  const marketScale = clamp(player.marketValue / Math.max(assumptions.cap * 0.18, 1), 0, 0.22);
+  return clamp(rightType + teamControl + overCapNeed + holdEfficiency * 0.12 + marketScale, 0, 1);
 }
 
 function isContenderMode(mode: TeamMode): boolean {
@@ -2215,109 +2310,132 @@ function summarizeOverrides(overrides: SimulatorOverrides) {
   };
 }
 
-function summarizeRuns(runs: SimulationRun[]): MultiRunSummary {
-  const destinationRows = new Map<string, { count: number; salary: number }>();
-  const draftRows = new Map<string, { count: number; pick: number }>();
-  const tradeTeams = new Map<string, number>();
-  const rfaRows = new Map<string, { matches: number; offers: number }>();
-  const payrollRows = new Map<string, number[]>();
-  const taxRows = new Map<string, number>();
-  const decisionRows = new Map<string, number>();
-  const decisionOutcomeCounts = new Map<string, Set<string>>();
-  const unresolvedRows = new Map<string, number>();
-  const surpriseRows = new Map<string, { detail: string; count: number }>();
+function createMultiRunAccumulator(): MultiRunAccumulator {
+  return {
+    runs: 0,
+    destinationRows: new Map(),
+    draftRows: new Map(),
+    tradeTeams: new Map(),
+    rfaRows: new Map(),
+    payrollRows: new Map(),
+    teamOutcomeRows: new Map(),
+    taxRows: new Map(),
+    decisionRows: new Map(),
+    decisionOutcomeCounts: new Map(),
+    unresolvedRows: new Map(),
+    surpriseRows: new Map()
+  };
+}
 
-  runs.forEach((run) => {
-    run.freeAgency.forEach((signing) => {
-      const key = `${signing.player.name}|${signing.toTeam}`;
-      const row = destinationRows.get(key) ?? { count: 0, salary: 0 };
-      row.count += 1;
-      row.salary += signing.annualSalary;
-      destinationRows.set(key, row);
-      if (signing.status === "RFA") {
-        const rfa = rfaRows.get(signing.player.name) ?? { matches: 0, offers: 0 };
-        rfa.offers += 1;
-        if (signing.matched) rfa.matches += 1;
-        rfaRows.set(signing.player.name, rfa);
-      }
-      if (signing.toTeam !== signing.fromTeam && signing.annualSalary < signing.player.marketValue * 0.72) {
-        const label = `${signing.player.name} discount`;
-        surpriseRows.set(label, { detail: `${signing.player.name} lands with ${signing.toTeam} below model market`, count: (surpriseRows.get(label)?.count ?? 0) + 1 });
-      }
-    });
-    run.draft.forEach((selection) => {
-      const key = `${selection.prospect.name}|${selection.team}`;
-      const row = draftRows.get(key) ?? { count: 0, pick: 0 };
-      row.count += 1;
-      row.pick += selection.pick;
-      draftRows.set(key, row);
-      if (Math.abs(selection.pick - selection.prospect.rank) >= 10 && selection.pick <= 30) {
-        const label = `${selection.prospect.name} range move`;
-        surpriseRows.set(label, { detail: `${selection.prospect.name} moves far from rank ${selection.prospect.rank}`, count: (surpriseRows.get(label)?.count ?? 0) + 1 });
-      }
-    });
-    run.trades.forEach((trade) => {
-      tradeTeams.set(trade.teamA, (tradeTeams.get(trade.teamA) ?? 0) + 1);
-      tradeTeams.set(trade.teamB, (tradeTeams.get(trade.teamB) ?? 0) + 1);
-    });
-    run.teams.forEach((team) => {
-      const row = payrollRows.get(team.team) ?? [];
-      row.push(team.payroll);
-      payrollRows.set(team.team, row);
-      const taxOutcome = team.secondApronRoom < 0 ? "Second apron" : team.firstApronRoom < 0 ? "First apron" : team.taxRoom < 0 ? "Tax" : "Below tax";
-      taxRows.set(`${team.team}|${taxOutcome}`, (taxRows.get(`${team.team}|${taxOutcome}`) ?? 0) + 1);
-    });
-    run.explanations.forEach((item) => {
-      const entity = item.player ?? item.title;
-      const outcome = item.team ? `${item.kind}: ${item.team}` : item.kind;
-      const key = `${entity}|${outcome}`;
-      decisionRows.set(key, (decisionRows.get(key) ?? 0) + 1);
-      const outcomes = decisionOutcomeCounts.get(entity) ?? new Set<string>();
-      outcomes.add(outcome);
-      decisionOutcomeCounts.set(entity, outcomes);
-    });
-    run.players
-      .filter((player) => player.status !== "Signed" && player.status !== "Rookie FA")
-      .forEach((player) => unresolvedRows.set(player.name, (unresolvedRows.get(player.name) ?? 0) + 1));
+function addRunToAccumulator(accumulator: MultiRunAccumulator, run: SimulationRun) {
+  accumulator.runs += 1;
+  run.freeAgency.forEach((signing) => {
+    const key = `${signing.player.name}|${signing.toTeam}`;
+    const row = accumulator.destinationRows.get(key) ?? { count: 0, salary: 0 };
+    row.count += 1;
+    row.salary += signing.annualSalary;
+    accumulator.destinationRows.set(key, row);
+    if (signing.status === "RFA") {
+      const rfa = accumulator.rfaRows.get(signing.player.name) ?? { matches: 0, offers: 0 };
+      rfa.offers += 1;
+      if (signing.matched) rfa.matches += 1;
+      accumulator.rfaRows.set(signing.player.name, rfa);
+    }
+    if (signing.toTeam !== signing.fromTeam && signing.annualSalary < signing.player.marketValue * 0.72) {
+      const label = `${signing.player.name} discount`;
+      accumulator.surpriseRows.set(label, { detail: `${signing.player.name} lands with ${signing.toTeam} below model market`, count: (accumulator.surpriseRows.get(label)?.count ?? 0) + 1 });
+    }
   });
+  run.draft.forEach((selection) => {
+    const key = `${selection.prospect.name}|${selection.team}`;
+    const row = accumulator.draftRows.get(key) ?? { count: 0, pick: 0 };
+    row.count += 1;
+    row.pick += selection.pick;
+    accumulator.draftRows.set(key, row);
+    if (Math.abs(selection.pick - selection.prospect.rank) >= 10 && selection.pick <= 30) {
+      const label = `${selection.prospect.name} range move`;
+      accumulator.surpriseRows.set(label, { detail: `${selection.prospect.name} moves far from rank ${selection.prospect.rank}`, count: (accumulator.surpriseRows.get(label)?.count ?? 0) + 1 });
+    }
+  });
+  run.trades.forEach((trade) => {
+    accumulator.tradeTeams.set(trade.teamA, (accumulator.tradeTeams.get(trade.teamA) ?? 0) + 1);
+    accumulator.tradeTeams.set(trade.teamB, (accumulator.tradeTeams.get(trade.teamB) ?? 0) + 1);
+  });
+  run.teams.forEach((team) => {
+    const payrollRow = accumulator.payrollRows.get(team.team) ?? [];
+    payrollRow.push(team.payroll);
+    accumulator.payrollRows.set(team.team, payrollRow);
+    const taxOutcome = team.secondApronRoom < 0 ? "Second apron" : team.firstApronRoom < 0 ? "First apron" : team.taxRoom < 0 ? "Tax" : "Below tax";
+    accumulator.taxRows.set(`${team.team}|${taxOutcome}`, (accumulator.taxRows.get(`${team.team}|${taxOutcome}`) ?? 0) + 1);
+    const teamOutcome = teamBatchOutcome(run, team);
+    const outcomeKey = `${team.team}|${teamOutcome}`;
+    const outcomeRow = accumulator.teamOutcomeRows.get(outcomeKey) ?? { count: 0, payroll: 0, capSpace: 0, taxRoom: 0 };
+    outcomeRow.count += 1;
+    outcomeRow.payroll += team.payroll;
+    outcomeRow.capSpace += team.capSpace;
+    outcomeRow.taxRoom += team.taxRoom;
+    accumulator.teamOutcomeRows.set(outcomeKey, outcomeRow);
+  });
+  run.explanations.forEach((item) => {
+    const entity = item.player ?? item.title;
+    const outcome = item.team ? `${item.kind}: ${item.team}` : item.kind;
+    const key = `${entity}|${outcome}`;
+    accumulator.decisionRows.set(key, (accumulator.decisionRows.get(key) ?? 0) + 1);
+    const outcomes = accumulator.decisionOutcomeCounts.get(entity) ?? new Set<string>();
+    outcomes.add(outcome);
+    accumulator.decisionOutcomeCounts.set(entity, outcomes);
+  });
+  run.players
+    .filter((player) => player.status !== "Signed" && player.status !== "Rookie FA")
+    .forEach((player) => accumulator.unresolvedRows.set(player.name, (accumulator.unresolvedRows.get(player.name) ?? 0) + 1));
+}
 
-  const decisionDistributions = Array.from(decisionRows.entries()).map(([key, count]) => {
+function finalizeMultiRunAccumulator(accumulator: MultiRunAccumulator): MultiRunSummary {
+  const runs = Math.max(accumulator.runs, 1);
+  const decisionDistributions = Array.from(accumulator.decisionRows.entries()).map(([key, count]) => {
     const [entity, outcome] = key.split("|");
-    return { entity, outcome, count, pct: count / runs.length };
+    return { entity, outcome, count, pct: count / runs };
   });
 
   return {
-    runs: runs.length,
-    playerDestinations: Array.from(destinationRows.entries())
+    runs: accumulator.runs,
+    playerDestinations: Array.from(accumulator.destinationRows.entries())
       .map(([key, value]) => {
         const [player, destination] = key.split("|");
-        return { player, destination, count: value.count, pct: value.count / runs.length, avgSalary: value.salary / value.count };
+        return { player, destination, count: value.count, pct: value.count / runs, avgSalary: value.salary / value.count };
       })
       .sort((a, b) => b.count - a.count || b.avgSalary - a.avgSalary)
       .slice(0, 18),
-    draftOutcomes: Array.from(draftRows.entries())
+    draftOutcomes: Array.from(accumulator.draftRows.entries())
       .map(([key, value]) => {
         const [prospect, team] = key.split("|");
-        return { prospect, team, count: value.count, pct: value.count / runs.length, avgPick: value.pick / value.count };
+        return { prospect, team, count: value.count, pct: value.count / runs, avgPick: value.pick / value.count };
       })
       .sort((a, b) => b.count - a.count || a.avgPick - b.avgPick)
       .slice(0, 18),
-    tradeTeams: Array.from(tradeTeams.entries())
-      .map(([team, count]) => ({ team, count, pct: count / runs.length }))
+    tradeTeams: Array.from(accumulator.tradeTeams.entries())
+      .map(([team, count]) => ({ team, count, pct: count / runs }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 12),
-    rfaMatches: Array.from(rfaRows.entries())
+    rfaMatches: Array.from(accumulator.rfaRows.entries())
       .map(([player, row]) => ({ player, matches: row.matches, offers: row.offers, pct: row.offers > 0 ? row.matches / row.offers : 0 }))
       .sort((a, b) => b.offers - a.offers)
       .slice(0, 12),
-    payrolls: Array.from(payrollRows.entries())
+    payrolls: Array.from(accumulator.payrollRows.entries())
       .map(([team, values]) => ({ team, avgPayroll: avg(values), highPayroll: Math.max(...values), lowPayroll: Math.min(...values) }))
       .sort((a, b) => b.avgPayroll - a.avgPayroll)
       .slice(0, 30),
-    taxOutcomes: Array.from(taxRows.entries())
+    teamOutcomes: Array.from(accumulator.teamOutcomeRows.entries())
+      .map(([key, row]) => {
+        const [team, outcome] = key.split("|");
+        return { team, outcome, count: row.count, pct: row.count / runs, avgPayroll: row.payroll / row.count, avgCapSpace: row.capSpace / row.count, avgTaxRoom: row.taxRoom / row.count };
+      })
+      .sort((a, b) => b.pct - a.pct || b.count - a.count || a.team.localeCompare(b.team))
+      .slice(0, 42),
+    taxOutcomes: Array.from(accumulator.taxRows.entries())
       .map(([key, count]) => {
         const [entity, outcome] = key.split("|");
-        return { entity, outcome, count, pct: count / runs.length };
+        return { entity, outcome, count, pct: count / runs };
       })
       .sort((a, b) => b.pct - a.pct || a.entity.localeCompare(b.entity))
       .slice(0, 30),
@@ -2326,15 +2444,15 @@ function summarizeRuns(runs: SimulationRun[]): MultiRunSummary {
       .sort((a, b) => b.pct - a.pct || b.count - a.count)
       .slice(0, 12),
     volatileDecisions: decisionDistributions
-      .filter((row) => row.pct >= 0.18 && row.pct <= 0.62 && (decisionOutcomeCounts.get(row.entity)?.size ?? 0) >= 2)
+      .filter((row) => row.pct >= 0.18 && row.pct <= 0.62 && (accumulator.decisionOutcomeCounts.get(row.entity)?.size ?? 0) >= 2)
       .sort((a, b) => Math.abs(0.5 - a.pct) - Math.abs(0.5 - b.pct))
       .slice(0, 12),
-    unresolvedMarkets: Array.from(unresolvedRows.entries())
-      .map(([entity, count]) => ({ entity, outcome: "Unsigned in run", count, pct: count / runs.length }))
+    unresolvedMarkets: Array.from(accumulator.unresolvedRows.entries())
+      .map(([entity, count]) => ({ entity, outcome: "Unsigned in run", count, pct: count / runs }))
       .sort((a, b) => b.pct - a.pct || b.count - a.count)
       .slice(0, 12),
-    surprises: Array.from(surpriseRows.entries())
-      .map(([label, row]) => ({ label, detail: row.detail, frequency: row.count / runs.length }))
+    surprises: Array.from(accumulator.surpriseRows.entries())
+      .map(([label, row]) => ({ label, detail: row.detail, frequency: row.count / runs }))
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, 10)
   };
@@ -2379,6 +2497,8 @@ function OffseasonCommandBar({
   assumptions,
   activePreset,
   overrideStats,
+  isSimulating,
+  simulationStatus,
   onTeamSelect,
   onRunOne,
   onRunMany,
@@ -2396,6 +2516,8 @@ function OffseasonCommandBar({
   assumptions: SimulatorAssumptions;
   activePreset: string;
   overrideStats: ReturnType<typeof summarizeOverrides>;
+  isSimulating: boolean;
+  simulationStatus: string | null;
   onTeamSelect: (team: string) => void;
   onRunOne: () => void;
   onRunMany: () => void;
@@ -2423,10 +2545,14 @@ function OffseasonCommandBar({
           </select>
         </label>
         <div className="offseason-button-row command-buttons">
-          <button className="hdr-btn primary" onClick={onRunOne}>Run one</button>
-          <button className="hdr-btn" onClick={onRunMany}>{`Run ${Math.round(assumptions.runCount)}`}</button>
-          <button className="hdr-btn" onClick={() => onExport("csv")}>CSV</button>
-          <button className="hdr-btn" onClick={() => onExport("json")}>JSON</button>
+          <button className="hdr-btn primary" disabled={isSimulating} onClick={onRunOne}>{isSimulating ? "Running..." : "Run one"}</button>
+          <button className="hdr-btn" disabled={isSimulating} onClick={onRunMany}>{isSimulating ? "Running..." : `Run ${Math.round(assumptions.runCount)}`}</button>
+          <button className="hdr-btn" disabled={isSimulating} onClick={() => onExport("csv")}>CSV</button>
+          <button className="hdr-btn" disabled={isSimulating} onClick={() => onExport("json")}>JSON</button>
+        </div>
+        {simulationStatus && <div className="simulation-progress-strip">{simulationStatus}</div>}
+        <div className="quick-run-control">
+          <AssumptionInput label="Batch simulations" value={assumptions.runCount} min={10} max={500} step={10} onChange={(value) => onAssumptionChange("runCount", value)} />
         </div>
         <div className="scenario-preset-row">
           {scenarioPresets.map((preset) => (
@@ -2441,14 +2567,16 @@ function OffseasonCommandBar({
           ))}
           {overrideStats.total > 0 && <span className="override-count">{`${overrideStats.total} overrides / ${overrideStats.affectedTeams.length} teams`}</span>}
         </div>
-        <div className="command-slider-grid">
-          <AssumptionInput label="Variance" value={assumptions.variance} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("variance", value)} />
-          <AssumptionInput label="Market heat" value={assumptions.marketAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("marketAggression", value)} />
-          <AssumptionInput label="Trade rate" value={assumptions.tradeAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("tradeAggression", value)} />
-          <AssumptionInput label="Draft fit" value={assumptions.draftFitWeight} min={0} max={0.55} step={0.01} onChange={(value) => onAssumptionChange("draftFitWeight", value)} />
-          <AssumptionInput label="Tax caution" value={assumptions.taxSensitivity} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("taxSensitivity", value)} />
-          <AssumptionInput label="Runs" value={assumptions.runCount} min={2} max={500} step={1} onChange={(value) => onAssumptionChange("runCount", value)} />
-        </div>
+        <details className="cap-assumption-drawer advanced-simulation-drawer">
+          <summary>Advanced simulation settings</summary>
+          <div className="command-slider-grid">
+            <AssumptionInput label="Variance" value={assumptions.variance} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("variance", value)} />
+            <AssumptionInput label="Market heat" value={assumptions.marketAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("marketAggression", value)} />
+            <AssumptionInput label="Trade rate" value={assumptions.tradeAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("tradeAggression", value)} />
+            <AssumptionInput label="Draft fit" value={assumptions.draftFitWeight} min={0} max={0.55} step={0.01} onChange={(value) => onAssumptionChange("draftFitWeight", value)} />
+            <AssumptionInput label="Tax caution" value={assumptions.taxSensitivity} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("taxSensitivity", value)} />
+          </div>
+        </details>
         <details className="cap-assumption-drawer">
           <summary>Cap assumptions</summary>
           <div className="offseason-cap-grid">
@@ -2473,6 +2601,9 @@ function DashboardView({ run, selectedTeam, multiRun }: { run: SimulationRun; se
   const moveGroups = dashboardMoveGroups(run, selectedTeam);
   return (
     <section className="offseason-stack dashboard-stack">
+      <RunResultDigest run={run} selectedTeam={selectedTeam} multiRun={multiRun} />
+      {multiRun && <DistributionSpotlight summary={multiRun} selectedTeam={selectedTeam} />}
+      <TeamOutcomeBreakdown run={run} teams={teams} selectedTeam={selectedTeam} multiRun={multiRun} />
       <section className="offseason-panel dashboard-hero-panel">
         <div className="panel-heading compact-heading">
           <div>
@@ -2532,6 +2663,138 @@ function DashboardView({ run, selectedTeam, multiRun }: { run: SimulationRun; se
         </div>
       </section>
     </section>
+  );
+}
+
+function RunResultDigest({ run, selectedTeam, multiRun }: { run: SimulationRun; selectedTeam: string; multiRun: MultiRunSummary | null }) {
+  const team = selectedTeam === "All" ? null : run.teams.find((row) => row.team === selectedTeam) ?? null;
+  const items = buildResultDigestItems(run, selectedTeam, multiRun);
+  const headline = team ? teamVerdict(run, team) : leagueVerdict(run);
+  const subhead = team
+    ? `${team.mode}; ${capPathLabel(team.capPath)} path, ${team.needs.join(", ") || "balanced"} needs, ${capWarnings(team)[0]}.`
+    : `${run.freeAgency.length} free-agent decisions, ${run.draft.length} draft picks, ${run.trades.length} trades, ${run.teams.filter((row) => row.capPath === "cap_room").length} cap-room teams.`;
+  return (
+    <section className="offseason-panel result-digest-panel">
+      <div className="result-digest-copy">
+        <span>{selectedTeam === "All" ? "Simulation Result" : `${selectedTeam} Result`}</span>
+        <h2>{headline}</h2>
+        <p>{subhead}</p>
+      </div>
+      <div className="result-digest-grid">
+        {items.map((item) => (
+          <div key={item.label} className={cls("result-digest-card", `digest-${item.tone}`)}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <p>{item.detail}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TeamOutcomeBreakdown({ run, teams, selectedTeam, multiRun }: { run: SimulationRun; teams: TeamSummary[]; selectedTeam: string; multiRun: MultiRunSummary | null }) {
+  const rows = teams
+    .slice()
+    .sort((a, b) => teamOutcomePriority(run, b) - teamOutcomePriority(run, a) || a.team.localeCompare(b.team))
+    .slice(0, selectedTeam === "All" ? 12 : 1);
+  return (
+    <section className="offseason-panel team-outcome-panel">
+      <div className="panel-heading compact-heading">
+        <div>
+          <h2>{selectedTeam === "All" ? "Team Breakdowns" : `${selectedTeam} Breakdown`}</h2>
+          <p>Each card condenses the team result, cap path, move stack, and remaining front-office problem.</p>
+        </div>
+      </div>
+      <div className="team-outcome-grid">
+        {rows.map((team) => {
+          const moves = teamMoveDigest(run, team);
+          const firstWarning = capWarnings(team)[0];
+          const dist = multiRun?.teamOutcomes.find((row) => row.team === team.team);
+          return (
+            <article key={`${team.team}-outcome`} className="team-outcome-card">
+              <div className="team-outcome-head">
+                <div>
+                  <span>{team.mode}</span>
+                  <strong>{team.team}</strong>
+                </div>
+                <b>{formatMoney(team.payroll)}</b>
+              </div>
+              <h3>{teamVerdict(run, team)}</h3>
+              <p>{frontOfficeRead(run, team)}</p>
+              <div className="team-outcome-facts">
+                <Fact label="Cap path" value={capPathLabel(team.capPath)} />
+                <Fact label="Room" value={formatSignedMoney(team.capSpace)} />
+                <Fact label="Tax" value={formatSignedMoney(team.taxRoom)} />
+                <Fact label="Needs" value={team.needs.slice(0, 3).join(", ") || "-"} />
+              </div>
+              <MoveList title="Move Stack" items={moves.length ? moves : ["No major modeled move"]} />
+              <MoveList title="Rights / Holds" items={rightsDigestForTeam(run, team)} />
+              <div className="team-outcome-footer">
+                <span>{firstWarning}</span>
+                {dist && <strong>{`${formatNumber(dist.pct * 100, 0)}% ${dist.outcome} in batch`}</strong>}
+              </div>
+              {multiRun && selectedTeam !== "All" && <TeamDistributionStrip summary={multiRun} team={team.team} />}
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function DistributionSpotlight({ summary, selectedTeam }: { summary: MultiRunSummary; selectedTeam: string }) {
+  const teamMode = selectedTeam !== "All";
+  const destinationRows = summary.playerDestinations
+    .filter((row) => !teamMode || row.destination === selectedTeam)
+    .slice(0, 8)
+    .map((row) => ({ label: `${row.player} -> ${row.destination}`, value: `${formatMoney(row.avgSalary)} avg`, pct: row.pct }));
+  const taxRows = summary.taxOutcomes
+    .filter((row) => !teamMode || row.entity === selectedTeam)
+    .slice(0, 8)
+    .map((row) => ({ label: `${row.entity}: ${row.outcome}`, value: `${row.count}/${summary.runs}`, pct: row.pct }));
+  const volatilityRows = summary.volatileDecisions
+    .filter((row) => !teamMode || row.outcome.includes(selectedTeam) || row.entity.includes(selectedTeam))
+    .slice(0, 8)
+    .map((row) => ({ label: row.entity, value: row.outcome, pct: row.pct }));
+  const teamRows = summary.teamOutcomes
+    .filter((row) => !teamMode || row.team === selectedTeam)
+    .slice(0, 8)
+    .map((row) => ({ label: `${row.team}: ${row.outcome}`, value: `${formatMoney(row.avgPayroll)} avg payroll`, pct: row.pct }));
+  return (
+    <section className="offseason-panel distribution-spotlight-panel">
+      <div className="panel-heading compact-heading">
+        <div>
+          <h2>{`${summary.runs} Simulation Distribution`}</h2>
+          <p>{teamMode ? `${selectedTeam} outcome frequencies across the batch.` : "Most common destinations, team paths, volatility, and apron outcomes across the batch."}</p>
+        </div>
+      </div>
+      <div className="distribution-spotlight-grid">
+        <DistributionBars title="Player Destinations" rows={destinationRows} empty="No repeated player destination signal yet" />
+        <DistributionBars title="Team Outcomes" rows={teamRows} empty="No team outcome signal yet" />
+        <DistributionBars title="Volatile Calls" rows={volatilityRows} empty="No material volatility in this scope" />
+        <DistributionBars title="Apron / Tax" rows={taxRows} empty="No tax outcome signal yet" />
+      </div>
+    </section>
+  );
+}
+
+function DistributionBars({ title, rows, empty }: { title: string; rows: Array<{ label: string; value: string; pct: number }>; empty: string }) {
+  return (
+    <div className="distribution-bars">
+      <h3>{title}</h3>
+      {rows.length === 0 && <p className="mini-empty">{empty}</p>}
+      {rows.map((row) => (
+        <div key={`${title}-${row.label}-${row.value}`} className="distribution-bar-row">
+          <div>
+            <span>{row.label}</span>
+            <strong>{row.value}</strong>
+          </div>
+          <i><b style={{ width: `${clamp(row.pct, 0, 1) * 100}%` }} /></i>
+          <em>{`${formatNumber(row.pct * 100, 0)}%`}</em>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -2684,6 +2947,244 @@ function dashboardMoveGroups(run: SimulationRun, selectedTeam: string): Array<{ 
         .map((item) => `${item.toTeam}: signed ${item.player.name} from ${item.fromTeam} via ${item.context.toolName} (${formatMoney(item.annualSalary)})`)
     }
   ];
+}
+
+function buildResultDigestItems(run: SimulationRun, selectedTeam: string, multiRun: MultiRunSummary | null): ResultDigestItem[] {
+  const team = selectedTeam === "All" ? null : run.teams.find((row) => row.team === selectedTeam) ?? null;
+  const scopedSignings = selectedTeam === "All" ? run.freeAgency : run.freeAgency.filter((row) => row.toTeam === selectedTeam || row.fromTeam === selectedTeam);
+  const scopedDraft = selectedTeam === "All" ? run.draft : run.draft.filter((row) => row.team === selectedTeam);
+  const scopedTrades = selectedTeam === "All" ? run.trades : run.trades.filter((row) => row.teamA === selectedTeam || row.teamB === selectedTeam);
+  const topSigning = scopedSignings.slice().sort((a, b) => b.annualSalary - a.annualSalary || b.player.score - a.player.score)[0];
+  const draftSignal = scopedDraft.slice().sort((a, b) => {
+    const aDelta = a.reachSteal === "Steal" ? 2 : a.reachSteal === "Reach" ? 1 : 0;
+    const bDelta = b.reachSteal === "Steal" ? 2 : b.reachSteal === "Reach" ? 1 : 0;
+    return bDelta - aDelta || a.pick - b.pick;
+  })[0];
+  const tradeSignal = scopedTrades.slice().sort((a, b) => b.pickValue - a.pickValue)[0];
+  const batchSignal = multiRun ? batchDigestForScope(multiRun, selectedTeam) : null;
+  const items: ResultDigestItem[] = [];
+
+  if (team) {
+    items.push({
+      label: "Cap Result",
+      value: capPathLabel(team.capPath),
+      detail: `${formatSignedMoney(team.capSpace)} room, ${formatSignedMoney(team.taxRoom)} tax room, ${formatMoney(team.holdsRenounced)} holds renounced.`,
+      tone: team.secondApronRoom < 0 ? "bad" : team.taxRoom < 0 ? "warn" : team.capSpace > 0 ? "good" : "neutral"
+    });
+  } else {
+    items.push({
+      label: "League Shape",
+      value: `${run.teams.filter((row) => row.capPath === "cap_room").length} room teams`,
+      detail: `${run.teams.filter((row) => row.taxRoom < 0).length} tax teams, ${run.teams.filter((row) => row.secondApronRoom < 0).length} second-apron teams.`,
+      tone: run.teams.some((row) => row.secondApronRoom < 0) ? "warn" : "neutral"
+    });
+  }
+
+  items.push(topSigning ? {
+    label: "Top FA Outcome",
+    value: `${topSigning.player.name} -> ${topSigning.toTeam}`,
+    detail: `${formatMoney(topSigning.annualSalary)} AAV via ${topSigning.context.toolName}; ${shortSigningReason(topSigning)}.`,
+    tone: topSigning.toTeam === topSigning.fromTeam ? "neutral" : "good"
+  } : {
+    label: "Top FA Outcome",
+    value: "No signing",
+    detail: "No free-agent outcome matched this scope.",
+    tone: "neutral"
+  });
+
+  items.push(draftSignal ? {
+    label: "Draft Signal",
+    value: `${draftSignal.pick}. ${draftSignal.prospect.name}`,
+    detail: `${draftSignal.team} took a ${draftSignal.reachSteal.toLowerCase()} relative to the board; fit ${formatNumber(draftSignal.score.needFit, 2)}.`,
+    tone: draftSignal.reachSteal === "Steal" ? "good" : draftSignal.reachSteal === "Reach" ? "warn" : "neutral"
+  } : {
+    label: "Draft Signal",
+    value: "No pick",
+    detail: "No draft pick landed in this scope.",
+    tone: "neutral"
+  });
+
+  items.push(tradeSignal ? {
+    label: "Trade Signal",
+    value: `${tradeSignal.teamB} gets ${tradeSignal.player.name}`,
+    detail: `${formatMoney(tradeSignal.pickValue)} pick-equivalent value; ${tradeSignal.sellerMotivation}`,
+    tone: "warn"
+  } : {
+    label: "Trade Signal",
+    value: "No trade",
+    detail: "No two-team trade cleared both front-office thresholds.",
+    tone: "neutral"
+  });
+
+  const rightsSignal = rightsSignalForScope(run, selectedTeam);
+  if (rightsSignal) items.push(rightsSignal);
+  if (batchSignal) items.push(batchSignal);
+  return items.slice(0, 5);
+}
+
+function rightsSignalForScope(run: SimulationRun, selectedTeam: string): ResultDigestItem | null {
+  const players = run.players.filter((player) =>
+    (player.status === "UFA" || player.status === "RFA") &&
+    player.rights !== "None" &&
+    (selectedTeam === "All" || player.rightsTeam === selectedTeam)
+  );
+  const retained = players.filter((player) => player.holdAction === "retained");
+  const renounced = run.players.filter((player) =>
+    player.holdAction === "renounced" &&
+    (selectedTeam === "All" || player.rightsTeam === selectedTeam)
+  );
+  const topRetained = retained.slice().sort((a, b) => b.holdRetainScore - a.holdRetainScore || b.marketValue - a.marketValue)[0];
+  const topRenounced = renounced.slice().sort((a, b) => b.capHold - a.capHold || b.marketValue - a.marketValue)[0];
+  if (topRetained) {
+    return {
+      label: "Rights Signal",
+      value: `${topRetained.rightsTeam} keeps ${topRetained.name}`,
+      detail: `${topRetained.rights} ${topRetained.status} rights; hold score ${formatNumber(topRetained.holdRetainScore, 2)}, option value ${formatNumber(topRetained.rightsValue, 2)}.`,
+      tone: topRetained.status === "RFA" || topRetained.rights === "Bird" ? "good" : "neutral"
+    };
+  }
+  if (topRenounced) {
+    return {
+      label: "Rights Signal",
+      value: `${topRenounced.rightsTeam} renounces ${topRenounced.name}`,
+      detail: `Opened room by dropping ${formatMoney(topRenounced.capHold)} hold; ${topRenounced.holdActionReason ?? "cap-room path."}`,
+      tone: "warn"
+    };
+  }
+  return null;
+}
+
+function batchDigestForScope(summary: MultiRunSummary, selectedTeam: string): ResultDigestItem | null {
+  if (selectedTeam !== "All") {
+    const row = summary.teamOutcomes.find((item) => item.team === selectedTeam);
+    if (!row) return null;
+    return {
+      label: "Batch Read",
+      value: `${formatNumber(row.pct * 100, 0)}% ${row.outcome}`,
+      detail: `${formatMoney(row.avgPayroll)} avg payroll, ${formatSignedMoney(row.avgTaxRoom)} avg tax room across ${summary.runs} runs.`,
+      tone: row.outcome.includes("Apron") || row.outcome.includes("Tax") ? "warn" : row.outcome.includes("Room") ? "good" : "neutral"
+    };
+  }
+  const volatile = summary.volatileDecisions[0];
+  if (!volatile) return {
+    label: "Batch Read",
+    value: `${summary.runs} runs stable`,
+    detail: "No high-frequency volatile decision crossed the display threshold.",
+    tone: "good"
+  };
+  return {
+    label: "Batch Read",
+    value: `${volatile.entity}`,
+    detail: `${volatile.outcome} in ${formatNumber(volatile.pct * 100, 0)}% of runs.`,
+    tone: "warn"
+  };
+}
+
+function leagueVerdict(run: SimulationRun): string {
+  const topSigning = run.freeAgency.slice().sort((a, b) => b.annualSalary - a.annualSalary)[0];
+  if (topSigning) return `${topSigning.player.name} headlines a ${run.freeAgency.length}-signing market`;
+  if (run.trades.length) return `${run.trades.length} trades define a quiet free-agent market`;
+  return "The model produces a patient, low-transaction offseason";
+}
+
+function teamVerdict(run: SimulationRun, team: TeamSummary): string {
+  const incoming = run.freeAgency.filter((row) => row.toTeam === team.team);
+  const outgoing = run.freeAgency.filter((row) => row.fromTeam === team.team && row.toTeam !== team.team);
+  const acquired = run.trades.filter((row) => row.teamB === team.team);
+  const moved = run.trades.filter((row) => row.teamA === team.team);
+  const picks = run.draft.filter((row) => row.team === team.team);
+  const bestIncoming = incoming.slice().sort((a, b) => b.annualSalary - a.annualSalary)[0];
+  if (bestIncoming) return `${team.team} ${bestIncoming.toTeam === bestIncoming.fromTeam ? "keeps" : "lands"} ${bestIncoming.player.name}`;
+  if (acquired[0]) return `${team.team} trades for ${acquired[0].player.name}`;
+  if (moved[0]) return `${team.team} converts ${moved[0].player.name} into flexibility`;
+  if (picks[0]) return `${team.team} drafts ${picks[0].prospect.name}`;
+  if (outgoing[0]) return `${team.team} loses ${outgoing[0].player.name} and protects flexibility`;
+  return `${team.team} mostly preserves optionality`;
+}
+
+function frontOfficeRead(run: SimulationRun, team: TeamSummary): string {
+  const incoming = run.freeAgency.filter((row) => row.toTeam === team.team);
+  const losses = run.freeAgency.filter((row) => row.fromTeam === team.team && row.toTeam !== team.team);
+  const trades = run.trades.filter((row) => row.teamA === team.team || row.teamB === team.team);
+  const pressure = capWarnings(team)[0];
+  if (team.secondApronRoom < 0) return `The office is operating under second-apron stress, so every added dollar needs a rotation-level reason. ${pressure}`;
+  if (team.capPath === "cap_room" && incoming.length) return `The office chose room over blanket hold retention, then spent into a target that fit the board. ${team.capPathReason}`;
+  if (team.capPath === "retained_rights" && incoming.some((row) => row.toTeam === row.fromTeam)) return `The office valued continuity and matching power more than a clean-room swing. ${team.capPathReason}`;
+  if (trades.length) return `The trade path mattered more than the open market, with asset value and salary matching steering the result.`;
+  if (losses.length && !incoming.length) return `The model lets the market walk rather than chase replacement cost into a weak cap position.`;
+  return team.capPathReason;
+}
+
+function teamMoveDigest(run: SimulationRun, team: TeamSummary): string[] {
+  const moves: string[] = [];
+  run.options
+    .filter((row) => row.team === team.team)
+    .slice(0, 2)
+    .forEach((row) => moves.push(`${row.decision === "exercise" ? "Kept" : "Declined"} ${row.player.name} option`));
+  run.draft
+    .filter((row) => row.team === team.team)
+    .slice(0, 3)
+    .forEach((row) => moves.push(`Pick ${row.pick}: ${row.prospect.name} (${row.reachSteal})`));
+  run.freeAgency
+    .filter((row) => row.toTeam === team.team)
+    .slice(0, 4)
+    .forEach((row) => moves.push(`${row.toTeam === row.fromTeam ? "Retained" : "Signed"} ${row.player.name} at ${formatMoney(row.annualSalary)}`));
+  run.freeAgency
+    .filter((row) => row.fromTeam === team.team && row.toTeam !== team.team)
+    .slice(0, 2)
+    .forEach((row) => moves.push(`Lost ${row.player.name} to ${row.toTeam}`));
+  run.trades
+    .filter((row) => row.teamA === team.team || row.teamB === team.team)
+    .slice(0, 2)
+    .forEach((row) => moves.push(row.teamB === team.team ? `Acquired ${row.player.name}` : `Moved ${row.player.name}`));
+  return moves.slice(0, 7);
+}
+
+function rightsDigestForTeam(run: SimulationRun, team: TeamSummary): string[] {
+  const retained = run.players
+    .filter((player) => player.rightsTeam === team.team && player.holdAction === "retained" && player.rights !== "None")
+    .sort((a, b) => b.holdRetainScore - a.holdRetainScore || b.marketValue - a.marketValue)
+    .slice(0, 4)
+    .map((player) => `${player.name}: retained ${player.rights}${player.status === "RFA" ? " RFA" : ""} rights, score ${formatNumber(player.holdRetainScore, 2)}`);
+  const renounced = run.players
+    .filter((player) => player.rightsTeam === team.team && player.holdAction === "renounced")
+    .sort((a, b) => b.capHold - a.capHold || b.marketValue - a.marketValue)
+    .slice(0, 3)
+    .map((player) => `${player.name}: renounced hold to create room`);
+  const matched = run.freeAgency
+    .filter((signing) => signing.matched && signing.toTeam === team.team)
+    .map((signing) => `${signing.player.name}: matched ${formatMoney(signing.annualSalary)} offer sheet`);
+  const drafted = run.draft
+    .filter((selection) => selection.team === team.team && selection.pick <= 30)
+    .slice(0, 2)
+    .map((selection) => `${selection.prospect.name}: rookie-scale control from pick ${selection.pick}`);
+  const rows = [...matched, ...retained, ...renounced, ...drafted];
+  return rows.length ? rows.slice(0, 6) : ["No meaningful rights decision"];
+}
+
+function teamOutcomePriority(run: SimulationRun, team: TeamSummary): number {
+  const moves = teamMoveDigest(run, team).length;
+  const capPressure = (team.secondApronRoom < 0 ? 5 : team.firstApronRoom < 0 ? 4 : team.taxRoom < 0 ? 2 : 0);
+  const spend = sum(run.freeAgency.filter((row) => row.toTeam === team.team).map((row) => row.annualSalary)) / 10_000_000;
+  return moves + capPressure + spend + team.premiumPickCount * 0.6;
+}
+
+function teamBatchOutcome(run: SimulationRun, team: TeamSummary): string {
+  const incoming = run.freeAgency.filter((row) => row.toTeam === team.team);
+  const outside = incoming.filter((row) => row.fromTeam !== team.team);
+  const retained = incoming.filter((row) => row.fromTeam === team.team);
+  const tradesIn = run.trades.filter((row) => row.teamB === team.team);
+  const tradesOut = run.trades.filter((row) => row.teamA === team.team);
+  if (team.secondApronRoom < 0) return "Second Apron";
+  if (team.firstApronRoom < 0) return "First Apron";
+  if (outside.length > 0 && team.capPath === "cap_room") return "Room Spend";
+  if (outside.length > 0) return "Outside FA Add";
+  if (retained.length > 0) return "Retained Core";
+  if (tradesIn.length > 0) return "Trade Buyer";
+  if (tradesOut.length > 0) return "Trade Seller";
+  if (run.draft.some((row) => row.team === team.team && row.pick <= 20)) return "Draft Focus";
+  if (team.taxRoom < 0) return "Tax Hold";
+  return "Hold Pattern";
 }
 
 function capPathLabel(value: string | null | undefined): string {
@@ -3020,6 +3521,7 @@ function MultiRunPanel({ summary }: { summary: MultiRunSummary }) {
         <MiniRank title="Draft Outcomes" rows={summary.draftOutcomes.slice(0, 8).map((row) => [`${row.prospect} -> ${row.team}`, `${formatNumber(row.pct * 100, 0)}% / pick ${formatNumber(row.avgPick, 1)}`])} />
         <MiniRank title="Trade Frequency" rows={summary.tradeTeams.slice(0, 8).map((row) => [row.team, `${formatNumber(row.pct * 100, 0)}%`])} />
         <MiniRank title="RFA Matches" rows={summary.rfaMatches.slice(0, 8).map((row) => [row.player, `${row.matches}/${row.offers} matched`])} />
+        <MiniRank title="Team Outcomes" rows={summary.teamOutcomes.slice(0, 8).map((row) => [row.team, `${row.outcome} / ${formatNumber(row.pct * 100, 0)}%`])} />
         <MiniRank title="Stable Decisions" rows={summary.stableDecisions.slice(0, 8).map((row) => [row.entity, `${row.outcome} / ${formatNumber(row.pct * 100, 0)}%`])} />
         <MiniRank title="Volatile Decisions" rows={summary.volatileDecisions.slice(0, 8).map((row) => [row.entity, `${row.outcome} / ${formatNumber(row.pct * 100, 0)}%`])} />
         <MiniRank title="Apron Outcomes" rows={summary.taxOutcomes.slice(0, 8).map((row) => [row.entity, `${row.outcome} / ${formatNumber(row.pct * 100, 0)}%`])} />
@@ -3207,7 +3709,7 @@ function MarketComponentBars({ components }: { components: MarketComponentBreakd
     ["Total guarantee", components.totalGuarantee, false],
     ["Noise", components.randomness, components.randomness < 0]
   ];
-  rows.splice(2, 0, ["Years", components.security, false], ["Role", components.roleFit, false], ["Familiar", components.familiarity, false], ["Close offer", components.closeOfferAdjustment, components.closeOfferAdjustment < 0]);
+  rows.splice(2, 0, ["Years", components.security, false], ["Role", components.roleFit, false], ["Familiar", components.familiarity, false], ["Scarcity", components.scarcity, false], ["Close offer", components.closeOfferAdjustment, components.closeOfferAdjustment < 0]);
   return (
     <div className="market-component-bars">
       <span>Player Choice Logic</span>
