@@ -317,6 +317,14 @@ type OfferContext = {
   moneyGap?: number;
   yearsGap?: number;
   highestMoneyLostReason?: string;
+  incumbentDecision?: "matched" | "declined" | "not_applicable";
+  incumbentDecisionReason?: string;
+  incumbentBid?: number;
+  incumbentBidYears?: number;
+  incumbentBidTool?: string;
+  incumbentCanMatch?: boolean;
+  incumbentLegalMax?: number;
+  incumbentMatchScore?: number;
 };
 
 type OfferAudit = {
@@ -3154,11 +3162,14 @@ function rightsDigestForTeam(run: SimulationRun, team: TeamSummary): string[] {
   const matched = run.freeAgency
     .filter((signing) => signing.matched && signing.toTeam === team.team)
     .map((signing) => `${signing.player.name}: matched ${formatMoney(signing.annualSalary)} offer sheet`);
+  const declinedSheets = run.freeAgency
+    .filter((signing) => signing.offerSheetTeam && !signing.matched && signing.fromTeam === team.team)
+    .map((signing) => `${signing.player.name}: declined ${signing.offerSheetTeam} sheet at ${formatMoney(signing.annualSalary)}`);
   const drafted = run.draft
     .filter((selection) => selection.team === team.team && selection.pick <= 30)
     .slice(0, 2)
     .map((selection) => `${selection.prospect.name}: rookie-scale control from pick ${selection.pick}`);
-  const rows = [...matched, ...retained, ...renounced, ...drafted];
+  const rows = [...matched, ...declinedSheets, ...retained, ...renounced, ...drafted];
   return rows.length ? rows.slice(0, 6) : ["No meaningful rights decision"];
 }
 
@@ -3214,6 +3225,40 @@ function shortSigningReason(signing: FreeAgentSigning): string {
   if (signing.context.holdAction === "retained" && signing.toTeam === signing.fromTeam) return "Rights retained";
   if (signing.context.capPath === "cap_room") return "Cap-room target";
   return signing.context.toolReason?.split(";")[0] ?? signing.marketResolution?.clearingRule ?? "Market offer";
+}
+
+function rfaIncumbentDecisionLabel(signing: FreeAgentSigning): string {
+  if (!signing.offerSheetTeam) return "-";
+  if (signing.context.incumbentDecision === "matched" || signing.matched) return `${signing.fromTeam} matched`;
+  if (signing.context.incumbentDecision === "declined") return `${signing.fromTeam} declined`;
+  return "Pending";
+}
+
+function rfaIncumbentBidLabel(signing: FreeAgentSigning): string {
+  if (!signing.offerSheetTeam) return "-";
+  const bid = signing.context.incumbentBid;
+  if (!bid) return "No incumbent bid";
+  const years = signing.context.incumbentBidYears ? ` x ${signing.context.incumbentBidYears}` : "";
+  const tool = signing.context.incumbentBidTool ? ` via ${signing.context.incumbentBidTool}` : "";
+  return `${formatMoney(bid)}${years}${tool}`;
+}
+
+function rfaIncumbentDecisionItems(signing: FreeAgentSigning): string[] {
+  if (!signing.offerSheetTeam) return [];
+  const legal = typeof signing.context.incumbentLegalMax === "number"
+    ? `Legal match capacity: ${formatMoney(signing.context.incumbentLegalMax)}; ${signing.context.incumbentCanMatch ? "could match" : "could not match"}`
+    : `${signing.fromTeam} matching rights were evaluated`;
+  const score = typeof signing.context.incumbentMatchScore === "number"
+    ? `Match score: ${formatNumber(signing.context.incumbentMatchScore, 2)}`
+    : "Match score unavailable";
+  return [
+    `${signing.offerSheetTeam} offer sheet: ${formatMoney(signing.annualSalary)} AAV x ${signing.years} years`,
+    `${signing.fromTeam} incumbent bid: ${rfaIncumbentBidLabel(signing)}`,
+    `${rfaIncumbentDecisionLabel(signing)} exact terms`,
+    legal,
+    score,
+    signing.context.incumbentDecisionReason ?? (signing.matched ? "Incumbent exercised full RFA matching control." : "Incumbent declined to match the exact offer sheet.")
+  ];
 }
 
 function WarRoomView({
@@ -3642,6 +3687,8 @@ function SigningResultsTable({ signings, audit, selectedTeam }: { signings: Free
                   <Fact label="Final team" value={signing.toTeam} />
                   <Fact label="Offer sheet" value={signing.offerSheetTeam ?? "-"} />
                   <Fact label="Incumbent" value={signing.fromTeam} />
+                  <Fact label="Inc. decision" value={rfaIncumbentDecisionLabel(signing)} />
+                  <Fact label="Inc. bid" value={rfaIncumbentBidLabel(signing)} />
                   <Fact label="Status" value={signing.matched ? "RFA match" : signing.status} />
                   <Fact label="Highest AAV" value={`${signing.context.highestBidTeam ?? "-"} ${signing.context.highestBid ? formatMoney(signing.context.highestBid) : "-"}`} />
                   <Fact label="Money gap" value={signing.context.moneyGap ? formatMoney(signing.context.moneyGap) : "-"} />
@@ -3681,6 +3728,7 @@ function SigningResultsTable({ signings, audit, selectedTeam }: { signings: Free
               </div>
             </div>
             <div className="market-bid-board">
+              {signing.offerSheetTeam && <MoveList title="RFA Incumbent Decision" items={rfaIncumbentDecisionItems(signing)} />}
               <MoveList title="Team Bid Logic" items={signing.context.logic.length ? signing.context.logic : ["No team bid details emitted"]} />
               <MoveList title="Other Bidders" items={signing.context.alternatives.length ? signing.context.alternatives : submittedOffers.filter((row) => row.team !== signing.toTeam).slice(0, 4).map((row) => `${row.team}: ${row.offer ? formatMoney(row.offer) : "-"} via ${row.toolName ?? "tool"}`)} />
               <MoveList title="Why Others Lost" items={signing.context.losingReasons?.length ? signing.context.losingReasons : rejectedOffers.slice(0, 5).map((row) => `${row.team}: ${row.reason}`)} />

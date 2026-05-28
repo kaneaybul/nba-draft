@@ -217,6 +217,14 @@ export type MarketFreeAgentSigning<TPlayer extends MarketPlayer = MarketPlayer> 
     moneyGap?: number;
     yearsGap?: number;
     highestMoneyLostReason?: string;
+    incumbentDecision?: "matched" | "declined" | "not_applicable";
+    incumbentDecisionReason?: string;
+    incumbentBid?: number;
+    incumbentBidYears?: number;
+    incumbentBidTool?: string;
+    incumbentCanMatch?: boolean;
+    incumbentLegalMax?: number;
+    incumbentMatchScore?: number;
   };
   explanation: string;
   plausibility: number;
@@ -786,6 +794,12 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
   let signingTool = chosen.tool.kind;
   let score = chosen.score;
   let matched = false;
+  let incumbentDecision: "matched" | "declined" | "not_applicable" = "not_applicable";
+  let incumbentDecisionReason: string | undefined;
+  let incumbentBid: TeamBidPlan<TPlayer, TTeam> | undefined;
+  let incumbentCanMatch: boolean | undefined;
+  let incumbentLegalMax: number | undefined;
+  let incumbentMatchScore: number | undefined;
 
   const resolution: MarketResolution = {
     playerId: player.id,
@@ -820,7 +834,13 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
   if (offerSheetTeam) {
     const incumbent = teams.get(player.rightsTeam);
     if (incumbent) {
+      incumbentBid = ranked
+        .filter((offer) => offer.team.team === incumbent.team)
+        .sort((a, b) => b.salary - a.salary || b.years - a.years)[0];
       const match = rfaMatchDecision(incumbent, player, chosen.salary, chosen.years, assumptions, rng);
+      incumbentCanMatch = match.canMatch;
+      incumbentLegalMax = match.legalMax;
+      incumbentMatchScore = match.score.total;
       const incumbentAlreadyMetSheet = ranked.some((offer) =>
         offer.team.team === incumbent.team &&
         offer.salary >= chosen.salary - 100_000 &&
@@ -831,6 +851,10 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
         signingTool = player.rights === "None" ? "minimum" : "bird";
         score = match.score;
         matched = true;
+        incumbentDecision = "matched";
+        incumbentDecisionReason = incumbentAlreadyMetSheet && incumbentBid
+          ? `${incumbent.team} matched because it had already offered ${formatMoney(incumbentBid.salary)} AAV over ${incumbentBid.years} years, so the outside sheet did not beat the incumbent's own terms.`
+          : `${incumbent.team} used retained ${player.rights} RFA rights to match the exact ${formatMoney(chosen.salary)} AAV, ${chosen.years}-year sheet.`;
         resolution.finalTeam = incumbent.team;
         resolution.rfaMatchResult = "matched";
         resolution.clearingRule = "matched exact offer sheet";
@@ -857,6 +881,10 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
         });
         audit.push(auditFromMatch(incumbent.team, player, round, "matched", incumbentAlreadyMetSheet ? `Matched exact ${offerSheetTeam} offer sheet; incumbent had already met the AAV` : `Matched exact ${offerSheetTeam} offer sheet`, chosen.salary, match.legalMax, match.score));
       } else {
+        incumbentDecision = "declined";
+        incumbentDecisionReason = match.canMatch
+          ? `${incumbent.team} could legally match, but declined because its match score was ${formatNumber(match.score.total, 2)} after need, value, tax/apron pressure, replacement, and roster context.`
+          : `${incumbent.team} could not legally match the exact sheet: ${match.reason}.`;
         resolution.rfaMatchResult = "declined";
         ledger.push({
           id: `${round}-${incumbent?.team ?? player.rightsTeam}-${player.id}-declined-${ledger.length}`,
@@ -881,6 +909,9 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
         });
         if (incumbent) audit.push(auditFromMatch(incumbent.team, player, round, "declined", "Declined exact offer sheet", chosen.salary, match.legalMax, match.score));
       }
+    } else {
+      incumbentDecision = "declined";
+      incumbentDecisionReason = `No incumbent team record was available for ${player.rightsTeam}, so the offer sheet could not be matched in this run.`;
     }
   }
 
@@ -973,7 +1004,15 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
       losingReasons,
       moneyGap,
       yearsGap,
-      highestMoneyLostReason: closeMoneyWin ? choice.reason : undefined
+      highestMoneyLostReason: closeMoneyWin ? choice.reason : undefined,
+      incumbentDecision,
+      incumbentDecisionReason,
+      incumbentBid: incumbentBid?.salary,
+      incumbentBidYears: incumbentBid?.years,
+      incumbentBidTool: incumbentBid?.tool.name ?? incumbentBid?.tool.kind,
+      incumbentCanMatch,
+      incumbentLegalMax,
+      incumbentMatchScore
     },
     explanation,
     plausibility: plausibilityFromScore(score, 0.5),
