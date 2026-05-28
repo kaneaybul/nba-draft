@@ -2637,6 +2637,8 @@ build_impact_players <- function(base_dir) {
   x$market_team <- ifelse(is_blank_text(x$team), "FA", normalize_team(x$team))
   x$team_projection_base <- x$market_team
   x$projection_roster_status <- projection_roster_status(x$contract_status, x$contract)
+  x <- append_latest_contract_inactive_rows(x, contract_reference, contract_year)
+  x <- carry_forward_dnq_profiles(x, contract_year)
   x <- apply_current_roster_truth(x, base_dir, contract_year)
 
   x <- x[order(x$year, -x$total, x$player_name), ]

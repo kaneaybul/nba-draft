@@ -74,6 +74,9 @@ type MarketTeam<TPlayer extends MarketPlayer> = {
   projectedRank: number;
   roster: TPlayer[];
   rosterCountAdjustment?: number;
+  standardRosterLimit?: number;
+  targetRosterCount?: number;
+  minimumRosterCount?: number;
   minimumRosterCharge?: number;
   payroll: number;
   activeSalary: number;
@@ -236,6 +239,9 @@ const marketTiers = [
   { label: "Exception market", minScore: 54, minValue: 3_500_000, acceptance: 0.58, maxPasses: 52 },
   { label: "Minimum / filler market", minScore: 0, minValue: 0, acceptance: 0.45, maxPasses: 64 }
 ];
+
+const STANDARD_ROSTER_LIMIT = 15;
+const MINIMUM_STANDARD_ROSTER = 12;
 
 export function simulateFreeAgencyMarket<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
   players: TPlayer[],
@@ -494,15 +500,16 @@ function buildTeamBidPlans<TPlayer extends MarketPlayer, TTeam extends MarketTea
 function buildEligibleTeamBoard<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, players: TPlayer[], assumptions: MarketAssumptions): TPlayer[] {
   return uniquePlayers(players)
     .map((player) => {
+      const rosterFit = rosterOfferFit(team, player, assumptions);
       const need = needFitScore(team, player.position, player.skills);
       const timeline = timelineFit(team, player);
       const redundancy = rosterRedundancyPenalty(team, player);
       const ownRights = player.rightsTeam === team.team && player.rights !== "None";
       const rawPriority = need * 0.34 + timeline * 0.2 + clamp(player.score / 100, 0, 1) * 0.26 + team.willingness * 0.12 + (ownRights ? 0.16 : 0) - redundancy * 0.18;
       const capUrgency = capRoomUrgencyActive(team, assumptions) && player.marketValue >= Math.min(team.capSpace * 0.2, assumptions.cap * 0.08) ? 0.08 : 0;
-      return { player, priority: rawPriority + capUrgency };
+      return { player, priority: rawPriority + capUrgency + rosterFit.priorityAdjustment, rosterFit };
     })
-    .filter((row) => row.priority >= 0.24 || row.player.marketValue <= minimumSalary(row.player) * 1.8)
+    .filter((row) => row.rosterFit.allowed && (row.priority >= 0.24 || (row.rosterFit.belowMinimum && row.player.marketValue <= minimumSalary(row.player) * 1.8)))
     .sort((a, b) => b.priority - a.priority || b.player.marketValue - a.player.marketValue)
     .slice(0, capRoomUrgencyActive(team, assumptions) ? 72 : 42)
     .map((row) => row.player);
@@ -537,7 +544,9 @@ function capPathTargetPriority<TPlayer extends MarketPlayer, TTeam extends Marke
 }
 
 function maxActiveOffersForTeam<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): number {
-  return capRoomUrgencyActive(team, assumptions) ? 3 : 1;
+  const openSlots = legalRosterSlotsRemaining(team);
+  if (openSlots <= 0) return 0;
+  return Math.min(openSlots, capRoomUrgencyActive(team, assumptions) ? 3 : 1);
 }
 
 function capRoomUrgencyActive<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): boolean {
@@ -572,6 +581,10 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   };
   if (player.status === "RFA" && player.rightsTeam === team.team && player.rights !== "None" && tier !== "RFA fallback") {
     return reject("Incumbent is preserving RFA match leverage rather than bidding against itself before offer sheets");
+  }
+  const rosterFit = rosterOfferFit(team, player, assumptions);
+  if (!rosterFit.allowed) {
+    return reject(rosterFit.reason);
   }
   const tool = bestSpendingTool(team, player, assumptions);
   if (!tool) {
@@ -609,7 +622,7 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   const alternatives = countAlternatives(team, player, marketPlayers);
   const affordability = clamp(legalMax / Math.max(player.marketValue, 1), 0, 1.35);
   const randomness = centeredRandom(rng, assumptions.variance) * 0.5;
-  const teamPriority = teamPriorityForPlayer(team, player, legalMax, assumptions, needFit, timeline, taxPain, redundancy, alternatives);
+  const teamPriority = clamp(teamPriorityForPlayer(team, player, legalMax, assumptions, needFit, timeline, taxPain, redundancy, alternatives) + rosterFit.priorityAdjustment, 0, 1);
   if (tool.kind === "cap" && pass < 8 && shouldReserveCapForHigherTarget(team, player, marketPlayers, assumptions, teamPriority)) {
     return reject("Reserved cap budget for higher target board", tool.name, undefined, legalMax);
   }
@@ -684,7 +697,7 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
     expectedMarketMinutes: player.expectedMarketMinutes,
     marketMinutesSource: player.marketMinutesSource,
     limiter: maxOffer.limiter,
-    reason: `Team bid plan: need ${formatNumber(needFit, 2)}, timeline ${formatNumber(timeline, 2)}, alternatives ${alternatives}, tax drag ${formatNumber(taxPain, 2)}`
+    reason: `Team bid plan: need ${formatNumber(needFit, 2)}, roster job ${formatNumber(rosterFit.slotFit, 2)}, timeline ${formatNumber(timeline, 2)}, alternatives ${alternatives}, tax drag ${formatNumber(taxPain, 2)}`
   };
   return { bid, team, player, salary, years, tool: { ...tool, amount: legalMax }, score, needFit, timeline, taxPain, redundancy, affordability, alternatives, toolReason };
 }
@@ -831,7 +844,7 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
   player.team = signingTeam.team;
   player.salary = chosen.salary;
   player.status = "Signed";
-  signingTeam.roster.push(player);
+  addPlayerToRoster(signingTeam, player);
   releaseCapHold(teams, player);
   const postToolRemaining = consumeSpendingTool(signingTeam, signingTool, chosen.salary);
   recordToolUse(signingTeam, player, signingTool, chosen.salary, postToolRemaining, matched ? "Matched offer sheet with retained rights." : chosen.toolReason);
@@ -851,7 +864,7 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
       ? `${offer.team.team}: highest AAV lost only because the money gap (${formatMoney(moneyGap)}) was inside the close-offer threshold`
       : `${offer.team.team}: lower money or weaker terms (${formatMoney(offer.salary)}, ${offer.years} yrs)`);
   const teamLogic = [
-    `Team bid logic: need ${formatNumber(chosen.needFit, 2)}, timeline ${formatNumber(chosen.timeline, 2)}, alternatives ${chosen.alternatives}, redundancy ${formatNumber(chosen.redundancy, 2)}`,
+    `Team bid logic: need ${formatNumber(chosen.needFit, 2)}, roster count ${teamRosterCount(signingTeam)}/${standardRosterLimit(signingTeam)}, timeline ${formatNumber(chosen.timeline, 2)}, alternatives ${chosen.alternatives}, redundancy ${formatNumber(chosen.redundancy, 2)}`,
     `Ability to pay: ${chosen.bid.tool} up to ${formatMoney(chosen.bid.legalMax)}; pre-offer cap ${formatMoney(chosen.bid.capSnapshot.capSpace)}, A1 room ${formatMoney(chosen.bid.capSnapshot.firstApronRoom)}`,
     `Tool path: ${chosen.bid.capPath ?? "retained_rights"}; ${chosen.bid.toolReason ?? chosen.toolReason}`,
     player.holdActionReason ? `Hold planning: ${player.holdActionReason}` : `Market role: ${formatNumber(player.expectedMarketMinutes ?? 0, 0)} minutes from ${player.marketMinutesSource ?? "player projection"}`,
@@ -929,6 +942,7 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
 
 function canHonorOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(offer: TeamBidPlan<TPlayer, TTeam>, assumptions: MarketAssumptions): boolean {
   refreshTeamPayroll(offer.team, assumptions);
+  if (!rosterOfferFit(offer.team, offer.player, assumptions).allowed) return false;
   if (offer.tool.kind === "bird") return offer.player.rightsTeam === offer.team.team && offer.player.rights !== "None" && offer.salary <= birdRightsAmount(offer.team, offer.player) + 100_000;
   if (offer.tool.kind === "cap") return offer.salary <= Math.max(0, offer.team.capSpace) + 100_000;
   if (offer.tool.kind === "non_taxpayer_mle" || offer.tool.kind === "bi_annual") {
@@ -1023,7 +1037,8 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
   const needFit = needFitScore(team, player.position, player.skills);
   const taxPain = taxPainScore(team, salary, assumptions);
   const legalMax = maxLegalOffer(team, player, assumptions, "bird").legalMax;
-  const canMatch = player.rightsTeam === team.team && player.rights !== "None" && salary <= legalMax + 100_000;
+  const rosterFit = rosterOfferFit(team, player, assumptions);
+  const canMatch = player.rightsTeam === team.team && player.rights !== "None" && salary <= legalMax + 100_000 && rosterFit.allowed;
   const score = makeScore({
     needFit,
     value: clamp(player.marketValue / Math.max(salary, 1), 0, 1.5),
@@ -1036,7 +1051,16 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
     incumbency: 1,
     randomness: centeredRandom(rng, assumptions.variance)
   });
-  return { canMatch, legalMax, score, reason: canMatch ? "matching rights available" : "no matching rights or outside offer exceeds legal max" };
+  return {
+    canMatch,
+    legalMax,
+    score,
+    reason: canMatch
+      ? "matching rights available"
+      : !rosterFit.allowed
+        ? rosterFit.reason
+        : "no matching rights or outside offer exceeds legal max"
+  };
 }
 
 function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): MarketTool | null {
@@ -1138,6 +1162,104 @@ function teamPriorityForPlayer<TPlayer extends MarketPlayer, TTeam extends Marke
   );
 }
 
+type RosterOfferFit = {
+  allowed: boolean;
+  reason: string;
+  priorityAdjustment: number;
+  slotFit: number;
+  belowMinimum: boolean;
+  clearUpgrade: boolean;
+};
+
+function rosterOfferFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): RosterOfferFit {
+  const count = teamRosterCount(team);
+  const limit = standardRosterLimit(team);
+  const legalRemaining = limit - count;
+  const minimum = minimumRosterCount(team);
+  const target = targetRosterCount(team);
+  const targetRemaining = target - count;
+  const belowMinimum = count < minimum;
+  const slotFit = rosterJobFit(team, player, assumptions);
+  const clearUpgrade = isClearRosterUpgrade(team, player, assumptions, slotFit);
+  if (legalRemaining <= 0) {
+    return { allowed: false, reason: `Standard roster limit reached (${count}/${limit})`, priorityAdjustment: -1, slotFit, belowMinimum, clearUpgrade };
+  }
+  if (targetRemaining <= 0 && !clearUpgrade) {
+    return { allowed: false, reason: `Target roster size reached (${count}/${target}); only clear upgrades remain active`, priorityAdjustment: -0.6, slotFit, belowMinimum, clearUpgrade };
+  }
+  const finalSlotReserve = legalRemaining <= 1 &&
+    !belowMinimum &&
+    !clearUpgrade &&
+    player.marketValue <= Math.max(minimumSalary(player) * 3, assumptions.cap * 0.025);
+  if (finalSlotReserve) {
+    return { allowed: false, reason: "Final standard roster slot reserved for a clearer rotation upgrade", priorityAdjustment: -0.5, slotFit, belowMinimum, clearUpgrade };
+  }
+  const priorityAdjustment = clamp(
+    (belowMinimum ? 0.16 : targetRemaining > 0 ? 0.06 : -0.08) +
+      (slotFit - 0.5) * 0.16 +
+      (clearUpgrade ? 0.05 : 0) -
+      (legalRemaining <= 2 && !belowMinimum ? 0.04 : 0),
+    -0.28,
+    0.28
+  );
+  return { allowed: true, reason: `Roster job fit ${formatNumber(slotFit, 2)} with ${legalRemaining} standard slot${legalRemaining === 1 ? "" : "s"} open`, priorityAdjustment, slotFit, belowMinimum, clearUpgrade };
+}
+
+function rosterJobFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): number {
+  const active = team.roster.filter((candidate) => candidate.status === "Signed");
+  const credible = active.filter((candidate) => credibleRosterPlayer(candidate, assumptions));
+  const primary = primaryPosition(player.position);
+  const samePosition = credible.filter((candidate) => primaryPosition(candidate.position) === primary).length;
+  const rotationCount = credible.length + Math.max(0, (team.rosterCountAdjustment ?? 0) * 0.35);
+  const targetRotation = team.mode === "contender" || team.mode === "tax-sensitive contender" ? 9 : 8;
+  const positionNeed = primary === "C"
+    ? samePosition === 0 ? 0.9 : samePosition === 1 ? 0.62 : samePosition === 2 ? 0.34 : 0.16
+    : samePosition <= 1 ? 0.82 : samePosition === 2 ? 0.58 : samePosition === 3 ? 0.34 : 0.16;
+  const skillNeed = topPlayerSkills(player).some((skill) => team.needs.includes(skill)) ? 0.72 : 0.36;
+  const rotationNeed = clamp((targetRotation - rotationCount) / Math.max(targetRotation, 1), 0, 1);
+  const qualityNeed = clamp(player.score / 100 + player.marketValue / Math.max(assumptions.cap * 0.35, 1), 0, 1.15);
+  return clamp(positionNeed * 0.34 + skillNeed * 0.26 + rotationNeed * 0.2 + qualityNeed * 0.2, 0, 1);
+}
+
+function credibleRosterPlayer<TPlayer extends MarketPlayer>(player: TPlayer, assumptions: MarketAssumptions): boolean {
+  return player.score >= 58 || player.marketValue >= assumptions.cap * 0.045 || player.salary >= assumptions.cap * 0.045 || (player.expectedMarketMinutes ?? 0) >= 1100;
+}
+
+function isClearRosterUpgrade<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions, slotFit: number): boolean {
+  if (player.score >= 72 || player.marketValue >= assumptions.cap * 0.07) return true;
+  const signed = team.roster.filter((candidate) => candidate.status === "Signed");
+  const weakest = signed.slice().sort((a, b) => a.score - b.score || a.marketValue - b.marketValue)[0];
+  if (!weakest) return true;
+  return player.score >= 62 && slotFit >= 0.66 && (player.score >= weakest.score + 8 || player.marketValue >= weakest.marketValue + assumptions.cap * 0.018);
+}
+
+function teamRosterCount<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam): number {
+  return team.roster.length + (team.rosterCountAdjustment ?? 0);
+}
+
+function standardRosterLimit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam): number {
+  return team.standardRosterLimit ?? STANDARD_ROSTER_LIMIT;
+}
+
+function minimumRosterCount<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam): number {
+  return team.minimumRosterCount ?? MINIMUM_STANDARD_ROSTER;
+}
+
+function targetRosterCount<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam): number {
+  if (typeof team.targetRosterCount === "number") return Math.min(standardRosterLimit(team), Math.max(minimumRosterCount(team), team.targetRosterCount));
+  if (team.mode === "tax-sensitive contender" || team.mode === "rebuilding" || team.mode === "rising") return Math.min(standardRosterLimit(team), 14);
+  return standardRosterLimit(team);
+}
+
+function legalRosterSlotsRemaining<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam): number {
+  return Math.max(0, standardRosterLimit(team) - teamRosterCount(team));
+}
+
+function addPlayerToRoster<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer) {
+  team.roster = team.roster.filter((candidate) => candidate.id !== player.id);
+  team.roster.push(player);
+}
+
 function teamSpendingPower<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): number {
   refreshTeamPayroll(team, assumptions);
   const capPath = team.capPath ?? "retained_rights";
@@ -1166,7 +1288,7 @@ function refreshTeamPayroll<TPlayer extends MarketPlayer, TTeam extends MarketTe
   team.activeSalary = sum(team.roster.map((player) => player.salary)) + (team.activeSalaryAdjustment ?? 0);
   team.guaranteedSalary = sum(team.roster.map((player) => player.guaranteedSalary || player.salary)) + (team.guaranteedSalaryAdjustment ?? 0);
   team.payroll = team.activeSalary + team.deadCap;
-  team.rosterCharges = Math.max(0, 12 - (team.roster.length + (team.rosterCountAdjustment ?? 0))) * (team.minimumRosterCharge ?? assumptions.cap * 0.008);
+  team.rosterCharges = Math.max(0, minimumRosterCount(team) - teamRosterCount(team)) * (team.minimumRosterCharge ?? assumptions.cap * 0.008);
   team.maximumCapSpace = assumptions.cap - team.payroll - team.rosterCharges;
   team.heldCapSpace = team.maximumCapSpace - team.capHolds;
   const capPath = team.capPath ?? (team.maximumCapSpace > assumptions.cap * 0.09 && team.heldCapSpace < team.maximumCapSpace - assumptions.cap * 0.03 ? "cap_room" : "retained_rights");
@@ -1379,7 +1501,7 @@ function timelineFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPla
 }
 
 function urgencyScore<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam): number {
-  const rosterNeed = clamp((12 - team.roster.length) / 7, 0, 1);
+  const rosterNeed = clamp((minimumRosterCount(team) - teamRosterCount(team)) / 7, 0, 1);
   const modeUrgency = team.mode === "contender" ? 0.82 : team.mode === "tax-sensitive contender" ? 0.68 : team.mode === "playoff hopeful" ? 0.62 : team.mode === "rising" ? 0.54 : 0.42;
   const capUrgency = team.capSpace > 12_000_000 ? 0.68 : team.taxRoom < 0 ? 0.36 : 0.5;
   return clamp(modeUrgency * 0.5 + rosterNeed * 0.28 + capUrgency * 0.22, 0, 1);
@@ -1399,7 +1521,8 @@ function rosterRedundancyPenalty<TPlayer extends MarketPlayer, TTeam extends Mar
   const sameSkill = topPlayerSkills(player)
     .map((skill) => active.filter((candidate) => candidate.skills[skill] >= 1.1 && candidate.score >= 55).length)
     .reduce((total, count) => total + Math.max(0, count - 1), 0);
-  return clamp(samePosition * 0.16 + sameSkill * 0.08, 0, 0.75);
+  const countPressure = Math.max(0, teamRosterCount(team) - targetRosterCount(team)) * 0.12;
+  return clamp(samePosition * 0.16 + sameSkill * 0.08 + countPressure, 0, 0.75);
 }
 
 function primaryPosition(position: string): string {

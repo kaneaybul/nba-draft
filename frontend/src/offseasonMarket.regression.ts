@@ -44,6 +44,9 @@ export function runOffseasonMarketRegressionTests(): string[] {
     capRoomTeamsSubmitMultipleCapBids(),
     capRoomUsesCapBeforeRoomException(),
     explicitExceptionInventoriesAreRespected(),
+    fullStandardRosterBlocksFreeAgentBids(),
+    capRoomTeamStopsAtStandardRosterLimit(),
+    targetRosterPlanBlocksExtraFiller(),
     teamsCanRebidInLaterWaves(),
     selectedSeasonCapYearWins(),
     rfaFallbackSignsWhenNoOutsideBid(),
@@ -218,6 +221,38 @@ function explicitExceptionInventoriesAreRespected(): string {
   const baeResult = simulateFreeAgencyMarket([player("p14o", "BAE Target", "FA", "UFA", 55, 4_000_000)], mapTeams([baeTeam]), assumptions, fixedRng);
   expect(baeResult.signings[0]?.tool === "bi_annual", `bi-annual exception should be explicit; got ${baeResult.signings[0]?.tool}`);
   return "explicit exception inventories are respected";
+}
+
+function fullStandardRosterBlocksFreeAgentBids(): string {
+  const fullTeam = team("FUL", 0, ["SHOOT"], 0.95, [], { capPath: "cap_room", mode: "playoff hopeful" });
+  fullTeam.roster = signedRoster("FUL", 15);
+  const result = simulateFreeAgencyMarket([player("p14q", "Extra Guard", "FA", "UFA", 70, 12_000_000)], mapTeams([fullTeam]), assumptions, fixedRng);
+  expect(result.signings.length === 0, `full standard roster should not add another standard FA; got ${result.signings.length}`);
+  expect(fullTeam.roster.length + (fullTeam.rosterCountAdjustment ?? 0) === 15, "full roster count should remain at the standard limit");
+  return "full standard roster blocks free-agent bids";
+}
+
+function capRoomTeamStopsAtStandardRosterLimit(): string {
+  const roomTeam = team("LIM", 0, ["SHOOT", "PASS"], 0.95, [], { capPath: "cap_room", mode: "playoff hopeful" });
+  roomTeam.roster = signedRoster("LIM", 13);
+  const targets = Array.from({ length: 6 }, (_, index) => player(`p14r-${index}`, `Limit Target ${index}`, "FA", "UFA", 66 - index, 6_500_000 - index * 250_000, "FA", "None", {
+    position: index % 3 === 0 ? "C" : index % 3 === 1 ? "F" : "G"
+  }));
+  const result = simulateFreeAgencyMarket(targets, mapTeams([roomTeam]), assumptions, fixedRng);
+  const finalCount = roomTeam.roster.length + (roomTeam.rosterCountAdjustment ?? 0);
+  expect(result.signings.length <= 2, `team with two standard slots should not sign more than two players; got ${result.signings.length}`);
+  expect(finalCount <= 15, `final roster should stay legal; got ${finalCount}`);
+  return "cap-room team stops at the standard roster limit";
+}
+
+function targetRosterPlanBlocksExtraFiller(): string {
+  const plannedTeam = team("PLN", 0, ["SHOOT"], 0.95, [], { capPath: "cap_room", mode: "rising" });
+  plannedTeam.roster = signedRoster("PLN", 14);
+  const result = simulateFreeAgencyMarket([
+    player("p14s", "Extra Filler", "FA", "UFA", 52, 2_500_000)
+  ], mapTeams([plannedTeam]), assumptions, fixedRng);
+  expect(result.signings.length === 0, "rising team at its target roster count should not use a final standard slot on filler");
+  return "target roster plan blocks extra filler";
 }
 
 function teamsCanRebidInLaterWaves(): string {
@@ -497,6 +532,10 @@ function team(
     projectedWins: overrides.projectedWins ?? 42,
     projectedRank: 15,
     roster: salarySlot as TestPlayer[],
+    rosterCountAdjustment: 0,
+    standardRosterLimit: 15,
+    targetRosterCount: overrides.mode === "rebuilding" || overrides.mode === "rising" || overrides.mode === "tax-sensitive contender" ? 14 : 15,
+    minimumRosterCount: 12,
     payroll: activeSalary,
     activeSalary,
     guaranteedSalary: activeSalary,
@@ -523,6 +562,20 @@ function team(
     toolLedger: [],
     explanations: []
   };
+}
+
+function signedRoster(teamCode: string, count: number): TestPlayer[] {
+  return Array.from({ length: count }, (_, index) => player(
+    `${teamCode}-signed-${index}`,
+    `${teamCode} Signed ${index}`,
+    teamCode,
+    "Signed",
+    50 + (index % 8),
+    2_000_000 + index * 100_000,
+    teamCode,
+    "None",
+    { position: index % 3 === 0 ? "C" : index % 3 === 1 ? "F" : "G" }
+  ));
 }
 
 function mapTeams(teams: TestTeam[]): Map<string, TestTeam> {

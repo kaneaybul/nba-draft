@@ -56,6 +56,7 @@ type CapTrackerIndex = {
   exceptionsByTeam: Map<string, CapTrackerException[]>;
   cellsByNbaId: Map<string, CapTrackerMatchedCell>;
   cellsByNameTeam: Map<string, CapTrackerMatchedCell>;
+  draftPickPlaceholdersByTeam: Map<string, { count: number; salary: number }>;
 };
 
 type CapTrackerMatchedCell = {
@@ -111,6 +112,11 @@ type TeamState = {
   projectedRank: number;
   roster: SimPlayer[];
   rosterCountAdjustment: number;
+  standardRosterLimit: number;
+  targetRosterCount: number;
+  minimumRosterCount: number;
+  draftPickPlaceholderCount: number;
+  draftPickPlaceholderSalary: number;
   minimumRosterCharge: number;
   activeRosterCountBase: number;
   payroll: number;
@@ -358,6 +364,9 @@ type TeamSummary = {
   capPath: CapPath;
   capPathReason: string;
   rosterCount: number;
+  standardRosterLimit: number;
+  targetRosterCount: number;
+  minimumRosterCount: number;
   rosterCore: string[];
   payroll: number;
   activeSalary: number;
@@ -470,6 +479,8 @@ type OfficialDraftPick = {
 };
 
 const skillKeys: SkillKey[] = ["FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH"];
+const STANDARD_ROSTER_LIMIT = 15;
+const MINIMUM_STANDARD_ROSTER = 12;
 const defaultOverrides: SimulatorOverrides = { teams: {}, players: {}, prospects: {} };
 const OFFSEASON_TAB_STORAGE_KEY = "offseason:activeTab:v2";
 const OFFSEASON_TEAM_STORAGE_KEY = "offseason:selectedTeam:v1";
@@ -992,11 +1003,12 @@ function simulateOptions(players: SimPlayer[], teams: Map<string, TeamState>, as
       });
       const optionType = isPlayerOption ? "Player Option" : isNonGuaranteed ? "Non-Guaranteed" : "Team Option";
       const explanation = optionExplanation(player, team, decision, optionSalary, score, optionType);
+      resolveTrackedRosterPlaceholder(team, player, optionSalary);
       if (decision === "exercise") {
         player.team = team.team;
         player.salary = optionSalary;
         player.status = "Signed";
-        team.roster.push(player);
+        addPlayerToTeamRoster(team, player);
         releaseCapHold(teams, player);
       } else {
         player.team = "FA";
@@ -1054,8 +1066,8 @@ function simulateDraft(
     const winner = weightedChoice(pool, (item) => Math.exp(item.total * 2.6), rng);
     available.splice(available.findIndex((prospect) => prospect.id === winner.prospect.id), 1);
     const salary = rookieScaleSalary(pick, assumptions.cap);
-    team.payroll += salary;
-    team.roster.push(prospectToPlayer(winner.prospect, team.team, salary, pick));
+    consumeDraftPickPlaceholder(team, salary);
+    addPlayerToTeamRoster(team, prospectToPlayer(winner.prospect, team.team, salary, pick));
     team.pickAssets = Math.max(0, team.pickAssets - (pickValues.get(pick) ?? 0) * 0.2);
     const fitDelta = winner.fit - avg(team.needs.map((skill) => winner.prospect.skills[skill]));
     const consensusDelta = winner.prospect.consensusRank - pick;
@@ -1108,7 +1120,7 @@ function simulateTrades(teams: Map<string, TeamState>, assumptions: SimulatorAss
     const seller = candidate.seller;
     const player = candidate.player;
     const buyers = allTeams
-      .filter((team) => team.team !== seller.team)
+      .filter((team) => team.team !== seller.team && standardRosterSlotsRemaining(team) > 0)
       .map((buyer) => {
         const need = needFitScore(buyer, player.position, player.skills);
         const winNow = urgencyScore(buyer);
@@ -1289,6 +1301,10 @@ function initializeTeams(
     const capHolds = trackerTeam?.cap_holds ?? capTruth?.cap_holds ?? sum(players.filter((player) => player.rightsTeam === projection.team && player.status !== "Signed").map(capHoldForPlayer));
     const activeRosterCountBase = trackerTeam?.roster_count ?? signedRoster.length;
     const rosterCountAdjustment = Math.max(0, activeRosterCountBase - signedRoster.length);
+    const standardRosterLimit = STANDARD_ROSTER_LIMIT;
+    const minimumRosterCount = MINIMUM_STANDARD_ROSTER;
+    const targetRosterCount = targetRosterCountForMode(override?.mode ?? baseMode, standardRosterLimit, minimumRosterCount);
+    const draftPickPlaceholders = capIndex.draftPickPlaceholdersByTeam.get(projection.team) ?? { count: 0, salary: 0 };
     const minimumRosterCharge = capIndex.season?.minimum_roster_charge ?? assumptions.cap * 0.008;
     const team: TeamState = {
       team: projection.team,
@@ -1301,6 +1317,11 @@ function initializeTeams(
       projectedRank: projection.rank,
       roster: [...signedRoster],
       rosterCountAdjustment,
+      standardRosterLimit,
+      targetRosterCount,
+      minimumRosterCount,
+      draftPickPlaceholderCount: draftPickPlaceholders.count,
+      draftPickPlaceholderSalary: draftPickPlaceholders.salary,
       minimumRosterCharge,
       activeRosterCountBase,
       payroll: trackerActiveSalary ?? signedSalary,
@@ -1747,6 +1768,42 @@ function refreshTeamPayroll(team: TeamState, assumptions: SimulatorAssumptions) 
   team.secondApronRoom = assumptions.secondApron - team.payroll;
 }
 
+function addPlayerToTeamRoster(team: TeamState, player: SimPlayer) {
+  team.roster = team.roster.filter((candidate) => candidate.id !== player.id);
+  team.roster.push(player);
+}
+
+function resolveTrackedRosterPlaceholder(team: TeamState, player: SimPlayer, salary: number) {
+  if (player.capTrackerTeam !== team.team) return;
+  const activeKinds = new Set(["guaranteed", "partial_guarantee", "player_option", "team_option", "non_guaranteed", "draft_pick"]);
+  if (!player.capTrackerKind || !activeKinds.has(player.capTrackerKind)) return;
+  consumeRosterPlaceholder(team, salary);
+}
+
+function consumeRosterPlaceholder(team: TeamState, salary: number) {
+  if (team.rosterCountAdjustment <= 0 && team.activeSalaryAdjustment <= 0 && team.guaranteedSalaryAdjustment <= 0) return;
+  team.rosterCountAdjustment = Math.max(0, team.rosterCountAdjustment - 1);
+  const amount = Math.max(0, salary);
+  team.activeSalaryAdjustment = Math.max(0, team.activeSalaryAdjustment - amount);
+  team.guaranteedSalaryAdjustment = Math.max(0, team.guaranteedSalaryAdjustment - amount);
+}
+
+function consumeDraftPickPlaceholder(team: TeamState, salary: number) {
+  if (team.draftPickPlaceholderCount <= 0) return;
+  team.draftPickPlaceholderCount = Math.max(0, team.draftPickPlaceholderCount - 1);
+  const amount = Math.min(Math.max(0, salary), Math.max(0, team.draftPickPlaceholderSalary || salary));
+  team.draftPickPlaceholderSalary = Math.max(0, team.draftPickPlaceholderSalary - amount);
+  consumeRosterPlaceholder(team, amount);
+}
+
+function standardRosterCount(team: TeamState): number {
+  return team.roster.length + team.rosterCountAdjustment;
+}
+
+function standardRosterSlotsRemaining(team: TeamState): number {
+  return Math.max(0, team.standardRosterLimit - standardRosterCount(team));
+}
+
 function buildTeamMeta(teams: TeamProjection[], season: number): TeamProjection[] {
   const seasonRows = teams.filter((team) => team.year === season && (team.scenario_id ?? "base") === "base");
   const fallback = teams.filter((team) => team.year === season);
@@ -1764,7 +1821,9 @@ function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, tr
     const truth = playerTruth(player, truthData);
     const tracker = capTrackerCellForPlayer(player, capIndex);
     const trackerStatus = contractStatusFromCapCell(tracker?.cell);
-    const status = override?.status ?? trackerStatus ?? normalizeStatus(truth?.contract_status ?? player.contract_status);
+    const truthStatus = normalizeStatus(truth?.contract_status ?? player.contract_status);
+    const optionTruthStatus = truthStatus === "Player Option" || truthStatus === "Team Option" || truthStatus === "Non-Guaranteed" ? truthStatus : undefined;
+    const status = override?.status ?? optionTruthStatus ?? trackerStatus ?? truthStatus;
     const marketValue = override?.marketValue ?? finiteNumber(player.fa_value, player.value, player.contract, 2_500_000);
     const marketMinutes = expectedMarketMinutesForPlayer(player, status, marketValue);
     const planningScore = marketPlanningScore(player, status, marketValue, marketMinutes.minutes);
@@ -1856,7 +1915,7 @@ function buildSimProspects(rows: DraftProspect[], overrides: SimulatorOverrides)
 }
 
 function teamSummary(team: TeamState, bids: MarketBid[]): TeamSummary {
-  const rosterCount = team.roster.length + team.rosterCountAdjustment;
+  const rosterCount = standardRosterCount(team);
   const teamBids = bids.filter((bid) => bid.team === team.team);
   return {
     team: team.team,
@@ -1866,6 +1925,9 @@ function teamSummary(team: TeamState, bids: MarketBid[]): TeamSummary {
     capPath: team.capPath,
     capPathReason: team.capPathReason,
     rosterCount,
+    standardRosterLimit: team.standardRosterLimit,
+    targetRosterCount: team.targetRosterCount,
+    minimumRosterCount: team.minimumRosterCount,
     rosterCore: team.roster
       .slice()
       .sort((a, b) => b.salary - a.salary || b.score - a.score)
@@ -1962,7 +2024,7 @@ function capHoldForPlayer(player: SimPlayer): number {
 }
 
 function incompleteRosterCharge(team: TeamState, assumptions: SimulatorAssumptions): number {
-  const openSpots = Math.max(0, 12 - (team.roster.length + team.rosterCountAdjustment));
+  const openSpots = Math.max(0, team.minimumRosterCount - standardRosterCount(team));
   return openSpots * (team.minimumRosterCharge || assumptions.cap * 0.008);
 }
 
@@ -1975,14 +2037,14 @@ function buildWarRoomPlans(run: SimulationRun, assumptions: SimulatorAssumptions
     const outgoing = signings.filter((item) => item.fromTeam === team.team && item.toTeam !== team.team);
     const incoming = signings.filter((item) => item.toTeam === team.team);
     const urgentCap = clamp(Math.max(0, -team.taxRoom) / assumptions.cap + Math.max(0, -team.firstApronRoom) / assumptions.cap * 1.4, 0, 1);
-    const rosterUrgency = clamp((12 - team.rosterCount) / 7, 0, 1);
+    const rosterUrgency = clamp((team.minimumRosterCount - team.rosterCount) / 7, 0, 1);
     const modeUrgency = team.mode === "contender" || team.mode === "tax-sensitive contender" ? 0.78 : team.mode === "playoff hopeful" ? 0.64 : 0.48;
     const urgency = clamp(modeUrgency * 0.42 + urgentCap * 0.38 + rosterUrgency * 0.2, 0, 1);
     const flexibility = clamp((Math.max(0, team.capSpace) + Math.max(0, team.taxRoom) * 0.18 + Math.max(0, team.renouncedCapSpace) * 0.28) / assumptions.cap, 0, 1);
     const taxDanger = clamp(Math.max(0, (team.payroll - assumptions.tax) / assumptions.cap) + Math.max(0, (team.payroll - assumptions.firstApron) / assumptions.cap) * 1.4 + Math.max(0, (team.payroll - assumptions.secondApron) / assumptions.cap) * 2, 0, 1);
     const assetLeverage = clamp(team.pickAssets / (assumptions.cap * 0.62) + team.premiumPickCount * 0.08, 0, 1);
     const moveCount = picks.length + incoming.length + trades.length + options.length;
-    const unresolvedPressure = clamp(outgoing.length / 5 + Math.max(0, 10 - team.rosterCount) / 6, 0, 1);
+    const unresolvedPressure = clamp(outgoing.length / 5 + Math.max(0, team.minimumRosterCount - 2 - team.rosterCount) / 6, 0, 1);
     const clarity = clamp(0.42 + moveCount * 0.07 + team.needs.length * 0.04 + assetLeverage * 0.18 - unresolvedPressure * 0.22 - taxDanger * 0.12, 0, 1);
     const priorities: TeamWarRoomPlan["priorities"] = [];
 
@@ -2078,7 +2140,8 @@ function objectiveForTeam(team: TeamSummary, urgency: number, taxDanger: number,
 
 function rosterHolesForTeam(team: TeamSummary): string[] {
   const holes = team.needs.map((need) => `${need} need`);
-  if (team.rosterCount < 12) holes.push(`${12 - team.rosterCount} roster slots below 12`);
+  if (team.rosterCount < team.minimumRosterCount) holes.push(`${team.minimumRosterCount - team.rosterCount} roster slots below ${team.minimumRosterCount}`);
+  if (team.rosterCount > team.standardRosterLimit) holes.push(`${team.rosterCount - team.standardRosterLimit} excess standard roster slots`);
   if (team.premiumPickCount > 0) holes.push(`${team.premiumPickCount} premium pick decision${team.premiumPickCount > 1 ? "s" : ""}`);
   if (team.capSpace < 0 && team.renouncedCapSpace > team.capSpace + 5_000_000) holes.push("Cap-hold cleanup path");
   return holes.slice(0, 5);
@@ -2086,11 +2149,12 @@ function rosterHolesForTeam(team: TeamSummary): string[] {
 
 function capWarnings(team: TeamSummary): string[] {
   const warnings = [
+    team.rosterCount > team.standardRosterLimit ? `${team.rosterCount - team.standardRosterLimit} over standard roster limit` : "",
     team.secondApronRoom < 0 ? "Over second apron" : "",
     team.firstApronRoom < 0 && team.secondApronRoom >= 0 ? "Over first apron" : "",
     team.taxRoom < 0 && team.firstApronRoom >= 0 ? "Tax team" : "",
     team.capSpace < 0 && team.renouncedCapSpace > 0 ? "Cap holds block room" : "",
-    team.rosterCount < 12 ? `${12 - team.rosterCount} roster charges` : ""
+    team.rosterCount < team.minimumRosterCount ? `${team.minimumRosterCount - team.rosterCount} roster charges` : ""
   ].filter(Boolean);
   return warnings.length ? warnings : ["Clean enough sheet"];
 }
@@ -3228,7 +3292,7 @@ function TeamCapTable({ teams }: { teams: TeamSummary[] }) {
             <div className="team-ledger-head">
               <div>
                 <strong>{team.team}</strong>
-                <span>{`${team.mode} / ${team.rosterCount} players`}</span>
+                <span>{`${team.mode} / ${team.rosterCount}/${team.standardRosterLimit} players`}</span>
               </div>
               <b>{formatMoney(team.payroll)}</b>
             </div>
@@ -3688,7 +3752,7 @@ function prospectToPlayer(prospect: SimProspect, team: string, salary: number, p
 function movePlayer(from: TeamState, to: TeamState, player: SimPlayer) {
   from.roster = from.roster.filter((candidate) => candidate.id !== player.id);
   player.team = to.team;
-  to.roster.push(player);
+  addPlayerToTeamRoster(to, player);
   from.explanations.push(`Traded ${player.name}`);
   to.explanations.push(`Acquired ${player.name}`);
 }
@@ -3762,6 +3826,11 @@ function willingnessForMode(mode: TeamMode): number {
   return 0.44;
 }
 
+function targetRosterCountForMode(mode: TeamMode, standardLimit = STANDARD_ROSTER_LIMIT, minimumCount = MINIMUM_STANDARD_ROSTER): number {
+  const target = mode === "tax-sensitive contender" || mode === "rebuilding" || mode === "rising" ? 14 : 15;
+  return Math.min(standardLimit, Math.max(minimumCount, target));
+}
+
 function pickAssetMultiplier(mode: TeamMode): number {
   if (mode === "rebuilding") return 2.2;
   if (mode === "rising") return 1.6;
@@ -3831,7 +3900,8 @@ function buildCapTrackerIndex(capTracker: CapTrackerData | undefined, season: nu
     teams: new Map((capTracker?.team_seasons ?? []).filter((row) => row.year === capYear).map((row) => [row.team, row])),
     exceptionsByTeam: groupCapTrackerExceptions(capTracker?.exceptions ?? [], capYear),
     cellsByNbaId: new Map(),
-    cellsByNameTeam: new Map()
+    cellsByNameTeam: new Map(),
+    draftPickPlaceholdersByTeam: new Map()
   };
   (capTracker?.contracts ?? []).forEach((row) => {
     const cell = row.cells.find((item) => item.year === capYear);
@@ -3839,6 +3909,11 @@ function buildCapTrackerIndex(capTracker: CapTrackerData | undefined, season: nu
     const matched = { row, cell };
     if (row.nba_id) index.cellsByNbaId.set(`${season}-${row.nba_id}`, matched);
     index.cellsByNameTeam.set(`${normalizeNameKey(row.player_name)}|${cleanTeam(row.team)}`, matched);
+    if (cell.kind === "draft_pick") {
+      const team = cleanTeam(row.team);
+      const prior = index.draftPickPlaceholdersByTeam.get(team) ?? { count: 0, salary: 0 };
+      index.draftPickPlaceholdersByTeam.set(team, { count: prior.count + 1, salary: prior.salary + cell.amount });
+    }
   });
   return index;
 }

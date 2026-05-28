@@ -47,6 +47,124 @@ scv_draft_lookup <- load_scv_draft_lookup(
 )
 rollup_config <- load_rollup_config(skillmap_fp, off_results_fp, def_results_fp)
 
+skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
+
+is_truthy_env <- function(value) {
+  tolower(trimws(value)) %in% c("1", "true", "yes", "y", "on")
+}
+
+parse_skill_update_filter <- function() {
+  raw_value <- trimws(Sys.getenv("DRAFT_SCORE_TARGET_SKILLS", Sys.getenv("DRAFT_SCORE_UPDATE_SKILLS", "")))
+  if (!nzchar(raw_value)) return(character())
+  requested <- toupper(trimws(strsplit(raw_value, ",", fixed = TRUE)[[1]]))
+  requested <- requested[nzchar(requested)]
+  intersect(skill_names, requested)
+}
+
+infer_existing_rollup_config <- function(config, output_path, target_year) {
+  if (!file.exists(output_path)) return(config)
+
+  existing <- fread(output_path, na.strings = c("", "NA", "N/A", "NaN"))
+  if (!nrow(existing) || !("draft_year" %in% names(existing))) return(config)
+
+  existing[, draft_year := suppressWarnings(as.integer(draft_year))]
+  reference <- existing[is.na(draft_year) | draft_year != target_year]
+  if (!nrow(reference)) reference <- existing
+
+  use_existing_intercept <- function(col_name, label) {
+    if (!(col_name %in% names(reference))) return(NULL)
+    vals <- suppressWarnings(as.numeric(reference[[col_name]]))
+    vals <- vals[is.finite(vals)]
+    if (!length(vals)) return(NULL)
+    value <- stats::median(vals)
+    message("Using existing ", label, " rollup intercept for target-year score: ", signif(value, 12))
+    value
+  }
+
+  off_value <- use_existing_intercept("off_intercept", "offense")
+  def_value <- use_existing_intercept("def_intercept", "defense")
+  if (!is.null(off_value)) config$off_intercept <- off_value
+  if (!is.null(def_value)) config$def_intercept <- def_value
+  config
+}
+
+recompute_totals_from_raw <- function(dt, config) {
+  if (is.null(dt) || !nrow(dt)) return(dt)
+  out <- as.data.table(copy(dt))
+  offense_skills <- intersect(if (!is.null(config$offense_skills)) config$offense_skills else character(), skill_names)
+  defense_skills <- intersect(if (!is.null(config$defense_skills)) config$defense_skills else character(), skill_names)
+  off_intercept <- if (!is.null(config$off_intercept) && is.finite(config$off_intercept)) config$off_intercept else 0
+  def_intercept <- if (!is.null(config$def_intercept) && is.finite(config$def_intercept)) config$def_intercept else 0
+
+  for (skill in skill_names) {
+    raw_col <- paste0(skill, "_raw_pred")
+    if (!(raw_col %in% names(out))) out[, (raw_col) := NA_real_]
+  }
+
+  off_cols <- intersect(paste0(offense_skills, "_raw_pred"), names(out))
+  def_cols <- intersect(paste0(defense_skills, "_raw_pred"), names(out))
+  off_sum <- if (length(off_cols)) rowSums(out[, ..off_cols], na.rm = TRUE) else 0
+  def_sum <- if (length(def_cols)) rowSums(out[, ..def_cols], na.rm = TRUE) else 0
+
+  out[, `:=`(
+    off_intercept = off_intercept,
+    def_intercept = def_intercept,
+    OFF_pred = off_intercept + off_sum,
+    DEF_pred = def_intercept + def_sum
+  )]
+  out[, TOTAL_pred := OFF_pred + DEF_pred]
+  as.data.table(standardize_prediction_skills(out))
+}
+
+apply_selected_skill_updates <- function(output_path, update_dt, target_year, selected_skills, config, label) {
+  if (!length(selected_skills) || !nrow(update_dt)) return(update_dt)
+  if (!file.exists(output_path)) {
+    warning("Cannot apply skill-limited ", label, " update; existing output is missing: ", output_path)
+    return(update_dt)
+  }
+
+  existing <- fread(output_path, na.strings = c("", "NA", "N/A", "NaN"))
+  if (!nrow(existing) || !all(c("player", "draft_year", "prediction_pool") %in% names(existing))) {
+    warning("Cannot apply skill-limited ", label, " update; existing output lacks key columns: ", output_path)
+    return(update_dt)
+  }
+  existing[, draft_year := suppressWarnings(as.integer(draft_year))]
+  target_rows <- existing[draft_year == target_year]
+  if (!nrow(target_rows)) {
+    warning("Cannot apply skill-limited ", label, " update; no existing rows for ", target_year)
+    return(update_dt)
+  }
+
+  update_dt <- as.data.table(copy(update_dt))
+  update_dt[, draft_year := suppressWarnings(as.integer(draft_year))]
+  key_cols <- c("player", "draft_year", "prediction_pool")
+  setkeyv(target_rows, key_cols)
+  setkeyv(update_dt, key_cols)
+  matched_before <- nrow(target_rows[update_dt, nomatch = 0L])
+
+  for (skill in selected_skills) {
+    raw_col <- paste0(skill, "_raw_pred")
+    if (!(raw_col %in% names(update_dt))) next
+    if (!(raw_col %in% names(target_rows))) target_rows[, (raw_col) := NA_real_]
+    target_rows[update_dt, (raw_col) := get(paste0("i.", raw_col))]
+  }
+
+  message(
+    "Applied skill-limited ", label, " update for ", target_year, ": ",
+    paste(selected_skills, collapse = ", "), " across ", matched_before, " matched rows."
+  )
+  recompute_totals_from_raw(target_rows, config)
+}
+
+use_existing_rollup <- is_truthy_env(Sys.getenv("DRAFT_SCORE_USE_EXISTING_ROLLUP", "false"))
+if (use_existing_rollup) {
+  rollup_config <- infer_existing_rollup_config(rollup_config, final_output, target_draft_year)
+}
+target_update_skills <- parse_skill_update_filter()
+if (length(target_update_skills)) {
+  message("Score-only update limited to skill(s): ", paste(target_update_skills, collapse = ", "))
+}
+
 overwrite_scv_draft_feature <- function(df, scv_lookup) {
   if (is.null(df) || !nrow(df) || is.null(scv_lookup) || !nrow(scv_lookup) || !"player" %in% names(df)) {
     return(df)
@@ -140,6 +258,25 @@ update_source_scv_file(unified_source_output, target_draft_year)
 
 main_rows <- score_prediction_specs(main_specs, main_models_rds)
 no_college_rows <- score_prediction_specs(no_college_specs, no_college_models_rds)
+
+if (length(target_update_skills)) {
+  main_rows <- apply_selected_skill_updates(
+    college_only_output,
+    main_rows,
+    target_draft_year,
+    target_update_skills,
+    rollup_config,
+    "college-only prediction"
+  )
+  no_college_rows <- apply_selected_skill_updates(
+    no_college_output,
+    no_college_rows,
+    target_draft_year,
+    target_update_skills,
+    rollup_config,
+    "no-college prediction"
+  )
+}
 
 merge_target_year_rows(college_only_output, main_rows, target_draft_year, "college-only prediction")
 merge_target_year_rows(no_college_output, no_college_rows, target_draft_year, "no-college prediction")

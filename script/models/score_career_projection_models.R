@@ -65,6 +65,19 @@ add_history_features <- function(panel) {
 
 add_role_mpg_features <- function(panel) {
   panel$mpg_sample_reliability <- clamp((panel$minutes_equiv - 300) / 1700, 0, 1)
+  lag1_mpg <- if ("lag1_mpg" %in% names(panel)) panel$lag1_mpg else rep(NA_real_, nrow(panel))
+  lag2_mpg <- if ("lag2_mpg" %in% names(panel)) panel$lag2_mpg else rep(NA_real_, nrow(panel))
+  lag1_minutes <- if ("lag1_minutes_equiv" %in% names(panel)) panel$lag1_minutes_equiv else rep(NA_real_, nrow(panel))
+  lag2_minutes <- if ("lag2_minutes_equiv" %in% names(panel)) panel$lag2_minutes_equiv else rep(NA_real_, nrow(panel))
+  prior_avg_mpg <- rowMeans(cbind(lag1_mpg, lag2_mpg), na.rm = TRUE)
+  prior_avg_minutes <- rowMeans(cbind(lag1_minutes, lag2_minutes), na.rm = TRUE)
+  prior_avg_mpg[!is.finite(prior_avg_mpg)] <- NA_real_
+  prior_avg_minutes[!is.finite(prior_avg_minutes)] <- NA_real_
+  panel$prior_history_role_mpg <- ifelse(
+    is.finite(prior_avg_mpg) & is.finite(prior_avg_minutes) & prior_avg_minutes >= 650,
+    prior_avg_mpg,
+    ifelse(is.finite(lag1_mpg) & is.finite(lag1_minutes) & lag1_minutes >= 650, lag1_mpg, NA_real_)
+  )
   panel$history_role_mpg <- ifelse(
     is.finite(panel$avg3_mpg) & is.finite(panel$avg3_minutes_equiv) & panel$avg3_minutes_equiv >= 650,
     panel$avg3_mpg,
@@ -74,10 +87,15 @@ add_role_mpg_features <- function(panel) {
       NA_real_
     )
   )
+  dnp_or_tiny_sample <- !is.finite(panel$minutes_equiv) | panel$minutes_equiv < 300
   panel$role_prior_mpg <- ifelse(
+    panel$has_prev == 1 & dnp_or_tiny_sample & is.finite(panel$prior_history_role_mpg),
+    panel$prior_history_role_mpg,
+    ifelse(
     panel$has_prev == 1 & is.finite(panel$history_role_mpg),
     panel$history_role_mpg,
     clamp(14 + 2 * panel$total, 8, 24)
+    )
   )
   panel$reliable_role_mpg <- panel$mpg_sample_reliability * panel$mpg +
     (1 - panel$mpg_sample_reliability) * panel$role_prior_mpg
@@ -89,17 +107,26 @@ add_role_mpg_features <- function(panel) {
 role_mpg_history_floor <- function(state, projected_age) {
   avg2_minutes <- ifelse(is.finite(state$avg2_minutes_equiv), state$avg2_minutes_equiv, NA_real_)
   avg3_minutes <- ifelse(is.finite(state$avg3_minutes_equiv), state$avg3_minutes_equiv, NA_real_)
+  prior_minutes <- if ("lag1_minutes_equiv" %in% names(state)) state$lag1_minutes_equiv else rep(NA_real_, nrow(state))
+  prior2_minutes <- if ("lag2_minutes_equiv" %in% names(state)) state$lag2_minutes_equiv else rep(NA_real_, nrow(state))
   avg_history_minutes <- pmax(
     ifelse(is.na(avg2_minutes), -Inf, avg2_minutes),
-    ifelse(is.na(avg3_minutes), -Inf, avg3_minutes)
+    ifelse(is.na(avg3_minutes), -Inf, avg3_minutes),
+    ifelse(is.na(prior_minutes), -Inf, prior_minutes),
+    ifelse(is.na(prior2_minutes), -Inf, prior2_minutes)
   )
   avg_history_minutes[!is.finite(avg_history_minutes)] <- NA_real_
+  floor_role_mpg <- if ("prior_history_role_mpg" %in% names(state)) {
+    ifelse(is.finite(state$prior_history_role_mpg), state$prior_history_role_mpg, state$reliable_role_mpg)
+  } else {
+    state$reliable_role_mpg
+  }
   eligible <- is.finite(avg_history_minutes) &
     avg_history_minutes >= 1400 &
-    is.finite(state$reliable_role_mpg) &
-    state$reliable_role_mpg >= 26
+    is.finite(floor_role_mpg) &
+    floor_role_mpg >= 26
   decline <- pmax(0, projected_age - 30) * 0.55 + pmax(0, projected_age - 34) * 0.85
-  floor_mpg <- clamp(state$reliable_role_mpg - decline, 0, 36.5)
+  floor_mpg <- clamp(floor_role_mpg - decline, 0, 36.5)
   ifelse(eligible & is.finite(floor_mpg), floor_mpg, NA_real_)
 }
 
