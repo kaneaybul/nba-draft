@@ -70,13 +70,29 @@ fetch_year <- function(year) {
   raw
 }
 
+infer_years <- function(base_dir) {
+  env_years <- trimws(Sys.getenv("BREF_PLAYER_SEASONS_YEARS", ""))
+  if (nzchar(env_years)) {
+    years <- suppressWarnings(as.integer(trimws(unlist(strsplit(env_years, ",")))))
+    years <- years[is.finite(years)]
+    if (length(years) > 0) return(sort(unique(years)))
+  }
+
+  epm_dir <- file.path(base_dir, "raw", "epm")
+  epm_files <- list.files(epm_dir, pattern = "^epm\\d{2}\\.csv$", full.names = FALSE)
+  epm_years <- suppressWarnings(as.integer(paste0("20", sub("^epm(\\d{2})\\.csv$", "\\1", epm_files))))
+  epm_years <- epm_years[is.finite(epm_years)]
+  if (length(epm_years) == 0) return(2016:2025)
+  seq.int(min(2016L, min(epm_years)), max(epm_years))
+}
+
 base_dir <- resolve_base_dir()
 out_path <- file.path(base_dir, "raw", "bref_player_seasons.csv")
 cache_dir <- file.path(base_dir, "raw", "bref_player_seasons_by_year")
 dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
-years <- 2016:2025
+years <- infer_years(base_dir)
 seasons <- do.call(rbind, lapply(years, function(year) {
   cache_path <- file.path(cache_dir, paste0("bref_player_seasons_", year, ".csv"))
   if (file.exists(cache_path)) {

@@ -54,6 +54,13 @@ export type PlayerImpact = {
   team_projection_base?: string | null;
   projection_roster_status?: string | null;
   position: string;
+  pg_share?: number | null;
+  sg_share?: number | null;
+  sf_share?: number | null;
+  pf_share?: number | null;
+  c_share?: number | null;
+  position_index?: number | null;
+  position_entropy?: number | null;
   age?: number | null;
   yoe?: number | null;
   games?: number | null;
@@ -339,6 +346,13 @@ export type DraftProspect = {
   weight_lbs?: number | null;
   pos_code?: number | null;
   position?: string | null;
+  pg_share?: number | null;
+  sg_share?: number | null;
+  sf_share?: number | null;
+  pf_share?: number | null;
+  c_share?: number | null;
+  position_index?: number | null;
+  position_entropy?: number | null;
   replacement_total?: number | null;
   timin?: number | null;
   college?: string | null;

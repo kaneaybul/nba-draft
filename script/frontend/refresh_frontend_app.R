@@ -172,6 +172,7 @@ if (!nzchar(Sys.getenv("REFRESH_FULL_SWITCH_HISTORY")) && refresh_mode == "quick
 message("Frontend refresh mode: ", refresh_mode)
 run_script(base_dir, "Refresh backend outputs", file.path("script", "refresh_outputs_2026.txt"))
 run_script(base_dir, "Refresh Basketball-Reference availability data", file.path("script", "data", "pull_bref_player_seasons.R"))
+run_script(base_dir, "Refresh Basketball-Reference position estimates", file.path("script", "data", "pull_bref_position_estimates.R"))
 run_script(base_dir, "Refresh contract data", file.path("script", "data", "pull_contracts_databallr.R"))
 run_node_script(base_dir, "Build cap transaction review", file.path("script", "frontend", "build_cap_transaction_review.mjs"))
 run_script(base_dir, "Refresh salary cap assumptions", file.path("script", "data", "pull_salary_cap_assumptions.R"))

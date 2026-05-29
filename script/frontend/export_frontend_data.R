@@ -459,7 +459,25 @@ rank_cutoff_value <- function(values, cutoff) {
   values[[min(cutoff, length(values))]]
 }
 
+weighted_rank_cutoff_value <- function(values, weights, cutoff) {
+  values <- suppressWarnings(as.numeric(values))
+  weights <- suppressWarnings(as.numeric(weights))
+  keep <- is.finite(values) & is.finite(weights) & weights > 0
+  values <- values[keep]
+  weights <- weights[keep]
+  if (length(values) == 0 || sum(weights) <= 0) return(NA_real_)
+  ord <- order(values, decreasing = TRUE)
+  values <- values[ord]
+  weights <- weights[ord]
+  hit <- which(cumsum(weights) >= cutoff)
+  values[[if (length(hit) > 0) hit[[1]] else length(values)]]
+}
+
 valid_positions <- function() c("PG", "SG", "SF", "PF", "C")
+
+position_share_columns <- function() {
+  c("pg_share", "sg_share", "sf_share", "pf_share", "c_share")
+}
 
 position_parts <- function(position) {
   parts <- unlist(strsplit(toupper(as.character(position)), "[-/[:space:]]+"))
@@ -472,6 +490,75 @@ normalize_position_label <- function(position) {
     if (length(parts) == 0) return(NA_character_)
     paste(parts, collapse = "/")
   }, character(1), USE.NAMES = FALSE)
+}
+
+position_share_matrix_from_labels <- function(position) {
+  cols <- position_share_columns()
+  out <- matrix(0, nrow = length(position), ncol = length(cols), dimnames = list(NULL, cols))
+  for (i in seq_along(position)) {
+    parts <- position_parts(position[[i]])
+    if (length(parts) == 0) next
+    col_idx <- match(tolower(parts), sub("_share$", "", cols))
+    out[i, col_idx] <- 1 / length(parts)
+  }
+  out
+}
+
+normalize_position_share_matrix <- function(shares, fallback_position = NULL) {
+  cols <- position_share_columns()
+  if (is.null(shares) || !is.data.frame(shares) || !all(cols %in% names(shares))) {
+    if (is.null(fallback_position)) fallback_position <- rep(NA_character_, 0)
+    return(position_share_matrix_from_labels(fallback_position))
+  }
+  out <- as.matrix(shares[, cols, drop = FALSE])
+  storage.mode(out) <- "numeric"
+  out[!is.finite(out) | out < 0] <- 0
+  row_sums <- rowSums(out, na.rm = TRUE)
+  can_normalize <- row_sums > 0
+  out[can_normalize, ] <- out[can_normalize, , drop = FALSE] / row_sums[can_normalize]
+  if (!is.null(fallback_position)) {
+    fallback <- position_share_matrix_from_labels(fallback_position)
+    needs_fallback <- !can_normalize & rowSums(fallback, na.rm = TRUE) > 0
+    out[needs_fallback, ] <- fallback[needs_fallback, , drop = FALSE]
+  }
+  colnames(out) <- cols
+  out
+}
+
+position_label_from_shares <- function(shares, fallback_position = NA_character_, single_threshold = 0.65, secondary_threshold = 0.20) {
+  positions <- valid_positions()
+  names(shares) <- positions
+  shares[!is.finite(shares)] <- 0
+  if (sum(shares) <= 0) return(normalize_position_label(fallback_position))
+  ord <- order(shares, decreasing = TRUE)
+  primary <- positions[[ord[[1]]]]
+  secondary <- positions[[ord[[2]]]]
+  if (shares[[ord[[1]]]] >= single_threshold || shares[[ord[[2]]]] < secondary_threshold) {
+    return(primary)
+  }
+  paste(primary, secondary, sep = "/")
+}
+
+position_labels_from_share_matrix <- function(shares, fallback_position = NA_character_) {
+  vapply(seq_len(nrow(shares)), function(i) {
+    fb <- if (length(fallback_position) >= i) fallback_position[[i]] else NA_character_
+    position_label_from_shares(shares[i, ], fb)
+  }, character(1), USE.NAMES = FALSE)
+}
+
+position_entropy_from_shares <- function(shares) {
+  apply(shares, 1, function(row) {
+    row <- row[is.finite(row) & row > 0]
+    if (length(row) == 0) return(NA_real_)
+    -sum(row * log(row)) / log(5)
+  })
+}
+
+position_index_from_shares <- function(shares) {
+  idx <- as.numeric(seq_along(valid_positions()))
+  out <- as.numeric(shares %*% idx)
+  out[rowSums(shares, na.rm = TRUE) <= 0] <- NA_real_
+  out
 }
 
 tier_from_score <- function(score) {
@@ -591,47 +678,66 @@ replacement_from_data <- function(df, side) {
   }
   fallback <- replacement_level(df$position, side)
   out <- rep(NA_real_, nrow(df))
+  shares <- normalize_position_share_matrix(df[, intersect(position_share_columns(), names(df)), drop = FALSE], df$position)
   cutoff <- replacement_slots_per_position()
   pool_years <- replacement_pool_years()
   eligible <- !is.na(metric) &
-    df$position %in% valid_positions()
+    is.finite(metric) &
+    rowSums(shares, na.rm = TRUE) > 0
 
-  keys <- unique(paste(df$year, df$position, sep = "||"))
-  for (key in keys) {
-    parts <- strsplit(key, "\\|\\|")[[1]]
-    target_year <- as.integer(parts[[1]])
-    target_pos <- parts[[2]]
-    idx <- df$year == target_year & df$position == target_pos
-    pool_idx <- eligible &
-      df$position == target_pos &
-      df$year <= target_year &
-      df$year > target_year - pool_years
-    pool_seasons <- unique(df$year[pool_idx])
-    pooled_cutoff <- cutoff * max(1, length(pool_seasons))
-    min_sample <- ceiling(pooled_cutoff * 0.75)
-    values <- metric[pool_idx]
-    if (sum(is.finite(values)) >= min_sample) {
-      out[idx] <- rank_cutoff_value(values, pooled_cutoff)
+  years <- sort(unique(df$year[is.finite(df$year)]))
+  positions <- valid_positions()
+  levels <- matrix(NA_real_, nrow = length(years), ncol = length(positions), dimnames = list(as.character(years), positions))
+
+  for (target_year in years) {
+    for (target_pos in positions) {
+      pos_col <- match(tolower(target_pos), sub("_share$", "", position_share_columns()))
+      pool_idx <- eligible &
+        df$year <= target_year &
+        df$year > target_year - pool_years &
+        shares[, pos_col] > 0
+      pool_seasons <- unique(df$year[pool_idx])
+      pooled_cutoff <- cutoff * max(1, length(pool_seasons))
+      min_sample <- pooled_cutoff * 0.75
+      weights <- shares[pool_idx, pos_col]
+      if (sum(weights[is.finite(weights)], na.rm = TRUE) >= min_sample) {
+        levels[as.character(target_year), target_pos] <- weighted_rank_cutoff_value(metric[pool_idx], weights, pooled_cutoff)
+      }
     }
   }
 
   recent_year <- max(df$year, na.rm = TRUE) - pool_years + 1
-  for (pos in valid_positions()) {
-    idx <- is.na(out) & df$position == pos
-    values <- metric[
+  for (target_pos in positions) {
+    pos_col <- match(tolower(target_pos), sub("_share$", "", position_share_columns()))
+    values_idx <-
       eligible &
-        df$position == pos &
-        df$year >= recent_year
-    ]
+        df$year >= recent_year &
+        shares[, pos_col] > 0
     recent_seasons <- unique(df$year[
-      eligible &
-        df$position == pos &
-        df$year >= recent_year
+      values_idx
     ])
     pooled_cutoff <- cutoff * max(1, length(recent_seasons))
-    min_sample <- ceiling(pooled_cutoff * 0.75)
-    if (sum(is.finite(values)) >= min_sample) {
-      out[idx] <- rank_cutoff_value(values, pooled_cutoff)
+    min_sample <- pooled_cutoff * 0.75
+    weights <- shares[values_idx, pos_col]
+    recent_level <- if (sum(weights[is.finite(weights)], na.rm = TRUE) >= min_sample) {
+      weighted_rank_cutoff_value(metric[values_idx], weights, pooled_cutoff)
+    } else {
+      NA_real_
+    }
+    needs_recent <- is.na(levels[, target_pos])
+    if (is.finite(recent_level) && any(needs_recent)) {
+      levels[needs_recent, target_pos] <- recent_level
+    }
+  }
+
+  for (i in seq_len(nrow(df))) {
+    year_key <- as.character(df$year[[i]])
+    if (!year_key %in% rownames(levels)) next
+    vals <- levels[year_key, ]
+    row_shares <- shares[i, ]
+    use <- is.finite(vals) & is.finite(row_shares) & row_shares > 0
+    if (any(use)) {
+      out[[i]] <- sum(vals[use] * row_shares[use]) / sum(row_shares[use])
     }
   }
 
@@ -645,14 +751,23 @@ replacement_reference_from_players <- function(players, latest_year = NULL) {
   if (is.null(latest_year)) {
     latest_year <- max(players$year, na.rm = TRUE)
   }
-  rows <- players[
-    players$year == latest_year &
-      players$position %in% valid_positions() &
-      is.finite(players$replacement_total),
-    c("position", "replacement_total"),
+  players <- players[
+    is.finite(players$total) &
+      suppressWarnings(as.integer(players$year)) <= latest_year,
+    ,
     drop = FALSE
   ]
-  rows <- rows[!duplicated(rows$position), ]
+  shares <- normalize_position_share_matrix(players[, intersect(position_share_columns(), names(players)), drop = FALSE], players$position)
+  ref_total <- replacement_from_data(players, "total")
+  rows <- data.frame(position = valid_positions(), replacement_total = NA_real_, stringsAsFactors = FALSE)
+  latest_rows <- players$year == latest_year
+  for (pos in valid_positions()) {
+    pos_col <- match(tolower(pos), sub("_share$", "", position_share_columns()))
+    pos_rows <- latest_rows & shares[, pos_col] > 0 & is.finite(ref_total)
+    if (any(pos_rows)) {
+      rows$replacement_total[rows$position == pos] <- stats::weighted.mean(ref_total[pos_rows], shares[pos_rows, pos_col], na.rm = TRUE)
+    }
+  }
   missing_pos <- setdiff(valid_positions(), rows$position)
   if (length(missing_pos) > 0) {
     rows <- rbind(
@@ -660,6 +775,7 @@ replacement_reference_from_players <- function(players, latest_year = NULL) {
       data.frame(position = missing_pos, replacement_total = replacement_level(missing_pos, "total"), stringsAsFactors = FALSE)
     )
   }
+  rows$replacement_total <- ifelse(is.finite(rows$replacement_total), rows$replacement_total, replacement_level(rows$position, "total"))
   rows[match(valid_positions(), rows$position), , drop = FALSE]
 }
 
@@ -1328,6 +1444,12 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   drafted_team <- if ("drafted_team" %in% names(draft)) as.character(draft$drafted_team) else rep(NA_character_, nrow(draft))
   rows$team <- ifelse(!is.na(drafted_team) & nzchar(trimws(drafted_team)) & is.finite(suppressWarnings(as.numeric(actual_pick))), drafted_team, "FA")
   rows$position <- ifelse(!is.na(draft$position) & nzchar(trimws(draft$position)), as.character(draft$position), "UNK")
+  rookie_position_shares <- position_share_matrix_from_labels(rows$position)
+  for (share_col in position_share_columns()) {
+    if (share_col %in% names(rows)) rows[[share_col]] <- round(rookie_position_shares[, share_col], 4)
+  }
+  if ("position_index" %in% names(rows)) rows$position_index <- round(position_index_from_shares(rookie_position_shares), 4)
+  if ("position_entropy" %in% names(rows)) rows$position_entropy <- round(position_entropy_from_shares(rookie_position_shares), 4)
   rows$age <- round(draft_age + 0.5, 1)
   rows$yoe <- 0
   rows$games <- round(games, 1)
@@ -2546,6 +2668,55 @@ build_impact_players <- function(base_dir) {
     }
   }
 
+  bref_position_path <- file.path(base_dir, "raw", "bref_position_estimates.csv")
+  bref_position_meta <- data.frame(
+    year = integer(),
+    name_key = character(),
+    bref_position_estimate = character(),
+    pg_share = numeric(),
+    sg_share = numeric(),
+    sf_share = numeric(),
+    pf_share = numeric(),
+    c_share = numeric(),
+    position_entropy = numeric(),
+    position_index = numeric(),
+    stringsAsFactors = FALSE
+  )
+  if (file.exists(bref_position_path)) {
+    bref_pos <- read.csv(bref_position_path, stringsAsFactors = FALSE, check.names = FALSE)
+    needed_cols <- c("year", "player_name", "position_estimate", position_share_columns())
+    if (all(needed_cols %in% names(bref_pos))) {
+      if (!("minutes" %in% names(bref_pos))) bref_pos$minutes <- NA_real_
+      if (!("name_key" %in% names(bref_pos))) bref_pos$name_key <- normalize_name(bref_pos$player_name)
+      if (!("position_entropy" %in% names(bref_pos))) bref_pos$position_entropy <- NA_real_
+      if (!("position_index" %in% names(bref_pos))) bref_pos$position_index <- NA_real_
+      bref_pos$minutes <- suppressWarnings(as.numeric(bref_pos$minutes))
+      for (share_col in position_share_columns()) {
+        bref_pos[[share_col]] <- suppressWarnings(as.numeric(bref_pos[[share_col]]))
+      }
+      bref_pos <- bref_pos[
+        bref_pos$name_key != "" & !is.na(bref_pos$year),
+        c("year", "name_key", "position_estimate", position_share_columns(), "position_entropy", "position_index", "minutes"),
+        drop = FALSE
+      ]
+      bref_pos <- bref_pos[order(bref_pos$year, bref_pos$name_key, -bref_pos$minutes), ]
+      bref_pos <- bref_pos[!duplicated(paste(bref_pos$year, bref_pos$name_key)), ]
+      bref_position_meta <- data.frame(
+        year = suppressWarnings(as.integer(bref_pos$year)),
+        name_key = bref_pos$name_key,
+        bref_position_estimate = normalize_position_label(bref_pos$position_estimate),
+        pg_share = bref_pos$pg_share,
+        sg_share = bref_pos$sg_share,
+        sf_share = bref_pos$sf_share,
+        pf_share = bref_pos$pf_share,
+        c_share = bref_pos$c_share,
+        position_entropy = suppressWarnings(as.numeric(bref_pos$position_entropy)),
+        position_index = suppressWarnings(as.numeric(bref_pos$position_index)),
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+
   positions_path <- file.path(base_dir, "raw", "switch", "player_positions.rds")
   positions <- data.frame(nba_id = integer(), position = character())
   if (file.exists(positions_path)) {
@@ -2576,12 +2747,24 @@ build_impact_players <- function(base_dir) {
   x$team <- ifelse(is.na(x$team) | x$team == "", "FA", x$team)
   x$name_key <- normalize_name(x$player_name)
   x <- merge(x, bref_meta, by = c("year", "name_key"), all.x = TRUE)
-  x$position <- coalesce_col(x$databallr_position, coalesce_col(x$bref_position, x$position))
+  x <- merge(x, bref_position_meta, by = c("year", "name_key"), all.x = TRUE)
+  x$position <- coalesce_col(x$bref_position_estimate, coalesce_col(x$databallr_position, coalesce_col(x$bref_position, x$position)))
   x$name_key <- NULL
   x$bref_position <- NULL
+  x$bref_position_estimate <- NULL
   x$databallr_position <- NULL
   x$position <- normalize_position_label(x$position)
   x$position <- ifelse(is.na(x$position) | x$position == "", "UNK", x$position)
+  position_shares <- normalize_position_share_matrix(x[, intersect(position_share_columns(), names(x)), drop = FALSE], x$position)
+  for (share_col in position_share_columns()) {
+    x[[share_col]] <- round(position_shares[, share_col], 4)
+  }
+  x$position <- position_labels_from_share_matrix(position_shares, x$position)
+  x$position <- ifelse(is.na(x$position) | x$position == "", "UNK", x$position)
+  x$position_entropy <- ifelse(is.finite(x$position_entropy), x$position_entropy, position_entropy_from_shares(position_shares))
+  x$position_index <- ifelse(is.finite(x$position_index), x$position_index, position_index_from_shares(position_shares))
+  x$position_entropy <- round(x$position_entropy, 4)
+  x$position_index <- round(x$position_index, 4)
   x$age <- suppressWarnings(as.numeric(x$age))
   x$draft_year <- suppressWarnings(as.numeric(x$draft_year))
   x$overall_pick <- suppressWarnings(as.numeric(x$overall_pick))
@@ -2830,12 +3013,13 @@ build_impact_players <- function(base_dir) {
     x <- rbind(x, projected_2027[, names(x), drop = FALSE])
   }
 
-  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Replacement is a trailing 3-year position-count cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
+  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Position is built from Basketball-Reference play-by-play position-share estimates when available, and replacement is a trailing 3-year fractional position-share cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
   cols <- c(
     "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "roster_status_source", "roster_truth_pulled_at",
     "incumbent_team", "market_team", "team_projection_base",
-    "projection_roster_status", "position", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
+    "projection_roster_status", "position", "pg_share", "sg_share", "sf_share", "pf_share", "c_share",
+    "position_index", "position_entropy", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "replacement_total", "score", "score_label", "score_delta", "tier", "availability_status", "availability_reason",
     "skill_source", "skill_source_year", "timin", "season_value", "raw_minutes", "raw_timin",
@@ -3625,6 +3809,12 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
   x$realgm_position <- NULL
   x$position <- coalesce_col(x$position_override, x$position)
   x$position_override <- NULL
+  draft_position_shares <- position_share_matrix_from_labels(x$position)
+  for (share_col in position_share_columns()) {
+    x[[share_col]] <- round(draft_position_shares[, share_col], 4)
+  }
+  x$position_index <- round(position_index_from_shares(draft_position_shares), 4)
+  x$position_entropy <- round(position_entropy_from_shares(draft_position_shares), 4)
   college <- if ("college" %in% names(x)) as.character(x[["college"]]) else rep(NA_character_, nrow(x))
   source_team <- if ("source_team" %in% names(x)) as.character(x[["source_team"]]) else rep(NA_character_, nrow(x))
   pre_draft_team <- if ("pre_draft_team" %in% names(x)) as.character(x[["pre_draft_team"]]) else rep(NA_character_, nrow(x))
@@ -3692,6 +3882,7 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
   cols <- c(
     "player", "draft_year", "rank_in_class", "base_rank_in_class", "score", "prediction_pool", "tier", "scv_draft",
     "draft_age", "height_wo_shoes_in", "wingspan_in", "weight_lbs", "pos_code", "position",
+    "pg_share", "sg_share", "sf_share", "pf_share", "c_share", "position_index", "position_entropy",
     "replacement_total", "timin", "college", "pre_draft_team",
     paste0(skill_names, "_pred"),
     "OFF_pred", "DEF_pred", "TOTAL_pred",
