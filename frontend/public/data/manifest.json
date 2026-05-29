@@ -34,7 +34,7 @@
     },
     {
       "dataset": "draft_prospects",
-      "rows": 485,
+      "rows": 493,
       "file": "draft_prospects.json"
     },
     {
@@ -80,7 +80,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-05-29T01:08:24.343Z",
+    "generated_at": "2026-05-29T02:36:19.115Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -527,10 +527,10 @@
       },
       "draft_prospects": {
         "strategy": "singleton",
-        "rows": 485,
+        "rows": 493,
         "file": "draft_prospects.json",
-        "bytes": 937505,
-        "sha256": "31c35b9bad9d4b7cec878a1129bd67972baf1cb241adfa3b28061856c3833c41"
+        "bytes": 964351,
+        "sha256": "369e1fe6ac683215a3c4d727c11d9bb41818224bbec4faa75c103792b4cff15f"
       },
       "draft_tracker_board_summary": {
         "strategy": "singleton",
@@ -571,15 +571,15 @@
         "strategy": "singleton",
         "rows": 459,
         "file": "offseason_truth.json",
-        "bytes": 314449,
-        "sha256": "378805c5de32d66e0d293e6751dbc1dd6a5622edf81663082a967d4567edbd1d"
+        "bytes": 323725,
+        "sha256": "56f1958df596b587b0dc3cbcd63be16e175aa3bc87f6ca74c6debbe423030792"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
-        "bytes": 1614268,
-        "sha256": "657ef024e8cfa08e98dcefd1faa6c6ef6e5fe67fda481fba37b8514dfbb9f6ca"
+        "bytes": 1669891,
+        "sha256": "f4fb54f2ca6737c01844cbd9e2e1f02f5c085d0657e51ec48f81a9491b8bf4ac"
       },
       "cap_transaction_review": {
         "strategy": "singleton",
