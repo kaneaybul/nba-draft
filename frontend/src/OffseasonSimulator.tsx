@@ -904,9 +904,10 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
 
 function runSimulation(data: AppData, season: number, capYear: number, assumptions: SimulatorAssumptions, overrides: SimulatorOverrides, runIndex: number): SimulationRun {
   const rng = mulberry32((Math.round(assumptions.seed) + runIndex * 9973) >>> 0);
-  const teamMeta = buildTeamMeta(data.teams, season);
+  const valueYear = offseasonValueYear(data.players, data.teams, season, capYear);
+  const teamMeta = buildTeamMeta(data.teams, valueYear);
   const capIndex = buildCapTrackerIndex(data.capTracker, season, capYear);
-  const players = buildSimPlayers(data.players.filter((player) => player.year === season), overrides, data.offseasonTruth, capIndex);
+  const players = buildSimPlayers(data.players.filter((player) => player.year === valueYear), overrides, data.offseasonTruth, capIndex, season);
   const draftYear = inferDraftYear(data.prospects, season);
   const prospects = buildSimProspects(data.prospects.filter((prospect) => prospect.draft_year === draftYear), overrides);
   const teams = initializeTeams(teamMeta, players, data.picks, assumptions, overrides, data.offseasonTruth, season, capIndex);
@@ -1443,6 +1444,12 @@ function initializeTeams(
   return teams;
 }
 
+function offseasonValueYear(players: PlayerImpact[], teams: TeamProjection[], season: number, capYear: number): number {
+  const hasPlayerRows = players.some((player) => player.year === capYear);
+  const hasTeamRows = teams.some((team) => team.year === capYear);
+  return hasPlayerRows && hasTeamRows ? capYear : season;
+}
+
 const TAXPAYER_MLE_BASE_2024 = 5_000_000;
 const TAXPAYER_MLE_BASE_CAP_2024 = 136_021_000;
 
@@ -1551,9 +1558,11 @@ function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer
       .map((plan) => plan.hold));
     const retainedRightsScore = retainedRightsProgramScore(team, holdPlans, lowEfficiencyHoldTotal, assumptions);
     const capRoomProgram = buildCapRoomProgram(team, holdPlans, outsideBoard, assumptions);
+    const protectedLossBlock = protectedHoldLossBlocksCapRoom(team, holdPlans, capRoomProgram.retainedIds, bestOutside, assumptions);
     const shouldOpenRoom = usableMaxRoom >= roomThreshold &&
       roomGain >= roomThreshold &&
       outsideBoard.length > 0 &&
+      !protectedLossBlock &&
       capRoomProgram.score >= retainedRightsScore + 0.04;
 
     if (shouldOpenRoom) {
@@ -1582,7 +1591,9 @@ function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer
       renouncedPlayers.slice(0, 3).forEach((player) => team.explanations.push(`Renounced ${player.name} hold`));
     } else {
       team.capPath = "retained_rights";
-      team.capPathReason = bestOwn
+      team.capPathReason = protectedLossBlock
+        ? `Kept retained-rights path because ${protectedLossBlock.player.name}'s protected ${protectedLossBlock.player.status} rights outweighed the cap-room board.`
+        : bestOwn
         ? `Kept retained-rights path because ${bestOwn.player.name} has the highest rights option value.`
         : "Kept retained-rights path because the outside cap-room board did not clear the program threshold.";
       team.holdsRetained = team.initialCapHolds;
@@ -1662,10 +1673,11 @@ function buildCapRoomProgram(team: TeamState, holdPlans: OwnHoldPlan[], outsideB
 
   retainable.forEach((plan) => {
     const roomAfterRetain = team.maximumCapSpace - retainedHoldTotal - plan.hold;
+    const keepProtectedHold = plan.protectedHold && plan.retainScore >= 0.58 && roomAfterRetain >= roomThreshold;
     const keepUsefulRoom = roomAfterRetain >= roomThreshold &&
       (!outsideBoard[0] || roomAfterRetain >= Math.min(outsideBoard[0].player.marketValue * 0.72, assumptions.cap * 0.18));
     const keepWithoutRoom = outsideBoard.length === 0 && plan.retainScore >= 0.82;
-    if (!keepUsefulRoom && !keepWithoutRoom) return;
+    if (!keepProtectedHold && !keepUsefulRoom && !keepWithoutRoom) return;
     retainedIds.add(plan.player.id);
     retainedHoldTotal += plan.hold;
   });
@@ -1678,6 +1690,25 @@ function buildCapRoomProgram(team: TeamState, holdPlans: OwnHoldPlan[], outsideB
     retainedIds,
     retainedHoldTotal
   };
+}
+
+function protectedHoldLossBlocksCapRoom(
+  team: TeamState,
+  holdPlans: OwnHoldPlan[],
+  retainedIds: Set<string>,
+  bestOutside: CapRoomTarget | undefined,
+  assumptions: SimulatorAssumptions
+): OwnHoldPlan | null {
+  const bestOutsidePriority = bestOutside ? capPathPlayerPriority(team, bestOutside.player, assumptions, false) : 0;
+  const bestOutsideMarket = bestOutside?.player.marketValue ?? 0;
+  return holdPlans
+    .filter((plan) => plan.protectedHold && !retainedIds.has(plan.player.id))
+    .filter((plan) => plan.player.status === "RFA" && plan.retainScore >= 0.74)
+    .filter((plan) => plan.player.marketValue >= assumptions.cap * 0.05 || plan.scarcity >= 0.58)
+    .find((plan) =>
+      bestOutsidePriority < plan.priority + 0.08 ||
+      bestOutsideMarket < plan.player.marketValue * 1.25
+    ) ?? null;
 }
 
 function valuableHoldForCapRoom(plan: OwnHoldPlan, assumptions: SimulatorAssumptions): boolean {
@@ -1918,9 +1949,9 @@ function buildTeamMeta(teams: TeamProjection[], season: number): TeamProjection[
   return Array.from(byTeam.values()).sort((a, b) => a.team.localeCompare(b.team));
 }
 
-function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, truthData?: OffseasonTruthData, capIndex?: CapTrackerIndex): SimPlayer[] {
+function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, truthData?: OffseasonTruthData, capIndex?: CapTrackerIndex, overrideSeason?: number): SimPlayer[] {
   return rows.map((player) => {
-    const override = overrides.players[playerKey(player)];
+    const override = playerOverride(player, overrides, overrideSeason);
     const truth = playerTruth(player, truthData);
     const tracker = capTrackerCellForPlayer(player, capIndex);
     const trackerStatus = contractStatusFromCapCell(tracker?.cell);
@@ -2065,6 +2096,12 @@ function teamSummary(team: TeamState, bids: MarketBid[]): TeamSummary {
     biddingHealth: biddingHealthForTeam(team, teamBids),
     majorMoves: team.explanations.slice(-5)
   };
+}
+
+function playerOverride(player: PlayerImpact, overrides: SimulatorOverrides, overrideSeason?: number): PlayerOverride | undefined {
+  const exact = overrides.players[playerKey(player)];
+  if (exact || !overrideSeason || player.year === overrideSeason) return exact;
+  return overrides.players[playerKey(player, overrideSeason)];
 }
 
 function biddingHealthForTeam(team: TeamState, bids: MarketBid[]): BiddingHealth {
@@ -4457,7 +4494,10 @@ function buildCapTrackerIndex(capTracker: CapTrackerData | undefined, season: nu
     const cell = row.cells.find((item) => item.year === capYear);
     if (!cell || cell.kind === "empty") return;
     const matched = { row, cell };
-    if (row.nba_id) index.cellsByNbaId.set(`${season}-${row.nba_id}`, matched);
+    if (row.nba_id) {
+      index.cellsByNbaId.set(`${season}-${row.nba_id}`, matched);
+      index.cellsByNbaId.set(`${capYear}-${row.nba_id}`, matched);
+    }
     index.cellsByNameTeam.set(`${normalizeNameKey(row.player_name)}|${cleanTeam(row.team)}`, matched);
     if (cell.kind === "draft_pick") {
       const team = cleanTeam(row.team);
@@ -4589,8 +4629,8 @@ function minimumSalary(player: SimPlayer): number {
   return player.age > 30 ? 2_500_000 : 1_500_000;
 }
 
-function playerKey(player: PlayerImpact): string {
-  return `${player.year}-${player.nba_id}-${player.player_name}`;
+function playerKey(player: PlayerImpact, year = player.year): string {
+  return `${year}-${player.nba_id}-${player.player_name}`;
 }
 
 function prospectKey(prospect: DraftProspect): string {
