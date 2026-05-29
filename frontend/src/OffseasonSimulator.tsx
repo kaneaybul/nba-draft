@@ -1130,17 +1130,18 @@ function simulateDraft(
     const pool = available
       .map((prospect) => {
         const bestConsensus = available[0]?.consensusRank ?? prospect.consensusRank;
-        const tierPenalty = Math.max(0, tierRank(prospect.tier) - tierRank(available[0]?.tier ?? prospect.tier)) * 0.18;
-        const reachPenalty = Math.max(0, prospect.consensusRank - pick) * (pick <= 14 ? 0.072 : pick <= 30 ? 0.046 : 0.028);
-        const stealBonus = Math.max(0, pick - prospect.consensusRank) * (pick <= 14 ? 0.024 : 0.018);
-        const consensusScore = clamp((80 - prospect.consensusRank) / 80 + Math.max(0, 12 - Math.abs(prospect.consensusRank - pick)) / 48, 0, 1.25);
+        const consensusBoard = clamp((90 - prospect.consensusRank) / 90, 0, 1);
+        const consensusSlot = clamp((16 - Math.abs(prospect.consensusRank - pick)) / 16, 0, 1);
+        const consensusScore = consensusBoard * 0.78 + consensusSlot * 0.22;
         const fit = prospectFit(team, prospect);
         const modelBpa = prospect.bpa;
+        const modelRankScore = clamp((90 - prospect.modelRank) / 90, 0, 1);
+        const bpaSupport = modelRankScore * 0.7 + clamp(modelBpa / 1.35, 0, 1) * 0.3;
         const readiness = isContender ? Math.max(0, 1 - prospect.risk) : prospect.upside;
-        const fitNudge = fit * assumptions.draftFitWeight * (pick <= 14 ? 0.16 : 0.24);
-        const randomness = centeredRandom(rng, assumptions.variance) * (pick <= 8 ? 0.16 : 0.38);
-        const consensusDiscipline = Math.max(0, prospect.consensusRank - bestConsensus) * 0.01;
-        const total = consensusScore * 0.62 + modelBpa * 0.26 + fitNudge + readiness * 0.06 + stealBonus - reachPenalty - tierPenalty - consensusDiscipline + randomness;
+        const fitNudge = (fit - 0.5) * assumptions.draftFitWeight * (pick <= 14 ? 0.18 : 0.28);
+        const randomness = centeredRandom(rng, assumptions.variance) * (pick <= 8 ? 0.015 : 0.045);
+        const consensusDiscipline = Math.max(0, prospect.consensusRank - bestConsensus) * (pick <= 14 ? 0.025 : 0.014);
+        const total = consensusScore * 0.76 + bpaSupport * 0.18 + fitNudge + readiness * 0.025 - consensusDiscipline + randomness;
         return { prospect, fit, bpa: modelBpa, readiness, randomness, total };
       })
       .sort((a, b) => b.total - a.total)
@@ -4626,12 +4627,6 @@ function tierFromScore(score: number): string {
   if (score >= 70) return "Starter";
   if (score >= 55) return "Bench";
   return "Project";
-}
-
-function tierRank(tier: string): number {
-  const order = ["MVP", "Superstar", "Star", "Elite Starter", "Starter", "Fringe Starter", "Strong Bench", "Bench", "Deep Bench", "Project", "Out"];
-  const index = order.indexOf(tier);
-  return index === -1 ? order.length : index;
 }
 
 function rookieScaleSalary(pick: number, cap: number): number {
