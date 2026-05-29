@@ -1145,7 +1145,8 @@ function simulateDraft(
       })
       .sort((a, b) => b.total - a.total)
       .slice(0, poolDepth);
-    const winner = weightedChoice(pool, (item) => Math.exp(item.total * 2.6), rng);
+    const choicePool = draftChoicePool(pool, pick);
+    const winner = weightedChoice(choicePool, (item) => Math.exp(item.total * draftChoiceTemperature(pick)), rng);
     available.splice(available.findIndex((prospect) => prospect.id === winner.prospect.id), 1);
     const salary = rookieScaleSalary(pick, assumptions.cap);
     consumeDraftPickPlaceholder(team, salary);
@@ -1182,6 +1183,21 @@ function simulateDraft(
   }
   refreshTeamPayrolls(teams, assumptions);
   return selections;
+}
+
+function draftChoicePool<T extends { total: number }>(pool: T[], pick: number): T[] {
+  const leader = pool[0];
+  if (!leader) return pool;
+  const window = pick <= 4 ? 0.08 : pick <= 8 ? 0.12 : pick <= 14 ? 0.18 : 0.34;
+  const close = pool.filter((item) => leader.total - item.total <= window);
+  return close.length > 0 ? close : [leader];
+}
+
+function draftChoiceTemperature(pick: number): number {
+  if (pick <= 4) return 8;
+  if (pick <= 8) return 5.5;
+  if (pick <= 14) return 4;
+  return 2.6;
 }
 
 function simulateTrades(teams: Map<string, TeamState>, assumptions: SimulatorAssumptions, rng: () => number, diagnostics: string[], phase: "pre-fa" | "post-fa"): TradeMove[] {
