@@ -492,6 +492,14 @@ normalize_position_label <- function(position) {
   }, character(1), USE.NAMES = FALSE)
 }
 
+primary_position_label <- function(position) {
+  vapply(as.character(position), function(pos) {
+    parts <- position_parts(pos)
+    if (length(parts) == 0) return(NA_character_)
+    parts[[1]]
+  }, character(1), USE.NAMES = FALSE)
+}
+
 position_share_matrix_from_labels <- function(position) {
   cols <- position_share_columns()
   out <- matrix(0, nrow = length(position), ncol = length(cols), dimnames = list(NULL, cols))
@@ -544,6 +552,34 @@ position_labels_from_share_matrix <- function(shares, fallback_position = NA_cha
     fb <- if (length(fallback_position) >= i) fallback_position[[i]] else NA_character_
     position_label_from_shares(shares[i, ], fb)
   }, character(1), USE.NAMES = FALSE)
+}
+
+primary_position_from_shares <- function(shares, fallback_position = NA_character_) {
+  positions <- valid_positions()
+  names(shares) <- positions
+  shares[!is.finite(shares)] <- 0
+  if (sum(shares) <= 0) return(primary_position_label(fallback_position))
+  positions[[order(shares, decreasing = TRUE)[[1]]]]
+}
+
+primary_position_labels_from_share_matrix <- function(shares, fallback_position = NA_character_) {
+  vapply(seq_len(nrow(shares)), function(i) {
+    fb <- if (length(fallback_position) >= i) fallback_position[[i]] else NA_character_
+    primary_position_from_shares(shares[i, ], fb)
+  }, character(1), USE.NAMES = FALSE)
+}
+
+primary_position_export <- function(df) {
+  if (!("position" %in% names(df))) return(df)
+  share_cols <- intersect(position_share_columns(), names(df))
+  if (length(share_cols) > 0) {
+    shares <- normalize_position_share_matrix(df[, share_cols, drop = FALSE], df$position)
+    df$position <- primary_position_labels_from_share_matrix(shares, df$position)
+  } else {
+    df$position <- primary_position_label(df$position)
+  }
+  df$position <- ifelse(is.na(df$position) | df$position == "", "UNK", df$position)
+  df
 }
 
 position_entropy_from_shares <- function(shares) {
@@ -3973,12 +4009,16 @@ tracker <- with_frontend_timing(base_dir, "frontend_export", "build_draft_tracke
 model_summary <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_summary", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_summary.csv")))
 model_details <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_feature_details", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_feature_details.csv")))
 
-with_frontend_timing(base_dir, "frontend_export_write", "write_impact_players_json", write_json_df(players, file.path(out_dir, "impact_players.json")), paste0(nrow(players), " rows"))
+players_export <- primary_position_export(players)
+team_lineups_export <- primary_position_export(team_lineups)
+draft_export <- primary_position_export(draft)
+
+with_frontend_timing(base_dir, "frontend_export_write", "write_impact_players_json", write_json_df(players_export, file.path(out_dir, "impact_players.json")), paste0(nrow(players_export), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_team_projections_json", write_json_df(teams, file.path(out_dir, "team_projections.json")), paste0(nrow(teams), " rows"))
-with_frontend_timing(base_dir, "frontend_export_write", "write_team_lineups_json", write_json_df(team_lineups, file.path(out_dir, "team_lineups.json")), paste0(nrow(team_lineups), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_team_lineups_json", write_json_df(team_lineups_export, file.path(out_dir, "team_lineups.json")), paste0(nrow(team_lineups_export), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_team_schedules_json", write_json_df(schedules, file.path(out_dir, "team_schedules.json")), paste0(nrow(schedules), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_pick_assets_json", write_json_df(picks, file.path(out_dir, "pick_assets.json")), paste0(nrow(picks), " rows"))
-with_frontend_timing(base_dir, "frontend_export_write", "write_draft_prospects_json", write_json_df(draft, file.path(out_dir, "draft_prospects.json")), paste0(nrow(draft), " rows"))
+with_frontend_timing(base_dir, "frontend_export_write", "write_draft_prospects_json", write_json_df(draft_export, file.path(out_dir, "draft_prospects.json")), paste0(nrow(draft_export), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_board_summary_json", write_json_df(tracker$board_summary, file.path(out_dir, "draft_tracker_board_summary.json")), paste0(nrow(tracker$board_summary), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_board_scores_json", write_json_df(tracker$board_scores, file.path(out_dir, "draft_tracker_board_scores.json")), paste0(nrow(tracker$board_scores), " rows"))
 with_frontend_timing(base_dir, "frontend_export_write", "write_draft_tracker_prospect_scores_json", write_json_df(tracker$prospect_scores, file.path(out_dir, "draft_tracker_prospect_scores.json")), paste0(nrow(tracker$prospect_scores), " rows"))
