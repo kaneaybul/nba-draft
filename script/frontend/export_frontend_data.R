@@ -2687,7 +2687,7 @@ build_impact_players <- function(base_dir) {
     needed_cols <- c("year", "player_name", "position_estimate", position_share_columns())
     if (all(needed_cols %in% names(bref_pos))) {
       if (!("minutes" %in% names(bref_pos))) bref_pos$minutes <- NA_real_
-      if (!("name_key" %in% names(bref_pos))) bref_pos$name_key <- normalize_name(bref_pos$player_name)
+      bref_pos$name_key <- normalize_name(bref_pos$player_name)
       if (!("position_entropy" %in% names(bref_pos))) bref_pos$position_entropy <- NA_real_
       if (!("position_index" %in% names(bref_pos))) bref_pos$position_index <- NA_real_
       bref_pos$minutes <- suppressWarnings(as.numeric(bref_pos$minutes))
