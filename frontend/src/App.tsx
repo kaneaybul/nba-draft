@@ -705,7 +705,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     const available = new Set(seasonPlayers.map((player) => faStatusLabel(player)));
     return order.filter((status) => status === "All" || available.has(status));
   }, [seasonPlayers]);
-  const positions = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.position))).sort()], [seasonPlayers]);
+  const positions = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => displayPosition(player.position)))).sort()], [seasonPlayers]);
   const tiers = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.tier))).sort()], [seasonPlayers]);
   const selectedFilterField = filterFields.find((field) => field.key === filterKey) ?? filterFields[0];
   const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
@@ -718,7 +718,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       .filter((player) => !q || player.player_name.toLowerCase().includes(q))
       .filter((player) => team === "All" || playerTeamFilterValue(player) === team)
       .filter((player) => faStatus === "All" || faStatusLabel(player) === faStatus)
-      .filter((player) => position === "All" || player.position === position)
+      .filter((player) => position === "All" || displayPosition(player.position) === position)
       .filter((player) => tier === "All" || player.tier === tier)
       .filter((player) => passesFilterRules(player, filterRules))
       .sort((a, b) => comparePlayers(a, b, sortKey, sortDirection));
@@ -1064,7 +1064,7 @@ function PlayerTable({
                     >
                       {player.player_name}
                     </button>
-                    <div className="player-sub">{playerMarketTeamLabel(player)} / {player.position}</div>
+                    <div className="player-sub">{playerMarketTeamLabel(player)} / {displayPosition(player.position)}</div>
                   </div>
                 </div>
               </td>
@@ -1194,7 +1194,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }:
           <div className="dp-identity">
             <PlayerHeadshot player={player} size="detail" />
             <div className="dp-title-block">
-              <div className="dp-meta">{player.team} / {player.position}</div>
+              <div className="dp-meta">{player.team} / {displayPosition(player.position)}</div>
               <div className="dp-name">{player.player_name}</div>
               <div className="dp-tags">
                 <span className="tier-text">{player.tier}</span>
@@ -1626,7 +1626,7 @@ function StartingLineupCard({ row, player }: { row: TeamLineupRow; player?: Play
       <div className="starter-card-top">
         {player ? <PlayerHeadshot player={player} /> : <span className="player-headshot">{row.player_name.slice(0, 2).toUpperCase()}</span>}
         <div>
-          <span>{row.role_label} / {row.position}</span>
+          <span>{row.role_label} / {displayPosition(row.position)}</span>
           <strong>{row.player_name}</strong>
         </div>
       </div>
@@ -1675,7 +1675,7 @@ function StartingBenchTable({ rows }: { rows: TeamLineupRow[] }) {
             <tr key={`${row.team}-${row.role_order}-${row.nba_id}`}>
               <td>{row.role_label}</td>
               <td>{row.player_name}</td>
-              <td>{row.position}</td>
+              <td>{displayPosition(row.position)}</td>
               <td><StatValue value={row.total} /></td>
               <td>{formatNumber(row.score, 1)}</td>
               <td>{formatNumber(row.original_minutes, 0)}</td>
@@ -2167,7 +2167,7 @@ function TradeSide({
             >
               <span>
                 <strong>{player.player_name}</strong>
-                <small>{player.position} / {player.tier} / {formatSalarySlot(player)}</small>
+                <small>{displayPosition(player.position)} / {player.tier} / {formatSalarySlot(player)}</small>
               </span>
               <em>{formatMoney(playerTradeValue(player))}</em>
             </button>
@@ -3345,7 +3345,7 @@ function LineupSheet({
                       </select>
                     </div>
                   </td>
-                  <td>{player?.position ?? "-"}</td>
+                  <td>{player ? displayPosition(player.position) : "-"}</td>
                   <td><SheetRate value={player?.offense} /></td>
                   <td><SheetRate value={player?.defense} /></td>
                   <td><SheetRate value={player?.total} strong /></td>
@@ -3453,7 +3453,7 @@ function LineupSuggestionPanel({
                 <div>
                   <strong>{suggestion.player.player_name}</strong>
                   <span>
-                    {suggestion.player.team} / {suggestion.player.position} / {suggestion.player.tier}
+                    {suggestion.player.team} / {displayPosition(suggestion.player.position)} / {suggestion.player.tier}
                   </span>
                   <em>{suggestion.reasons.join(" / ")}</em>
                 </div>
@@ -3551,7 +3551,7 @@ function LineupCard({
                   const id = lineupPlayerId(option);
                   return (
                     <option key={id} value={id}>
-                      {option.player_name} / {option.team} / {option.position}
+                      {option.player_name} / {option.team} / {displayPosition(option.position)}
                     </option>
                   );
                 })}
@@ -3561,7 +3561,7 @@ function LineupCard({
                   <PlayerHeadshot player={player} />
                   <div>
                     <strong>{player.player_name}</strong>
-                    <span>{player.position} / {player.tier}</span>
+                    <span>{displayPosition(player.position)} / {player.tier}</span>
                   </div>
                   <StatValue value={player.total} />
                   <button
@@ -3810,7 +3810,7 @@ function lineupSuggestionReasons(
   if (scoreDelta > 1) reasons.push(`${formatSigned(scoreDelta, 0)} score`);
   if (newGaps.length === 0) reasons.push("No new gaps");
   else reasons.push(`Watch ${newGaps[0].label}`);
-  if (reasons.length === 1) reasons.unshift(`${player.position || "Lineup"} fit`);
+  if (reasons.length === 1) reasons.unshift(`${displayPosition(player.position)} fit`);
   return reasons.slice(0, 4);
 }
 
@@ -4970,7 +4970,7 @@ function assetLabel(asset: TradeAsset): string {
 
 function assetMeta(asset: TradeAsset): string {
   if (asset.kind === "player" && asset.player) {
-    return `${asset.player.team} / ${asset.player.position} / ${formatSalarySlot(asset.player)}`;
+    return `${asset.player.team} / ${displayPosition(asset.player.position)} / ${formatSalarySlot(asset.player)}`;
   }
   if (asset.pick?.asset_type === "generic_pick") {
     const convey = typeof asset.pick.convey_probability === "number" ? `${formatNumber(asset.pick.convey_probability * 100, 1)}% convey` : "EV";
@@ -5123,6 +5123,12 @@ function cleanTeamValue(value?: string | null): string {
   return team ? team : "FA";
 }
 
+function displayPosition(position?: string | null): string {
+  const raw = String(position ?? "").trim();
+  if (!raw) return "UNK";
+  return raw.split(/[/-]/)[0]?.trim() || "UNK";
+}
+
 function teamForProjectionScenario(player: PlayerImpact, scenario: TeamProjectionScenario): string {
   const isProjected = player.availability_status === "projected" || player.availability_status === "rookie_projection";
   if (!isProjected) return cleanTeamValue(player.team);
@@ -5152,6 +5158,7 @@ function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, directio
 }
 
 function getPlayerSortValue(player: PlayerImpact, key: FilterKey): string | number | null | undefined {
+  if (key === "position") return displayPosition(player.position);
   if (key === "future_value_4y") return futureValue4y(player);
   if (key === "future_scale_4y") return futureScale4y(player);
   if (key === "skill_total") return skillAggregateTotal(player);
@@ -5195,10 +5202,7 @@ function getDraftSortValue(prospect: DraftProspect, key: DraftSortKey): string |
 }
 
 function displayDraftPosition(prospect: DraftProspect): string {
-  const raw = prospect.position || "UNK";
-  if (!raw.includes("/")) return raw;
-  if (prospect.draft_year === 2026) return raw.split("/")[0] || "UNK";
-  return raw;
+  return displayPosition(prospect.position);
 }
 
 function draftTier(prospect: DraftProspect): string {
