@@ -1741,7 +1741,13 @@ input:focus {
   display: grid;
   min-width: 0;
   gap: 2px;
+  cursor: pointer;
+  list-style: none;
   text-align: left;
+}
+
+.draft-comp::-webkit-details-marker {
+  display: none;
 }
 
 .draft-comp strong {
@@ -1759,8 +1765,54 @@ input:focus {
 }
 
 .draft-comp-cell {
+  position: relative;
   padding-right: 12px;
   border-left: 1px solid var(--line);
+}
+
+.draft-comp-details {
+  position: relative;
+}
+
+.draft-comp-list {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  width: min(360px, 78vw);
+  max-height: 300px;
+  overflow: auto;
+  gap: 1px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+}
+
+.draft-comp-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 58px 58px 58px;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 6px;
+  background: var(--bg);
+  font-size: 0.66rem;
+}
+
+.draft-comp-row strong {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-comp-row span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .pool-pill {

@@ -34,7 +34,7 @@
     },
     {
       "dataset": "draft_prospects",
-      "rows": 491,
+      "rows": 485,
       "file": "draft_prospects.json"
     },
     {
@@ -80,7 +80,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-05-27T06:46:28.069Z",
+    "generated_at": "2026-05-29T01:08:24.343Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -527,10 +527,10 @@
       },
       "draft_prospects": {
         "strategy": "singleton",
-        "rows": 491,
+        "rows": 485,
         "file": "draft_prospects.json",
-        "bytes": 879369,
-        "sha256": "ca59a4c1686792c498aa10244cedf3460c34f7942b71f8ee832d09dfa5ffa7ec"
+        "bytes": 937505,
+        "sha256": "31c35b9bad9d4b7cec878a1129bd67972baf1cb241adfa3b28061856c3833c41"
       },
       "draft_tracker_board_summary": {
         "strategy": "singleton",

@@ -363,6 +363,7 @@ export type DraftProspect = {
   similarity_comp_off?: number | null;
   similarity_comp_def?: number | null;
   similarity_comp_minutes?: number | null;
+  similarity_comps?: DraftSimilarityComp[] | string | null;
   actual_pick?: number | null;
   drafted_team?: string | null;
   pick_proxy?: number | null;
@@ -819,6 +820,18 @@ export type MarketBid = {
   marketMinutesSource?: string;
   limiter: string;
   reason: string;
+};
+
+export type DraftSimilarityComp = {
+  rank: number;
+  player: string;
+  year: number;
+  score?: number | null;
+  distance?: number | null;
+  total?: number | null;
+  off?: number | null;
+  def?: number | null;
+  minutes?: number | null;
 };
 
 export type MarketResolution = {

@@ -1,7 +1,7 @@
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadPlayerCareerHistory, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
-import type { AppData, DraftProspect, DraftTrackerProspectScore, PickAsset, PlayerCareerHistoryRow, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
+import type { AppData, DraftProspect, DraftSimilarityComp as DraftSimilarityCompRow, DraftTrackerProspectScore, PickAsset, PlayerCareerHistoryRow, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
 const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
@@ -2630,27 +2630,99 @@ function ProspectTable({
 }
 
 function DraftSimilarityComp({ prospect }: { prospect: DraftProspect }) {
-  const player = prospect.similarity_comp_player?.trim();
-  const year = prospect.similarity_comp_year;
-  const score = prospect.similarity_score;
-  if (!player || typeof year !== "number" || !Number.isFinite(year)) {
+  const comps = draftSimilarityComps(prospect);
+  const topComp = comps[0];
+  if (!topComp) {
     return <span className="muted-cell">-</span>;
   }
 
-  const scoreText = typeof score === "number" && Number.isFinite(score) ? `${formatNumber(score, 1)} sim` : "-";
+  const scoreText = typeof topComp.score === "number" && Number.isFinite(topComp.score) ? `${formatNumber(topComp.score, 1)} sim` : "-";
   const title = [
-    `${year} ${player}`,
+    `${topComp.year} ${topComp.player}`,
     `Similarity: ${scoreText}`,
-    `Total: ${formatSigned(prospect.similarity_comp_total, 2)}`,
-    `Minutes: ${formatNumber(prospect.similarity_comp_minutes, 0)}`
+    `Total: ${formatSigned(topComp.total, 2)}`,
+    `Minutes: ${formatNumber(topComp.minutes, 0)}`
   ].join("\n");
 
   return (
-    <div className="draft-comp" title={title}>
-      <strong>{year} {player}</strong>
-      <span>{scoreText}</span>
-    </div>
+    <details className="draft-comp-details">
+      <summary className="draft-comp" title={title}>
+        <strong>{topComp.year} {topComp.player}</strong>
+        <span>{scoreText} / top {comps.length}</span>
+      </summary>
+      <div className="draft-comp-list">
+        {comps.map((comp) => (
+          <div className="draft-comp-row" key={`${comp.rank}-${comp.year}-${comp.player}`}>
+            <strong>{comp.rank}. {comp.year} {comp.player}</strong>
+            <span>{formatNumber(comp.score, 1)} sim</span>
+            <span>{formatSigned(comp.total, 2)} tot</span>
+            <span>{formatNumber(comp.minutes, 0)} min</span>
+          </div>
+        ))}
+      </div>
+    </details>
   );
+}
+
+function draftSimilarityComps(prospect: DraftProspect): DraftSimilarityCompRow[] {
+  const raw = prospect.similarity_comps;
+  let parsed: unknown = null;
+  if (Array.isArray(raw)) {
+    parsed = raw;
+  } else if (typeof raw === "string" && raw.trim().startsWith("[")) {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = null;
+    }
+  }
+
+  const comps = Array.isArray(parsed)
+    ? parsed.map(toDraftSimilarityComp).filter((comp): comp is DraftSimilarityCompRow => comp !== null)
+    : [];
+
+  if (comps.length > 0) {
+    return comps.sort((a, b) => a.rank - b.rank);
+  }
+
+  const player = prospect.similarity_comp_player?.trim();
+  const year = prospect.similarity_comp_year;
+  if (!player || typeof year !== "number" || !Number.isFinite(year)) return [];
+  return [{
+    rank: 1,
+    player,
+    year,
+    score: finiteNumberOrNull(prospect.similarity_score),
+    distance: finiteNumberOrNull(prospect.similarity_distance),
+    total: finiteNumberOrNull(prospect.similarity_comp_total),
+    off: finiteNumberOrNull(prospect.similarity_comp_off),
+    def: finiteNumberOrNull(prospect.similarity_comp_def),
+    minutes: finiteNumberOrNull(prospect.similarity_comp_minutes)
+  }];
+}
+
+function toDraftSimilarityComp(value: unknown): DraftSimilarityCompRow | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Record<string, unknown>;
+  const player = typeof row.player === "string" ? row.player.trim() : "";
+  const rank = finiteNumberOrNull(row.rank);
+  const year = finiteNumberOrNull(row.year);
+  if (!player || rank === null || year === null) return null;
+  return {
+    rank,
+    player,
+    year,
+    score: finiteNumberOrNull(row.score),
+    distance: finiteNumberOrNull(row.distance),
+    total: finiteNumberOrNull(row.total),
+    off: finiteNumberOrNull(row.off),
+    def: finiteNumberOrNull(row.def),
+    minutes: finiteNumberOrNull(row.minutes)
+  };
+}
+
+function finiteNumberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function draftSortSkill(key: DraftSortKey): SkillKey | null {
@@ -5118,7 +5190,8 @@ function getDraftSortValue(prospect: DraftProspect, key: DraftSortKey): string |
   if (key === "position") return displayDraftPosition(prospect);
   if (key === "tier") return draftTierRank(draftTier(prospect));
 
-  return prospect[key as keyof DraftProspect];
+  const value = prospect[key as keyof DraftProspect];
+  return Array.isArray(value) ? null : value;
 }
 
 function displayDraftPosition(prospect: DraftProspect): string {

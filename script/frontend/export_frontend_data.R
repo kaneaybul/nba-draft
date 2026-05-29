@@ -3571,7 +3571,8 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
   skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
   similarity_cols <- c(
     "similarity_comp_player", "similarity_comp_year", "similarity_score", "similarity_distance",
-    "similarity_comp_total", "similarity_comp_off", "similarity_comp_def", "similarity_comp_minutes"
+    "similarity_comp_total", "similarity_comp_off", "similarity_comp_def", "similarity_comp_minutes",
+    "similarity_comps"
   )
   skill_cols <- c(
     "player", "draft_year", "prediction_pool",
