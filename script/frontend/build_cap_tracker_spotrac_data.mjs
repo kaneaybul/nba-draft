@@ -24,6 +24,7 @@ const spotracWidePath = path.join(spotracDir, "spotrac_active_roster_cap_hold_al
 const spotracLongPath = path.join(spotracDir, "spotrac_active_roster_cap_hold_allteams_long.csv");
 const spotracAuditPath = path.join(spotracDir, "scrape_audit.csv");
 const capPath = path.join(root, "processed", "livedata", "impactrefresh", "salary_cap_assumptions.csv");
+const impactPlayersPath = path.join(dataDir, "impact_players.json");
 const teamProjectionsPath = path.join(dataDir, "team_projections.json");
 const contractsPath = path.join(root, "processed", "livedata", "impactrefresh", "contracts_2026_current.csv");
 const guaranteeOverridePath = path.join(root, "ref", "cap_tracker_guarantees.csv");
@@ -79,11 +80,15 @@ export function buildSpotracCapTrackerData() {
   }
 
   const capRows = readCsvFile(capPath);
+  const impactPlayers = readJson(impactPlayersPath, []);
   const teamProjectionRows = readJson(teamProjectionsPath, []);
   const guaranteeOverrides = buildGuaranteeOverrideMap(readCsvFile(guaranteeOverridePath));
   const seasons = buildSeasons(capRows);
   const teamMeta = buildTeamMeta(teamProjectionRows, spotracRows);
-  const contractRows = buildContractRows(spotracRows, teamMeta, guaranteeOverrides);
+  const contractRows = [
+    ...buildContractRows(spotracRows, teamMeta, guaranteeOverrides),
+    ...buildProjectedRookieContractRows(impactPlayers)
+  ].sort(contractRowSort);
   const deadMoney = buildDeadMoneyRows(spotracRows);
   const teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
   const exceptions = buildExceptions(teamSeasons, seasons, readCsvFile(exceptionOverridePath));
@@ -128,6 +133,7 @@ export function buildSpotracCapTrackerData() {
       { label: "Primary cap source", detail: "Spotrac all-team scrape: Active Roster and Cap Hold sections.", quality: "spotrac" },
       { label: "Guarantees", detail: "Manual override only; Spotrac hover-only guarantee percentages are not scraped in v1.", quality: "unavailable" },
       { label: "Dead money", detail: "Supported by this builder when Spotrac dead-money rows are present in the normalized input; current scrape does not include a persisted dead-money section.", quality: "unavailable" },
+      { label: "Projected rookie scale", detail: "Consensus/mock first-round rookies are added from impact_players.json with salaries seeded from ref/cap_tracker_rookie_scale.csv.", quality: "projected" },
       { label: "Databallr comparison", detail: `QA discrepancy report written to ${path.relative(root, discrepancyPath)}`, quality: "spotrac" },
       { label: "Cap levels", detail: "Existing salary_cap_assumptions.csv is retained until Spotrac summary rows are persisted.", quality: "projected" }
     ]
@@ -275,6 +281,59 @@ function buildContractRows(rows, teamMeta, guaranteeOverrides) {
     })
     .filter((row) => row.cells.some((cell) => cell.amount > 0))
     .sort(contractRowSort);
+}
+
+function buildProjectedRookieContractRows(players) {
+  if (!Array.isArray(players) || !players.length) return [];
+  return players
+    .filter((row) => numberValue(row.year) === START_YEAR)
+    .filter((row) => row.availability_status === "rookie_projection")
+    .filter((row) => numberValue(row.contract) > 0)
+    .map((row, index) => {
+      const team = cleanTeam(row.team_projection_base || row.current_roster_team || row.team);
+      if (!team || team === "FA") return null;
+      const yearAmount = new Map([
+        [START_YEAR, { amount: numberValue(row.contract), kind: "draft_pick", status: "Rookie Scale" }],
+        [START_YEAR + 1, { amount: numberValue(row.projection_contract_y1), kind: "draft_pick", status: "Rookie Scale" }],
+        [START_YEAR + 2, { amount: numberValue(row.projection_contract_y2), kind: "draft_pick", status: "Team Option" }],
+        [START_YEAR + 3, { amount: numberValue(row.projection_contract_y3), kind: "draft_pick", status: "Team Option" }],
+        [START_YEAR + 4, { amount: numberValue(row.projection_contract_y4), kind: "cap_hold", status: "RFA" }]
+      ]);
+      const cells = YEARS.map((year) => {
+        const value = yearAmount.get(year);
+        if (!value?.amount) return emptyCell(year);
+        return cleanObject({
+          year,
+          amount: Math.round(value.amount),
+          kind: value.kind,
+          status: value.status,
+          source: "projected",
+          label: value.kind === "cap_hold" ? "Hold" : "Pick",
+          note: value.kind === "cap_hold" ? "Projected rookie-scale RFA hold at 300 percent of fourth-year salary" : "Projected consensus/mock rookie-scale contract",
+          guaranteed_amount: value.kind === "cap_hold" ? null : Math.round(value.amount),
+          unguaranteed_amount: value.kind === "cap_hold" ? null : 0,
+          guarantee_deadline: null,
+          guarantee_note: null,
+          guarantee_source: "unavailable"
+        });
+      });
+      return cleanObject({
+        id: `projected-rookie-${normalizeName(row.player_name)}-${team}`,
+        nba_id: numberValue(row.nba_id),
+        player_name: row.player_name,
+        team,
+        row_type: "draft_pick",
+        display_order: 8000 + index,
+        position: row.position || "Pick",
+        age: numberValue(row.age),
+        rank: null,
+        contract_notes: "Projected first-round rookie-scale contract from consensus/mock rank",
+        source: "impact_players.json rookie projection; ref/cap_tracker_rookie_scale.csv",
+        source_quality: "projected",
+        cells
+      });
+    })
+    .filter(Boolean);
 }
 
 function cellFromSpotracText(text, section, year, row, guaranteeOverrides) {

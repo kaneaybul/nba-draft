@@ -1148,6 +1148,71 @@ predict_rookie_minutes <- function(curves, pick_proxy, total, draft_age) {
   clamp(out, 120, 2400)
 }
 
+load_rookie_scale_contracts <- function(base_dir) {
+  path <- file.path(base_dir, "ref", "cap_tracker_rookie_scale.csv")
+  if (!file.exists(path)) {
+    return(data.frame(
+      pick = integer(),
+      first_year_salary = numeric(),
+      second_year_salary = numeric(),
+      third_year_salary = numeric(),
+      fourth_year_salary = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  scale <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  needed <- c("pick", "first_year_salary", "second_year_salary", "third_year_salary", "fourth_year_salary")
+  if (!all(needed %in% names(scale))) return(scale[FALSE, , drop = FALSE])
+  for (col in needed) scale[[col]] <- suppressWarnings(as.numeric(scale[[col]]))
+  scale[is.finite(scale$pick), needed, drop = FALSE]
+}
+
+load_official_draft_order <- function(base_dir) {
+  path <- file.path(base_dir, "frontend", "src", "OffseasonSimulator.tsx")
+  if (!file.exists(path)) {
+    return(data.frame(pick = integer(), team = character(), label = character(), stringsAsFactors = FALSE))
+  }
+  text <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  matches <- gregexpr("\\{\\s*pick:\\s*([0-9]+),\\s*team:\\s*\"([^\"]+)\",\\s*label:\\s*\"([^\"]+)\"\\s*\\}", text, perl = TRUE)
+  items <- regmatches(text, matches)[[1]]
+  if (!length(items) || identical(items, character(0))) {
+    return(data.frame(pick = integer(), team = character(), label = character(), stringsAsFactors = FALSE))
+  }
+  parsed <- do.call(rbind, lapply(items, function(item) {
+    groups <- regmatches(item, regexec("\\{\\s*pick:\\s*([0-9]+),\\s*team:\\s*\"([^\"]+)\",\\s*label:\\s*\"([^\"]+)\"\\s*\\}", item, perl = TRUE))[[1]]
+    data.frame(
+      pick = suppressWarnings(as.integer(groups[2])),
+      team = normalize_team(groups[3]),
+      label = groups[4],
+      stringsAsFactors = FALSE
+    )
+  }))
+  parsed[is.finite(parsed$pick), , drop = FALSE]
+}
+
+mock_picks_from_rank <- function(rank_proxy, model_rank, player) {
+  n <- length(rank_proxy)
+  rank_proxy <- suppressWarnings(as.numeric(rank_proxy))
+  model_rank <- suppressWarnings(as.numeric(model_rank))
+  fallback <- seq_len(n)
+  rank_proxy[!is.finite(rank_proxy)] <- 999
+  model_rank[!is.finite(model_rank)] <- fallback[!is.finite(model_rank)]
+  ord <- order(rank_proxy, model_rank, as.character(player), na.last = TRUE)
+  out <- rep(NA_integer_, n)
+  out[ord] <- seq_len(n)
+  out
+}
+
+rookie_projection_path <- function(rookie_value, model_value, horizon) {
+  rookie_value <- suppressWarnings(as.numeric(rookie_value))
+  model_value <- suppressWarnings(as.numeric(model_value))
+  progress <- c(0.40, 0.65, 0.85, 1.00, 1.05)[horizon]
+  target <- coalesce_numeric(model_value, rookie_value)
+  out <- rookie_value + (target - rookie_value) * progress
+  out[!is.finite(out)] <- rookie_value[!is.finite(out)]
+  out
+}
+
 calc_fa_market_values <- function(df, caps, horizon = 1, target_roster_spots = 450) {
   n <- nrow(df)
   out <- data.frame(
@@ -1468,24 +1533,45 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows <- blank_like(template, nrow(draft))
   pick_proxy <- if ("pick_proxy" %in% names(draft)) draft$pick_proxy else NA_real_
   actual_pick <- if ("actual_pick" %in% names(draft)) draft$actual_pick else NA_real_
-  rank_proxy <- coalesce_numeric(pick_proxy, coalesce_numeric(actual_pick, draft$rank_in_class))
+  rank_proxy_raw <- coalesce_numeric(pick_proxy, coalesce_numeric(actual_pick, draft$rank_in_class))
+  mock_pick <- mock_picks_from_rank(rank_proxy_raw, draft$rank_in_class, draft$player)
+  actual_pick_num <- suppressWarnings(as.numeric(actual_pick))
+  rank_proxy <- ifelse(is.finite(actual_pick_num), actual_pick_num, mock_pick)
   draft_age <- suppressWarnings(as.numeric(draft$draft_age))
   draft_age[!is.finite(draft_age)] <- median(draft_age, na.rm = TRUE)
   if (!any(is.finite(draft_age))) draft_age[] <- 19.5
 
-  off <- final_pred_value(draft, "OFF") + predict_rookie_adjustment(curves, "OFF", draft_age)
-  def <- final_pred_value(draft, "DEF") + predict_rookie_adjustment(curves, "DEF", draft_age)
+  model_off <- final_pred_value(draft, "OFF")
+  model_def <- final_pred_value(draft, "DEF")
+  off <- model_off + predict_rookie_adjustment(curves, "OFF", draft_age)
+  def <- model_def + predict_rookie_adjustment(curves, "DEF", draft_age)
   total <- off + def
   minutes <- predict_rookie_minutes(curves, rank_proxy, total, draft_age)
   games <- clamp(54 - 0.28 * rank_proxy + 2.5 * total - 0.6 * pmax(0, draft_age - 20), 18, 82)
   games[!is.finite(games)] <- clamp(minutes[!is.finite(games)] / 18, 18, 82)
   mpg <- ifelse(games > 0, minutes / games, NA_real_)
+  rookie_scale <- load_rookie_scale_contracts(base_dir)
+  scale_match <- match(rank_proxy, rookie_scale$pick)
+  first_year_salary <- rookie_scale$first_year_salary[scale_match]
+  second_year_salary <- rookie_scale$second_year_salary[scale_match]
+  third_year_salary <- rookie_scale$third_year_salary[scale_match]
+  fourth_year_salary <- rookie_scale$fourth_year_salary[scale_match]
+  first_round_scale <- is.finite(first_year_salary) & rank_proxy >= 1 & rank_proxy <= 30
+  draft_order <- load_official_draft_order(base_dir)
+  pick_team <- draft_order$team[match(rank_proxy, draft_order$pick)]
 
   rows$nba_id <- -as.integer(2027000 + seq_len(nrow(rows)))
   rows$player_name <- as.character(draft$player)
   rows$year <- target_year
   drafted_team <- if ("drafted_team" %in% names(draft)) as.character(draft$drafted_team) else rep(NA_character_, nrow(draft))
-  rows$team <- ifelse(!is.na(drafted_team) & nzchar(trimws(drafted_team)) & is.finite(suppressWarnings(as.numeric(actual_pick))), drafted_team, "FA")
+  rows$team <- ifelse(
+    !is.na(drafted_team) & nzchar(trimws(drafted_team)) & is.finite(actual_pick_num),
+    normalize_team(drafted_team),
+    ifelse(!is.na(pick_team) & nzchar(trimws(pick_team)), normalize_team(pick_team), "FA")
+  )
+  if ("current_roster_team" %in% names(rows)) rows$current_roster_team <- rows$team
+  if ("roster_truth_team" %in% names(rows)) rows$roster_truth_team <- rows$team
+  if ("roster_status_source" %in% names(rows)) rows$roster_status_source <- "consensus mock draft order"
   rows$position <- ifelse(!is.na(draft$position) & nzchar(trimws(draft$position)), as.character(draft$position), "UNK")
   rookie_position_shares <- position_share_matrix_from_labels(rows$position)
   for (share_col in position_share_columns()) {
@@ -1508,12 +1594,14 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows$availability_reason <- "Draft model de-aged to rookie season"
   rows$skill_source <- "draft_model_deaged"
   rows$skill_source_year <- draft$draft_year
-  rows$contract <- NA_real_
-  rows$contract_status <- "Rookie FA"
+  rows$contract <- ifelse(first_round_scale, first_year_salary, NA_real_)
+  rows$contract_status <- ifelse(first_round_scale, "Signed", "Rookie FA")
   rows$incumbent_team <- normalize_team(rows$team)
-  rows$market_team <- ifelse(rows$team == "FA" | is_blank_text(rows$team), "FA", normalize_team(rows$team))
+  rows$market_team <- ifelse(first_round_scale, rows$incumbent_team, ifelse(rows$team == "FA" | is_blank_text(rows$team), "FA", normalize_team(rows$team)))
   rows$team_projection_base <- rows$market_team
-  rows$projection_roster_status <- "rookie_fa"
+  rows$projection_roster_status <- ifelse(first_round_scale, "signed", "rookie_fa")
+  if ("overall_pick" %in% names(rows)) rows$overall_pick <- rank_proxy
+  if ("draft_year" %in% names(rows)) rows$draft_year <- draft$draft_year
 
   if ("skill_model_off" %in% names(rows)) rows$skill_model_off <- rows$offense
   if ("skill_model_def" %in% names(rows)) rows$skill_model_def <- rows$defense
@@ -1531,15 +1619,43 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
     if (final_col %in% names(rows)) rows[[final_col]] <- rows[[skill_name]]
   }
 
-  decay <- c(0.94, 0.88, 0.82, 0.76, 0.70)
   for (horizon in 1:5) {
-    rows[[paste0("projection_y", horizon)]] <- round(rows$total * decay[[horizon]], 2)
+    projection_off <- rookie_projection_path(rows$offense, model_off, horizon)
+    projection_def <- rookie_projection_path(rows$defense, model_def, horizon)
+    rows[[paste0("projection_y", horizon)]] <- round(projection_off + projection_def, 2)
+    if (paste0("projection_offense_y", horizon) %in% names(rows)) rows[[paste0("projection_offense_y", horizon)]] <- round(projection_off, 2)
+    if (paste0("projection_defense_y", horizon) %in% names(rows)) rows[[paste0("projection_defense_y", horizon)]] <- round(projection_def, 2)
+    if (paste0("projection_skill_model_off_y", horizon) %in% names(rows)) rows[[paste0("projection_skill_model_off_y", horizon)]] <- round(projection_off, 3)
+    if (paste0("projection_skill_model_def_y", horizon) %in% names(rows)) rows[[paste0("projection_skill_model_def_y", horizon)]] <- round(projection_def, 3)
     rows[[paste0("projection_games_y", horizon)]] <- round(clamp(rows$games + horizon * 1.5, 0, 82), 1)
     rows[[paste0("projection_mpg_y", horizon)]] <- round(clamp(rows$p_mpg + horizon * 0.4, 0, 34), 1)
     rows[[paste0("projection_minutes_y", horizon)]] <- round(rows[[paste0("projection_games_y", horizon)]] * rows[[paste0("projection_mpg_y", horizon)]], 0)
-    rows[[paste0("projection_contract_y", horizon)]] <- NA_real_
-    rows[[paste0("projection_contract_status_y", horizon)]] <- NA_character_
+    rows[[paste0("projection_contract_y", horizon)]] <- switch(
+      as.character(horizon),
+      "1" = ifelse(first_round_scale, second_year_salary, NA_real_),
+      "2" = ifelse(first_round_scale, third_year_salary, NA_real_),
+      "3" = ifelse(first_round_scale, fourth_year_salary, NA_real_),
+      "4" = ifelse(first_round_scale, round(fourth_year_salary * 3, 0), NA_real_),
+      NA_real_
+    )
+    rows[[paste0("projection_contract_status_y", horizon)]] <- switch(
+      as.character(horizon),
+      "1" = ifelse(first_round_scale, "Signed", NA_character_),
+      "2" = ifelse(first_round_scale, "Team Option", NA_character_),
+      "3" = ifelse(first_round_scale, "Team Option", NA_character_),
+      "4" = ifelse(first_round_scale, "RFA", NA_character_),
+      NA_character_
+    )
     rows[[paste0("projection_cap_y", horizon)]] <- cap_for_year(cap_assumptions, rows$year + horizon, "scale_cap")
+  }
+  for (skill_name in skill_names) {
+    model_skill <- final_pred_value(draft, skill_name)
+    for (horizon in 1:5) {
+      projection_col <- paste0("projection_", skill_name, "_y", horizon)
+      if (projection_col %in% names(rows)) {
+        rows[[projection_col]] <- round(rookie_projection_path(rows[[skill_name]], model_skill, horizon), 2)
+      }
+    }
   }
   rows
 }
