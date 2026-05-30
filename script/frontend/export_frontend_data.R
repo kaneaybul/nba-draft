@@ -451,6 +451,10 @@ replacement_pool_years <- function() {
   3L
 }
 
+replacement_min_minutes <- function() {
+  250
+}
+
 rank_cutoff_value <- function(values, cutoff) {
   values <- sort(values[is.finite(values)], decreasing = TRUE)
   if (length(values) == 0) {
@@ -717,8 +721,11 @@ replacement_from_data <- function(df, side) {
   shares <- normalize_position_share_matrix(df[, intersect(position_share_columns(), names(df)), drop = FALSE], df$position)
   cutoff <- replacement_slots_per_position()
   pool_years <- replacement_pool_years()
+  replacement_minutes <- if ("Minutes" %in% names(df)) suppressWarnings(as.numeric(df$Minutes)) else rep(Inf, nrow(df))
   eligible <- !is.na(metric) &
     is.finite(metric) &
+    is.finite(replacement_minutes) &
+    replacement_minutes >= replacement_min_minutes() &
     rowSums(shares, na.rm = TRUE) > 0
 
   years <- sort(unique(df$year[is.finite(df$year)]))
