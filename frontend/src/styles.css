@@ -7908,6 +7908,18 @@ body,
 }
 
 @media (min-width: 721px) {
+  .board-controls > .advanced-filter-drawer.mobile-drawer-filter {
+    display: block;
+  }
+
+  .board-controls > .advanced-filter-drawer.mobile-drawer-filter > summary {
+    display: none;
+  }
+
+  .board-controls > .advanced-filter-drawer.mobile-drawer-filter > .rule-builder {
+    display: flex;
+  }
+
   details.advanced-filter-drawer:not([open]) > .rule-builder {
     display: flex;
   }

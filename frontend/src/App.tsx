@@ -849,7 +849,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
             </button>
           </div>
-          <details id="impact-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter">
+          <details id="impact-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter" open>
             <summary>Advanced filter</summary>
             <div className="rule-builder" aria-label="Add filter rule">
               <label>
@@ -2371,7 +2371,7 @@ function DraftWorkspace({ data }: { data: AppData }) {
                 {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
               </button>
             </div>
-            <details id="draft-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter">
+            <details id="draft-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter" open>
               <summary>Advanced filter</summary>
               <div className="rule-builder" aria-label="Add draft filter rule">
                 <label>
