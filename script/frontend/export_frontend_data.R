@@ -692,9 +692,34 @@ draft_tier_from_score <- function(score) {
   out
 }
 
-draft_replacement_total <- function(position, replacement_reference = NULL) {
+draft_replacement_total <- function(position, replacement_reference = NULL, shares = NULL) {
+  share_matrix <- NULL
+  if (!is.null(shares)) {
+    share_df <- as.data.frame(shares, stringsAsFactors = FALSE)
+    share_matrix <- normalize_position_share_matrix(share_df, position)
+  }
+
+  ref_positions <- valid_positions()
+  ref_values <- replacement_level(ref_positions, "total")
+  if (!is.null(replacement_reference) && is.data.frame(replacement_reference)) {
+    needed <- c("position", "replacement_total")
+    if (all(needed %in% names(replacement_reference))) {
+      match_idx <- match(ref_positions, toupper(as.character(replacement_reference$position)))
+      matched_values <- suppressWarnings(as.numeric(replacement_reference$replacement_total[match_idx]))
+      ref_values[is.finite(matched_values)] <- matched_values[is.finite(matched_values)]
+    }
+  }
+
   from_reference <- replacement_reference_lookup(replacement_reference, position, "total")
   vapply(seq_along(position), function(i) {
+    if (!is.null(share_matrix) && i <= nrow(share_matrix)) {
+      row_shares <- share_matrix[i, ]
+      use <- is.finite(row_shares) & row_shares > 0 & is.finite(ref_values)
+      if (any(use)) {
+        return(sum(ref_values[use] * row_shares[use]) / sum(row_shares[use]))
+      }
+    }
+
     pos <- as.character(position[[i]])
     ref_value <- from_reference[[i]]
     if (is.finite(ref_value)) {
@@ -2144,7 +2169,11 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   if (!nrow(rows)) return(rows)
   rows <- recalculate_projected_skill_rollups(rows, x)
 
-  rows$replacement_total <- draft_replacement_total(rows$position, replacement_reference)
+  rows$replacement_total <- draft_replacement_total(
+    rows$position,
+    replacement_reference,
+    rows[, intersect(position_share_columns(), names(rows)), drop = FALSE]
+  )
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
   rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
   rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
@@ -2159,7 +2188,11 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rows$lineup_role_order <- minute_rows$lineup_role_order
   rows$lineup_role_band_minutes <- minute_rows$lineup_role_band_minutes
 
-  rows$replacement_total <- draft_replacement_total(rows$position, replacement_reference)
+  rows$replacement_total <- draft_replacement_total(
+    rows$position,
+    replacement_reference,
+    rows[, intersect(position_share_columns(), names(rows)), drop = FALSE]
+  )
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
   rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
   rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
@@ -3990,7 +4023,11 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
     no_college_source_team,
     pre_draft_team
   )
-  x$replacement_total <- draft_replacement_total(x$position, replacement_reference)
+  x$replacement_total <- draft_replacement_total(
+    x$position,
+    replacement_reference,
+    x[, intersect(position_share_columns(), names(x)), drop = FALSE]
+  )
   if (!("FINAL_TOTAL_pred" %in% names(x))) {
     x$FINAL_TOTAL_pred <- x$TOTAL_pred
   }
