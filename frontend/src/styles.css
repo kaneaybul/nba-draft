@@ -5684,6 +5684,99 @@ input:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.after-roster-panel {
+  overflow: visible;
+}
+
+.after-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.after-team-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--panel) 92%, white 8%);
+}
+
+.after-team-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.after-team-head div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.after-team-head strong {
+  font-size: 1rem;
+}
+
+.after-team-head span,
+.after-team-head b {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.after-team-head b {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.after-strength-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.after-table-wrap {
+  overflow-x: auto;
+}
+
+.after-roster-table {
+  width: 100%;
+  min-width: 860px;
+}
+
+.after-roster-table th,
+.after-roster-table td {
+  white-space: nowrap;
+}
+
+.after-roster-table th:first-child,
+.after-roster-table td:first-child {
+  min-width: 160px;
+}
+
+.after-roster-table th:last-child,
+.after-roster-table td:last-child {
+  min-width: 170px;
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tracked-roster-row td,
+.unsigned-outcome-row td {
+  color: var(--muted);
+}
+
+.after-outcome-table {
+  min-width: 1450px;
+}
+
 .team-ledger-card,
 .transaction-card,
 .cap-card,
@@ -7697,6 +7790,7 @@ input:focus {
   .cap-card-grid,
   .team-focus-grid,
   .market-plan-grid,
+  .after-roster-grid,
   .war-room-grid,
   .decision-card-grid,
   .draft-board-grid,
@@ -8485,6 +8579,7 @@ body,
   .cap-card-grid,
   .transaction-grid,
   .market-plan-grid,
+  .after-roster-grid,
   .war-room-grid,
   .decision-card-grid,
   .draft-board-grid,

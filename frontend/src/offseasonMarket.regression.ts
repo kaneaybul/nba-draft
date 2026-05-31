@@ -42,6 +42,9 @@ export function runOffseasonMarketRegressionTests(): string[] {
     capRoomRequiresCapPath(),
     roomExceptionRequiresCapPath(),
     capRoomTeamsSubmitMultipleCapBids(),
+    retainedRightsTeamsUseLiveMleEntitlement(),
+    retainedRightsTeamsBidMultipleTools(),
+    declinedTeamOptionsNeedDiscountToReSign(),
     capRoomUsesCapBeforeRoomException(),
     explicitExceptionInventoriesAreRespected(),
     fullStandardRosterBlocksFreeAgentBids(),
@@ -120,7 +123,7 @@ function spendingToolsCannotBeSpentTwice(): string {
     player("p6", "MLE One", "FA", "UFA", 62, 9_000_000),
     player("p7", "MLE Two", "FA", "UFA", 61, 9_000_000)
   ], mapTeams([mleTeam]), assumptions, fixedRng);
-  expect(mleResult.signings.filter((row) => row.toTeam === "MLE").length === 1, "single MLE should not buy two rotation players");
+  expect(mleResult.signings.filter((row) => row.toTeam === "MLE" && row.tool === "non_taxpayer_mle").length === 1, "single MLE should not be spent on two rotation players");
 
   const capTeam = team("CAP", 118_000_000, ["PASS"], 0.9, []);
   const capResult = simulateFreeAgencyMarket([
@@ -136,7 +139,7 @@ function spendingToolsCannotBeSpentTwice(): string {
   ], mapTeams([roomTeam]), assumptions, fixedRng);
   expect(roomResult.signings.filter((row) => row.toTeam === "ROM").length <= 1, "room exception should not be spent twice");
 
-  const minTeam = team("MIN", 205_000_000, ["RIM"], 0.9, [{ name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }]);
+  const minTeam = team("MIN", 212_000_000, ["RIM"], 0.9, [{ name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }]);
   const minResult = simulateFreeAgencyMarket([
     player("p12", "Minimum One", "FA", "UFA", 49, 2_000_000),
     player("p13", "Minimum Two", "FA", "UFA", 48, 2_000_000)
@@ -163,13 +166,13 @@ function birdRightsBeatCapRoomForOwnPlayer(): string {
 }
 
 function capRoomRequiresCapPath(): string {
-  const target = player("p14c", "Outside Guard", "FA", "UFA", 72, 18_000_000);
+  const target = player("p14c", "Outside Guard", "FA", "UFA", 78, 32_000_000);
   const retainedTeam = team("AAA", 112_000_000, ["SHOOT"], 0.9, [], { capPath: "retained_rights" });
   const retainedResult = simulateFreeAgencyMarket([target], mapTeams([retainedTeam]), assumptions, fixedRng);
   expect(retainedResult.signings.length === 0, "retained-rights team should not use cap room just because it has room");
 
   const roomTeam = team("BBB", 112_000_000, ["SHOOT"], 0.9, [], { capPath: "cap_room" });
-  const capResult = simulateFreeAgencyMarket([player("p14d", "Outside Wing", "FA", "UFA", 72, 18_000_000)], mapTeams([roomTeam]), assumptions, fixedRng);
+  const capResult = simulateFreeAgencyMarket([player("p14d", "Outside Wing", "FA", "UFA", 78, 32_000_000)], mapTeams([roomTeam]), assumptions, fixedRng);
   expect(capResult.signings[0]?.tool === "cap", "cap-room path should be allowed to use cap space");
   return "cap room is available only on cap-room path";
 }
@@ -177,7 +180,7 @@ function capRoomRequiresCapPath(): string {
 function roomExceptionRequiresCapPath(): string {
   const retainedTeam = team("AAA", 156_000_000, ["DPM"], 0.9, [{ name: "Room Exception", amount: 7_000_000, used: 0, kind: "room_exception" }], { capPath: "retained_rights" });
   const retainedResult = simulateFreeAgencyMarket([player("p14e", "Room Target", "FA", "UFA", 58, 6_000_000)], mapTeams([retainedTeam]), assumptions, fixedRng);
-  expect(retainedResult.signings.length === 0, "retained-rights path should not use room exception");
+  expect(!retainedResult.signings.some((row) => row.tool === "room_exception"), "retained-rights path should not use room exception");
 
   const roomTeam = team("BBB", 156_000_000, ["DPM"], 0.9, [{ name: "Room Exception", amount: 7_000_000, used: 0, kind: "room_exception" }], { capPath: "cap_room" });
   const roomResult = simulateFreeAgencyMarket([player("p14f", "Room Target Two", "FA", "UFA", 58, 6_000_000)], mapTeams([roomTeam]), assumptions, fixedRng);
@@ -200,6 +203,44 @@ function capRoomTeamsSubmitMultipleCapBids(): string {
   return "cap-room teams submit multiple conditional cap bids";
 }
 
+function retainedRightsTeamsUseLiveMleEntitlement(): string {
+  const target = player("p14u", "Live MLE Wing", "FA", "UFA", 66, 11_000_000, "FA", "None", { position: "F" });
+  const retainedTeam = team("UTA", 178_000_000, ["SHOOT", "DPM"], 0.95, [
+    { name: "Taxpayer MLE", amount: 7_000_000, used: 0, kind: "taxpayer_mle" }
+  ], { capPath: "retained_rights", mode: "rising" });
+  const result = simulateFreeAgencyMarket([target], mapTeams([retainedTeam]), assumptions, fixedRng);
+  expect(result.signings[0]?.tool === "non_taxpayer_mle", `team below the first apron should use live NTMLE entitlement, got ${result.signings[0]?.tool}`);
+  return "retained-rights teams use live MLE entitlement instead of stale cap-tracker exception";
+}
+
+function retainedRightsTeamsBidMultipleTools(): string {
+  const retainedTeam = team("BID", 176_000_000, ["SHOOT", "PASS", "DPM"], 0.95, [
+    { name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" },
+    { name: "Bi-Annual", amount: 5_500_000, used: 0, kind: "bi_annual" },
+    { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }
+  ], { capPath: "retained_rights", mode: "playoff hopeful" });
+  const result = simulateFreeAgencyMarket([
+    player("p14v", "MLE Target", "FA", "UFA", 62, 8_000_000, "FA", "None", { position: "F" }),
+    player("p14w", "BAE Target", "FA", "UFA", 55, 4_000_000, "FA", "None", { position: "G" }),
+    player("p14x", "Minimum Target", "FA", "UFA", 48, 2_000_000, "FA", "None", { position: "C" })
+  ], mapTeams([retainedTeam]), assumptions, fixedRng);
+  const bidTools = new Set(result.bids.filter((bid) => bid.team === "BID").map((bid) => bid.toolKind));
+  expect(bidTools.has("non_taxpayer_mle") && bidTools.has("bi_annual"), `retained-rights team should submit offers across available exception tools; got ${Array.from(bidTools).join(", ")}`);
+  return "retained-rights teams submit bids across multiple available tools";
+}
+
+function declinedTeamOptionsNeedDiscountToReSign(): string {
+  const declined = player("p14y", "Declined Option Return", "OPT", "UFA", 64, 10_000_000, "OPT", "Bird", {
+    holdAction: "retained"
+  });
+  declined.declinedOptionTeam = "OPT";
+  declined.declinedOptionType = "Team Option";
+  declined.declinedOptionSalary = 10_000_000;
+  const result = simulateFreeAgencyMarket([declined], mapTeams([team("OPT", 170_000_000, ["SHOOT"], 0.95, undefined, { capPath: "retained_rights" })]), assumptions, fixedRng);
+  expect(!result.signings.some((row) => row.toTeam === "OPT" && row.annualSalary >= 9_200_000), "team should not decline an option and immediately re-sign the same player at essentially the same price");
+  return "declined team options need a real discount before incumbent re-sign";
+}
+
 function capRoomUsesCapBeforeRoomException(): string {
   const capTeam = team("CAP", 118_000_000, ["DPM"], 0.9, [
     { name: "Room Exception", amount: 9_000_000, used: 0, kind: "room_exception" }
@@ -220,7 +261,7 @@ function explicitExceptionInventoriesAreRespected(): string {
 
   const baeTeam = team("BAE", 182_000_000, ["PASS"], 0.95, [{ name: "Bi-Annual", amount: 5_500_000, used: 0, kind: "bi_annual" }], { capPath: "retained_rights" });
   const baeResult = simulateFreeAgencyMarket([player("p14o", "BAE Target", "FA", "UFA", 55, 4_000_000)], mapTeams([baeTeam]), assumptions, fixedRng);
-  expect(baeResult.signings[0]?.tool === "bi_annual", `bi-annual exception should be explicit; got ${baeResult.signings[0]?.tool}`);
+  expect(baeResult.signings[0]?.tool === "non_taxpayer_mle", `live NTMLE should outrank BAE when both are available; got ${baeResult.signings[0]?.tool}`);
   return "explicit exception inventories are respected";
 }
 
@@ -509,6 +550,9 @@ function player(
     scarcityScore: overrides.scarcityScore ?? 0,
     expectedMarketMinutes: overrides.expectedMarketMinutes ?? 1200,
     marketMinutesSource: overrides.marketMinutesSource ?? "regression",
+    declinedOptionTeam: undefined as string | undefined,
+    declinedOptionType: undefined as "Team Option" | "Non-Guaranteed" | "Player Option" | undefined,
+    declinedOptionSalary: undefined as number | undefined,
     guaranteedSalary: 0,
     deadCap: 0,
     total: 0,

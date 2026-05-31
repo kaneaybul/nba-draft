@@ -62,6 +62,9 @@ type MarketPlayer = {
   replaceability: number;
   skills: Record<SkillKey, number>;
   original?: { yoe?: number | null; projection_effective_contract_y1?: number | null } | undefined;
+  declinedOptionTeam?: string;
+  declinedOptionType?: "Team Option" | "Non-Guaranteed" | "Player Option";
+  declinedOptionSalary?: number;
 };
 
 type MarketTeam<TPlayer extends MarketPlayer> = {
@@ -491,12 +494,13 @@ function buildTeamBidPlans<TPlayer extends MarketPlayer, TTeam extends MarketTea
 ): TeamBidPlan<TPlayer, TTeam>[] {
   refreshTeamPayroll(team, assumptions);
   const maxActiveOffers = maxActiveOffersForTeam(team, assumptions);
+  if (maxActiveOffers <= 0) return [];
   const candidatePlayers = buildEligibleTeamBoard(team, players, assumptions);
   const plans = candidatePlayers
     .map((player) => buildOfferForTarget(team, player, players, assumptions, rng, round, tier, pass, ledger, audit, false))
     .filter((plan): plan is TeamBidPlan<TPlayer, TTeam> => Boolean(plan))
     .sort((a, b) => b.bid.teamPriority - a.bid.teamPriority || b.bid.teamUtility - a.bid.teamUtility || b.salary - a.salary);
-  if (plans.length) return plans.slice(0, maxActiveOffers);
+  if (plans.length) return fillActiveBidPlans(team, candidatePlayers, players, plans, maxActiveOffers, assumptions, rng, round, tier, pass, ledger, audit);
   candidatePlayers
     .slice()
     .sort((a, b) => b.marketValue - a.marketValue)
@@ -555,7 +559,62 @@ function capPathTargetPriority<TPlayer extends MarketPlayer, TTeam extends Marke
 function maxActiveOffersForTeam<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): number {
   const openSlots = legalRosterSlotsRemaining(team);
   if (openSlots <= 0) return 0;
-  return Math.min(openSlots, capRoomUrgencyActive(team, assumptions) ? 3 : 1);
+  const reusableRightsSlots = Math.min(openSlots, Math.max(0, team.roster.filter((player) => player.status !== "Signed").length));
+  const liveTools = liveExceptionTools(team, assumptions)
+    .filter((tool) => tool.amount - tool.used > assumptions.cap * 0.006)
+    .filter((tool) => tool.kind !== "room_exception" || (team.capPath ?? "retained_rights") === "cap_room")
+    .filter((tool) => !isOverCapException(tool.kind) || (team.capPath ?? "retained_rights") === "retained_rights")
+    .length;
+  const capSlots = capRoomUrgencyActive(team, assumptions) ? 3 : 0;
+  return Math.min(openSlots, Math.max(1, capSlots, liveTools + Math.min(reusableRightsSlots, 2)));
+}
+
+function selectActiveBidPlans<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  plans: TeamBidPlan<TPlayer, TTeam>[],
+  maxActiveOffers: number
+): TeamBidPlan<TPlayer, TTeam>[] {
+  const selected: TeamBidPlan<TPlayer, TTeam>[] = [];
+  const limitedTools = new Set<MarketToolKind>();
+  const reusableTools = new Set<MarketToolKind>(["cap", "bird"]);
+  for (const plan of plans) {
+    if (selected.length >= maxActiveOffers) break;
+    if (!reusableTools.has(plan.tool.kind) && limitedTools.has(plan.tool.kind)) continue;
+    selected.push(plan);
+    if (!reusableTools.has(plan.tool.kind)) limitedTools.add(plan.tool.kind);
+  }
+  return selected;
+}
+
+function fillActiveBidPlans<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  candidatePlayers: TPlayer[],
+  marketPlayers: TPlayer[],
+  initialPlans: TeamBidPlan<TPlayer, TTeam>[],
+  maxActiveOffers: number,
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  round: number,
+  tier: string,
+  pass: number,
+  ledger: MarketLedgerRow[],
+  audit: LegacyAuditRow[]
+): TeamBidPlan<TPlayer, TTeam>[] {
+  const selected = selectActiveBidPlans(initialPlans, maxActiveOffers);
+  const reusableTools = new Set<MarketToolKind>(["cap", "bird"]);
+  const selectedPlayerIds = new Set(selected.map((plan) => plan.player.id));
+  while (selected.length < maxActiveOffers) {
+    const excludedTools = new Set(selected.filter((plan) => !reusableTools.has(plan.tool.kind)).map((plan) => plan.tool.kind));
+    const extraPlans = candidatePlayers
+      .filter((player) => !selectedPlayerIds.has(player.id))
+      .map((player) => buildOfferForTarget(team, player, marketPlayers, assumptions, rng, round, tier, pass, ledger, audit, false, excludedTools))
+      .filter((plan): plan is TeamBidPlan<TPlayer, TTeam> => Boolean(plan))
+      .sort((a, b) => b.bid.teamPriority - a.bid.teamPriority || b.bid.teamUtility - a.bid.teamUtility || b.salary - a.salary);
+    const next = extraPlans.find((plan) => reusableTools.has(plan.tool.kind) || !excludedTools.has(plan.tool.kind));
+    if (!next) break;
+    selected.push(next);
+    selectedPlayerIds.add(next.player.id);
+  }
+  return selected;
 }
 
 function capRoomUrgencyActive<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): boolean {
@@ -582,7 +641,8 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   pass: number,
   ledger: MarketLedgerRow[],
   audit: LegacyAuditRow[],
-  recordRejections: boolean
+  recordRejections: boolean,
+  excludedToolKinds: Set<MarketToolKind> = new Set()
 ): TeamBidPlan<TPlayer, TTeam> | null {
   const reject = (reason: string, toolName?: string, offer?: number, legalMax?: number) => {
     if (recordRejections) recordRejectedOffer(team, player, round, tier, reason, toolName, offer, legalMax, ledger, audit);
@@ -595,7 +655,7 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   if (!rosterFit.allowed) {
     return reject(rosterFit.reason);
   }
-  const tool = bestSpendingTool(team, player, assumptions);
+  const tool = bestSpendingTool(team, player, assumptions, excludedToolKinds);
   if (!tool) {
     return reject("No cap room, rights, or usable exception");
   }
@@ -655,6 +715,9 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   const salary = clamp(player.marketValue * targetMultiplier, minSalary, legalMax);
   if (salary < Math.min(player.marketValue * 0.48, 8_000_000) && player.marketValue > 12_000_000) {
     return reject("Offer too far below player market to be credible", tool.name, salary, legalMax);
+  }
+  if (player.declinedOptionTeam === team.team && player.declinedOptionSalary && player.declinedOptionType !== "Player Option" && salary >= player.declinedOptionSalary * 0.92) {
+    return reject(`Declined ${player.declinedOptionType ?? "option"} blocks same-price re-sign; needs a real discount from ${formatMoney(player.declinedOptionSalary)}`, tool.name, salary, legalMax);
   }
 
   const components = playerChoiceComponents(team, player, salary, years, needFit, 0, false);
@@ -920,7 +983,7 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
   player.status = "Signed";
   addPlayerToRoster(signingTeam, player);
   releaseCapHold(teams, player);
-  const postToolRemaining = consumeSpendingTool(signingTeam, signingTool, chosen.salary);
+  const postToolRemaining = consumeSpendingTool(signingTeam, signingTool, chosen.salary, assumptions);
   recordToolUse(signingTeam, player, signingTool, chosen.salary, postToolRemaining, matched ? "Matched offer sheet with retained rights." : chosen.toolReason);
   signingTeam.explanations.push(`${player.name} signed for ${formatMoney(chosen.salary)} AAV`);
   refreshTeamPayroll(signingTeam, assumptions);
@@ -1028,25 +1091,25 @@ function canHonorOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TP
   if (offer.tool.kind === "bird") return offer.player.rightsTeam === offer.team.team && offer.player.rights !== "None" && offer.salary <= birdRightsAmount(offer.team, offer.player) + 100_000;
   if (offer.tool.kind === "cap") return offer.salary <= Math.max(0, offer.team.capSpace) + 100_000;
   if (offer.tool.kind === "non_taxpayer_mle" || offer.tool.kind === "bi_annual") {
-    const tool = offer.team.exceptions.find((candidate) => candidate.kind === offer.tool.kind);
+    const tool = liveExceptionTools(offer.team, assumptions).find((candidate) => candidate.kind === offer.tool.kind);
     const remaining = tool ? tool.amount - tool.used : 0;
     return (offer.team.capPath ?? "retained_rights") === "retained_rights" &&
       offer.team.payroll + offer.salary <= assumptions.firstApron + 100_000 &&
       offer.salary <= Math.min(remaining, Math.max(0, offer.team.firstApronRoom)) + 100_000;
   }
   if (offer.tool.kind === "taxpayer_mle") {
-    const tool = offer.team.exceptions.find((candidate) => candidate.kind === "taxpayer_mle");
+    const tool = liveExceptionTools(offer.team, assumptions).find((candidate) => candidate.kind === "taxpayer_mle");
     const remaining = tool ? tool.amount - tool.used : 0;
     return (offer.team.capPath ?? "retained_rights") === "retained_rights" &&
       offer.team.payroll + offer.salary <= assumptions.secondApron + 100_000 &&
       offer.salary <= Math.min(remaining, Math.max(0, offer.team.secondApronRoom)) + 100_000;
   }
   if (offer.tool.kind === "room_exception") {
-    const tool = offer.team.exceptions.find((candidate) => candidate.kind === "room_exception");
+    const tool = liveExceptionTools(offer.team, assumptions).find((candidate) => candidate.kind === "room_exception");
     const remaining = tool ? tool.amount - tool.used : 0;
     return (offer.team.capPath ?? "retained_rights") === "cap_room" && offer.salary <= remaining + 100_000;
   }
-  const tool = offer.team.exceptions.find((candidate) => candidate.kind === "minimum");
+  const tool = liveExceptionTools(offer.team, assumptions).find((candidate) => candidate.kind === "minimum");
   const remaining = tool ? tool.amount - tool.used : minimumSalary(offer.player);
   return offer.salary <= remaining + 100_000;
 }
@@ -1175,7 +1238,7 @@ function destinationFamiliarity<TPlayer extends MarketPlayer, TTeam extends Mark
   return 0.2;
 }
 
-function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): MarketTool | null {
+function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions, excludedToolKinds: Set<MarketToolKind> = new Set()): MarketTool | null {
   refreshTeamPayroll(team, assumptions);
   const capPath = team.capPath ?? (team.capSpace > minimumSalary(player) ? "cap_room" : "retained_rights");
   const rightsAmount = birdRightsAmount(team, player);
@@ -1186,7 +1249,7 @@ function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam
   if (capPath === "cap_room" && team.capSpace > minimumSalary(player)) {
     tools.push({ name: "Cap Space", amount: Math.max(team.capSpace, 0), used: 0, kind: "cap" });
   }
-  team.exceptions.forEach((tool) => {
+  liveExceptionTools(team, assumptions).forEach((tool) => {
     const remaining = tool.amount - tool.used;
     if (remaining <= minimumSalary(player)) return;
     if (tool.kind === "room_exception" && capPath !== "cap_room") return;
@@ -1204,7 +1267,41 @@ function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam
   return tools
     .map((tool) => ({ ...tool, amount: Math.max(0, tool.amount - tool.used) }))
     .filter((tool) => tool.amount >= minimumSalary(player))
+    .filter((tool) => !excludedToolKinds.has(tool.kind))
     .sort((a, b) => Number(b.amount >= player.marketValue * 0.9) - Number(a.amount >= player.marketValue * 0.9) || toolRank(a.kind) - toolRank(b.kind) || b.amount - a.amount)[0] ?? null;
+}
+
+function liveExceptionTools<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): MarketTool[] {
+  const existing = new Map<MarketToolKind, MarketTool>();
+  team.exceptions.forEach((tool) => existing.set(tool.kind, tool));
+  const toolFor = (kind: MarketToolKind, name: string, amount: number): MarketTool => {
+    const prior = existing.get(kind);
+    return {
+      name: prior?.name ?? name,
+      amount: prior?.amount && prior.amount > 0 ? Math.max(prior.amount, amount) : amount,
+      used: prior?.used ?? 0,
+      kind,
+      path: prior?.path,
+      source: prior?.source ?? "modeled live cap position"
+    };
+  };
+  const tools = new Map<MarketToolKind, MarketTool>();
+  tools.set("minimum", toolFor("minimum", "Minimum", minimumExceptionAmount(assumptions)));
+  const capPath = team.capPath ?? "retained_rights";
+  if (capPath === "cap_room") {
+    tools.set("room_exception", toolFor("room_exception", "Room Exception", exceptionAmount("room_exception", assumptions)));
+  } else if (capPath === "retained_rights") {
+    if (team.firstApronRoom > minimumExceptionAmount(assumptions)) {
+      tools.set("non_taxpayer_mle", toolFor("non_taxpayer_mle", "Non-Taxpayer MLE", exceptionAmount("non_taxpayer_mle", assumptions)));
+      tools.set("bi_annual", toolFor("bi_annual", "Bi-Annual", exceptionAmount("bi_annual", assumptions)));
+    } else if (team.secondApronRoom > minimumExceptionAmount(assumptions)) {
+      tools.set("taxpayer_mle", toolFor("taxpayer_mle", "Taxpayer MLE", exceptionAmount("taxpayer_mle", assumptions)));
+    }
+  }
+  existing.forEach((tool, kind) => {
+    if (!tools.has(kind) && tool.used > 0) tools.set(kind, tool);
+  });
+  return Array.from(tools.values());
 }
 
 function maxLegalOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions, toolKind: MarketToolKind): { legalMax: number; limiter: string } {
@@ -1441,10 +1538,17 @@ function releaseCapHold<TPlayer extends MarketPlayer, TTeam extends MarketTeam<T
   if (typeof incumbent.holdsRetained === "number") incumbent.holdsRetained = Math.max(0, incumbent.holdsRetained - hold);
 }
 
-function consumeSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, kind: MarketToolKind, salary: number): number {
+function consumeSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, kind: MarketToolKind, salary: number, assumptions: MarketAssumptions): number {
   if (kind === "cap") return Math.max(0, team.capSpace - salary);
   if (kind === "bird") return 0;
-  const tool = team.exceptions.find((candidate) => candidate.kind === kind && candidate.amount - candidate.used > 0);
+  let tool = team.exceptions.find((candidate) => candidate.kind === kind && candidate.amount - candidate.used > 0);
+  if (!tool) {
+    const liveTool = liveExceptionTools(team, assumptions).find((candidate) => candidate.kind === kind);
+    if (liveTool) {
+      team.exceptions.push(liveTool);
+      tool = liveTool;
+    }
+  }
   if (!tool) return 0;
   tool.used = Math.min(tool.amount, tool.used + salary);
   return Math.max(0, tool.amount - tool.used);
@@ -1712,7 +1816,12 @@ function exceptionAmount(kind: MarketToolKind, assumptions: MarketAssumptions): 
   if (kind === "bi_annual") return assumptions.cap * 0.0353;
   if (kind === "room_exception") return assumptions.cap * 0.05678;
   if (kind === "taxpayer_mle") return TAXPAYER_MLE_BASE_2024 * (assumptions.cap / TAXPAYER_MLE_BASE_CAP_2024);
+  if (kind === "minimum") return minimumExceptionAmount(assumptions);
   return 0;
+}
+
+function minimumExceptionAmount(assumptions: MarketAssumptions): number {
+  return Math.max(2_500_000, assumptions.cap * 0.012);
 }
 
 function isMarketExceptionTool(kind: MarketToolKind): boolean {

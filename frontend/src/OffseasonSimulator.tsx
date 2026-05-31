@@ -23,7 +23,7 @@ import type {
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
 type TeamMode = "rebuilding" | "rising" | "playoff hopeful" | "contender" | "tax-sensitive contender";
-type OffseasonTab = "dashboard" | "warRoom" | "league" | "draft" | "options" | "freeAgency" | "trades" | "teams" | "markets" | "overrides";
+type OffseasonTab = "dashboard" | "warRoom" | "league" | "draft" | "options" | "freeAgency" | "after" | "trades" | "teams" | "markets" | "overrides";
 type DecisionKind = "draft" | "option" | "ufa" | "rfa" | "trade";
 type ContractStatus = "Signed" | "UFA" | "RFA" | "Player Option" | "Team Option" | "Non-Guaranteed" | "Rookie FA";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
@@ -104,6 +104,7 @@ type SimulatorOverrides = {
 type TeamState = {
   team: string;
   name: string;
+  conference: string;
   mode: TeamMode;
   capYear: number;
   capPath: CapPath;
@@ -181,6 +182,9 @@ type SimPlayer = {
   marketMinutesSource: string;
   waivedDate?: string | null;
   rosterStatusSource: string;
+  declinedOptionTeam?: string;
+  declinedOptionType?: OptionDecision["optionType"];
+  declinedOptionSalary?: number;
   total: number;
   score: number;
   tier: string;
@@ -364,9 +368,61 @@ type TradeMove = {
   plausibility: number;
 };
 
+type AfterRosterPlayer = {
+  id: string;
+  name: string;
+  team: string;
+  position: string;
+  age: number;
+  status: ContractStatus;
+  salary: number;
+  guaranteedSalary: number;
+  marketValue: number;
+  minutes: number;
+  offense: number;
+  defense: number;
+  total: number;
+  score: number;
+  tier: string;
+};
+
+type AfterTeamStrength = {
+  rosterCount: number;
+  minutes: number;
+  minutesCoverage: number;
+  rawOffense: number;
+  rawDefense: number;
+  rawTotal: number;
+  offense: number;
+  defense: number;
+  total: number;
+  adjustedTotal: number;
+  winUnits: number;
+  projectedWins: number;
+  projectedLosses: number;
+  rank: number;
+  conferenceRank: number;
+  playoffStatus: string;
+};
+
+type FreeAgentOutcomeRow = {
+  id: string;
+  player: string;
+  status: ContractStatus;
+  rightsTeam: string;
+  finalTeam: string;
+  outcome: string;
+  salary: number;
+  years: number | null;
+  tool: string;
+  marketValue: number;
+  explanation: string;
+};
+
 type TeamSummary = {
   team: string;
   name: string;
+  conference: string;
   mode: TeamMode;
   capYear: number;
   capPath: CapPath;
@@ -404,6 +460,10 @@ type TeamSummary = {
   toolLedger: ToolLedgerEntry[];
   biddingHealth: BiddingHealth;
   majorMoves: string[];
+  roster: AfterRosterPlayer[];
+  trackedRosterSlots: number;
+  trackedRosterSalary: number;
+  strength: AfterTeamStrength;
 };
 
 type SimulationRun = {
@@ -839,6 +899,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
               ["draft", "Draft"],
               ["options", "Options"],
               ["freeAgency", "Free Agency"],
+              ["after", "After Rosters"],
               ["trades", "Trades"],
               ["teams", "Cap Sheets"],
               ["markets", "Markets"],
@@ -873,6 +934,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
           {activeTab === "draft" && <DraftResultsTable selections={run.draft} selectedTeam={selectedTeam} />}
           {activeTab === "options" && <OptionResultsTable decisions={run.options} selectedTeam={selectedTeam} />}
           {activeTab === "freeAgency" && <SigningResultsTable signings={filteredSignings} audit={run.marketAudit} selectedTeam={selectedTeam} />}
+          {activeTab === "after" && <AfterRosterView run={run} teams={filteredTeamRows} selectedTeam={selectedTeam} />}
           {activeTab === "trades" && <TradeResultsTable trades={filteredTrades} diagnostics={run.tradeDiagnostics} />}
           {activeTab === "teams" && <TeamCapTable teams={filteredTeamRows} />}
           {activeTab === "markets" && <MarketPlanView run={run} selectedTeam={selectedTeam} />}
@@ -964,8 +1026,7 @@ function runSimulation(data: AppData, season: number, capYear: number, assumptio
   }));
 
   refreshTeamPayrolls(teams, assumptions);
-  const teamSummaries = Array.from(teams.values())
-    .map((team) => teamSummary(team, market.bids))
+  const teamSummaries = buildTeamSummaries(Array.from(teams.values()), market.bids)
     .sort((a, b) => b.payroll - a.payroll);
 
   return {
@@ -1095,6 +1156,9 @@ function simulateOptions(players: SimPlayer[], teams: Map<string, TeamState>, as
       } else {
         player.team = "FA";
         player.status = "UFA";
+        player.declinedOptionTeam = team.team;
+        player.declinedOptionType = optionType;
+        player.declinedOptionSalary = optionSalary;
       }
       decisions.push({
         player,
@@ -1408,6 +1472,7 @@ function initializeTeams(
     const team: TeamState = {
       team: projection.team,
       name: projection.team_name,
+      conference: projection.conference || "NBA",
       mode: override?.mode ?? baseMode,
       capYear: capIndex.capYear,
       capPath: "retained_rights",
@@ -1917,6 +1982,39 @@ function refreshTeamPayroll(team: TeamState, assumptions: SimulatorAssumptions) 
   team.taxRoom = assumptions.tax - team.payroll;
   team.firstApronRoom = assumptions.firstApron - team.payroll;
   team.secondApronRoom = assumptions.secondApron - team.payroll;
+  team.exceptions = liveSpendingToolsForTeam(team, assumptions);
+}
+
+function liveSpendingToolsForTeam(team: TeamState, assumptions: SimulatorAssumptions): SpendingTool[] {
+  const existing = new Map<SpendingTool["kind"], SpendingTool>();
+  team.exceptions.forEach((tool) => existing.set(tool.kind, tool));
+  const toolFor = (kind: SpendingTool["kind"], name: string, amount: number, path: SpendingTool["path"]): SpendingTool => {
+    const prior = existing.get(kind);
+    return {
+      name: prior?.name ?? name,
+      amount: Math.round(prior?.amount && prior.amount > 0 ? Math.max(prior.amount, amount) : amount),
+      used: prior?.used ?? 0,
+      kind,
+      path,
+      source: prior?.source === "cap tracker override" ? prior.source : "modeled from live cap/apron position"
+    };
+  };
+  const tools = new Map<SpendingTool["kind"], SpendingTool>();
+  tools.set("minimum", toolFor("minimum", "Minimum", minimumExceptionAmount(assumptions), "either"));
+  if (team.capPath === "cap_room") {
+    tools.set("room_exception", toolFor("room_exception", "Room Exception", exceptionAmount("room_exception", assumptions), "renounced"));
+  } else if (team.capPath === "retained_rights") {
+    if (team.firstApronRoom > minimumExceptionAmount(assumptions)) {
+      tools.set("non_taxpayer_mle", toolFor("non_taxpayer_mle", "Non-Taxpayer MLE", exceptionAmount("non_taxpayer_mle", assumptions), "retained"));
+      tools.set("bi_annual", toolFor("bi_annual", "Bi-Annual", exceptionAmount("bi_annual", assumptions), "retained"));
+    } else if (team.secondApronRoom > minimumExceptionAmount(assumptions)) {
+      tools.set("taxpayer_mle", toolFor("taxpayer_mle", "Taxpayer MLE", exceptionAmount("taxpayer_mle", assumptions), "retained"));
+    }
+  }
+  existing.forEach((tool, kind) => {
+    if (!tools.has(kind) && tool.used > 0) tools.set(kind, tool);
+  });
+  return Array.from(tools.values()).sort((a, b) => spendingToolSort(a.kind) - spendingToolSort(b.kind));
 }
 
 function addPlayerToTeamRoster(team: TeamState, player: SimPlayer) {
@@ -2065,12 +2163,19 @@ function buildSimProspects(rows: DraftProspect[], overrides: SimulatorOverrides)
   });
 }
 
+function buildTeamSummaries(teams: TeamState[], bids: MarketBid[]): TeamSummary[] {
+  const summaries = teams.map((team) => teamSummary(team, bids));
+  applyAfterRosterStrength(summaries);
+  return summaries;
+}
+
 function teamSummary(team: TeamState, bids: MarketBid[]): TeamSummary {
   const rosterCount = standardRosterCount(team);
   const teamBids = bids.filter((bid) => bid.team === team.team);
   return {
     team: team.team,
     name: team.name,
+    conference: team.conference,
     mode: team.mode,
     capYear: team.capYear,
     capPath: team.capPath,
@@ -2111,8 +2216,143 @@ function teamSummary(team: TeamState, bids: MarketBid[]): TeamSummary {
     premiumPickCount: team.premiumPickCount,
     toolLedger: [...team.toolLedger],
     biddingHealth: biddingHealthForTeam(team, teamBids),
-    majorMoves: team.explanations.slice(-5)
+    majorMoves: team.explanations.slice(-5),
+    roster: team.roster
+      .slice()
+      .sort((a, b) => b.salary - a.salary || b.score - a.score)
+      .map(afterRosterPlayer),
+    trackedRosterSlots: team.rosterCountAdjustment,
+    trackedRosterSalary: Math.max(team.activeSalaryAdjustment, team.guaranteedSalaryAdjustment, 0),
+    strength: preliminaryAfterTeamStrength(team)
   };
+}
+
+function afterRosterPlayer(player: SimPlayer): AfterRosterPlayer {
+  const offense = playerProjectionOffense(player);
+  const defense = playerProjectionDefense(player);
+  return {
+    id: player.id,
+    name: player.name,
+    team: player.team,
+    position: player.position || "UNK",
+    age: player.age,
+    status: player.status,
+    salary: player.salary,
+    guaranteedSalary: player.guaranteedSalary || player.salary,
+    marketValue: player.marketValue,
+    minutes: playerProjectionMinutes(player),
+    offense,
+    defense,
+    total: offense + defense,
+    score: player.score,
+    tier: player.tier
+  };
+}
+
+function preliminaryAfterTeamStrength(team: TeamState): AfterTeamStrength {
+  const roster = team.roster.map(afterRosterPlayer);
+  const minutes = sum(roster.map((player) => player.minutes));
+  const weighted = (value: (player: AfterRosterPlayer) => number) => {
+    if (minutes > 0) return sum(roster.map((player) => value(player) * player.minutes / minutes));
+    return avg(roster.map(value));
+  };
+  const rawOffense = weighted((player) => player.offense) * 5;
+  const rawDefense = weighted((player) => player.defense) * 5;
+  return {
+    rosterCount: standardRosterCount(team),
+    minutes: roundTo(minutes, 1),
+    minutesCoverage: roundTo(clamp(minutes / 19680, 0, 1), 3),
+    rawOffense,
+    rawDefense,
+    rawTotal: rawOffense + rawDefense,
+    offense: rawOffense,
+    defense: rawDefense,
+    total: rawOffense + rawDefense,
+    adjustedTotal: rawOffense + rawDefense,
+    winUnits: rawOffense + rawDefense,
+    projectedWins: team.projectedWins,
+    projectedLosses: roundTo(82 - team.projectedWins, 1),
+    rank: team.projectedRank,
+    conferenceRank: team.projectedRank,
+    playoffStatus: "Lottery"
+  };
+}
+
+function applyAfterRosterStrength(summaries: TeamSummary[]) {
+  if (summaries.length === 0) return;
+  const rawOffenseMean = avg(summaries.map((team) => team.strength.rawOffense));
+  const rawDefenseMean = avg(summaries.map((team) => team.strength.rawDefense));
+  const centeredRaw = summaries.map((team) => {
+    const rawOffense = team.strength.rawOffense - rawOffenseMean;
+    const rawDefense = team.strength.rawDefense - rawDefenseMean;
+    return { team, rawOffense, rawDefense };
+  });
+  const missingMinuteOffense = Math.min(0, quantile(centeredRaw.map((row) => row.rawOffense), 0.2));
+  const missingMinuteDefense = Math.min(0, quantile(centeredRaw.map((row) => row.rawDefense), 0.2));
+  const adjusted = centeredRaw.map((row) => {
+    const coverage = row.team.strength.minutesCoverage;
+    const enoughMinutes = row.team.strength.minutes >= 19680;
+    const offense = enoughMinutes ? row.rawOffense : row.rawOffense * coverage + missingMinuteOffense * (1 - coverage);
+    const defense = enoughMinutes ? row.rawDefense : row.rawDefense * coverage + missingMinuteDefense * (1 - coverage);
+    return { ...row, offense, defense };
+  });
+  const offenseMean = avg(adjusted.map((row) => row.offense));
+  const defenseMean = avg(adjusted.map((row) => row.defense));
+  const roundedOffense = zeroSumRound(adjusted.map((row) => row.offense - offenseMean));
+  const roundedDefense = zeroSumRound(adjusted.map((row) => row.defense - defenseMean));
+  adjusted.forEach((row, index) => {
+    const offense = roundedOffense[index];
+    const defense = roundedDefense[index];
+    const total = roundTo(offense + defense, 2);
+    row.team.strength = {
+      ...row.team.strength,
+      rawOffense: roundTo(row.rawOffense, 2),
+      rawDefense: roundTo(row.rawDefense, 2),
+      rawTotal: roundTo(row.rawOffense + row.rawDefense, 2),
+      offense,
+      defense,
+      total,
+      adjustedTotal: total,
+      winUnits: total
+    };
+  });
+  const meanWinUnits = avg(summaries.map((team) => team.strength.winUnits));
+  summaries.forEach((team) => {
+    const projectedWins = roundTo(clamp(41 + (team.strength.winUnits - meanWinUnits) * 2.8, 12, 70), 1);
+    team.strength.projectedWins = projectedWins;
+    team.strength.projectedLosses = roundTo(82 - projectedWins, 1);
+  });
+  summaries
+    .slice()
+    .sort((a, b) => b.strength.projectedWins - a.strength.projectedWins || b.strength.total - a.strength.total)
+    .forEach((team, index) => {
+      team.strength.rank = index + 1;
+    });
+  const conferences = Array.from(new Set(summaries.map((team) => team.conference || "NBA")));
+  conferences.forEach((conference) => {
+    summaries
+      .filter((team) => (team.conference || "NBA") === conference)
+      .sort((a, b) => b.strength.projectedWins - a.strength.projectedWins || b.strength.total - a.strength.total)
+      .forEach((team, index) => {
+        const conferenceRank = index + 1;
+        team.strength.conferenceRank = conferenceRank;
+        team.strength.playoffStatus = conferenceRank <= 6 ? "Playoff" : conferenceRank <= 10 ? "Play-In" : "Lottery";
+      });
+  });
+}
+
+function playerProjectionMinutes(player: SimPlayer): number {
+  return Math.max(0, finiteNumber(player.original?.projection_minutes_y1, player.expectedMarketMinutes, player.original?.Minutes, 0));
+}
+
+function playerProjectionOffense(player: SimPlayer): number {
+  const fallbackTotal = finiteNumber(player.original?.projection_y1, player.original?.total, player.total, 0);
+  return finiteNumber(player.original?.projection_offense_y1, player.original?.offense, fallbackTotal * 0.52);
+}
+
+function playerProjectionDefense(player: SimPlayer): number {
+  const fallbackTotal = finiteNumber(player.original?.projection_y1, player.original?.total, player.total, 0);
+  return finiteNumber(player.original?.projection_defense_y1, player.original?.defense, fallbackTotal - playerProjectionOffense(player));
 }
 
 function playerOverride(player: PlayerImpact, overrides: SimulatorOverrides, overrideSeason?: number): PlayerOverride | undefined {
@@ -3939,6 +4179,203 @@ function TeamCapTable({ teams }: { teams: TeamSummary[] }) {
   );
 }
 
+function AfterRosterView({ run, teams, selectedTeam }: { run: SimulationRun; teams: TeamSummary[]; selectedTeam: string }) {
+  const teamRows = teams
+    .slice()
+    .sort((a, b) => a.strength.rank - b.strength.rank || a.team.localeCompare(b.team));
+  const outcomes = buildFreeAgentOutcomeRows(run, selectedTeam);
+  const unsignedCount = outcomes.filter((row) => row.finalTeam === "Unsigned").length;
+  const signedCount = outcomes.length - unsignedCount;
+  return (
+    <div className="offseason-stack">
+      <section className="offseason-panel after-roster-panel">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>After Rosters</h2>
+            <p>Final simulated rosters with salary, role value, and Team Projection-style strength after options, draft, free agency, and trades.</p>
+          </div>
+        </div>
+        <div className="after-roster-grid">
+          {teamRows.map((team) => (
+            <article key={team.team} className="after-team-card">
+              <div className="after-team-head">
+                <div>
+                  <strong>{team.team}</strong>
+                  <span>{`${team.name} / ${team.strength.playoffStatus}`}</span>
+                </div>
+                <b>{`${formatNumber(team.strength.projectedWins, 1)} wins`}</b>
+              </div>
+              <div className="after-strength-strip">
+                <Fact label="Rank" value={`#${team.strength.rank} / ${team.conference} #${team.strength.conferenceRank}`} />
+                <Fact label="Total" value={formatNumber(team.strength.total, 2)} />
+                <Fact label="Off" value={formatSignedNumber(team.strength.offense, 2)} />
+                <Fact label="Def" value={formatSignedNumber(team.strength.defense, 2)} />
+                <Fact label="Minutes" value={`${formatNumber(team.strength.minutes, 0)} (${formatNumber(team.strength.minutesCoverage * 100, 0)}%)`} />
+                <Fact label="Payroll" value={formatMoney(team.payroll)} />
+              </div>
+              <div className="after-table-wrap">
+                <table className="data-table after-roster-table">
+                  <thead>
+                    <tr>
+                      <th>Player</th>
+                      <th>Pos</th>
+                      <th>Age</th>
+                      <th>Salary</th>
+                      <th>Guar.</th>
+                      <th>Min</th>
+                      <th>Total</th>
+                      <th>Tier</th>
+                      <th>How</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {team.roster.map((player) => (
+                      <tr key={player.id}>
+                        <td>{player.name}</td>
+                        <td>{player.position}</td>
+                        <td>{formatNumber(player.age, 0)}</td>
+                        <td>{formatMoney(player.salary)}</td>
+                        <td>{formatMoney(player.guaranteedSalary)}</td>
+                        <td>{formatNumber(player.minutes, 0)}</td>
+                        <td>{formatSignedNumber(player.total, 2)}</td>
+                        <td>{player.tier}</td>
+                        <td>{afterRosterAcquisition(player, team, run)}</td>
+                      </tr>
+                    ))}
+                    {team.trackedRosterSlots > 0 && (
+                      <tr className="tracked-roster-row">
+                        <td>{`${team.trackedRosterSlots} tracked slot${team.trackedRosterSlots === 1 ? "" : "s"}`}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>{formatMoney(team.trackedRosterSalary)}</td>
+                        <td>{formatMoney(team.trackedRosterSalary)}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>Cap tracker</td>
+                        <td>Unmatched active salary</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+      <TablePanel title="Free-Agent Outcomes" detail={`${signedCount} market players found a team and ${unsignedCount} remain unsigned in this run.`}>
+        <table className="data-table offseason-table after-outcome-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Status</th>
+              <th>Rights</th>
+              <th>Final</th>
+              <th>Outcome</th>
+              <th>Salary</th>
+              <th>Years</th>
+              <th>Tool</th>
+              <th>FA Value</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {outcomes.map((row) => (
+              <tr key={row.id} className={cls(row.finalTeam === "Unsigned" && "unsigned-outcome-row")}>
+                <td>{row.player}</td>
+                <td>{row.status}</td>
+                <td>{row.rightsTeam || "-"}</td>
+                <td>{row.finalTeam}</td>
+                <td>{row.outcome}</td>
+                <td>{row.salary > 0 ? formatMoney(row.salary) : "-"}</td>
+                <td>{row.years ?? "-"}</td>
+                <td>{row.tool}</td>
+                <td>{formatMoney(row.marketValue)}</td>
+                <td>{row.explanation}</td>
+              </tr>
+            ))}
+            {outcomes.length === 0 && (
+              <tr>
+                <td colSpan={10}>No free-agent outcomes matched this filter.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </TablePanel>
+    </div>
+  );
+}
+
+function afterRosterAcquisition(player: AfterRosterPlayer, team: TeamSummary, run: SimulationRun): string {
+  const trade = run.trades.find((item) => item.player.id === player.id && item.teamB === team.team);
+  if (trade) return `Trade from ${trade.teamA}`;
+  const draft = run.draft.find((item) => `rookie-${item.prospect.id}-${item.pick}` === player.id);
+  if (draft) return `Draft pick ${draft.pick}`;
+  const signing = run.freeAgency.find((item) => item.player.id === player.id && item.toTeam === team.team);
+  if (signing) {
+    if (signing.matched) return `Matched ${signing.offerSheetTeam ?? "offer"} sheet`;
+    if (signing.fromTeam === signing.toTeam) return `Re-signed via ${signing.context.toolName || signing.tool}`;
+    return `FA from ${signing.fromTeam || "FA"} via ${signing.context.toolName || signing.tool}`;
+  }
+  const option = run.options.find((item) => item.player.id === player.id && item.team === team.team && item.decision === "exercise");
+  if (option) return `${option.optionType} kept`;
+  return "Returning";
+}
+
+function buildFreeAgentOutcomeRows(run: SimulationRun, selectedTeam: string): FreeAgentOutcomeRow[] {
+  const signingsByPlayer = new Map(run.freeAgency.map((signing) => [signing.player.id, signing]));
+  const optionsByPlayer = new Map(run.options.map((option) => [option.player.id, option]));
+  const resolutionsByPlayer = new Map(run.marketResolutions.map((resolution) => [resolution.playerId, resolution]));
+  return run.players
+    .filter((player) => {
+      const openingStatus = openingFreeAgentStatus(player);
+      return openingStatus !== "Signed" || signingsByPlayer.has(player.id) || optionsByPlayer.has(player.id) || player.status !== "Signed";
+    })
+    .map((player) => {
+      const signing = signingsByPlayer.get(player.id);
+      const option = optionsByPlayer.get(player.id);
+      const resolution = resolutionsByPlayer.get(player.id);
+      const status = option?.optionType ?? openingFreeAgentStatus(player);
+      const finalTeam = signing?.toTeam ?? (player.status === "Signed" && player.team !== "FA" ? player.team : "Unsigned");
+      const outcome = freeAgentOutcomeLabel(player, signing, option, finalTeam);
+      const explanation = signing?.explanation ?? option?.explanation ?? resolution?.unresolvedReason ?? "No team used a roster spot or spending tool at the simulated price.";
+      return {
+        id: player.id,
+        player: player.name,
+        status,
+        rightsTeam: player.rightsTeam,
+        finalTeam,
+        outcome,
+        salary: signing?.annualSalary ?? (finalTeam === "Unsigned" ? 0 : player.salary),
+        years: signing?.years ?? null,
+        tool: signing?.context.toolName ?? signing?.tool ?? (option ? option.optionType : "-"),
+        marketValue: player.marketValue,
+        explanation
+      };
+    })
+    .filter((row) => selectedTeam === "All" || row.rightsTeam === selectedTeam || row.finalTeam === selectedTeam)
+    .sort((a, b) => {
+      if (a.finalTeam === "Unsigned" && b.finalTeam !== "Unsigned") return -1;
+      if (a.finalTeam !== "Unsigned" && b.finalTeam === "Unsigned") return 1;
+      return b.marketValue - a.marketValue || a.player.localeCompare(b.player);
+    });
+}
+
+function openingFreeAgentStatus(player: SimPlayer): ContractStatus {
+  if (player.declinedOptionType) return player.declinedOptionType;
+  return normalizeStatus(player.original?.contract_status);
+}
+
+function freeAgentOutcomeLabel(player: SimPlayer, signing: FreeAgentSigning | undefined, option: OptionDecision | undefined, finalTeam: string): string {
+  if (signing?.matched) return "Offer sheet matched";
+  if (signing?.offerSheetTeam && signing.toTeam !== signing.fromTeam) return "Offer sheet signed";
+  if (signing && signing.fromTeam === signing.toTeam) return "Re-signed";
+  if (signing) return "Signed";
+  if (option?.decision === "exercise") return `${option.optionType} exercised`;
+  if (option?.decision === "decline" && finalTeam === "Unsigned") return `Unsigned after ${option.optionType}`;
+  if (player.status !== "Signed" || finalTeam === "Unsigned") return "Unsigned";
+  return "Stayed under contract";
+}
+
 function MarketPlanView({ run, selectedTeam }: { run: SimulationRun; selectedTeam: string }) {
   const teams = selectedTeam === "All" ? run.teams.slice(0, 12) : run.teams.filter((team) => team.team === selectedTeam);
   const unsigned = run.players
@@ -4676,7 +5113,7 @@ function readStoredOffseasonTab(): OffseasonTab {
 }
 
 function isOffseasonTab(value: string): value is OffseasonTab {
-  return ["dashboard", "warRoom", "league", "draft", "options", "freeAgency", "trades", "teams", "markets", "overrides"].includes(value);
+  return ["dashboard", "warRoom", "league", "draft", "options", "freeAgency", "after", "trades", "teams", "markets", "overrides"].includes(value);
 }
 
 function parseNeeds(value: string): SkillKey[] {
@@ -4692,12 +5129,44 @@ function finiteNumber(...values: Array<number | null | undefined>): number {
   return value ?? 0;
 }
 
+function formatSignedNumber(value: number, digits: number): string {
+  const rounded = formatNumber(value, digits);
+  return value > 0 ? `+${rounded}` : rounded;
+}
+
 function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0);
 }
 
 function avg(values: number[]): number {
   return values.length === 0 ? 0 : sum(values) / values.length;
+}
+
+function roundTo(value: number, digits: number): number {
+  const factor = 10 ** digits;
+  return Math.round((Number.isFinite(value) ? value : 0) * factor) / factor;
+}
+
+function quantile(values: number[], probability: number): number {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (sorted.length === 0) return 0;
+  const position = clamp(probability, 0, 1) * (sorted.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower);
+}
+
+function zeroSumRound(values: number[]): number[] {
+  const rounded = values.map((value) => roundTo(value, 2));
+  const residual = roundTo(-sum(rounded), 2);
+  if (Math.abs(residual) >= 0.01 && rounded.length > 0) {
+    const targetIndex = rounded
+      .map((value, index) => ({ value: Math.abs(value), index }))
+      .sort((a, b) => b.value - a.value)[0].index;
+    rounded[targetIndex] = roundTo(rounded[targetIndex] + residual, 2);
+  }
+  return rounded;
 }
 
 function safeRatio(numerator: number, denominator: number): number {
