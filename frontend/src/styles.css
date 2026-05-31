@@ -5688,6 +5688,40 @@ input:focus {
   overflow: visible;
 }
 
+.unsigned-board-panel {
+  overflow: hidden;
+}
+
+.unsigned-board-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.unsigned-board-wrap {
+  max-height: 420px;
+  border-top: 1px solid var(--line);
+}
+
+.unsigned-board-table {
+  width: max(100%, 980px);
+}
+
+.unsigned-board-table th,
+.unsigned-board-table td {
+  white-space: nowrap;
+}
+
+.unsigned-board-table th:last-child,
+.unsigned-board-table td:last-child {
+  max-width: 520px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+}
+
 .after-roster-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7791,6 +7825,7 @@ input:focus {
   .team-focus-grid,
   .market-plan-grid,
   .after-roster-grid,
+  .unsigned-board-summary,
   .war-room-grid,
   .decision-card-grid,
   .draft-board-grid,
@@ -8580,6 +8615,7 @@ body,
   .transaction-grid,
   .market-plan-grid,
   .after-roster-grid,
+  .unsigned-board-summary,
   .war-room-grid,
   .decision-card-grid,
   .draft-board-grid,

@@ -4184,10 +4184,12 @@ function AfterRosterView({ run, teams, selectedTeam }: { run: SimulationRun; tea
     .slice()
     .sort((a, b) => a.strength.rank - b.strength.rank || a.team.localeCompare(b.team));
   const outcomes = buildFreeAgentOutcomeRows(run, selectedTeam);
-  const unsignedCount = outcomes.filter((row) => row.finalTeam === "Unsigned").length;
+  const unsignedRows = outcomes.filter((row) => row.finalTeam === "Unsigned");
+  const unsignedCount = unsignedRows.length;
   const signedCount = outcomes.length - unsignedCount;
   return (
     <div className="offseason-stack">
+      <UnsignedFreeAgentBoard rows={unsignedRows} selectedTeam={selectedTeam} />
       <section className="offseason-panel after-roster-panel">
         <div className="panel-heading compact-heading">
           <div>
@@ -4302,6 +4304,57 @@ function AfterRosterView({ run, teams, selectedTeam }: { run: SimulationRun; tea
         </table>
       </TablePanel>
     </div>
+  );
+}
+
+function UnsignedFreeAgentBoard({ rows, selectedTeam }: { rows: FreeAgentOutcomeRow[]; selectedTeam: string }) {
+  const totalMarket = sum(rows.map((row) => row.marketValue));
+  const topUnsigned = rows[0];
+  return (
+    <section className="offseason-panel unsigned-board-panel">
+      <div className="panel-heading compact-heading">
+        <div>
+          <h2>{selectedTeam === "All" ? "Who's Left" : `${selectedTeam} Unsigned / Lost Market`}</h2>
+          <p>Free agents who did not end up on a simulated roster, sorted by FA value.</p>
+        </div>
+      </div>
+      <div className="unsigned-board-summary">
+        <Fact label="Unsigned" value={String(rows.length)} />
+        <Fact label="FA value left" value={formatMoney(totalMarket)} />
+        <Fact label="Top name" value={topUnsigned ? `${topUnsigned.player} (${formatMoney(topUnsigned.marketValue)})` : "-"} />
+      </div>
+      <div className="table-wrap unsigned-board-wrap">
+        <table className="data-table unsigned-board-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Status</th>
+              <th>Rights</th>
+              <th>FA Value</th>
+              <th>Outcome</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={`unsigned-${row.id}`}>
+                <td>{row.player}</td>
+                <td>{row.status}</td>
+                <td>{row.rightsTeam || "-"}</td>
+                <td>{formatMoney(row.marketValue)}</td>
+                <td>{row.outcome}</td>
+                <td>{row.explanation}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={6}>No unsigned free agents matched this filter.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
