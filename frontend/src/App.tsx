@@ -684,7 +684,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [query, setQuery] = useSessionState("impact:query", "");
   const [team, setTeam] = useSessionState("impact:team", "All");
   const [faStatus, setFaStatus] = useSessionState<FaStatusFilter>("impact:faStatus", "All");
-  const [position, setPosition] = useSessionState("impact:position", "All");
+  const [positionSelections, setPositionSelections] = useSessionState<string[]>("impact:positions", []);
   const [tier, setTier] = useSessionState("impact:tier", "All");
   const [sortKey, setSortKey] = useSessionState<SortKey>("impact:sortKey", "score");
   const [sortDirection, setSortDirection] = useSessionState<SortDirection>("impact:sortDirection", "desc");
@@ -705,11 +705,16 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     const available = new Set(seasonPlayers.map((player) => faStatusLabel(player)));
     return order.filter((status) => status === "All" || available.has(status));
   }, [seasonPlayers]);
-  const positions = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => displayPosition(player.position)))).sort()], [seasonPlayers]);
+  const positions = useMemo(() => Array.from(new Set(seasonPlayers.map((player) => displayPosition(player.position)))).sort(), [seasonPlayers]);
+  const activePositionSelections = useMemo(
+    () => (Array.isArray(positionSelections) ? positionSelections.filter((item) => positions.includes(item)) : []),
+    [positionSelections, positions]
+  );
+  const selectedPositionSet = useMemo(() => new Set(activePositionSelections), [activePositionSelections]);
   const tiers = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.tier))).sort()], [seasonPlayers]);
   const selectedFilterField = filterFields.find((field) => field.key === filterKey) ?? filterFields[0];
   const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
-  const quickFilterCount = [query.trim(), team !== "All", faStatus !== "All", position !== "All", tier !== "All"].filter(Boolean).length;
+  const quickFilterCount = [query.trim(), team !== "All", faStatus !== "All", activePositionSelections.length > 0, tier !== "All"].filter(Boolean).length;
   const activeFilterCount = quickFilterCount + filterRules.length;
 
   const filtered = useMemo(() => {
@@ -718,11 +723,19 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       .filter((player) => !q || player.player_name.toLowerCase().includes(q))
       .filter((player) => team === "All" || playerTeamFilterValue(player) === team)
       .filter((player) => faStatus === "All" || faStatusLabel(player) === faStatus)
-      .filter((player) => position === "All" || displayPosition(player.position) === position)
+      .filter((player) => activePositionSelections.length === 0 || selectedPositionSet.has(displayPosition(player.position)))
       .filter((player) => tier === "All" || player.tier === tier)
       .filter((player) => passesFilterRules(player, filterRules))
       .sort((a, b) => comparePlayers(a, b, sortKey, sortDirection));
-  }, [faStatus, filterRules, position, query, seasonPlayers, sortDirection, sortKey, team, tier]);
+  }, [activePositionSelections.length, faStatus, filterRules, query, seasonPlayers, selectedPositionSet, sortDirection, sortKey, team, tier]);
+
+  useEffect(() => {
+    setPositionSelections((current) => {
+      const currentList = Array.isArray(current) ? current : [];
+      const next = currentList.filter((item) => positions.includes(item));
+      return next.length === currentList.length ? currentList : next;
+    });
+  }, [positions, setPositionSelections]);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -760,7 +773,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     setQuery("");
     setTeam("All");
     setFaStatus("All");
-    setPosition("All");
+    setPositionSelections([]);
     setTier("All");
     setFilterRules([]);
     setFilterDrawerOpen(false);
@@ -815,14 +828,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
                 ))}
               </select>
             </label>
-            <label className="mobile-drawer-filter">
-              Position
-              <select value={position} onChange={(event) => setPosition(event.target.value)}>
-                {positions.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
+            <PositionFilter positions={positions} selectedPositions={activePositionSelections} onChange={setPositionSelections} />
             <label className="mobile-drawer-filter">
               Tier
               <select value={tier} onChange={(event) => setTier(event.target.value)}>
@@ -938,6 +944,46 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
         </div>
       )}
     </main>
+  );
+}
+
+function PositionFilter({
+  positions,
+  selectedPositions,
+  onChange
+}: {
+  positions: string[];
+  selectedPositions: string[];
+  onChange: (value: string[] | ((current: string[]) => string[])) => void;
+}) {
+  const selectedSet = useMemo(() => new Set(selectedPositions), [selectedPositions]);
+  const togglePosition = (position: string) => {
+    onChange((current) => {
+      const currentList = Array.isArray(current) ? current : [];
+      return currentList.includes(position) ? currentList.filter((item) => item !== position) : [...currentList, position];
+    });
+  };
+
+  return (
+    <div className="filter-field position-multi-filter mobile-drawer-filter">
+      <span>Position</span>
+      <div className="position-toggle-group" role="group" aria-label="Position filter">
+        <button type="button" className={cls(selectedPositions.length === 0 && "active")} aria-pressed={selectedPositions.length === 0} onClick={() => onChange([])}>
+          All
+        </button>
+        {positions.map((position) => (
+          <button
+            key={position}
+            type="button"
+            className={cls(selectedSet.has(position) && "active")}
+            aria-pressed={selectedSet.has(position)}
+            onClick={() => togglePosition(position)}
+          >
+            {position}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
