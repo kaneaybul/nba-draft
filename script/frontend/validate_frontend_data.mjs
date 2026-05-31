@@ -35,6 +35,7 @@ function main() {
 
   validateRowCounts(manifest);
   validateInitialPayload(manifest);
+  validateRookieProjectionAssignments(manifest);
   console.log(`frontend data contract passed: ${files.length} manifest files`);
 }
 
@@ -74,6 +75,29 @@ function validateInitialPayload(manifest) {
   assert(initialBytes <= maxInitialBytes, `Initial manifest + player shard payload exceeds ${maxInitialBytes} bytes (${initialBytes})`);
 }
 
+function validateRookieProjectionAssignments(manifest) {
+  const playerShards = manifest.static_data.datasets.impact_players?.shards ?? [];
+  for (const shard of playerShards) {
+    const season = Number(shard.year ?? shard.key);
+    if (!Number.isFinite(season)) continue;
+    const rows = readJson(path.join(dataDir, shard.file));
+    const rookies = rows.filter((row) => row.availability_status === "rookie_projection");
+    if (rookies.length === 0) continue;
+    const assigned = rookies.filter((row) =>
+      cleanTeam(row.team) !== "FA" ||
+      cleanTeam(row.current_roster_team) !== "FA" ||
+      cleanTeam(row.incumbent_team) !== "FA" ||
+      cleanTeam(row.market_team) !== "FA" ||
+      cleanTeam(row.team_projection_base) !== "FA" ||
+      row.projection_roster_status !== "rookie_fa" ||
+      row.contract_status !== "Rookie FA"
+    );
+    assert(assigned.length === 0, `Rookie projections must remain unassigned in ${season}: ${assigned.slice(0, 5).map((row) => row.player_name).join(", ")}`);
+    const missingMinutes = rookies.filter((row) => !(Number(row.Minutes) > 0));
+    assert(missingMinutes.length === 0, `Rookie projections must keep positive minutes in ${season}: ${missingMinutes.slice(0, 5).map((row) => row.player_name).join(", ")}`);
+  }
+}
+
 function rowCountFor(dataset, payload) {
   if (Array.isArray(payload)) return payload.length;
   if (dataset === "cap_tracker" && Array.isArray(payload?.team_seasons)) return payload.team_seasons.length;
@@ -105,4 +129,8 @@ function walk(dir) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function cleanTeam(value) {
+  return String(value ?? "").trim().toUpperCase() || "FA";
 }

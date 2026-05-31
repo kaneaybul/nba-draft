@@ -1584,19 +1584,22 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   first_round_scale <- is.finite(first_year_salary) & rank_proxy >= 1 & rank_proxy <= 30
   draft_order <- load_official_draft_order(base_dir)
   pick_team <- draft_order$team[match(rank_proxy, draft_order$pick)]
+  projected_pick_team <- ifelse(!is.na(pick_team) & nzchar(trimws(pick_team)), normalize_team(pick_team), NA_character_)
 
   rows$nba_id <- -as.integer(2027000 + seq_len(nrow(rows)))
   rows$player_name <- as.character(draft$player)
   rows$year <- target_year
   drafted_team <- if ("drafted_team" %in% names(draft)) as.character(draft$drafted_team) else rep(NA_character_, nrow(draft))
-  rows$team <- ifelse(
+  actual_drafted_team <- ifelse(
     !is.na(drafted_team) & nzchar(trimws(drafted_team)) & is.finite(actual_pick_num),
     normalize_team(drafted_team),
-    ifelse(!is.na(pick_team) & nzchar(trimws(pick_team)), normalize_team(pick_team), "FA")
+    NA_character_
   )
+  projected_pick_team <- coalesce_col(actual_drafted_team, projected_pick_team)
+  rows$team <- "FA"
   if ("current_roster_team" %in% names(rows)) rows$current_roster_team <- rows$team
   if ("roster_truth_team" %in% names(rows)) rows$roster_truth_team <- rows$team
-  if ("roster_status_source" %in% names(rows)) rows$roster_status_source <- "consensus mock draft order"
+  if ("roster_status_source" %in% names(rows)) rows$roster_status_source <- "unassigned rookie projection"
   rows$position <- ifelse(!is.na(draft$position) & nzchar(trimws(draft$position)), as.character(draft$position), "UNK")
   rookie_position_shares <- position_share_matrix_from_labels(rows$position)
   for (share_col in position_share_columns()) {
@@ -1620,13 +1623,21 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows$skill_source <- "draft_model_deaged"
   rows$skill_source_year <- draft$draft_year
   rows$contract <- ifelse(first_round_scale, first_year_salary, NA_real_)
-  rows$contract_status <- ifelse(first_round_scale, "Signed", "Rookie FA")
-  rows$incumbent_team <- normalize_team(rows$team)
-  rows$market_team <- ifelse(first_round_scale, rows$incumbent_team, ifelse(rows$team == "FA" | is_blank_text(rows$team), "FA", normalize_team(rows$team)))
-  rows$team_projection_base <- rows$market_team
-  rows$projection_roster_status <- ifelse(first_round_scale, "signed", "rookie_fa")
+  rows$contract_status <- "Rookie FA"
+  rows$incumbent_team <- "FA"
+  rows$market_team <- "FA"
+  rows$team_projection_base <- "FA"
+  rows$projection_roster_status <- "rookie_fa"
   if ("overall_pick" %in% names(rows)) rows$overall_pick <- rank_proxy
   if ("draft_year" %in% names(rows)) rows$draft_year <- draft$draft_year
+  if ("source_note" %in% names(rows)) {
+    pick_note <- ifelse(
+      !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team)),
+      paste0("Consensus/mock pick team ", projected_pick_team, " is used only for pick/salary context; player remains unassigned."),
+      "Consensus/mock rookie projection remains unassigned until actually drafted."
+    )
+    rows$source_note <- pick_note
+  }
 
   if ("skill_model_off" %in% names(rows)) rows$skill_model_off <- rows$offense
   if ("skill_model_def" %in% names(rows)) rows$skill_model_def <- rows$defense
