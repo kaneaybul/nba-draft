@@ -2818,7 +2818,9 @@ build_impact_players <- function(base_dir) {
     age = numeric(),
     draft_year = numeric(),
     overall_pick = numeric(),
-    games = numeric()
+    games = numeric(),
+    stat_minutes = numeric(),
+    stat_mpg = numeric()
   )
   if (file.exists(stats_path)) {
     stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
@@ -2831,15 +2833,19 @@ build_impact_players <- function(base_dir) {
       strict = TRUE
     )
     if (all(c("nba_id", "year", "Pos2") %in% names(stats))) {
-      keep <- intersect(c("nba_id", "year", "Pos2", "Age", "draft_year", "overall_pick", "GamesPlayed"), names(stats))
+      keep <- intersect(c("nba_id", "year", "Pos2", "Age", "draft_year", "overall_pick", "GamesPlayed", "Minutes", "MPG"), names(stats))
       stat_meta <- stats[, keep, drop = FALSE]
       if (!("Age" %in% names(stat_meta))) stat_meta$Age <- NA_real_
       if (!("draft_year" %in% names(stat_meta))) stat_meta$draft_year <- NA_real_
       if (!("overall_pick" %in% names(stat_meta))) stat_meta$overall_pick <- NA_real_
       if (!("GamesPlayed" %in% names(stat_meta))) stat_meta$GamesPlayed <- NA_real_
+      if (!("Minutes" %in% names(stat_meta))) stat_meta$Minutes <- NA_real_
+      if (!("MPG" %in% names(stat_meta))) stat_meta$MPG <- NA_real_
       names(stat_meta)[names(stat_meta) == "Pos2"] <- "databallr_position"
       names(stat_meta)[names(stat_meta) == "Age"] <- "age"
       names(stat_meta)[names(stat_meta) == "GamesPlayed"] <- "games"
+      names(stat_meta)[names(stat_meta) == "Minutes"] <- "stat_minutes"
+      names(stat_meta)[names(stat_meta) == "MPG"] <- "stat_mpg"
       stat_meta$databallr_position <- normalize_position_label(stat_meta$databallr_position)
       stat_meta <- stat_meta[!duplicated(paste(stat_meta$year, stat_meta$nba_id)), ]
     }
@@ -2930,7 +2936,7 @@ build_impact_players <- function(base_dir) {
     }
   }
 
-  x <- merge(impact, skill, by = c("nba_id", "player_name", "year"), all.x = TRUE, suffixes = c("", "_skill"))
+  x <- merge(impact, skill, by = c("nba_id", "player_name", "year"), all = TRUE, suffixes = c("", "_skill"))
   x <- merge(x, epm, by = c("nba_id", "year"), all.x = TRUE)
   x <- merge(x, stat_meta, by = c("nba_id", "year"), all.x = TRUE)
   x <- merge(x, positions, by = "nba_id", all.x = TRUE)
@@ -2938,6 +2944,20 @@ build_impact_players <- function(base_dir) {
   contract_year_reference <- load_contract_year_reference(base_dir)
   x <- merge(x, contract_year_reference, by = c("nba_id", "year"), all.x = TRUE)
   x <- merge(x, contract_reference, by = "nba_id", all.x = TRUE)
+  for (pair in list(
+    c("o_epm", "SOURCE_O_EPM"),
+    c("o_dpm", "SOURCE_O_DPM"),
+    c("d_epm", "SOURCE_D_EPM"),
+    c("d_dpm", "SOURCE_D_DPM"),
+    c("off_dep", "IMPACT_OFF"),
+    c("def_dep", "IMPACT_DEF")
+  )) {
+    target_col <- pair[[1]]
+    source_col <- pair[[2]]
+    if (target_col %in% names(x) && source_col %in% names(x)) {
+      x[[target_col]] <- coalesce_numeric(x[[target_col]], x[[source_col]])
+    }
+  }
   source_cols <- intersect(c("o_epm", "o_dpm", "d_epm", "d_dpm"), names(x))
   if (length(source_cols) == 4) {
     has_current_sources <- Reduce(
@@ -2974,6 +2994,12 @@ build_impact_players <- function(base_dir) {
   x$yoe <- ifelse(!is.na(x$draft_year), pmax(0, x$year - x$draft_year), NA_real_)
   x$games <- suppressWarnings(as.numeric(x$games))
   x$Minutes <- suppressWarnings(as.numeric(x$Minutes))
+  if ("stat_minutes" %in% names(x)) {
+    x$Minutes <- coalesce_numeric(x$Minutes, x$stat_minutes)
+  }
+  if ("stat_mpg" %in% names(x) && "p_mpg" %in% names(x)) {
+    x$p_mpg <- coalesce_numeric(x$p_mpg, x$stat_mpg)
+  }
   x$availability_status <- "qualified"
   x$availability_reason <- ""
   x$skill_source <- "current"
@@ -3959,7 +3985,13 @@ build_draft_prospects <- function(base_dir, impact_reference = NULL, replacement
   similarity_cols <- c(
     "similarity_comp_player", "similarity_comp_year", "similarity_score", "similarity_distance",
     "similarity_comp_total", "similarity_comp_off", "similarity_comp_def", "similarity_comp_minutes",
-    "similarity_comps"
+    "similarity_comps",
+    "off_similarity_comp_player", "off_similarity_comp_year", "off_similarity_score", "off_similarity_distance",
+    "off_similarity_comp_total", "off_similarity_comp_off", "off_similarity_comp_def", "off_similarity_comp_minutes",
+    "off_similarity_comps",
+    "def_similarity_comp_player", "def_similarity_comp_year", "def_similarity_score", "def_similarity_distance",
+    "def_similarity_comp_total", "def_similarity_comp_off", "def_similarity_comp_def", "def_similarity_comp_minutes",
+    "def_similarity_comps"
   )
   skill_cols <- c(
     "player", "draft_year", "prediction_pool",
