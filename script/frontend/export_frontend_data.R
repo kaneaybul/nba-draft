@@ -586,6 +586,24 @@ primary_position_export <- function(df) {
   df
 }
 
+lineup_position_export <- function(df) {
+  if (!all(c("position", "position_group") %in% names(df))) return(primary_position_export(df))
+  df$position <- vapply(seq_len(nrow(df)), function(i) {
+    parts <- position_parts(df$position[[i]])
+    group <- as.character(df$position_group[[i]])
+    preferred <- switch(group,
+      Guard = parts[parts %in% c("PG", "SG")],
+      Forward = parts[parts %in% c("SF", "PF")],
+      Center = parts[parts == "C"],
+      character(0)
+    )
+    if (length(preferred)) return(preferred[[1]])
+    primary_position_label(df$position[[i]])
+  }, character(1), USE.NAMES = FALSE)
+  df$position <- ifelse(is.na(df$position) | df$position == "", "UNK", df$position)
+  df
+}
+
 position_entropy_from_shares <- function(shares) {
   apply(shares, 1, function(row) {
     row <- row[is.finite(row) & row > 0]
@@ -1715,10 +1733,11 @@ lineup_role_score <- function(df) {
 
 lineup_position_flags <- function(position) {
   pos <- toupper(trimws(as.character(position)))
-  has_guard <- pos %in% c("PG", "SG", "G") | grepl("(^|[-/ ])G($|[-/ ])", pos)
-  has_forward <- pos %in% c("SF", "PF", "F") | grepl("(^|[-/ ])F($|[-/ ])", pos)
-  has_center <- pos == "C" | grepl("(^|[-/ ])C($|[-/ ])", pos)
-  has_pf <- pos == "PF" | grepl("PF", pos, fixed = TRUE)
+  parts <- lapply(pos, position_parts)
+  has_guard <- vapply(parts, function(part) any(part %in% c("PG", "SG")), logical(1))
+  has_forward <- vapply(parts, function(part) any(part %in% c("SF", "PF")), logical(1))
+  has_center <- vapply(parts, function(part) any(part == "C"), logical(1))
+  has_pf <- vapply(parts, function(part) any(part == "PF"), logical(1))
   data.frame(
     has_guard = has_guard,
     has_forward = has_forward,
@@ -4213,7 +4232,7 @@ model_summary <- with_frontend_timing(base_dir, "frontend_export", "read_draft_m
 model_details <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_feature_details", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_feature_details.csv")))
 
 players_export <- primary_position_export(players)
-team_lineups_export <- primary_position_export(team_lineups)
+team_lineups_export <- lineup_position_export(team_lineups)
 draft_export <- primary_position_export(draft)
 
 with_frontend_timing(base_dir, "frontend_export_write", "write_impact_players_json", write_json_df(players_export, file.path(out_dir, "impact_players.json")), paste0(nrow(players_export), " rows"))
