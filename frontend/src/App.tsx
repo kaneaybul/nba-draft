@@ -1278,7 +1278,7 @@ function playerControlTeam(player: PlayerImpact): string {
 
 function playerTeamFilterValue(player: PlayerImpact): string {
   const status = faStatusLabel(player);
-  if (status === "UFA" || status === "Rookie") return "FA";
+  if (status === "UFA") return "FA";
   return playerControlTeam(player);
 }
 
@@ -1286,7 +1286,7 @@ function playerMarketTeamLabel(player: PlayerImpact): string {
   const status = faStatusLabel(player);
   const controlTeam = playerControlTeam(player);
   if (status === "UFA") return "UFA";
-  if (status === "Rookie") return "Rookie";
+  if (status === "Rookie") return controlTeam !== "FA" ? `${controlTeam} / Rookie` : "Rookie";
   if (status === "PO" || status === "TO") return controlTeam !== "FA" ? `${status} / ${controlTeam}` : status;
   if (status === "RFA") return controlTeam !== "FA" ? controlTeam : "RFA";
   return cleanTeamValue(player.team);
