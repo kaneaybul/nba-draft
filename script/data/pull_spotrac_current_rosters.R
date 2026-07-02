@@ -172,6 +172,34 @@ row_trade_marker <- function(row_node) {
   grepl("\\btrade|traded|text-trade|arrow-right-arrow-left", text, ignore.case = TRUE)
 }
 
+extract_trade_destinations <- function(page) {
+  cards <- rvest::html_elements(page, "div.d-flex.align-items-center.border-bottom")
+  if (!length(cards)) {
+    return(data.frame(name_key = character(), trade_destination_team = character(), stringsAsFactors = FALSE))
+  }
+  rows <- lapply(cards, function(card) {
+    detail <- clean_cell(rvest::html_text2(rvest::html_element(card, "p")))
+    if (!grepl("\\bTraded to\\b", detail, ignore.case = TRUE)) return(NULL)
+    dest <- sub(".*\\bTraded to\\s+[^()]+\\(([A-Z]{2,3})\\).*", "\\1", detail, ignore.case = TRUE)
+    if (identical(dest, detail)) return(NULL)
+    player <- clean_cell(rvest::html_text2(rvest::html_element(card, "h6 a")))
+    player <- sub(",.*$", "", player)
+    key <- normalize_name(player)
+    if (!nzchar(key)) return(NULL)
+    data.frame(
+      name_key = key,
+      trade_destination_team = normalize_team(dest),
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (!length(rows)) {
+    return(data.frame(name_key = character(), trade_destination_team = character(), stringsAsFactors = FALSE))
+  }
+  out <- do.call(rbind, rows)
+  out[!duplicated(out$name_key), , drop = FALSE]
+}
+
 empty_rows <- function() {
   data.frame()
 }
@@ -231,6 +259,19 @@ parse_section_table <- function(table_node, section, team_name, abbr, source_url
   do.call(rbind, out)
 }
 
+apply_trade_destination_truth <- function(wide, trade_destinations) {
+  if (!nrow(wide)) return(wide)
+  if (!("name_key" %in% names(wide))) wide$name_key <- normalize_name(wide$player_or_entity)
+  if (!nrow(trade_destinations)) return(wide)
+  idx <- match(wide$name_key, trade_destinations$name_key)
+  incoming <- !is.na(idx) &
+    wide$section == "Active Roster" &
+    wide$trade_marker %in% TRUE &
+    normalize_team(wide$team_abbr) == trade_destinations$trade_destination_team[idx]
+  wide$roster_state[incoming] <- "active_pending_done"
+  wide
+}
+
 scrape_team <- function(base_dir, team_row, labels) {
   if (!requireNamespace("rvest", quietly = TRUE) || !requireNamespace("xml2", quietly = TRUE)) {
     stop("Packages 'rvest' and 'xml2' are required to scrape Spotrac roster state.")
@@ -267,6 +308,7 @@ scrape_team <- function(base_dir, team_row, labels) {
   })
   rows <- rows[lengths(rows) > 0]
   wide <- if (length(rows)) do.call(rbind, rows) else data.frame()
+  wide <- apply_trade_destination_truth(wide, extract_trade_destinations(page))
   audit <- data.frame(
     team = team_row$team,
     source_url = url,

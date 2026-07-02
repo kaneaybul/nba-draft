@@ -2450,9 +2450,19 @@ overlay_spotrac_contracts <- function(contracts, spotrac) {
       status <- if (status_col %in% names(spotrac)) as.character(spotrac[[status_col]][[i]]) else NA_character_
       has_status <- !is.na(status) && nzchar(trimws(status))
       has_amount <- is.finite(amount) && amount > 0
+      existing_amount <- suppressWarnings(as.numeric(contracts[[salary_col]][[idx]]))
+      existing_status <- if (status_col %in% names(contracts)) as.character(contracts[[status_col]][[idx]]) else NA_character_
+      has_existing_amount <- is.finite(existing_amount) && existing_amount > 0
+      has_existing_status <- !is.na(existing_status) && nzchar(trimws(existing_status))
+      is_fa_estimate <- has_status && status %in% c("UFA", "RFA") && !has_amount
       if (has_status || has_amount) {
-        contracts[[salary_col]][[idx]] <- if (has_amount) amount else NA_real_
-        contracts[[status_col]][[idx]] <- normalize_spotrac_contract_status(status, amount)
+        if (has_amount) {
+          contracts[[salary_col]][[idx]] <- amount
+          contracts[[status_col]][[idx]] <- normalize_spotrac_contract_status(status, amount)
+        } else if (!is_fa_estimate || (!has_existing_amount && !has_existing_status)) {
+          contracts[[salary_col]][[idx]] <- NA_real_
+          contracts[[status_col]][[idx]] <- normalize_spotrac_contract_status(status, amount)
+        }
       }
     }
   }
