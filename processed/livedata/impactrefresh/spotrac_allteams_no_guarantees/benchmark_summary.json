@@ -4,10 +4,10 @@
   "teams_error": 0,
   "rows_wide": 806,
   "rows_long": 4030,
-  "active_roster_truth_rows": 389,
-  "free_agent_or_cap_hold_truth_rows": 263,
-  "traded_marker_excluded_rows": 57,
+  "active_roster_truth_rows": 421,
+  "free_agent_or_cap_hold_truth_rows": 259,
+  "traded_marker_excluded_rows": 25,
   "unmatched_rows": 68,
-  "generated_at": "2026-07-02T20:08:07Z"
+  "generated_at": "2026-07-02T20:17:33Z"
 }
 

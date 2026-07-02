@@ -169,7 +169,7 @@ row_trade_marker <- function(row_node) {
     rvest::html_attr(rvest::html_elements(row_node, "i, span, a"), "class"),
     collapse = " "
   )
-  grepl("\\btrade|traded|text-trade|arrow-right-arrow-left", text, ignore.case = TRUE)
+  grepl("\\bTrade Pending\\b|text-trade-pending|arrow-right-arrow-left", text, ignore.case = TRUE)
 }
 
 extract_trade_destinations <- function(page) {
