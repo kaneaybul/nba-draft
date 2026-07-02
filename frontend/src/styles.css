@@ -14,6 +14,7 @@
   --red: #f05c52;
   --white: #ffffff;
   --r: 5px;
+  --r-sm: 4px;
   --font-brand: "Playfair Display", Georgia, serif;
   --font-ui: "DM Sans", system-ui, sans-serif;
   --header-h: 62px;
@@ -185,6 +186,719 @@ input {
   border: 1px solid var(--line);
   border-radius: var(--r);
   outline: none;
+}
+
+/* Offseason console remake */
+.offseason-console-command {
+  grid-template-columns: minmax(320px, 0.9fr) minmax(520px, 1.25fr);
+  align-items: center;
+  padding: 12px;
+  background: var(--panel);
+  border-color: color-mix(in srgb, var(--green) 18%, var(--line));
+}
+
+.offseason-console-command .offseason-command-copy h2 {
+  font-size: 1.28rem;
+}
+
+.offseason-console-command .offseason-command-copy p {
+  max-width: 96ch;
+}
+
+.console-command-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 86px minmax(300px, 1.4fr);
+  gap: 8px;
+  align-items: end;
+  min-width: 0;
+}
+
+.run-count-field input {
+  min-width: 0;
+}
+
+.offseason-lensbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.offseason-lensbar button {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 7px 10px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  text-align: left;
+}
+
+.offseason-lensbar button strong,
+.offseason-lensbar button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offseason-lensbar button strong {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.offseason-lensbar button span {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.offseason-lensbar button:hover,
+.offseason-lensbar button.active {
+  border-color: color-mix(in srgb, var(--green) 42%, var(--line));
+}
+
+.offseason-lensbar button.active {
+  background: color-mix(in srgb, var(--green) 8%, var(--bg));
+}
+
+.offseason-console {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.story-console,
+.markets-console {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.36fr);
+  align-items: start;
+}
+
+.story-primary,
+.market-board,
+.team-story-detail {
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.league-digest-strip {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.78fr) minmax(0, 1.22fr);
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 90%, var(--green) 3%);
+}
+
+.league-digest-copy {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.league-digest-copy span,
+.story-toolbar p,
+.rail-head span,
+.team-story-hero span,
+.inspector-head span,
+.inspector-fact span,
+.console-section h3 {
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.league-digest-copy h2,
+.story-toolbar h2,
+.team-story-hero h2,
+.inspector-head h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.league-digest-copy p,
+.inspector-head p,
+.inspector-section p,
+.team-story-hero p,
+.problem-list p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.league-digest-metrics,
+.team-summary-strip,
+.inspector-fact-grid,
+.lab-settings-grid {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.league-digest-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.console-metric,
+.inspector-fact {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.console-metric strong,
+.inspector-fact strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-good,
+.event-good {
+  border-color: color-mix(in srgb, var(--green) 32%, var(--line));
+}
+
+.metric-warn,
+.event-warn {
+  border-color: color-mix(in srgb, var(--gold) 32%, var(--line));
+}
+
+.metric-bad,
+.event-bad {
+  border-color: color-mix(in srgb, var(--red) 32%, var(--line));
+}
+
+.story-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.story-toolbar > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.story-filters {
+  display: flex;
+  gap: 8px;
+  min-width: min(440px, 100%);
+}
+
+.story-filters > select,
+.story-filters > input,
+.market-board .story-toolbar input {
+  min-height: 34px;
+  min-width: 0;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+.story-filters > select {
+  width: 140px;
+}
+
+.story-filters > input,
+.market-board .story-toolbar input {
+  width: 220px;
+}
+
+.story-batch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 0.68rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.story-batch-toggle input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--green);
+}
+
+.story-batch-toggle:has(input:disabled) {
+  opacity: 0.48;
+}
+
+.offseason-tape-wrap {
+  min-width: 0;
+  overflow: auto;
+  max-height: calc(100vh - 282px);
+}
+
+.offseason-tape-table,
+.compact-console-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.offseason-tape-table th,
+.offseason-tape-table td,
+.compact-console-table th,
+.compact-console-table td {
+  min-width: 0;
+  padding: 7px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  text-align: left;
+  vertical-align: top;
+}
+
+.offseason-tape-table th,
+.compact-console-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  color: var(--faint);
+  background: var(--panel);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.offseason-tape-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.offseason-tape-table td:nth-child(1) {
+  width: 92px;
+}
+
+.offseason-tape-table td:nth-child(2) {
+  width: 170px;
+}
+
+.offseason-tape-table td:nth-child(5) {
+  width: 132px;
+}
+
+.offseason-tape-table td:nth-child(9) {
+  width: 34%;
+}
+
+.offseason-tape-table strong,
+.compact-console-table strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.offseason-tape-table span,
+.compact-console-table span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tape-phase-row td {
+  position: sticky;
+  top: 28px;
+  z-index: 1;
+  color: var(--green);
+  background: color-mix(in srgb, var(--panel) 94%, var(--green) 4%);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tape-event-row,
+.market-console-table tbody tr,
+.compact-console-table tbody tr {
+  cursor: pointer;
+}
+
+.tape-event-row:hover td,
+.tape-event-row.active td,
+.market-console-table tbody tr:hover td,
+.market-console-table tbody tr.active td,
+.compact-console-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--green) 7%, transparent);
+}
+
+.event-kind {
+  display: inline-block !important;
+  width: auto;
+  padding: 3px 6px;
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: var(--r-sm);
+}
+
+.event-inspector {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.inspector-head {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.inspector-fact-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inspector-fact-grid.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inspector-section,
+.console-section {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  background: color-mix(in srgb, var(--bg) 84%, var(--panel) 16%);
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: var(--r-sm);
+}
+
+.inspector-section .score-breakdown {
+  margin: 0;
+}
+
+.inspector-section .driver-chip-row {
+  margin: 0;
+}
+
+.inspector-section .compact-console-table,
+.console-section .compact-console-table {
+  min-width: 0;
+  table-layout: auto;
+}
+
+.console-empty {
+  padding: 16px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.teams-console {
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: start;
+}
+
+.team-story-rail {
+  position: sticky;
+  top: 12px;
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rail-head button {
+  min-height: 26px;
+  padding: 3px 8px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.rail-head button.active {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 38%, var(--line));
+}
+
+.team-story-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 3px 8px;
+  min-width: 0;
+  padding: 9px 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  text-align: left;
+}
+
+.team-story-row strong {
+  grid-row: span 2;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.team-story-row span,
+.team-story-row b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-story-row span {
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.team-story-row b {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.team-story-row:hover,
+.team-story-row.active {
+  background: color-mix(in srgb, var(--green) 7%, transparent);
+}
+
+.team-story-detail {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.team-story-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.team-story-hero > div:first-child {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.team-scoreline {
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  flex: 0 0 auto;
+}
+
+.team-scoreline strong {
+  color: var(--green);
+  font-size: 1.5rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.team-scoreline span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.team-summary-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.team-detail-grid,
+.lab-settings-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+}
+
+.problem-list,
+.core-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.problem-list p,
+.core-list span,
+.market-alert {
+  min-width: 0;
+  padding: 5px 7px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.market-alert {
+  color: color-mix(in srgb, var(--gold) 80%, var(--text));
+  border-color: color-mix(in srgb, var(--gold) 34%, var(--line));
+}
+
+.roster-console-table {
+  min-width: 780px;
+}
+
+.market-detail-panel .hdr-btn {
+  justify-self: start;
+}
+
+.lab-console .offseason-data-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lab-settings-panel {
+  overflow: visible;
+}
+
+.lab-settings-grid {
+  padding: 12px;
+}
+
+.raw-audit-drawer {
+  padding: 10px;
+}
+
+.raw-audit-drawer summary {
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+@media (max-width: 1180px) {
+  .offseason-console-command,
+  .story-console,
+  .markets-console,
+  .teams-console,
+  .league-digest-strip,
+  .team-detail-grid,
+  .lab-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-inspector,
+  .team-story-rail {
+    position: static;
+    max-height: none;
+  }
+
+  .team-story-rail {
+    grid-template-columns: repeat(3, minmax(190px, 1fr));
+    overflow-x: auto;
+  }
+
+  .rail-head {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .console-command-row,
+  .offseason-lensbar,
+  .league-digest-metrics,
+  .team-summary-strip,
+  .inspector-fact-grid,
+  .inspector-fact-grid.compact,
+  .lab-console .offseason-data-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .story-toolbar,
+  .team-story-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .story-filters {
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .story-filters > select,
+  .story-filters > input,
+  .story-batch-toggle,
+  .market-board .story-toolbar input {
+    width: 100%;
+  }
+
+  .offseason-tape-wrap {
+    max-height: none;
+  }
 }
 
 select:focus,
@@ -1276,6 +1990,10 @@ input:focus {
   color: var(--gold);
 }
 
+.metric-pill.red strong {
+  color: var(--red);
+}
+
 .projection {
   display: block;
   width: 100%;
@@ -1672,7 +2390,7 @@ input:focus {
 }
 
 .draft-model-table .cg-draft-comp {
-  width: 210px;
+  width: 230px;
 }
 
 .draft-model-table tr.group-row th {
@@ -1738,10 +2456,17 @@ input:focus {
   white-space: nowrap;
 }
 
+.draft-comp-stack {
+  display: grid;
+  gap: 5px;
+}
+
 .draft-comp {
   display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 48px;
+  align-items: center;
   min-width: 0;
-  gap: 2px;
+  gap: 5px;
   cursor: pointer;
   list-style: none;
   text-align: left;
@@ -1763,6 +2488,30 @@ input:focus {
 .draft-comp span {
   color: var(--muted);
   font-size: 0.64rem;
+}
+
+.draft-comp .draft-comp-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 18px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 0.61rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.draft-comp .draft-comp-label.off {
+  border-color: rgba(224, 185, 106, 0.45);
+  color: var(--gold);
+}
+
+.draft-comp .draft-comp-label.def {
+  border-color: rgba(104, 211, 145, 0.4);
+  color: var(--green);
 }
 
 .draft-comp-cell {
@@ -2700,6 +3449,10 @@ input:focus {
   align-items: start;
 }
 
+.trade-grid.three-team {
+  grid-template-columns: repeat(3, minmax(280px, 1fr)) 320px;
+}
+
 .trade-builder,
 .trade-side,
 .trade-verdict {
@@ -2806,12 +3559,55 @@ input:focus {
 .trade-player-main span,
 .asset-list small,
 .trade-team-card span,
-.saved-scenario-row span {
+.saved-scenario-row span,
+.saved-scenario-row small,
+.saved-scenario-row em {
   overflow: hidden;
   color: var(--muted);
   font-size: 0.72rem;
+  font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.saved-scenario-row small {
+  width: 100%;
+  color: var(--text-soft);
+  font-size: 0.7rem;
+}
+
+.saved-scenario-status {
+  display: inline-flex;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.saved-scenario-status.ok {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 34%, var(--line));
+  background: rgba(126, 212, 90, 0.08);
+}
+
+.saved-scenario-status.warn {
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 38%, var(--line));
+  background: rgba(232, 191, 107, 0.08);
+}
+
+.saved-scenario-status.bad {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 34%, var(--line));
+  background: rgba(240, 92, 82, 0.08);
+}
+
+.saved-scenario-row em {
+  color: color-mix(in srgb, var(--muted) 88%, var(--line));
+  font-size: 0.66rem;
 }
 
 .trade-player-metrics {
@@ -2863,6 +3659,436 @@ input:focus {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 0;
+}
+
+.trade-route-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  text-align: left;
+}
+
+.trade-review-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  text-align: left;
+}
+
+.trade-review-list {
+  display: grid;
+  gap: 7px;
+}
+
+.trade-review-item {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  background: var(--panel);
+  border-left: 3px solid var(--line);
+  border-radius: var(--r);
+}
+
+.trade-review-item.fail {
+  border-left-color: var(--red);
+}
+
+.trade-review-item.warn {
+  border-left-color: var(--gold);
+}
+
+.trade-review-item span {
+  color: var(--muted);
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trade-review-item strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-review-item p,
+.trade-review-more {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.trade-review-item em {
+  color: var(--gold);
+  font-size: 0.66rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.trade-route-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.trade-route-head span,
+.trade-route-assets span {
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trade-route-head strong {
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.trade-flow-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.trade-flow-lane {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.trade-flow-teams {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  min-width: 0;
+  text-align: center;
+}
+
+.trade-flow-teams span {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-flow-teams strong {
+  color: var(--muted);
+  font-size: 0.54rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trade-flow-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.trade-flow-main strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-flow-main small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-route-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.trade-route-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.trade-route-team,
+.trade-route-model,
+.trade-route-metrics,
+.trade-route-assets {
+  min-width: 0;
+}
+
+.trade-route-team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.trade-route-team span {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.trade-route-team strong {
+  color: var(--gold);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-route-model {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trade-route-model + .trade-route-model {
+  padding-top: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.trade-route-model > span:last-child {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.66rem;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-route-verdict {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.trade-route-verdict.ok {
+  color: var(--green);
+  background: rgba(126, 212, 90, 0.14);
+}
+
+.trade-route-verdict.warn {
+  color: var(--gold);
+  background: rgba(232, 191, 107, 0.15);
+}
+
+.trade-route-verdict.bad {
+  color: var(--red);
+  background: rgba(240, 92, 82, 0.15);
+}
+
+.trade-route-verdict.neutral {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.trade-route-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 8px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-route-assets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trade-route-assets div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.trade-route-assets small {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-cba-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  text-align: left;
+}
+
+.trade-cba-panel.legal {
+  border-color: color-mix(in srgb, var(--green) 34%, var(--line));
+}
+
+.trade-cba-panel.warning {
+  border-color: color-mix(in srgb, var(--gold) 38%, var(--line));
+}
+
+.trade-cba-panel.illegal {
+  border-color: color-mix(in srgb, var(--red) 42%, var(--line));
+}
+
+.trade-cba-head {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.trade-cba-head span,
+.trade-cba-team span,
+.trade-cba-check span {
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trade-cba-head strong {
+  color: var(--text);
+  font-size: 0.94rem;
+  font-weight: 900;
+}
+
+.trade-cba-head small,
+.trade-cba-panel > p {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.trade-cba-team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trade-cba-team {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.trade-cba-team.legal {
+  border-color: color-mix(in srgb, var(--green) 28%, var(--line));
+}
+
+.trade-cba-team.warning {
+  border-color: color-mix(in srgb, var(--gold) 34%, var(--line));
+}
+
+.trade-cba-team.illegal {
+  border-color: color-mix(in srgb, var(--red) 38%, var(--line));
+}
+
+.trade-cba-team strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-cba-team small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-cba-checks {
+  display: grid;
+  gap: 6px;
+}
+
+.trade-cba-audit {
+  display: grid;
+  gap: 7px;
+}
+
+.trade-cba-audit summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.trade-cba-audit[open] summary {
+  color: var(--text);
+}
+
+.trade-cba-check {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+  background: var(--panel);
+  border-left: 3px solid var(--line);
+  border-radius: var(--r);
+}
+
+.trade-cba-check.pass {
+  border-left-color: var(--green);
+}
+
+.trade-cba-check.warn {
+  border-left-color: var(--gold);
+}
+
+.trade-cba-check.fail {
+  border-left-color: var(--red);
+}
+
+.trade-cba-check p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.trade-roster-search {
+  margin: 0;
 }
 
 .trade-roster-list {
@@ -2989,36 +4215,70 @@ input:focus {
   padding: 0;
 }
 
-.asset-list button {
+.asset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px 11px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.asset-row:hover {
+  border-color: color-mix(in srgb, var(--gold) 35%, var(--line));
+}
+
+.asset-remove {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  min-height: 54px;
-  padding: 10px 11px;
+  min-height: 34px;
+  padding: 0;
   color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
+  background: transparent;
+  border: 0;
   text-align: left;
 }
 
-.asset-list button span {
+.asset-remove span {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
-.asset-list button em {
+.asset-remove em {
   flex: 0 0 auto;
   color: var(--gold);
   font-style: normal;
   font-weight: 800;
 }
 
-.asset-list button:hover {
-  border-color: var(--red);
+.asset-remove:hover {
+  color: var(--red);
+}
+
+.asset-destination {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.asset-destination select {
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .trade-verdict {
@@ -3040,6 +4300,12 @@ input:focus {
   padding-bottom: 12px;
   text-align: left;
   border-bottom: 1px solid var(--line);
+}
+
+.trade-summary-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
 }
 
 .trade-summary-title h2 {
@@ -3097,6 +4363,41 @@ input:focus {
   text-align: left;
 }
 
+.scenario-file-tools {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.scenario-save-tools {
+  grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+}
+
+.scenario-note-field {
+  grid-column: 1 / -1;
+}
+
+.scenario-note-field textarea {
+  width: 100%;
+  min-height: 58px;
+  resize: vertical;
+  padding: 8px 9px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.scenario-import-note {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .saved-scenarios {
   display: grid;
   gap: 8px;
@@ -3104,15 +4405,98 @@ input:focus {
   text-align: left;
 }
 
+.saved-scenario-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 6px;
+}
+
+.saved-scenario-filters button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 8px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.saved-scenario-filters button.active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--gold) 42%, var(--line));
+  background: rgba(232, 191, 107, 0.08);
+}
+
+.saved-scenario-filters span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-scenario-filters strong {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.saved-scenario-search,
+.saved-scenario-sort {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.saved-scenario-search input,
+.saved-scenario-sort select {
+  min-height: 34px;
+  padding: 7px 9px;
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.clear-saved-view {
+  justify-self: start;
+  padding: 7px 9px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.saved-scenario-summary {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
 .saved-scenario-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 6px;
+}
+
+.saved-scenario-row.pinned button:first-child {
+  border-color: color-mix(in srgb, var(--gold) 46%, var(--line));
+  background: rgba(232, 191, 107, 0.07);
 }
 
 .saved-scenario-row button:first-child {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   justify-items: start;
   padding: 8px 9px;
   color: var(--text);
@@ -3122,8 +4506,26 @@ input:focus {
   text-align: left;
 }
 
+.saved-scenario-pin {
+  color: var(--gold);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pin-scenario,
+.duplicate-scenario,
 .remove-scenario {
   padding: 8px 9px;
+}
+
+.saved-scenario-user-note {
+  color: var(--text);
+}
+
+.saved-scenario-note {
+  color: var(--muted);
 }
 
 .diagnostic-list,
@@ -6641,7 +8043,7 @@ input:focus {
 .distribution-spotlight-grid,
 .team-outcome-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 12px;
   padding: 0 12px 12px;
 }
@@ -7808,6 +9210,10 @@ input:focus {
     grid-template-columns: 1fr;
   }
 
+  .trade-grid.three-team {
+    grid-template-columns: 1fr;
+  }
+
   .offseason-shell,
   .offseason-kpis,
   .offseason-command-panel,
@@ -8407,7 +9813,7 @@ body,
   }
 
   .draft-model-table .cg-draft-comp {
-    width: 190px;
+    width: 220px;
   }
 
   .draft-heading .draft-summary-strip {
@@ -8890,5 +10296,358 @@ body,
 
   .workspace-error-panel .panel-heading {
     align-items: stretch;
+  }
+}
+
+/* Final ordering pass for the Offseason console remake.
+   These selectors intentionally sit after the legacy offseason CSS so the
+   story-first shell wins over older command-panel and mobile overrides. */
+.offseason-command-panel.offseason-console-command {
+  grid-template-columns: minmax(320px, 0.9fr) minmax(520px, 1.25fr);
+  align-items: center;
+  padding: 12px;
+  background: var(--panel);
+  border-color: color-mix(in srgb, var(--green) 18%, var(--line));
+}
+
+.offseason-command-panel.offseason-console-command .command-controls {
+  gap: 8px;
+}
+
+.offseason-command-panel.offseason-console-command .command-buttons {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.offseason-command-panel.offseason-console-command .offseason-command-copy h2 {
+  font-size: 1.28rem;
+}
+
+.offseason-command-panel.offseason-console-command .offseason-command-copy p {
+  max-width: 96ch;
+}
+
+.offseason-lensbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.offseason-console .panel-heading p,
+.offseason-console p {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .offseason-command-panel.offseason-console-command {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .offseason-command-panel.offseason-console-command .command-buttons,
+  .offseason-lensbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Offseason console refinement: dense sorted tables, avatars, and projection rail. */
+.console-sort-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+}
+
+.console-sort-header b {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 0.64rem;
+  font-weight: 950;
+}
+
+.console-sort-header.active span {
+  color: var(--text);
+}
+
+.entity-cell,
+.team-movement-cell,
+.rights-team-cell,
+.inspector-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.entity-copy,
+.movement-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.sim-player-avatar,
+.sim-team-logo {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  color: var(--text);
+  background: color-mix(in srgb, var(--green) 10%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 950;
+}
+
+.sim-player-avatar img,
+.sim-team-logo {
+  object-fit: cover;
+}
+
+.sim-player-avatar img {
+  width: 100%;
+  height: 100%;
+}
+
+.sim-team-logo {
+  padding: 2px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.sim-team-logo.fallback {
+  padding: 0;
+  color: var(--green);
+  background: var(--bg);
+}
+
+.team-logo-stack {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.team-logo-stack .sim-team-logo + .sim-team-logo {
+  margin-left: -8px;
+}
+
+.offseason-tape-table .col-event-phase { width: 92px; }
+.offseason-tape-table .col-event-actor { width: 210px; }
+.offseason-tape-table .col-event-action { width: 132px; }
+.offseason-tape-table .col-event-movement { width: 170px; }
+.offseason-tape-table .col-event-money { width: 130px; }
+.offseason-tape-table .col-event-impact { width: 150px; }
+.offseason-tape-table .col-event-confidence { width: 74px; }
+.offseason-tape-table .col-event-batch { width: 82px; }
+.offseason-tape-table .col-event-why { width: auto; }
+
+.market-console-table .col-market-player { width: 230px; }
+.market-console-table .col-market-status { width: 82px; }
+.market-console-table .col-market-movement { width: 160px; }
+.market-console-table .col-market-value { width: 104px; }
+.market-console-table .col-market-aav { width: 104px; }
+.market-console-table .col-market-years { width: 54px; }
+.market-console-table .col-market-tool { width: 112px; }
+.market-console-table .col-market-confidence { width: 72px; }
+.market-console-table .col-market-batch { width: 98px; }
+.market-console-table .col-market-why { width: auto; }
+
+.compact-console-table .col-ledger-phase { width: 112px; }
+.compact-console-table .col-ledger-action { width: 132px; }
+.compact-console-table .col-ledger-actor { width: 220px; }
+.compact-console-table .col-ledger-money { width: 118px; }
+.compact-console-table .col-ledger-why { width: auto; }
+
+.roster-console-table .col-roster-player { width: 260px; }
+.roster-console-table .col-roster-pos { width: 64px; }
+.roster-console-table .col-roster-salary { width: 110px; }
+.roster-console-table .col-roster-minutes { width: 86px; }
+.roster-console-table .col-roster-total { width: 82px; }
+.roster-console-table .col-roster-score { width: 78px; }
+.roster-console-table .col-roster-tier { width: 150px; }
+
+.teams-console {
+  grid-template-columns: 390px minmax(0, 1fr);
+}
+
+.team-rail-sort {
+  display: grid;
+  grid-template-columns: 58px 58px 58px 1fr;
+  gap: 4px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.team-rail-sort .console-sort-header {
+  min-height: 24px;
+  padding: 0 5px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font-size: 0.55rem;
+}
+
+.team-projection-row {
+  grid-template-columns: 34px minmax(0, 1fr) 42px;
+  gap: 4px 8px;
+  padding: 9px 10px;
+}
+
+.team-projection-row > .sim-team-logo {
+  grid-row: span 3;
+  width: 30px;
+  height: 30px;
+}
+
+.team-projection-main {
+  display: grid;
+  min-width: 0;
+}
+
+.team-projection-main strong {
+  grid-row: auto;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.team-projection-main span,
+.team-projection-note {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-projection-rank {
+  justify-self: end;
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+}
+
+.team-projection-metrics {
+  grid-column: 2 / 4;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.team-projection-metrics b {
+  min-width: 0;
+  padding: 3px 5px;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: var(--r-sm);
+  font-size: 0.58rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.team-projection-note {
+  grid-column: 2 / 4;
+}
+
+.team-story-hero {
+  align-items: center;
+}
+
+.team-story-hero > .sim-team-logo {
+  width: 44px;
+  height: 44px;
+}
+
+.inspector-title-row .sim-player-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.unsigned-console-board {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.unsigned-board-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.unsigned-board-head h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.unsigned-board-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.unsigned-board-head strong {
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.unsigned-console-wrap {
+  max-height: 260px;
+}
+
+.unsigned-console-table {
+  min-width: 940px;
+}
+
+.unsigned-console-table .col-unsigned-player { width: 230px; }
+.unsigned-console-table .col-unsigned-pos { width: 62px; }
+.unsigned-console-table .col-unsigned-value { width: 104px; }
+.unsigned-console-table .col-unsigned-score { width: 78px; }
+.unsigned-console-table .col-unsigned-rights { width: 96px; }
+.unsigned-console-table .col-unsigned-best { width: 116px; }
+.unsigned-console-table .col-unsigned-why { width: auto; }
+
+@media (max-width: 1180px) {
+  .teams-console {
+    grid-template-columns: 1fr;
+  }
+
+  .team-story-rail {
+    grid-template-columns: repeat(2, minmax(300px, 1fr));
+  }
+
+  .team-rail-sort,
+  .rail-head {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .team-story-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .team-projection-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

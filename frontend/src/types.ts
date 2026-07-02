@@ -378,6 +378,24 @@ export type DraftProspect = {
   similarity_comp_def?: number | null;
   similarity_comp_minutes?: number | null;
   similarity_comps?: DraftSimilarityComp[] | string | null;
+  off_similarity_comp_player?: string | null;
+  off_similarity_comp_year?: number | null;
+  off_similarity_score?: number | null;
+  off_similarity_distance?: number | null;
+  off_similarity_comp_total?: number | null;
+  off_similarity_comp_off?: number | null;
+  off_similarity_comp_def?: number | null;
+  off_similarity_comp_minutes?: number | null;
+  off_similarity_comps?: DraftSimilarityComp[] | string | null;
+  def_similarity_comp_player?: string | null;
+  def_similarity_comp_year?: number | null;
+  def_similarity_score?: number | null;
+  def_similarity_distance?: number | null;
+  def_similarity_comp_total?: number | null;
+  def_similarity_comp_off?: number | null;
+  def_similarity_comp_def?: number | null;
+  def_similarity_comp_minutes?: number | null;
+  def_similarity_comps?: DraftSimilarityComp[] | string | null;
   actual_pick?: number | null;
   drafted_team?: string | null;
   pick_proxy?: number | null;
@@ -548,6 +566,11 @@ export type CapTrackerContractRow = {
   position?: string | null;
   age?: number | null;
   rank?: number | null;
+  contract_type?: string | null;
+  contract_status_source?: string | null;
+  signed_using?: string | null;
+  free_agent_status?: string | null;
+  free_agent_year?: number | null;
   contract_notes?: string | null;
   source: string;
   source_quality: CapTrackerMoneySource;
@@ -589,6 +612,10 @@ export type CapTrackerTeamSeason = {
   second_apron_room_with_holds: number;
   second_apron_room_renounced: number;
   salary_floor_room: number;
+  cash_paid_this_year?: number | null;
+  cash_received_this_year?: number | null;
+  cashPaidThisYear?: number | null;
+  cashReceivedThisYear?: number | null;
   roster_count: number;
   hold_count: number;
   status_band: string;
@@ -608,6 +635,21 @@ export type CapTrackerException = {
   amount: number;
   path: "retained" | "renounced" | "override" | string;
   expires?: string | null;
+  first_apron_restriction_starts?: string | null;
+  signed_and_traded_contract?: boolean | null;
+  note?: string | null;
+  source: string;
+  source_quality?: CapTrackerMoneySource;
+};
+
+export type CapTrackerHardCap = {
+  id: string;
+  team: string;
+  year: number;
+  hard_cap: "first_apron" | "second_apron";
+  trigger: string;
+  transaction_date?: string | null;
+  expires?: string | null;
   note?: string | null;
   source: string;
   source_quality?: CapTrackerMoneySource;
@@ -620,6 +662,7 @@ export type CapTrackerPick = {
   round: number;
   label: string;
   protection?: string | null;
+  second_apron_frozen?: boolean | null;
   source: string;
   source_quality: CapTrackerMoneySource;
 };
@@ -665,6 +708,7 @@ export type CapTrackerData = {
   team_seasons: CapTrackerTeamSeason[];
   contracts: CapTrackerContractRow[];
   exceptions: CapTrackerException[];
+  hard_caps?: CapTrackerHardCap[];
   picks: CapTrackerPick[];
   dead_money: CapTrackerDeadMoney[];
   max_contracts: CapTrackerMaxContractLevel[];

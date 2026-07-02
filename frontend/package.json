@@ -11,7 +11,11 @@
     "validate:data": "node ../script/frontend/validate_frontend_data.mjs",
     "test:cap-tracker": "node ../script/frontend/test_cap_tracker_data.mjs",
     "test:offseason-market": "node ../script/frontend/run_offseason_market_regression.mjs",
-    "test:cap-sandbox": "node ../script/frontend/run_cap_sandbox_regression.mjs"
+    "test:offseason-view-models": "node ../script/frontend/run_offseason_view_model_regression.mjs",
+    "test:offseason-console": "node ../script/frontend/run_offseason_console_smoke.mjs",
+    "test:cap-sandbox": "node ../script/frontend/run_cap_sandbox_regression.mjs",
+    "test:trade-scenarios": "node ../script/frontend/run_trade_scenarios_regression.mjs",
+    "test:trade-machine": "node ../script/frontend/run_trade_machine_regression.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

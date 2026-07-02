@@ -178,6 +178,8 @@ run_node_script(base_dir, "Build cap transaction review", file.path("script", "f
 run_script(base_dir, "Refresh salary cap assumptions", file.path("script", "data", "pull_salary_cap_assumptions.R"))
 run_script(base_dir, "Score career projections", file.path("script", "models", "score_career_projection_models.R"))
 run_script(base_dir, "Export frontend data", file.path("script", "frontend", "export_frontend_data.R"))
+run_node_script(base_dir, "Build Spotrac cap tracker", file.path("script", "frontend", "build_cap_tracker_spotrac_data.mjs"))
+run_node_script(base_dir, "Refresh static data manifest", file.path("script", "frontend", "build_static_data_manifest.mjs"))
 
 message("")
 message("Frontend refresh complete. Click Reload data in the app, or refresh the browser.")

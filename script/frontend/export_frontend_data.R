@@ -2627,17 +2627,24 @@ load_current_roster_truth <- function(base_dir, roster_year) {
   if (!("nba_id" %in% names(roster))) roster$nba_id <- NA_integer_
   if (!("roster_source" %in% names(roster))) roster$roster_source <- "NBA.com league roster"
   if (!("pulled_at" %in% names(roster))) roster$pulled_at <- NA_character_
+  if (!("rights_team" %in% names(roster))) roster$rights_team <- roster$team
+  if (!("contract_status" %in% names(roster))) roster$contract_status <- NA_character_
+  if (!("roster_state" %in% names(roster))) roster$roster_state <- ifelse(normalize_team(roster$team) == "FA", "free_agent", "active")
 
   out <- data.frame(
     nba_id = suppressWarnings(as.integer(roster$nba_id)),
     player_name = as.character(roster$player_name),
     name_key = normalize_name(roster$player_name),
     roster_truth_team = normalize_team(roster$team),
+    rights_team = normalize_team(roster$rights_team),
+    roster_contract_status = as.character(roster$contract_status),
+    roster_state = as.character(roster$roster_state),
     roster_truth_source = as.character(roster$roster_source),
     roster_truth_pulled_at = as.character(roster$pulled_at),
     stringsAsFactors = FALSE
   )
   out$roster_truth_team[is_blank_text(out$roster_truth_team)] <- "FA"
+  out$rights_team[is_blank_text(out$rights_team)] <- ifelse(out$roster_truth_team == "FA", "FA", out$roster_truth_team)
   out <- out[nzchar(out$name_key), , drop = FALSE]
   out <- out[order(is.na(out$nba_id), out$nba_id, out$name_key), , drop = FALSE]
   out[!duplicated(ifelse(!is.na(out$nba_id), paste0("id:", out$nba_id), paste0("name:", out$name_key))), , drop = FALSE]
@@ -2649,6 +2656,9 @@ apply_current_roster_truth <- function(x, base_dir, roster_year) {
   x$roster_truth_team <- NA_character_
   x$roster_status_source <- NA_character_
   x$roster_truth_pulled_at <- NA_character_
+  x$roster_contract_status <- NA_character_
+  if (!("rights_team" %in% names(x))) x$rights_team <- NA_character_
+  if (!("roster_state" %in% names(x))) x$roster_state <- NA_character_
 
   latest_rows <- x$year == roster_year
   if (!any(latest_rows, na.rm = TRUE)) {
@@ -2676,12 +2686,23 @@ apply_current_roster_truth <- function(x, base_dir, roster_year) {
   truth_source[matched] <- roster$roster_truth_source[roster_match[matched]]
   truth_pulled_at <- rep(NA_character_, nrow(x))
   truth_pulled_at[matched] <- roster$roster_truth_pulled_at[roster_match[matched]]
+  truth_rights_team <- rep(NA_character_, nrow(x))
+  truth_rights_team[matched] <- roster$rights_team[roster_match[matched]]
+  truth_contract_status <- rep(NA_character_, nrow(x))
+  truth_contract_status[matched] <- roster$roster_contract_status[roster_match[matched]]
+  truth_roster_state <- rep(NA_character_, nrow(x))
+  truth_roster_state[matched] <- roster$roster_state[roster_match[matched]]
 
   x$roster_truth_team[matched] <- truth_team[matched]
   x$roster_status_source[matched] <- truth_source[matched]
   x$roster_truth_pulled_at[matched] <- truth_pulled_at[matched]
+  x$roster_contract_status[matched] <- truth_contract_status[matched]
+  x$rights_team[matched] <- truth_rights_team[matched]
+  x$roster_state[matched] <- truth_roster_state[matched]
   x$roster_truth_team[missing] <- "FA"
   x$roster_status_source[missing] <- "NBA.com league roster missing player"
+  x$rights_team[missing] <- "FA"
+  x$roster_state[missing] <- "missing_roster_truth"
 
   active <- matched & truth_team != "FA" & !is_blank_text(truth_team)
   inactive <- latest_rows & !active
@@ -2691,19 +2712,68 @@ apply_current_roster_truth <- function(x, base_dir, roster_year) {
   x$market_team[active] <- truth_team[active]
   x$team_projection_base[active] <- truth_team[active]
   x$current_roster_team[active] <- truth_team[active]
+  x$rights_team[active & is_blank_text(x$rights_team)] <- truth_team[active & is_blank_text(x$rights_team)]
 
   x$team[inactive] <- "FA"
   x$market_team[inactive] <- "FA"
   x$team_projection_base[inactive] <- "FA"
   x$current_roster_team[inactive] <- "FA"
   x$projection_roster_status[inactive] <- "open_market"
-  x$contract_status[inactive] <- ifelse(x$contract_status[inactive] %in% c("RFA", "Rookie FA"), x$contract_status[inactive], "UFA")
+  roster_fa_status <- truth_contract_status[inactive]
+  roster_fa_status <- ifelse(roster_fa_status %in% c("RFA", "UFA", "Rookie FA"), roster_fa_status, NA_character_)
+  x$contract_status[inactive] <- ifelse(
+    !is.na(roster_fa_status) & nzchar(trimws(roster_fa_status)),
+    roster_fa_status,
+    ifelse(x$contract_status[inactive] %in% c("RFA", "Rookie FA"), x$contract_status[inactive], "UFA")
+  )
+  x$rights_team[inactive & is_blank_text(x$rights_team)] <- "FA"
 
   message(
     "Roster truth applied for ", roster_year, ": active=", sum(active, na.rm = TRUE),
     ", FA/missing=", sum(inactive, na.rm = TRUE),
     ", roster rows=", nrow(roster)
   )
+  x
+}
+
+enforce_roster_truth_placements <- function(x, roster_year) {
+  if (!("roster_truth_team" %in% names(x))) return(x)
+  latest_rows <- suppressWarnings(as.integer(x$year)) == roster_year
+  truth_team <- normalize_team(x$roster_truth_team)
+  truth_team[is_blank_text(truth_team)] <- NA_character_
+  active <- latest_rows & !is.na(truth_team) & truth_team != "FA"
+  inactive <- latest_rows & !active
+
+  if (any(active, na.rm = TRUE)) {
+    x$team[active] <- truth_team[active]
+    x$current_roster_team[active] <- truth_team[active]
+    x$incumbent_team[active] <- truth_team[active]
+    x$market_team[active] <- truth_team[active]
+    x$team_projection_base[active] <- truth_team[active]
+    x$projection_roster_status[active] <- projection_roster_status(x$contract_status[active], x$contract[active])
+    if ("rights_team" %in% names(x)) {
+      x$rights_team[active & is_blank_text(x$rights_team)] <- truth_team[active & is_blank_text(x$rights_team)]
+    }
+  }
+
+  if (any(inactive, na.rm = TRUE)) {
+    x$team[inactive] <- "FA"
+    x$current_roster_team[inactive] <- "FA"
+    x$market_team[inactive] <- "FA"
+    x$team_projection_base[inactive] <- "FA"
+    x$projection_roster_status[inactive] <- "open_market"
+    if ("roster_contract_status" %in% names(x)) {
+      roster_status <- as.character(x$roster_contract_status[inactive])
+      roster_status <- ifelse(roster_status %in% c("RFA", "UFA", "Rookie FA"), roster_status, NA_character_)
+      x$contract_status[inactive] <- ifelse(
+        !is.na(roster_status) & nzchar(trimws(roster_status)),
+        roster_status,
+        ifelse(x$contract_status[inactive] %in% c("RFA", "Rookie FA"), x$contract_status[inactive], "UFA")
+      )
+    } else {
+      x$contract_status[inactive] <- ifelse(x$contract_status[inactive] %in% c("RFA", "Rookie FA"), x$contract_status[inactive], "UFA")
+    }
+  }
   x
 }
 
@@ -3249,6 +3319,7 @@ build_impact_players <- function(base_dir) {
   }
   contract_scale_model <- fit_value_contract_scale_model(x, cap_assumptions)
   x <- recalculate_projection_scalability(x, cap_assumptions, contract_scale_model = contract_scale_model)
+  x <- enforce_roster_truth_placements(x, contract_year)
 
   x$lineup_original_minutes <- x$Minutes
   x$lineup_adjusted_minutes <- x$Minutes
@@ -3261,10 +3332,12 @@ build_impact_players <- function(base_dir) {
     x <- rbind(x, projected_2027[, names(x), drop = FALSE])
   }
 
+  x <- enforce_roster_truth_placements(x, contract_year)
+
   x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Position is built from Basketball-Reference play-by-play position-share estimates when available, and replacement is a trailing 3-year fractional position-share cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
   cols <- c(
-    "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "roster_status_source", "roster_truth_pulled_at",
+    "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "rights_team", "roster_state", "roster_status_source", "roster_truth_pulled_at",
     "incumbent_team", "market_team", "team_projection_base",
     "projection_roster_status", "position", "pg_share", "sg_share", "sf_share", "pf_share", "c_share",
     "position_index", "position_entropy", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",

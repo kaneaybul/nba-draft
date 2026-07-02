@@ -778,6 +778,7 @@ function buildPicks(overrideRows, officialDraftOrder) {
     round: pick.pick <= 30 ? 1 : 2,
     label: `#${pick.pick} ${pick.label}`,
     protection: null,
+    second_apron_frozen: null,
     source: "Local official 2026 draft order used by Offseason Simulator",
     source_quality: "contract"
   }));
@@ -794,6 +795,7 @@ function buildPicks(overrideRows, officialDraftOrder) {
         round,
         label: row.label,
         protection: row.protection || null,
+        second_apron_frozen: booleanValue(row.second_apron_frozen ?? row.frozen_second_apron ?? row.frozen),
         source: row.source || "Manual future-pick override",
         source_quality: "override"
       });
@@ -1089,6 +1091,14 @@ function numberValue(...values) {
     const parsed = Number(String(value).replace(/[$,%]/g, ""));
     if (Number.isFinite(parsed)) return parsed;
   }
+  return null;
+}
+
+function booleanValue(value) {
+  const text = String(value ?? "").trim().toLowerCase();
+  if (!text) return null;
+  if (["true", "t", "yes", "y", "1"].includes(text)) return true;
+  if (["false", "f", "no", "n", "0"].includes(text)) return false;
   return null;
 }
 

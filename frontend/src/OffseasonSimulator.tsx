@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { simulateFreeAgencyMarket } from "./offseasonMarket";
+import {
+  buildOffseasonViewModels,
+  filterOffseasonEvents,
+  type MarketStory,
+  type OffseasonEvent,
+  type OffseasonEventKind,
+  type OffseasonLens,
+  type OffseasonViewModels,
+  type TeamStory
+} from "./offseasonViewModels";
 import type {
   MarketBid,
   MarketComponentBreakdown,
@@ -22,8 +32,9 @@ import type {
 } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
+const NBA_HEADSHOT_URL = "https://cdn.nba.com/headshots/nba/latest/260x190";
+
 type TeamMode = "rebuilding" | "rising" | "playoff hopeful" | "contender" | "tax-sensitive contender";
-type OffseasonTab = "dashboard" | "warRoom" | "league" | "draft" | "options" | "freeAgency" | "after" | "trades" | "teams" | "markets" | "overrides";
 type DecisionKind = "draft" | "option" | "ufa" | "rfa" | "trade";
 type ContractStatus = "Signed" | "UFA" | "RFA" | "Player Option" | "Team Option" | "Non-Guaranteed" | "Rookie FA";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
@@ -371,6 +382,7 @@ type TradeMove = {
 type AfterRosterPlayer = {
   id: string;
   name: string;
+  nbaId?: number | null;
   team: string;
   position: string;
   age: number;
@@ -489,6 +501,7 @@ type SimulationRun = {
 type MultiRunSummary = {
   runs: number;
   playerDestinations: Array<{ player: string; destination: string; count: number; pct: number; avgSalary: number }>;
+  optionDecisions: Array<{ player: string; team: string; decision: string; optionType: string; count: number; pct: number }>;
   draftOutcomes: Array<{ prospect: string; team: string; count: number; pct: number; avgPick: number }>;
   tradeTeams: Array<{ team: string; count: number; pct: number }>;
   rfaMatches: Array<{ player: string; matches: number; offers: number; pct: number }>;
@@ -504,6 +517,7 @@ type MultiRunSummary = {
 type MultiRunAccumulator = {
   runs: number;
   destinationRows: Map<string, { count: number; salary: number }>;
+  optionRows: Map<string, number>;
   draftRows: Map<string, { count: number; pick: number }>;
   tradeTeams: Map<string, number>;
   rfaRows: Map<string, { matches: number; offers: number }>;
@@ -517,6 +531,7 @@ type MultiRunAccumulator = {
 };
 
 type DriverTone = "good" | "warn" | "bad" | "neutral";
+type SortDirection = "asc" | "desc";
 
 type DecisionDriver = {
   label: string;
@@ -575,7 +590,7 @@ const skillKeys: SkillKey[] = ["FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DR
 const STANDARD_ROSTER_LIMIT = 15;
 const MINIMUM_STANDARD_ROSTER = 12;
 const defaultOverrides: SimulatorOverrides = { teams: {}, players: {}, prospects: {} };
-const OFFSEASON_TAB_STORAGE_KEY = "offseason:activeTab:v2";
+const OFFSEASON_TAB_STORAGE_KEY = "offseason:activeLens:v3";
 const OFFSEASON_TEAM_STORAGE_KEY = "offseason:selectedTeam:v1";
 const OFFSEASON_PRESET_STORAGE_KEY = "offseason:preset:v1";
 let offseasonRunCache: { data: AppData; key: string; run: SimulationRun } | null = null;
@@ -692,7 +707,7 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
     secondApron: baseCapSettings.secondApron
   }));
   const [overrides, setOverrides] = useState<SimulatorOverrides>(defaultOverrides);
-  const [activeTab, setActiveTab] = useState<OffseasonTab>(() => readStoredOffseasonTab());
+  const [activeLens, setActiveLens] = useState<OffseasonLens>(() => readStoredOffseasonTab());
   const [run, setRun] = useState<SimulationRun | null>(() => readCachedSimulationRun(data, simulationCacheKey(season, capYear, assumptions, overrides)));
   const [isSimulating, setIsSimulating] = useState(() => run === null);
   const [simulationStatus, setSimulationStatus] = useState<string | null>(null);
@@ -700,6 +715,9 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   const [multiRun, setMultiRun] = useState<MultiRunSummary | null>(null);
   const [selectedTeam, setSelectedTeam] = useState(() => readStoredString(OFFSEASON_TEAM_STORAGE_KEY, "All"));
   const [activePreset, setActivePreset] = useState(() => readStoredString(OFFSEASON_PRESET_STORAGE_KEY, "balanced"));
+  const [storyQuery, setStoryQuery] = useState("");
+  const [storyKind, setStoryKind] = useState<OffseasonEventKind | "all">("all");
+  const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedPlayerId, setSelectedPlayerId] = useState("");
   const [selectedTeamCode, setSelectedTeamCode] = useState("");
   const [selectedProspectId, setSelectedProspectId] = useState("");
@@ -708,24 +726,28 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   const seasonPlayers = useMemo(() => data.players.filter((player) => player.year === season), [data.players, season]);
   const draftYear = useMemo(() => inferDraftYear(data.prospects, season), [data.prospects, season]);
   const prospects = useMemo(() => data.prospects.filter((prospect) => prospect.draft_year === draftYear), [data.prospects, draftYear]);
-  const teamCodes = useMemo(() => buildTeamMeta(data.teams, season).map((team) => team.team), [data.teams, season]);
+  const teamMetaRows = useMemo(() => buildTeamMeta(data.teams, season), [data.teams, season]);
+  const teamCodes = useMemo(() => teamMetaRows.map((team) => team.team), [teamMetaRows]);
+  const teamMetaByCode = useMemo(() => new Map(teamMetaRows.map((team) => [team.team, team])), [teamMetaRows]);
+  const playerMetaById = useMemo(() => new Map(seasonPlayers.map((player) => [playerKey(player), player])), [seasonPlayers]);
+  const offseasonDataReady = seasonPlayers.length > 0 && teamCodes.length > 0 && data.picks.length > 0 && prospects.length > 0 && Boolean(data.capTracker);
   const teams = useMemo(() => ["All", ...teamCodes], [teamCodes]);
-  const filteredTeamRows = !run ? [] : selectedTeam === "All" ? run.teams : run.teams.filter((team) => team.team === selectedTeam);
-  const filteredSignings = selectedTeam === "All"
-    ? run?.freeAgency ?? []
-    : run?.freeAgency.filter((signing) => signing.toTeam === selectedTeam || signing.fromTeam === selectedTeam) ?? [];
-  const filteredTrades = selectedTeam === "All"
-    ? run?.trades ?? []
-    : run?.trades.filter((trade) => trade.teamA === selectedTeam || trade.teamB === selectedTeam) ?? [];
   const selectedPlayer = seasonPlayers.find((player) => playerKey(player) === selectedPlayerId) ?? seasonPlayers[0] ?? null;
   const selectedProspect = prospects.find((prospect) => prospectKey(prospect) === selectedProspectId) ?? prospects[0] ?? null;
   const selectedTeamForEdit = selectedTeamCode || teamCodes[0] || "";
   const headline = useMemo(() => run ? buildRunHeadline(run) : null, [run]);
-  const warRoomPlans = useMemo(() => run ? buildWarRoomPlans(run, assumptions) : [], [assumptions, run]);
-  const selectedPlan = selectedTeam === "All" ? null : warRoomPlans.find((plan) => plan.team.team === selectedTeam) ?? null;
+  const viewModels = useMemo(() => run ? buildOffseasonViewModels(run, multiRun) : null, [multiRun, run]);
   const overrideStats = useMemo(() => summarizeOverrides(overrides), [overrides]);
 
   useEffect(() => {
+    if (!offseasonDataReady) {
+      setRun(null);
+      setMultiRun(null);
+      setRunOffset(0);
+      setIsSimulating(true);
+      setSimulationStatus("Loading offseason data...");
+      return;
+    }
     const key = simulationCacheKey(season, capYear, assumptions, overrides);
     const cached = readCachedSimulationRun(data, key);
     if (cached) {
@@ -756,15 +778,15 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
       cancelled = true;
       cancelIdleWork(handle);
     };
-  }, [data, season, capYear]);
+  }, [data, season, capYear, offseasonDataReady]);
 
   useEffect(() => {
     if (!teams.includes(selectedTeam)) setSelectedTeam("All");
   }, [selectedTeam, teams]);
 
   useEffect(() => {
-    window.localStorage.setItem(OFFSEASON_TAB_STORAGE_KEY, activeTab);
-  }, [activeTab]);
+    window.localStorage.setItem(OFFSEASON_TAB_STORAGE_KEY, activeLens);
+  }, [activeLens]);
 
   useEffect(() => {
     window.localStorage.setItem(OFFSEASON_TEAM_STORAGE_KEY, selectedTeam);
@@ -773,6 +795,18 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
   useEffect(() => {
     window.localStorage.setItem(OFFSEASON_PRESET_STORAGE_KEY, activePreset);
   }, [activePreset]);
+
+  useEffect(() => {
+    if (!viewModels) return;
+    const scopedEvents = filterOffseasonEvents(viewModels.events, { team: selectedTeam, query: storyQuery, kind: storyKind });
+    if (scopedEvents.length === 0) {
+      if (selectedEventId) setSelectedEventId("");
+      return;
+    }
+    if (!scopedEvents.some((event) => event.id === selectedEventId)) {
+      setSelectedEventId(scopedEvents[0].id);
+    }
+  }, [selectedEventId, selectedTeam, storyKind, storyQuery, viewModels]);
 
   const updateAssumption = (key: keyof SimulatorAssumptions, value: number) => {
     setAssumptions((current) => ({ ...current, [key]: value }));
@@ -889,73 +923,79 @@ export function OffseasonSimulatorWorkspace({ data, season }: { data: AppData; s
           ) : (
             <OffseasonLoadingPanel season={season} draftYear={draftYear} isSimulating={isSimulating} simulationStatus={simulationStatus} />
           )}
-          {run && headline && (
+          {run && headline && viewModels && (
             <>
-          <div className="offseason-tabs" role="tablist" aria-label="Offseason simulator sections">
-            {[
-              ["dashboard", "Dashboard"],
-              ["warRoom", "War Room"],
-              ["league", "League Board"],
-              ["draft", "Draft"],
-              ["options", "Options"],
-              ["freeAgency", "Free Agency"],
-              ["after", "After Rosters"],
-              ["trades", "Trades"],
-              ["teams", "Cap Sheets"],
-              ["markets", "Markets"],
-              ["overrides", `Overrides${overrideStats.total ? ` (${overrideStats.total})` : ""}`]
-            ].map(([key, label]) => (
-              <button key={key} className={cls(activeTab === key && "active")} onClick={() => setActiveTab(key as OffseasonTab)}>
-                {label}
-              </button>
-            ))}
-          </div>
+              <OffseasonLensNav activeLens={activeLens} overrideCount={overrideStats.total} onLensChange={setActiveLens} />
 
-          {activeTab === "dashboard" && (
-            <DashboardView run={run} selectedTeam={selectedTeam} multiRun={multiRun} />
-          )}
+              {activeLens === "story" && (
+                <StoryLensView
+                  viewModels={viewModels}
+                  selectedTeam={selectedTeam}
+                  teamMetaByCode={teamMetaByCode}
+                  playerMetaById={playerMetaById}
+                  query={storyQuery}
+                  kind={storyKind}
+                  selectedEventId={selectedEventId}
+                  onQueryChange={setStoryQuery}
+                  onKindChange={setStoryKind}
+                  onSelectEvent={setSelectedEventId}
+                />
+              )}
 
-          {activeTab === "warRoom" && (
-            <div className="offseason-stack">
-              <div className="offseason-kpis">
-                <MetricCard label="Draft picks" value={String(run.draft.length)} />
-                <MetricCard label="Options" value={String(run.options.length)} />
-                <MetricCard label="Signings" value={String(run.freeAgency.length)} />
-                <MetricCard label="Trades" value={String(run.trades.length)} />
-                <MetricCard label="Avg payroll" value={formatMoney(avg(run.teams.map((team) => team.payroll)))} />
-              </div>
-              <WarRoomView plans={warRoomPlans} selectedTeam={selectedTeam} selectedPlan={selectedPlan} multiRun={multiRun} />
-              <DecisionBoard run={run} selectedTeam={selectedTeam} />
-              {multiRun && <MultiRunPanel summary={multiRun} />}
-            </div>
-          )}
+              {activeLens === "teams" && (
+                <TeamsLensView
+                  viewModels={viewModels}
+                  selectedTeam={selectedTeam}
+                  teamMetaByCode={teamMetaByCode}
+                  playerMetaById={playerMetaById}
+                  onTeamSelect={setSelectedTeam}
+                  onSelectEvent={(eventId) => {
+                    setSelectedEventId(eventId);
+                    setActiveLens("story");
+                  }}
+                />
+              )}
 
-          {activeTab === "league" && <LeagueBoardView plans={warRoomPlans} onSelectTeam={setSelectedTeam} />}
-          {activeTab === "draft" && <DraftResultsTable selections={run.draft} selectedTeam={selectedTeam} />}
-          {activeTab === "options" && <OptionResultsTable decisions={run.options} selectedTeam={selectedTeam} />}
-          {activeTab === "freeAgency" && <SigningResultsTable signings={filteredSignings} audit={run.marketAudit} selectedTeam={selectedTeam} />}
-          {activeTab === "after" && <AfterRosterView run={run} teams={filteredTeamRows} selectedTeam={selectedTeam} />}
-          {activeTab === "trades" && <TradeResultsTable trades={filteredTrades} diagnostics={run.tradeDiagnostics} />}
-          {activeTab === "teams" && <TeamCapTable teams={filteredTeamRows} />}
-          {activeTab === "markets" && <MarketPlanView run={run} selectedTeam={selectedTeam} />}
-          {activeTab === "overrides" && (
-            <DataEditor
-              players={seasonPlayers}
-              prospects={prospects}
-              teamCodes={teamCodes}
-              selectedPlayer={selectedPlayer}
-              selectedProspect={selectedProspect}
-              selectedTeam={selectedTeamForEdit}
-              overrides={overrides}
-              offseasonTruth={data.offseasonTruth}
-              season={season}
-              onPlayerSelect={setSelectedPlayerId}
-              onProspectSelect={setSelectedProspectId}
-              onTeamSelect={setSelectedTeamCode}
-              onOverridesChange={setOverrides}
-              onImport={importOverrides}
-            />
-          )}
+              {activeLens === "markets" && (
+                <MarketsLensView
+                  viewModels={viewModels}
+                  selectedTeam={selectedTeam}
+                  teamMetaByCode={teamMetaByCode}
+                  playerMetaById={playerMetaById}
+                  onSelectEvent={(eventId) => {
+                    setSelectedEventId(eventId);
+                    setActiveLens("story");
+                  }}
+                />
+              )}
+
+              {activeLens === "lab" && (
+                <LabLensView
+                  data={data}
+                  run={run}
+                  season={season}
+                  assumptions={assumptions}
+                  activePreset={activePreset}
+                  overrideStats={overrideStats}
+                  players={seasonPlayers}
+                  prospects={prospects}
+                  teamCodes={teamCodes}
+                  selectedPlayer={selectedPlayer}
+                  selectedProspect={selectedProspect}
+                  selectedTeamForEdit={selectedTeamForEdit}
+                  overrides={overrides}
+                  multiRun={multiRun}
+                  selectedTeam={selectedTeam}
+                  onAssumptionChange={updateAssumption}
+                  onPreset={applyPreset}
+                  onPlayerSelect={setSelectedPlayerId}
+                  onProspectSelect={setSelectedProspectId}
+                  onTeamEditSelect={setSelectedTeamCode}
+                  onOverridesChange={setOverrides}
+                  onImport={importOverrides}
+                  onExport={exportRun}
+                />
+              )}
             </>
           )}
         </section>
@@ -1674,7 +1714,9 @@ function applyCapPathDecisions(teams: Map<string, TeamState>, players: SimPlayer
     } else {
       team.capPath = "retained_rights";
       team.capPathReason = protectedLossBlock
-        ? `Kept retained-rights path because ${protectedLossBlock.player.name}'s protected ${protectedLossBlock.player.status} rights outweighed the cap-room board.`
+        ? protectedLossBlock.compressibleHold
+          ? `Kept retained-rights path because ${protectedLossBlock.player.name}'s Bird rights can compress a ${formatMoney(protectedLossBlock.hold)} hold into a projected ${formatMoney(protectedLossBlock.compressedSalary)} re-signing, which outweighed the cap-room board.`
+          : `Kept retained-rights path because ${protectedLossBlock.player.name}'s protected ${protectedLossBlock.player.status} rights outweighed the cap-room board.`
         : bestOwn
         ? `Kept retained-rights path because ${bestOwn.player.name} has the highest rights option value.`
         : "Kept retained-rights path because the outside cap-room board did not clear the program threshold.";
@@ -1702,11 +1744,38 @@ type CapRoomProgram = {
 type OwnHoldPlan = {
   player: SimPlayer;
   hold: number;
+  compressedSalary: number;
+  compressionSavings: number;
+  compressibleHold: boolean;
   priority: number;
   rightsValue: number;
   scarcity: number;
   retainScore: number;
   protectedHold: boolean;
+};
+
+export type BirdHoldCompressionInput = {
+  status: "Signed" | "UFA" | "RFA" | "Player Option" | "Team Option" | "Non-Guaranteed" | "Rookie FA";
+  rights: "Bird" | "Early Bird" | "Non-Bird" | "None";
+  hold: number;
+  marketValue: number;
+  minimumSalary: number;
+  cap: number;
+  score: number;
+  expectedMarketMinutes: number;
+  position: string;
+  rimProtection?: number;
+  retainScore: number;
+  scarcity: number;
+  standardRosterSlots: number;
+  severeApronPain?: boolean;
+  projectedSalary?: number;
+};
+
+export type BirdHoldCompressionPreview = {
+  projectedSalary: number;
+  savings: number;
+  compressible: boolean;
 };
 
 function buildCapRoomTargetBoard(team: TeamState, players: SimPlayer[], assumptions: SimulatorAssumptions, usableMaxRoom: number): CapRoomTarget[] {
@@ -1734,9 +1803,12 @@ function retainedRightsProgramScore(team: TeamState, holdPlans: OwnHoldPlan[], l
   const protectedValue = sum(holdPlans
     .filter((plan) => plan.protectedHold)
     .map((plan) => plan.retainScore * Math.min(plan.hold, assumptions.cap * 0.16) / assumptions.cap));
+  const compressionValue = sum(holdPlans
+    .filter((plan) => plan.compressibleHold)
+    .map((plan) => plan.retainScore * clamp(plan.compressionSavings / Math.max(assumptions.cap, 1), 0, 0.22)));
   const contenderBias = isContenderMode(team.mode) ? 0.08 : 0;
   const lowHoldDrag = clamp(lowEfficiencyHoldTotal / Math.max(assumptions.cap * 0.7, 1), 0, 0.34);
-  return clamp((bestOwn?.retainScore ?? 0) * 0.72 + protectedValue * 0.6 + contenderBias - lowHoldDrag, 0, 1.2);
+  return clamp((bestOwn?.retainScore ?? 0) * 0.72 + protectedValue * 0.6 + compressionValue * 0.9 + contenderBias - lowHoldDrag, 0, 1.2);
 }
 
 function buildCapRoomProgram(team: TeamState, holdPlans: OwnHoldPlan[], outsideBoard: CapRoomTarget[], assumptions: SimulatorAssumptions): CapRoomProgram {
@@ -1767,8 +1839,15 @@ function buildCapRoomProgram(team: TeamState, holdPlans: OwnHoldPlan[], outsideB
   const protectedLossPenalty = holdPlans
     .filter((plan) => plan.protectedHold && !retainedIds.has(plan.player.id))
     .reduce((total, plan) => total + plan.retainScore * (plan.player.status === "RFA" ? 0.16 : 0.1), 0);
+  const compressionLossPenalty = holdPlans
+    .filter((plan) => plan.compressibleHold && !retainedIds.has(plan.player.id))
+    .reduce((total, plan) =>
+      total +
+      plan.retainScore *
+      clamp(plan.compressionSavings / Math.max(assumptions.cap, 1), 0.02, 0.2),
+    0);
   return {
-    score: clamp(boardScore + roomBonus + lowHoldBonus - protectedLossPenalty, 0, 1.25),
+    score: clamp(boardScore + roomBonus + lowHoldBonus - protectedLossPenalty - compressionLossPenalty, 0, 1.25),
     retainedIds,
     retainedHoldTotal
   };
@@ -1785,11 +1864,14 @@ function protectedHoldLossBlocksCapRoom(
   const bestOutsideMarket = bestOutside?.player.marketValue ?? 0;
   return holdPlans
     .filter((plan) => plan.protectedHold && !retainedIds.has(plan.player.id))
-    .filter((plan) => plan.player.status === "RFA" && plan.retainScore >= 0.74)
-    .filter((plan) => plan.player.marketValue >= assumptions.cap * 0.05 || plan.scarcity >= 0.58)
+    .filter((plan) =>
+      (plan.player.status === "RFA" && plan.retainScore >= 0.74) ||
+      (plan.compressibleHold && plan.retainScore >= 0.5)
+    )
+    .filter((plan) => plan.compressibleHold || plan.player.marketValue >= assumptions.cap * 0.05 || plan.scarcity >= 0.58)
     .find((plan) =>
       bestOutsidePriority < plan.priority + 0.08 ||
-      bestOutsideMarket < plan.player.marketValue * 1.25
+      bestOutsideMarket < plan.player.marketValue * (plan.compressibleHold ? 1.55 : 1.25)
     ) ?? null;
 }
 
@@ -1797,13 +1879,82 @@ function valuableHoldForCapRoom(plan: OwnHoldPlan, assumptions: SimulatorAssumpt
   if (plan.hold <= 0) return false;
   const efficiency = plan.player.marketValue / Math.max(plan.hold, minimumSalary(plan.player));
   if (plan.player.status === "RFA") return plan.retainScore >= 0.46 || plan.scarcity >= 0.62 || efficiency >= 0.72;
+  if (plan.player.rights === "Bird" && (plan.scarcity >= 0.55 || plan.player.expectedMarketMinutes >= 900)) return plan.retainScore >= 0.5 || efficiency >= 0.55;
   return plan.retainScore >= 0.7 && (efficiency >= 0.62 || plan.player.marketValue >= assumptions.cap * 0.12);
 }
 
 function lowEfficiencyHold(plan: OwnHoldPlan, assumptions: SimulatorAssumptions): boolean {
   const efficiency = plan.player.marketValue / Math.max(plan.hold, minimumSalary(plan.player));
+  if (plan.compressibleHold) return false;
   if (plan.player.status === "RFA" && (plan.retainScore >= 0.58 || plan.scarcity >= 0.72)) return false;
+  if (plan.player.rights === "Bird" && (plan.retainScore >= 0.5 || plan.scarcity >= 0.55 || plan.player.expectedMarketMinutes >= 900)) return false;
   return plan.hold >= assumptions.cap * 0.035 && (efficiency < 0.72 || plan.retainScore < 0.46);
+}
+
+function projectedOwnRightsReturnSalary(player: SimPlayer, assumptions: SimulatorAssumptions): number {
+  return projectedOwnRightsReturnSalaryFromMarket(player.marketValue, minimumSalary(player), assumptions.cap);
+}
+
+function projectedOwnRightsReturnSalaryFromMarket(marketValue: number, minimum: number, cap: number): number {
+  const market = Math.max(marketValue, minimum);
+  const discount = market >= cap * 0.1
+    ? 0.84
+    : market >= cap * 0.045
+    ? 0.76
+    : 0.72;
+  return Math.round(clamp(market * discount, minimum, Math.max(minimum, market * 1.05)));
+}
+
+export function evaluateBirdHoldCompression(input: BirdHoldCompressionInput): BirdHoldCompressionPreview {
+  const projectedSalary = input.projectedSalary ?? projectedOwnRightsReturnSalaryFromMarket(input.marketValue, input.minimumSalary, input.cap);
+  const savings = Math.max(0, input.hold - projectedSalary);
+  const usefulRotationLevel =
+    input.marketValue >= Math.max(4_000_000, input.cap * 0.024) ||
+    input.score >= 55 ||
+    input.expectedMarketMinutes >= 850 ||
+    (input.position.toUpperCase().includes("C") && (input.rimProtection ?? 0) >= 1.1);
+  const teamHasReason =
+    input.retainScore >= 0.44 ||
+    input.scarcity >= 0.48 ||
+    input.expectedMarketMinutes >= 900 ||
+    input.standardRosterSlots > 0;
+  const compressible =
+    input.status === "UFA" &&
+    input.rights === "Bird" &&
+    savings >= Math.max(4_000_000, input.cap * 0.025) &&
+    input.hold >= input.cap * 0.06 &&
+    usefulRotationLevel &&
+    teamHasReason &&
+    (!input.severeApronPain || input.retainScore >= 0.62 || input.scarcity >= 0.58);
+  return { projectedSalary, savings, compressible };
+}
+
+function ownBirdHoldCanCompress(
+  team: TeamState,
+  player: SimPlayer,
+  assumptions: SimulatorAssumptions,
+  hold: number,
+  projectedSalary: number,
+  retainScore: number,
+  scarcity: number
+): boolean {
+  return evaluateBirdHoldCompression({
+    status: player.status,
+    rights: player.rights,
+    hold,
+    marketValue: player.marketValue,
+    minimumSalary: minimumSalary(player),
+    cap: assumptions.cap,
+    score: player.score,
+    expectedMarketMinutes: player.expectedMarketMinutes,
+    position: player.position,
+    rimProtection: player.skills.RIMPRO,
+    retainScore,
+    scarcity,
+    standardRosterSlots: standardRosterSlotsRemaining(team),
+    severeApronPain: taxPainScore(team, projectedSalary, assumptions) >= 0.88,
+    projectedSalary
+  }).compressible;
 }
 
 function roomThresholdForCapPath(assumptions: SimulatorAssumptions): number {
@@ -1816,15 +1967,28 @@ function ownHoldPlan(team: TeamState, player: SimPlayer, assumptions: SimulatorA
   const scarcity = positionalScarcityScore(team, player);
   const rightsValue = rightsOptionValue(team, player, assumptions, hold, scarcity);
   const rfaControlPremium = player.status === "RFA" ? clamp(0.08 + player.upside * 0.08 + (player.age <= 25 ? 0.08 : 0), 0, 0.22) : 0;
-  const birdToolPremium = player.rights === "Bird" && team.heldCapSpace <= 0 ? 0.08 : player.rights === "Early Bird" && team.heldCapSpace <= 0 ? 0.04 : 0;
+  const birdToolPremium = player.rights === "Bird"
+    ? (team.heldCapSpace <= 0 ? 0.12 : 0.06)
+    : player.rights === "Early Bird" && team.heldCapSpace <= 0 ? 0.04 : 0;
   const retainScore = clamp(priority * 0.38 + rightsValue * 0.42 + scarcity * 0.16 + rfaControlPremium + birdToolPremium, 0, 1.3);
-  const protectedHold = player.status === "RFA"
+  const baseProtectedHold = player.status === "RFA"
     ? retainScore >= 0.44 || scarcity >= 0.58 || player.marketValue >= 7_500_000 || player.age <= 24
-    : retainScore >= 0.64 || (player.rights === "Bird" && player.marketValue >= assumptions.cap * 0.07) || player.marketValue >= assumptions.cap * 0.12 || ["MVP", "Superstar", "All-Star", "Starter"].includes(player.tier);
+    : retainScore >= 0.64 ||
+      (player.rights === "Bird" && (
+        player.marketValue >= assumptions.cap * 0.04 ||
+        (scarcity >= 0.55 && player.score >= 55) ||
+        player.expectedMarketMinutes >= 900
+      )) ||
+      player.marketValue >= assumptions.cap * 0.12 ||
+      ["MVP", "Superstar", "All-Star", "Starter"].includes(player.tier);
+  const compressedSalary = projectedOwnRightsReturnSalary(player, assumptions);
+  const compressionSavings = Math.max(0, hold - compressedSalary);
+  const compressibleHold = ownBirdHoldCanCompress(team, player, assumptions, hold, compressedSalary, retainScore, scarcity);
+  const protectedHold = baseProtectedHold || compressibleHold;
   player.rightsValue = rightsValue;
   player.holdRetainScore = retainScore;
   player.scarcityScore = scarcity;
-  return { player, hold, priority, rightsValue, scarcity, retainScore, protectedHold };
+  return { player, hold, compressedSalary, compressionSavings, compressibleHold, priority, rightsValue, scarcity, retainScore, protectedHold };
 }
 
 function applyHoldPlanToPlayer(plan: OwnHoldPlan, retain: boolean, targetName?: string) {
@@ -1836,6 +2000,8 @@ function applyHoldPlanToPlayer(plan: OwnHoldPlan, retain: boolean, targetName?: 
     player.holdAction = "retained";
     player.holdActionReason = player.status === "RFA"
       ? `Retained RFA rights: option value ${formatNumber(plan.rightsValue, 2)}, scarcity ${formatNumber(plan.scarcity, 2)}, hold score ${formatNumber(plan.retainScore, 2)}.`
+      : plan.compressibleHold
+      ? `Rights retained: projected below-hold Bird re-sign path can replace ${formatMoney(plan.hold)} hold with roughly ${formatMoney(plan.compressedSalary)} salary; retain score ${formatNumber(plan.retainScore, 2)}.`
       : `Hold retained: rights value ${formatNumber(plan.rightsValue, 2)} and retain score ${formatNumber(plan.retainScore, 2)}.`;
     return;
   }
@@ -2233,6 +2399,7 @@ function afterRosterPlayer(player: SimPlayer): AfterRosterPlayer {
   return {
     id: player.id,
     name: player.name,
+    nbaId: player.original?.nba_id ?? null,
     team: player.team,
     position: player.position || "UNK",
     age: player.age,
@@ -2425,7 +2592,7 @@ function incompleteRosterCharge(team: TeamState, assumptions: SimulatorAssumptio
   return openSpots * (team.minimumRosterCharge || assumptions.cap * 0.008);
 }
 
-function buildWarRoomPlans(run: SimulationRun, assumptions: SimulatorAssumptions): TeamWarRoomPlan[] {
+export function buildWarRoomPlans(run: SimulationRun, assumptions: SimulatorAssumptions): TeamWarRoomPlan[] {
   return run.teams.map((team) => {
     const picks = run.draft.filter((item) => item.team === team.team);
     const signings = run.freeAgency.filter((item) => item.toTeam === team.team || item.fromTeam === team.team);
@@ -2616,6 +2783,7 @@ function createMultiRunAccumulator(): MultiRunAccumulator {
   return {
     runs: 0,
     destinationRows: new Map(),
+    optionRows: new Map(),
     draftRows: new Map(),
     tradeTeams: new Map(),
     rfaRows: new Map(),
@@ -2631,6 +2799,10 @@ function createMultiRunAccumulator(): MultiRunAccumulator {
 
 function addRunToAccumulator(accumulator: MultiRunAccumulator, run: SimulationRun) {
   accumulator.runs += 1;
+  run.options.forEach((decision) => {
+    const key = `${decision.player.name}|${decision.team}|${decision.decision}|${decision.optionType}`;
+    accumulator.optionRows.set(key, (accumulator.optionRows.get(key) ?? 0) + 1);
+  });
   run.freeAgency.forEach((signing) => {
     const key = `${signing.player.name}|${signing.toTeam}`;
     const row = accumulator.destinationRows.get(key) ?? { count: 0, salary: 0 };
@@ -2708,6 +2880,13 @@ function finalizeMultiRunAccumulator(accumulator: MultiRunAccumulator): MultiRun
       })
       .sort((a, b) => b.count - a.count || b.avgSalary - a.avgSalary)
       .slice(0, 18),
+    optionDecisions: Array.from(accumulator.optionRows.entries())
+      .map(([key, count]) => {
+        const [player, team, decision, optionType] = key.split("|");
+        return { player, team, decision, optionType, count, pct: count / runs };
+      })
+      .sort((a, b) => b.count - a.count || a.player.localeCompare(b.player))
+      .slice(0, 18),
     draftOutcomes: Array.from(accumulator.draftRows.entries())
       .map(([key, value]) => {
         const [prospect, team] = key.split("|");
@@ -2779,7 +2958,7 @@ function MoneyInput({ label, value, onChange }: { label: string; value: number; 
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+export function MetricCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="metric-pill offseason-metric">
       <span>{label}</span>
@@ -2829,33 +3008,43 @@ function OffseasonCommandBar({
 }) {
   const focusTeam = selectedTeam === "All" ? null : run.teams.find((team) => team.team === selectedTeam) ?? null;
   return (
-    <section className="offseason-command-panel war-room-command">
+    <section className="offseason-command-panel offseason-console-command">
       <div className="offseason-command-copy">
         <span>{`Run ${run.seed} / ${season} roster-value season / ${capYear} cap / ${draftYear} draft`}</span>
-        <h2>{focusTeam ? `${focusTeam.team} Front Office War Room` : "Leaguewide Offseason War Room"}</h2>
+        <h2>{focusTeam ? `${focusTeam.team} Offseason Console` : "Leaguewide Offseason Console"}</h2>
         <p>
           {focusTeam
             ? `${focusTeam.mode}; ${formatMoney(focusTeam.payroll)} payroll, ${formatSignedMoney(focusTeam.taxRoom)} tax room, ${focusTeam.needs.join(", ")} needs.`
-            : `${headline.majorMoves} simulated decisions with ${formatNumber(headline.avgPlausibility * 100, 0)} average plausibility, ${headline.taxTeams} tax teams, and ${formatMoney(headline.tradeValue)} pick-equivalent trade value.`}
+            : `${headline.majorMoves} simulated decisions, ${formatNumber(headline.avgPlausibility * 100, 0)} average plausibility, ${headline.taxTeams} tax teams, ${formatMoney(headline.tradeValue)} pick-equivalent trade value.`}
         </p>
       </div>
       <div className="command-controls">
-        <label className="command-field">
-          <span>Team Scope</span>
-          <select value={selectedTeam} onChange={(event) => onTeamSelect(event.target.value)}>
-            {teams.map((team) => <option key={team} value={team}>{team}</option>)}
-          </select>
-        </label>
-        <div className="offseason-button-row command-buttons">
-          <button className="hdr-btn primary" disabled={isSimulating} onClick={onRunOne}>{isSimulating ? "Running..." : "Run one"}</button>
-          <button className="hdr-btn" disabled={isSimulating} onClick={onRunMany}>{isSimulating ? "Running..." : `Run ${Math.round(assumptions.runCount)}`}</button>
-          <button className="hdr-btn" disabled={isSimulating} onClick={() => onExport("csv")}>CSV</button>
-          <button className="hdr-btn" disabled={isSimulating} onClick={() => onExport("json")}>JSON</button>
+        <div className="console-command-row">
+          <label className="command-field">
+            <span>Scope</span>
+            <select value={selectedTeam} onChange={(event) => onTeamSelect(event.target.value)}>
+              {teams.map((team) => <option key={team} value={team}>{team}</option>)}
+            </select>
+          </label>
+          <label className="command-field run-count-field">
+            <span>Batch</span>
+            <input
+              type="number"
+              min={10}
+              max={500}
+              step={10}
+              value={Math.round(assumptions.runCount)}
+              onChange={(event) => onAssumptionChange("runCount", Number(event.target.value))}
+            />
+          </label>
+          <div className="offseason-button-row command-buttons">
+            <button className="hdr-btn primary" disabled={isSimulating} onClick={onRunOne}>{isSimulating ? "Running..." : "Run one"}</button>
+            <button className="hdr-btn" disabled={isSimulating} onClick={onRunMany}>{isSimulating ? "Running..." : `Run ${Math.round(assumptions.runCount)}`}</button>
+            <button className="hdr-btn" disabled={isSimulating} onClick={() => onExport("csv")}>CSV</button>
+            <button className="hdr-btn" disabled={isSimulating} onClick={() => onExport("json")}>JSON</button>
+          </div>
         </div>
         {simulationStatus && <div className="simulation-progress-strip">{simulationStatus}</div>}
-        <div className="quick-run-control">
-          <AssumptionInput label="Batch simulations" value={assumptions.runCount} min={10} max={500} step={10} onChange={(value) => onAssumptionChange("runCount", value)} />
-        </div>
         <div className="scenario-preset-row">
           {scenarioPresets.map((preset) => (
             <button
@@ -2869,31 +3058,1150 @@ function OffseasonCommandBar({
           ))}
           {overrideStats.total > 0 && <span className="override-count">{`${overrideStats.total} overrides / ${overrideStats.affectedTeams.length} teams`}</span>}
         </div>
-        <details className="cap-assumption-drawer advanced-simulation-drawer">
-          <summary>Advanced simulation settings</summary>
-          <div className="command-slider-grid">
-            <AssumptionInput label="Variance" value={assumptions.variance} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("variance", value)} />
-            <AssumptionInput label="Market heat" value={assumptions.marketAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("marketAggression", value)} />
-            <AssumptionInput label="Trade rate" value={assumptions.tradeAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("tradeAggression", value)} />
-            <AssumptionInput label="Draft fit" value={assumptions.draftFitWeight} min={0} max={0.55} step={0.01} onChange={(value) => onAssumptionChange("draftFitWeight", value)} />
-            <AssumptionInput label="Tax caution" value={assumptions.taxSensitivity} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("taxSensitivity", value)} />
-          </div>
-        </details>
-        <details className="cap-assumption-drawer">
-          <summary>Cap assumptions</summary>
-          <div className="offseason-cap-grid">
-            <MoneyInput label="Cap" value={assumptions.cap} onChange={(value) => onAssumptionChange("cap", value)} />
-            <MoneyInput label="Tax" value={assumptions.tax} onChange={(value) => onAssumptionChange("tax", value)} />
-            <MoneyInput label="First apron" value={assumptions.firstApron} onChange={(value) => onAssumptionChange("firstApron", value)} />
-            <MoneyInput label="Second apron" value={assumptions.secondApron} onChange={(value) => onAssumptionChange("secondApron", value)} />
-          </div>
-        </details>
       </div>
     </section>
   );
 }
 
-function DashboardView({ run, selectedTeam, multiRun }: { run: SimulationRun; selectedTeam: string; multiRun: MultiRunSummary | null }) {
+function OffseasonLensNav({ activeLens, overrideCount, onLensChange }: { activeLens: OffseasonLens; overrideCount: number; onLensChange: (lens: OffseasonLens) => void }) {
+  const lenses: Array<{ id: OffseasonLens; label: string; detail: string }> = [
+    { id: "story", label: "Story", detail: "Event tape" },
+    { id: "teams", label: "Teams", detail: "Team outcomes" },
+    { id: "markets", label: "Markets", detail: "FA bids" },
+    { id: "lab", label: overrideCount ? `Lab (${overrideCount})` : "Lab", detail: "Settings" }
+  ];
+  return (
+    <div className="offseason-lensbar" role="tablist" aria-label="Offseason lenses">
+      {lenses.map((lens) => (
+        <button key={lens.id} className={cls(activeLens === lens.id && "active")} onClick={() => onLensChange(lens.id)}>
+          <strong>{lens.label}</strong>
+          <span>{lens.detail}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type StorySortKey = "phase" | "actor" | "action" | "movement" | "amount" | "impact" | "confidence" | "outcomePct" | "why";
+type TeamRailSortKey = "rank" | "team" | "wins" | "net" | "offense" | "defense" | "roster";
+type EventLedgerSortKey = "phase" | "action" | "actor" | "amount" | "confidence";
+type RosterSortKey = "name" | "position" | "salary" | "minutes" | "total" | "score" | "tier";
+type MarketSortKey = "player" | "status" | "movement" | "marketValue" | "annualSalary" | "years" | "tool" | "confidence" | "outcomePct";
+type UnsignedSortKey = "player" | "position" | "marketValue" | "score" | "rightsTeam" | "bestBid";
+
+function StoryLensView({
+  viewModels,
+  selectedTeam,
+  teamMetaByCode,
+  playerMetaById,
+  query,
+  kind,
+  selectedEventId,
+  onQueryChange,
+  onKindChange,
+  onSelectEvent
+}: {
+  viewModels: OffseasonViewModels;
+  selectedTeam: string;
+  teamMetaByCode: Map<string, TeamProjection>;
+  playerMetaById: Map<string, PlayerImpact>;
+  query: string;
+  kind: OffseasonEventKind | "all";
+  selectedEventId: string;
+  onQueryChange: (query: string) => void;
+  onKindChange: (kind: OffseasonEventKind | "all") => void;
+  onSelectEvent: (eventId: string) => void;
+}) {
+  const [sortKey, setSortKey] = useState<StorySortKey>("phase");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [batchOnly, setBatchOnly] = useState(false);
+  const baseEvents = filterOffseasonEvents(viewModels.events, { team: selectedTeam, query, kind });
+  const batchEventCount = baseEvents.filter((event) => typeof event.outcomePct === "number").length;
+  const events = batchOnly ? baseEvents.filter((event) => typeof event.outcomePct === "number") : baseEvents;
+  const sortedEvents = sortOffseasonEvents(events, sortKey, sortDirection);
+  const selectedEvent = events.find((event) => event.id === selectedEventId) ?? events[0] ?? null;
+  const grouped = sortKey === "phase" ? groupEventsByPhase(sortedEvents) : [{ phase: "Sorted", events: sortedEvents }];
+  const onSort = (key: StorySortKey) => {
+    setSortDirection((current) => sortKey === key ? flipDirection(current) : defaultSortDirection(key));
+    setSortKey(key);
+  };
+  useEffect(() => {
+    if (batchOnly && batchEventCount === 0) setBatchOnly(false);
+  }, [batchEventCount, batchOnly]);
+  return (
+    <section className="offseason-console story-console">
+      <div className="story-primary">
+        <LeagueDigestStrip viewModels={viewModels} />
+        <div className="story-toolbar">
+          <div>
+            <h2>Offseason Tape</h2>
+            <p>{selectedTeam === "All" ? "Every modeled decision in phase order." : `${selectedTeam} decisions, losses, cap path, and unresolved markets.`}</p>
+          </div>
+          <div className="story-filters">
+            <select value={kind} onChange={(event) => onKindChange(event.target.value as OffseasonEventKind | "all")}>
+              <option value="all">All events</option>
+              {eventKindOptions.map((item) => <option key={item} value={item}>{eventKindLabel(item)}</option>)}
+            </select>
+            <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search tape" />
+            <label className="story-batch-toggle">
+              <input
+                type="checkbox"
+                checked={batchOnly}
+                disabled={batchEventCount === 0}
+                onChange={(event) => setBatchOnly(event.target.checked)}
+              />
+              <span>{`Batch signals (${batchEventCount})`}</span>
+            </label>
+          </div>
+        </div>
+        <div className="offseason-tape-wrap">
+          <table className="offseason-tape-table">
+            <colgroup>
+              <col className="col-event-phase" />
+              <col className="col-event-actor" />
+              <col className="col-event-action" />
+              <col className="col-event-movement" />
+              <col className="col-event-money" />
+              <col className="col-event-impact" />
+              <col className="col-event-confidence" />
+              <col className="col-event-batch" />
+              <col className="col-event-why" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th><ConsoleSortHeader label="Phase" sortKey="phase" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Actor" sortKey="actor" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Action" sortKey="action" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Move" sortKey="movement" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Money / Tool" sortKey="amount" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Impact" sortKey="impact" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Conf." sortKey="confidence" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Batch" sortKey="outcomePct" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+                <th><ConsoleSortHeader label="Why" sortKey="why" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              </tr>
+            </thead>
+            {grouped.map((group) => (
+              <tbody key={group.phase}>
+                {sortKey === "phase" && (
+                  <tr className="tape-phase-row">
+                    <td colSpan={9}>{`${group.phase} (${group.events.length})`}</td>
+                  </tr>
+                )}
+                {group.events.map((event) => (
+                  <StoryEventRow
+                    key={event.id}
+                    event={event}
+                    selected={selectedEvent?.id === event.id}
+                    teamMetaByCode={teamMetaByCode}
+                    playerMetaById={playerMetaById}
+                    onSelect={onSelectEvent}
+                  />
+                ))}
+              </tbody>
+            ))}
+          </table>
+          {events.length === 0 && <p className="console-empty">No events match this filter.</p>}
+        </div>
+      </div>
+      <EventInspector event={selectedEvent} viewModels={viewModels} />
+    </section>
+  );
+}
+
+function StoryEventRow({
+  event,
+  selected,
+  teamMetaByCode,
+  playerMetaById,
+  onSelect
+}: {
+  event: OffseasonEvent;
+  selected: boolean;
+  teamMetaByCode: Map<string, TeamProjection>;
+  playerMetaById: Map<string, PlayerImpact>;
+  onSelect: (eventId: string) => void;
+}) {
+  const player = event.playerId ? playerMetaById.get(event.playerId) : undefined;
+  return (
+    <tr
+      className={cls("tape-event-row", `event-${event.tone}`, selected && "active")}
+      onClick={() => onSelect(event.id)}
+    >
+      <td><span className="event-kind">{eventKindLabel(event.kind)}</span></td>
+      <td><PlayerEntityCell name={event.actor} player={player} detail={event.team || event.phase} /></td>
+      <td>{event.action}</td>
+      <td><TeamMovementCell event={event} teamMetaByCode={teamMetaByCode} /></td>
+      <td><strong>{eventAmount(event)}</strong><span>{event.tool ?? "-"}</span></td>
+      <td>{event.impact}</td>
+      <td>{typeof event.confidence === "number" ? `${formatNumber(event.confidence * 100, 0)}%` : "-"}</td>
+      <td>{eventBatchColumnLabel(event)}</td>
+      <td>{event.why}</td>
+    </tr>
+  );
+}
+
+function ConsoleSortHeader<T extends string>({
+  label,
+  sortKey,
+  active,
+  direction,
+  onSort
+}: {
+  label: string;
+  sortKey: T;
+  active: T;
+  direction: SortDirection;
+  onSort: (key: T) => void;
+}) {
+  return (
+    <button type="button" className={cls("console-sort-header", active === sortKey && "active")} onClick={() => onSort(sortKey)}>
+      <span>{label}</span>
+      {active === sortKey && <b>{direction === "desc" ? "v" : "^"}</b>}
+    </button>
+  );
+}
+
+function PlayerEntityCell({ name, player, detail }: { name: string; player?: PlayerImpact; detail?: string }) {
+  return (
+    <div className="entity-cell">
+      <PlayerHeadshotMini player={player} name={name} />
+      <span className="entity-copy">
+        <strong>{name}</strong>
+        <span>{detail ?? "-"}</span>
+      </span>
+    </div>
+  );
+}
+
+function PlayerHeadshotMini({ player, name }: { player?: PlayerImpact; name: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [player?.nba_id]);
+  const initials = initialsForName(name);
+  if (!player?.nba_id || failed) {
+    return <span className="sim-player-avatar">{initials}</span>;
+  }
+  return (
+    <span className="sim-player-avatar">
+      <img
+        src={`${NBA_HEADSHOT_URL}/${player.nba_id}.png`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+      />
+    </span>
+  );
+}
+
+function TeamLogoMini({ team, label }: { team?: TeamProjection; label: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [team?.team_logo_url, label]);
+  const display = team?.team_abbr ?? label;
+  if (!team?.team_logo_url || failed) {
+    return <span className="sim-team-logo fallback">{display.slice(0, 3)}</span>;
+  }
+  return <img className="sim-team-logo" src={team.team_logo_url} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />;
+}
+
+function TeamMovementCell({ event, teamMetaByCode }: { event: OffseasonEvent; teamMetaByCode: Map<string, TeamProjection> }) {
+  const teams = event.teams.length ? event.teams : event.team && event.team !== "FA" ? [event.team] : [];
+  return (
+    <div className="team-movement-cell">
+      {teams.length > 0 && (
+        <span className="team-logo-stack">
+          {teams.slice(0, 3).map((team) => <TeamLogoMini key={team} team={teamMetaByCode.get(team)} label={team} />)}
+        </span>
+      )}
+      <span className="movement-copy">{event.movement}</span>
+    </div>
+  );
+}
+
+function initialsForName(name: string): string {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  return initials || "?";
+}
+
+function flipDirection(direction: SortDirection): SortDirection {
+  return direction === "desc" ? "asc" : "desc";
+}
+
+function defaultSortDirection(key: string): SortDirection {
+  return ["amount", "confidence", "outcomePct", "marketValue", "annualSalary", "years", "wins", "net", "offense", "defense", "roster", "salary", "minutes", "total", "score", "bestBid"].includes(key) ? "desc" : "asc";
+}
+
+function compareSortValues(a: string | number | null | undefined, b: string | number | null | undefined, direction: SortDirection): number {
+  const factor = direction === "asc" ? 1 : -1;
+  const aMissing = a === null || a === undefined || a === "";
+  const bMissing = b === null || b === undefined || b === "";
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  if (typeof a === "number" && typeof b === "number") return (a - b) * factor;
+  return String(a).localeCompare(String(b)) * factor;
+}
+
+function sortOffseasonEvents(events: OffseasonEvent[], key: StorySortKey, direction: SortDirection): OffseasonEvent[] {
+  const value = (event: OffseasonEvent): string | number | undefined => {
+    if (key === "phase") return event.phaseOrder * 1000 + event.sortOrder;
+    if (key === "amount") return event.amount ?? -1;
+    if (key === "confidence") return event.confidence ?? -1;
+    if (key === "outcomePct") return event.outcomePct ?? -1;
+    return event[key];
+  };
+  return events.slice().sort((a, b) => compareSortValues(value(a), value(b), direction) || a.phaseOrder - b.phaseOrder || a.sortOrder - b.sortOrder || a.actor.localeCompare(b.actor));
+}
+
+function sortTeamStories(stories: TeamStory[], key: TeamRailSortKey, direction: SortDirection): TeamStory[] {
+  const value = (story: TeamStory): string | number | undefined => {
+    if (key === "team") return story.team;
+    if (key === "wins") return story.projectedWins;
+    if (key === "net") return story.adjustedTotal ?? story.total;
+    if (key === "offense") return story.offense;
+    if (key === "defense") return story.defense;
+    if (key === "roster") return story.rosterCount;
+    return story.rank;
+  };
+  return stories.slice().sort((a, b) => compareSortValues(value(a), value(b), direction) || a.rank - b.rank || a.team.localeCompare(b.team));
+}
+
+function sortLedgerEvents(events: OffseasonEvent[], key: EventLedgerSortKey, direction: SortDirection): OffseasonEvent[] {
+  const value = (event: OffseasonEvent): string | number | undefined => {
+    if (key === "phase") return event.phaseOrder * 1000 + event.sortOrder;
+    if (key === "amount") return event.amount ?? -1;
+    if (key === "confidence") return event.confidence ?? -1;
+    return event[key];
+  };
+  return events.slice().sort((a, b) => compareSortValues(value(a), value(b), direction) || a.phaseOrder - b.phaseOrder || a.sortOrder - b.sortOrder);
+}
+
+function sortRosterPlayers(players: TeamStory["roster"], key: RosterSortKey, direction: SortDirection): TeamStory["roster"] {
+  const value = (player: TeamStory["roster"][number]): string | number | undefined => {
+    if (key === "score") return player.score ?? -1;
+    return player[key];
+  };
+  return players.slice().sort((a, b) => compareSortValues(value(a), value(b), direction) || b.minutes - a.minutes || a.name.localeCompare(b.name));
+}
+
+function sortMarketStories(stories: MarketStory[], key: MarketSortKey, direction: SortDirection): MarketStory[] {
+  const value = (story: MarketStory): string | number | undefined => {
+    if (key === "marketValue") return story.marketValue ?? story.annualSalary ?? -1;
+    if (key === "annualSalary") return story.annualSalary ?? -1;
+    if (key === "years") return story.years ?? -1;
+    if (key === "confidence") return story.confidence ?? -1;
+    if (key === "outcomePct") return story.outcomePct ?? -1;
+    return story[key];
+  };
+  return stories.slice().sort((a, b) => compareSortValues(value(a), value(b), direction) || compareSortValues(a.marketValue ?? a.annualSalary ?? 0, b.marketValue ?? b.annualSalary ?? 0, "desc") || a.player.localeCompare(b.player));
+}
+
+function sortUnsignedStories(stories: MarketStory[], key: UnsignedSortKey, direction: SortDirection): MarketStory[] {
+  const value = (story: MarketStory): string | number | undefined => {
+    if (key === "marketValue") return story.marketValue ?? 0;
+    if (key === "score") return story.score ?? -1;
+    if (key === "bestBid") return bestBidAmount(story);
+    if (key === "rightsTeam") return story.rightsTeam || story.fromTeam;
+    return story[key];
+  };
+  return stories.slice().sort((a, b) => compareSortValues(value(a), value(b), direction) || compareSortValues(a.marketValue ?? 0, b.marketValue ?? 0, "desc") || a.player.localeCompare(b.player));
+}
+
+function LeagueDigestStrip({ viewModels }: { viewModels: OffseasonViewModels }) {
+  return (
+    <div className="league-digest-strip">
+      <div className="league-digest-copy">
+        <span>Simulation Read</span>
+        <h2>{viewModels.digest.headline}</h2>
+        <p>{viewModels.digest.subhead}</p>
+      </div>
+      <div className="league-digest-metrics">
+        {viewModels.digest.metrics.map((metric) => (
+          <div key={metric.label} className={cls("console-metric", `metric-${metric.tone}`)}>
+            <span>{metric.label}</span>
+            <strong>{metric.label.includes("value") ? compactMoney(Number(metric.value)) : metric.value}</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EventInspector({ event, viewModels }: { event: OffseasonEvent | null; viewModels: OffseasonViewModels }) {
+  const team = event ? viewModels.teamStories.find((story) => story.team === event.team || event.teams.includes(story.team)) : null;
+  const market = event?.playerId ? viewModels.marketStories.find((story) => story.playerId === event.playerId) ?? null : null;
+  if (!event) {
+    return (
+      <aside className="event-inspector">
+        <div className="inspector-head">
+          <span>Inspector</span>
+          <h2>No event selected</h2>
+          <p>Select a row in the offseason tape to inspect model logic, bid pressure, and team consequences.</p>
+        </div>
+      </aside>
+    );
+  }
+  return (
+    <aside className="event-inspector">
+      <div className="inspector-head">
+        <span>{`${event.phase} / ${eventKindLabel(event.kind)}`}</span>
+        <h2>{`${event.action}: ${event.actor}`}</h2>
+        <p>{event.why}</p>
+      </div>
+      <div className="inspector-fact-grid">
+        <InspectorFact label="Movement" value={event.movement} />
+        <InspectorFact label="Money" value={eventAmount(event)} />
+        <InspectorFact label="Tool" value={event.tool ?? "-"} />
+        <InspectorFact label="Confidence" value={typeof event.confidence === "number" ? `${formatNumber(event.confidence * 100, 0)}%` : "-"} />
+        {typeof event.outcomePct === "number" && <InspectorFact label="Batch" value={eventBatchSignalLabel(event)} />}
+      </div>
+      {event.score && (
+        <div className="inspector-section">
+          <h3>Decision Drivers</h3>
+          <DriverChips drivers={driversFromScore(event.score)} />
+          <ScoreBreakdown score={event.score} />
+        </div>
+      )}
+      {market && (
+        <div className="inspector-section">
+          <h3>Market Result</h3>
+          <p>{market.why}</p>
+          <div className="inspector-fact-grid compact">
+            <InspectorFact label="Winner" value={market.winner} />
+            <InspectorFact label="Runner-up" value={market.runnerUp ?? "-"} />
+            <InspectorFact label="Role" value={market.role ?? "-"} />
+            <InspectorFact label="RFA" value={market.incumbentDecision ?? (market.offerSheetTeam ? "Offer sheet" : "-")} />
+            <InspectorFact label="Batch" value={marketBatchSignalLabel(market)} />
+            {typeof market.rfaMatchPct === "number" && <InspectorFact label="RFA rate" value={rfaMatchSignalLabel(market)} />}
+          </div>
+          <BidLadder bids={market.bids} />
+          <LedgerRows rows={market.ledger} />
+        </div>
+      )}
+      {team && (
+        <div className="inspector-section">
+          <h3>Team Consequence</h3>
+          <p>{team.headline}</p>
+          <div className="inspector-fact-grid compact">
+            <InspectorFact label="Payroll" value={formatMoney(team.payroll)} />
+            <InspectorFact label="Room" value={formatSignedMoney(team.capSpace)} />
+            <InspectorFact label="Tax room" value={formatSignedMoney(team.taxRoom)} />
+            <InspectorFact label="Projected" value={`${formatNumber(team.projectedWins, 1)} wins`} />
+          </div>
+        </div>
+      )}
+      {event.logic && event.logic.length > 0 && (
+        <div className="inspector-section">
+          <h3>Method Trace</h3>
+          {event.logic.slice(0, 5).map((row) => <p key={row}>{row}</p>)}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function TeamsLensView({
+  viewModels,
+  selectedTeam,
+  teamMetaByCode,
+  playerMetaById,
+  onTeamSelect,
+  onSelectEvent
+}: {
+  viewModels: OffseasonViewModels;
+  selectedTeam: string;
+  teamMetaByCode: Map<string, TeamProjection>;
+  playerMetaById: Map<string, PlayerImpact>;
+  onTeamSelect: (team: string) => void;
+  onSelectEvent: (eventId: string) => void;
+}) {
+  const [sortKey, setSortKey] = useState<TeamRailSortKey>("rank");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const activeStory = selectedTeam === "All"
+    ? viewModels.teamStories[0] ?? null
+    : viewModels.teamStories.find((story) => story.team === selectedTeam) ?? viewModels.teamStories[0] ?? null;
+  const sortedStories = sortTeamStories(viewModels.teamStories, sortKey, sortDirection);
+  const onSort = (key: TeamRailSortKey) => {
+    setSortDirection((current) => sortKey === key ? flipDirection(current) : defaultSortDirection(key));
+    setSortKey(key);
+  };
+  return (
+    <section className="offseason-console teams-console">
+      <aside className="team-story-rail">
+        <div className="rail-head">
+          <span>Team Projections</span>
+          <button className={cls(selectedTeam === "All" && "active")} onClick={() => onTeamSelect("All")}>League</button>
+        </div>
+        <div className="team-rail-sort">
+          <ConsoleSortHeader label="Rank" sortKey="rank" active={sortKey} direction={sortDirection} onSort={onSort} />
+          <ConsoleSortHeader label="Net" sortKey="net" active={sortKey} direction={sortDirection} onSort={onSort} />
+          <ConsoleSortHeader label="Wins" sortKey="wins" active={sortKey} direction={sortDirection} onSort={onSort} />
+          <ConsoleSortHeader label="Roster" sortKey="roster" active={sortKey} direction={sortDirection} onSort={onSort} />
+        </div>
+        {sortedStories.map((story) => (
+          <button key={story.team} className={cls("team-story-row team-projection-row", activeStory?.team === story.team && "active")} onClick={() => onTeamSelect(story.team)}>
+            <TeamLogoMini team={teamMetaByCode.get(story.team)} label={story.team} />
+            <span className="team-projection-main">
+              <strong>{story.team}</strong>
+              <span>{story.name}</span>
+            </span>
+            <span className="team-projection-rank">{`#${story.rank}`}</span>
+            <span className="team-projection-metrics">
+              <b>{`${formatNumber(story.projectedWins, 1)} W`}</b>
+              <b>{`NET ${formatSignedNumber(story.adjustedTotal ?? story.total ?? 0, 1)}`}</b>
+              <b>{`O ${formatSignedNumber(story.offense ?? 0, 1)}`}</b>
+              <b>{`D ${formatSignedNumber(story.defense ?? 0, 1)}`}</b>
+            </span>
+            <span className="team-projection-note">{story.outcomePct ? `${formatNumber(story.outcomePct * 100, 0)}% ${story.outcomeLabel}` : `${story.rosterCount}/${story.standardRosterLimit} / ${capPathLabel(story.capPath)}`}</span>
+          </button>
+        ))}
+      </aside>
+      {activeStory ? <TeamStoryDetail story={activeStory} teamMeta={teamMetaByCode.get(activeStory.team)} playerMetaById={playerMetaById} onSelectEvent={onSelectEvent} /> : <p className="console-empty">No team story available.</p>}
+    </section>
+  );
+}
+
+function TeamStoryDetail({ story, teamMeta, playerMetaById, onSelectEvent }: { story: TeamStory; teamMeta?: TeamProjection; playerMetaById: Map<string, PlayerImpact>; onSelectEvent: (eventId: string) => void }) {
+  const [ledgerSortKey, setLedgerSortKey] = useState<EventLedgerSortKey>("amount");
+  const [ledgerSortDirection, setLedgerSortDirection] = useState<SortDirection>("desc");
+  const [rosterSortKey, setRosterSortKey] = useState<RosterSortKey>("minutes");
+  const [rosterSortDirection, setRosterSortDirection] = useState<SortDirection>("desc");
+  const ledgerEvents = sortLedgerEvents(story.events.filter((event) => event.kind !== "cap_path"), ledgerSortKey, ledgerSortDirection);
+  const roster = sortRosterPlayers(story.roster, rosterSortKey, rosterSortDirection);
+  const onLedgerSort = (key: EventLedgerSortKey) => {
+    setLedgerSortDirection((current) => ledgerSortKey === key ? flipDirection(current) : defaultSortDirection(key));
+    setLedgerSortKey(key);
+  };
+  const onRosterSort = (key: RosterSortKey) => {
+    setRosterSortDirection((current) => rosterSortKey === key ? flipDirection(current) : defaultSortDirection(key));
+    setRosterSortKey(key);
+  };
+  return (
+    <section className="team-story-detail">
+      <div className="team-story-hero">
+        <TeamLogoMini team={teamMeta} label={story.team} />
+        <div>
+          <span>{`${story.mode} / ${story.playoffStatus}`}</span>
+          <h2>{`${story.team} - ${story.headline}`}</h2>
+          <p>{story.capPathReason}</p>
+        </div>
+        <div className="team-scoreline">
+          <strong>{formatNumber(story.projectedWins, 1)}</strong>
+          <span>{`wins / rank #${story.rank} / net ${formatSignedNumber(story.adjustedTotal ?? story.total ?? 0, 1)}`}</span>
+        </div>
+      </div>
+      <div className="team-summary-strip">
+        <InspectorFact label="Payroll" value={formatMoney(story.payroll)} />
+        <InspectorFact label="Room" value={formatSignedMoney(story.capSpace)} />
+        <InspectorFact label="Tax room" value={formatSignedMoney(story.taxRoom)} />
+        <InspectorFact label="Roster" value={`${story.rosterCount}/${story.standardRosterLimit}`} />
+        <InspectorFact label="Roster delta" value={formatSignedNumber(story.rosterDelta, 0)} />
+        <InspectorFact label="Needs" value={story.needs.slice(0, 3).join(", ") || "-"} />
+      </div>
+      <div className="team-detail-grid">
+        <div className="console-section">
+          <h3>Move Ledger</h3>
+          <table className="compact-console-table">
+            <colgroup>
+              <col className="col-ledger-phase" />
+              <col className="col-ledger-action" />
+              <col className="col-ledger-actor" />
+              <col className="col-ledger-money" />
+              <col className="col-ledger-why" />
+            </colgroup>
+            <thead><tr>
+              <th><ConsoleSortHeader label="Phase" sortKey="phase" active={ledgerSortKey} direction={ledgerSortDirection} onSort={onLedgerSort} /></th>
+              <th><ConsoleSortHeader label="Action" sortKey="action" active={ledgerSortKey} direction={ledgerSortDirection} onSort={onLedgerSort} /></th>
+              <th><ConsoleSortHeader label="Actor" sortKey="actor" active={ledgerSortKey} direction={ledgerSortDirection} onSort={onLedgerSort} /></th>
+              <th><ConsoleSortHeader label="Money" sortKey="amount" active={ledgerSortKey} direction={ledgerSortDirection} onSort={onLedgerSort} /></th>
+              <th>Why</th>
+            </tr></thead>
+            <tbody>
+              {ledgerEvents.map((event) => (
+                <tr key={event.id} onClick={() => onSelectEvent(event.id)}>
+                  <td>{event.phase}</td>
+                  <td>{event.action}</td>
+                  <td><PlayerEntityCell name={event.actor} player={event.playerId ? playerMetaById.get(event.playerId) : undefined} detail={event.movement} /></td>
+                  <td>{eventAmount(event)}</td>
+                  <td>{event.why}</td>
+                </tr>
+              ))}
+              {ledgerEvents.length === 0 && <tr><td colSpan={5}>No major modeled move.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <div className="console-section">
+          <h3>Problems Left</h3>
+          <div className="problem-list">
+            {story.unresolved.map((item) => <p key={item}>{item}</p>)}
+          </div>
+          <h3>Core</h3>
+          <div className="core-list">
+            {story.core.slice(0, 8).map((item) => <span key={item}>{item}</span>)}
+            {story.core.length === 0 && <span>-</span>}
+          </div>
+        </div>
+      </div>
+      <div className="console-section">
+        <h3>Final Roster</h3>
+        <table className="compact-console-table roster-console-table">
+          <colgroup>
+            <col className="col-roster-player" />
+            <col className="col-roster-pos" />
+            <col className="col-roster-salary" />
+            <col className="col-roster-minutes" />
+            <col className="col-roster-total" />
+            <col className="col-roster-score" />
+            <col className="col-roster-tier" />
+          </colgroup>
+          <thead><tr>
+            <th><ConsoleSortHeader label="Player" sortKey="name" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+            <th><ConsoleSortHeader label="Pos" sortKey="position" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+            <th><ConsoleSortHeader label="Salary" sortKey="salary" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+            <th><ConsoleSortHeader label="Minutes" sortKey="minutes" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+            <th><ConsoleSortHeader label="Total" sortKey="total" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+            <th><ConsoleSortHeader label="Score" sortKey="score" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+            <th><ConsoleSortHeader label="Tier" sortKey="tier" active={rosterSortKey} direction={rosterSortDirection} onSort={onRosterSort} /></th>
+          </tr></thead>
+          <tbody>
+            {roster.slice(0, 18).map((player) => (
+              <tr key={player.id}>
+                <td><PlayerEntityCell name={player.name} player={playerMetaById.get(player.id)} detail={player.status ?? story.team} /></td>
+                <td>{player.position}</td>
+                <td>{formatMoney(player.salary)}</td>
+                <td>{formatNumber(player.minutes, 0)}</td>
+                <td>{formatSignedNumber(player.total, 2)}</td>
+                <td>{typeof player.score === "number" ? formatNumber(player.score, 1) : "-"}</td>
+                <td>{player.tier}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function MarketsLensView({
+  viewModels,
+  selectedTeam,
+  teamMetaByCode,
+  playerMetaById,
+  onSelectEvent
+}: {
+  viewModels: OffseasonViewModels;
+  selectedTeam: string;
+  teamMetaByCode: Map<string, TeamProjection>;
+  playerMetaById: Map<string, PlayerImpact>;
+  onSelectEvent: (eventId: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<MarketSortKey>("marketValue");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [batchOnly, setBatchOnly] = useState(false);
+  const baseFiltered = viewModels.marketStories.filter((story) => {
+    const teamMatch = selectedTeam === "All" || story.toTeam === selectedTeam || story.fromTeam === selectedTeam || story.offerSheetTeam === selectedTeam;
+    const search = `${story.player} ${story.status} ${story.movement} ${story.tool ?? ""} ${story.outcomeLabel ?? ""} ${rfaMatchSignalLabel(story)} ${story.why}`.toLowerCase();
+    return teamMatch && (!query.trim() || search.includes(query.trim().toLowerCase()));
+  });
+  const batchMarketCount = baseFiltered.filter(hasMarketBatchSignal).length;
+  const filtered = batchOnly ? baseFiltered.filter(hasMarketBatchSignal) : baseFiltered;
+  const sorted = sortMarketStories(filtered, sortKey, sortDirection);
+  const [selectedMarketId, setSelectedMarketId] = useState("");
+  const selected = sorted.find((story) => story.id === selectedMarketId) ?? sorted[0] ?? null;
+  const onSort = (key: MarketSortKey) => {
+    setSortDirection((current) => sortKey === key ? flipDirection(current) : defaultSortDirection(key));
+    setSortKey(key);
+  };
+
+  useEffect(() => {
+    if (!selected && selectedMarketId) setSelectedMarketId("");
+    if (selected && selected.id !== selectedMarketId) setSelectedMarketId(selected.id);
+  }, [selected, selectedMarketId]);
+
+  useEffect(() => {
+    if (batchOnly && batchMarketCount === 0) setBatchOnly(false);
+  }, [batchMarketCount, batchOnly]);
+
+  return (
+    <section className="offseason-console markets-console">
+      <div className="market-board">
+        <div className="story-toolbar">
+          <div>
+            <h2>Free-Agent Markets</h2>
+            <p>Winners, runner-ups, tool constraints, and unresolved markets in one board.</p>
+          </div>
+          <div className="story-filters market-filters">
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search markets" />
+            <label className="story-batch-toggle">
+              <input
+                type="checkbox"
+                checked={batchOnly}
+                disabled={batchMarketCount === 0}
+                onChange={(event) => setBatchOnly(event.target.checked)}
+              />
+              <span>{`Batch signals (${batchMarketCount})`}</span>
+            </label>
+          </div>
+        </div>
+        <div className="offseason-tape-wrap">
+          <table className="offseason-tape-table market-console-table">
+            <colgroup>
+              <col className="col-market-player" />
+              <col className="col-market-status" />
+              <col className="col-market-movement" />
+              <col className="col-market-value" />
+              <col className="col-market-aav" />
+              <col className="col-market-years" />
+              <col className="col-market-tool" />
+              <col className="col-market-confidence" />
+              <col className="col-market-batch" />
+              <col className="col-market-why" />
+            </colgroup>
+            <thead><tr>
+              <th><ConsoleSortHeader label="Player" sortKey="player" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Status" sortKey="status" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Movement" sortKey="movement" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Value" sortKey="marketValue" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="AAV" sortKey="annualSalary" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Yrs" sortKey="years" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Tool" sortKey="tool" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Conf." sortKey="confidence" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Batch" sortKey="outcomePct" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th>Why</th>
+            </tr></thead>
+            <tbody>
+              {sorted.map((story) => (
+                <tr key={story.id} className={cls(selected?.id === story.id && "active")} onClick={() => setSelectedMarketId(story.id)}>
+                  <td><PlayerEntityCell name={story.player} player={playerMetaById.get(story.playerId)} detail={`${story.position ?? "-"} / ${story.tier ?? story.status}`} /></td>
+                  <td>{story.status}</td>
+                  <td><MarketMovementCell story={story} teamMetaByCode={teamMetaByCode} /></td>
+                  <td>{typeof story.marketValue === "number" ? formatMoney(story.marketValue) : "-"}</td>
+                  <td>{typeof story.annualSalary === "number" ? formatMoney(story.annualSalary) : "-"}</td>
+                  <td>{story.years ?? "-"}</td>
+                  <td>{story.tool ?? "-"}</td>
+                  <td>{typeof story.confidence === "number" ? `${formatNumber(story.confidence * 100, 0)}%` : "-"}</td>
+                  <td>{marketBatchColumnLabel(story)}</td>
+                  <td>{story.why}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && <p className="console-empty">No markets match this filter.</p>}
+        </div>
+        <UnsignedFreeAgentConsoleBoard stories={sorted.filter((story) => story.winner === "Unsigned")} playerMetaById={playerMetaById} teamMetaByCode={teamMetaByCode} />
+      </div>
+      <MarketDetail story={selected} viewModels={viewModels} playerMetaById={playerMetaById} onSelectEvent={onSelectEvent} />
+    </section>
+  );
+}
+
+function MarketMovementCell({ story, teamMetaByCode }: { story: MarketStory; teamMetaByCode: Map<string, TeamProjection> }) {
+  const teams = [story.fromTeam, story.toTeam].filter((team) => team && team !== "FA" && team !== "Unsigned");
+  return (
+    <div className="team-movement-cell">
+      {teams.length > 0 && (
+        <span className="team-logo-stack">
+          {Array.from(new Set(teams)).slice(0, 2).map((team) => <TeamLogoMini key={team} team={teamMetaByCode.get(team)} label={team} />)}
+        </span>
+      )}
+      <span className="movement-copy">{story.movement}</span>
+    </div>
+  );
+}
+
+function UnsignedFreeAgentConsoleBoard({
+  stories,
+  playerMetaById,
+  teamMetaByCode
+}: {
+  stories: MarketStory[];
+  playerMetaById: Map<string, PlayerImpact>;
+  teamMetaByCode: Map<string, TeamProjection>;
+}) {
+  const [sortKey, setSortKey] = useState<UnsignedSortKey>("marketValue");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const rows = sortUnsignedStories(stories, sortKey, sortDirection).slice(0, 80);
+  const onSort = (key: UnsignedSortKey) => {
+    setSortDirection((current) => sortKey === key ? flipDirection(current) : defaultSortDirection(key));
+    setSortKey(key);
+  };
+  return (
+    <div className="unsigned-console-board">
+      <div className="unsigned-board-head">
+        <div>
+          <h3>Still Available</h3>
+          <p>{`${stories.length} free agents remain unsigned in this run.`}</p>
+        </div>
+        <strong>{formatMoney(sum(stories.map((story) => story.marketValue ?? 0)))}</strong>
+      </div>
+      <div className="offseason-tape-wrap unsigned-console-wrap">
+        <table className="compact-console-table unsigned-console-table">
+          <colgroup>
+            <col className="col-unsigned-player" />
+            <col className="col-unsigned-pos" />
+            <col className="col-unsigned-value" />
+            <col className="col-unsigned-score" />
+            <col className="col-unsigned-rights" />
+            <col className="col-unsigned-best" />
+            <col className="col-unsigned-why" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th><ConsoleSortHeader label="Player" sortKey="player" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Pos" sortKey="position" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Value" sortKey="marketValue" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Score" sortKey="score" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Rights" sortKey="rightsTeam" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th><ConsoleSortHeader label="Best bid" sortKey="bestBid" active={sortKey} direction={sortDirection} onSort={onSort} /></th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((story) => (
+              <tr key={story.id}>
+                <td><PlayerEntityCell name={story.player} player={playerMetaById.get(story.playerId)} detail={story.tier ?? story.status} /></td>
+                <td>{story.position ?? "-"}</td>
+                <td>{typeof story.marketValue === "number" ? formatMoney(story.marketValue) : "-"}</td>
+                <td>{typeof story.score === "number" ? formatNumber(story.score, 1) : "-"}</td>
+                <td><RightsTeamCell story={story} teamMetaByCode={teamMetaByCode} /></td>
+                <td>{bestBidLabel(story)}</td>
+                <td>{story.why}</td>
+              </tr>
+            ))}
+            {rows.length === 0 && <tr><td colSpan={7}>No unsigned free agents in this filter.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function RightsTeamCell({ story, teamMetaByCode }: { story: MarketStory; teamMetaByCode: Map<string, TeamProjection> }) {
+  const team = story.rightsTeam || story.fromTeam;
+  if (!team || team === "FA" || team === "Unsigned") return <>-</>;
+  return (
+    <span className="rights-team-cell">
+      <TeamLogoMini team={teamMetaByCode.get(team)} label={team} />
+      <span>{team}</span>
+    </span>
+  );
+}
+
+function bestBidAmount(story: MarketStory): number {
+  return story.bids.reduce((best, bid) => Math.max(best, bid.submittedAav ?? 0), 0);
+}
+
+function bestBidLabel(story: MarketStory): string {
+  const best = story.bids.slice().sort((a, b) => (b.submittedAav ?? 0) - (a.submittedAav ?? 0))[0];
+  if (!best) return "-";
+  return `${best.team} ${formatMoney(best.submittedAav)}`;
+}
+
+function hasMarketBatchSignal(story: MarketStory): boolean {
+  return typeof story.outcomePct === "number" || typeof story.rfaMatchPct === "number";
+}
+
+function marketBatchSignalLabel(story: MarketStory): string {
+  if (typeof story.outcomePct !== "number") return "-";
+  const pct = `${formatNumber(story.outcomePct * 100, 0)}%`;
+  const label = story.outcomeLabel ?? "batch outcome";
+  const count = typeof story.outcomeCount === "number" ? ` / ${story.outcomeCount} runs` : "";
+  const salary = typeof story.outcomeAvgSalary === "number" ? ` / ${formatMoney(story.outcomeAvgSalary)} avg` : "";
+  return `${pct} ${label}${count}${salary}`;
+}
+
+function marketBatchColumnLabel(story: MarketStory): string {
+  if (typeof story.outcomePct !== "number") return "-";
+  const pct = `${formatNumber(story.outcomePct * 100, 0)}%`;
+  const label = story.outcomeLabel?.replace(/\s+destination$/i, "") ?? "batch";
+  return `${pct} ${label}`;
+}
+
+function rfaMatchSignalLabel(story: MarketStory): string {
+  if (typeof story.rfaMatchPct !== "number") return "";
+  const pct = `${formatNumber(story.rfaMatchPct * 100, 0)}%`;
+  if (typeof story.rfaMatchCount === "number" && typeof story.rfaOfferCount === "number") {
+    return `${story.rfaMatchCount}/${story.rfaOfferCount} matched (${pct})`;
+  }
+  return `${pct} matched`;
+}
+
+function MarketDetail({ story, viewModels, playerMetaById, onSelectEvent }: { story: MarketStory | null; viewModels: OffseasonViewModels; playerMetaById: Map<string, PlayerImpact>; onSelectEvent: (eventId: string) => void }) {
+  if (!story) {
+    return <aside className="event-inspector"><div className="inspector-head"><span>Market Detail</span><h2>No market selected</h2></div></aside>;
+  }
+  const linkedEvent = viewModels.events.find((event) => event.playerId === story.playerId && (event.kind === "signing" || event.kind === "rfa_match" || event.kind === "unsigned"));
+  return (
+    <aside className="event-inspector market-detail-panel">
+      <div className="inspector-head">
+        <span>{story.status}</span>
+        <div className="inspector-title-row">
+          <PlayerHeadshotMini player={playerMetaById.get(story.playerId)} name={story.player} />
+          <h2>{story.player}</h2>
+        </div>
+        <p>{story.why}</p>
+      </div>
+      <div className="inspector-fact-grid">
+        <InspectorFact label="Winner" value={story.winner} />
+        <InspectorFact label="Value" value={typeof story.marketValue === "number" ? formatMoney(story.marketValue) : "-"} />
+        <InspectorFact label="AAV" value={typeof story.annualSalary === "number" ? formatMoney(story.annualSalary) : "-"} />
+        <InspectorFact label="Total" value={typeof story.totalSalary === "number" ? formatMoney(story.totalSalary) : "-"} />
+        <InspectorFact label="Tool" value={story.tool ?? "-"} />
+        <InspectorFact label="Runner-up" value={story.runnerUp ?? "-"} />
+        <InspectorFact label="Highest" value={story.highestBid ?? "-"} />
+        <InspectorFact label="Batch" value={marketBatchSignalLabel(story)} />
+        {typeof story.rfaMatchPct === "number" && <InspectorFact label="RFA rate" value={rfaMatchSignalLabel(story)} />}
+      </div>
+      {story.offerSheetTeam && <p className="market-alert">{`${story.offerSheetTeam} offer sheet; ${story.matched ? "incumbent matched" : "incumbent declined"}.`}</p>}
+      {linkedEvent && <button className="hdr-btn primary" onClick={() => onSelectEvent(linkedEvent.id)}>Open in tape</button>}
+      <BidLadder bids={story.bids} />
+      <LedgerRows rows={story.ledger} />
+      {(story.logic.length > 0 || story.lostReasons.length > 0) && (
+        <div className="inspector-section">
+          <h3>Logic / Lost Bids</h3>
+          {[...story.logic.slice(0, 4), ...story.lostReasons.slice(0, 4)].map((row) => <p key={row}>{row}</p>)}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function LabLensView({
+  data,
+  run,
+  season,
+  assumptions,
+  activePreset,
+  overrideStats,
+  players,
+  prospects,
+  teamCodes,
+  selectedPlayer,
+  selectedProspect,
+  selectedTeamForEdit,
+  overrides,
+  multiRun,
+  selectedTeam,
+  onAssumptionChange,
+  onPreset,
+  onPlayerSelect,
+  onProspectSelect,
+  onTeamEditSelect,
+  onOverridesChange,
+  onImport,
+  onExport
+}: {
+  data: AppData;
+  run: SimulationRun;
+  season: number;
+  assumptions: SimulatorAssumptions;
+  activePreset: string;
+  overrideStats: ReturnType<typeof summarizeOverrides>;
+  players: PlayerImpact[];
+  prospects: DraftProspect[];
+  teamCodes: string[];
+  selectedPlayer: PlayerImpact | null;
+  selectedProspect: DraftProspect | null;
+  selectedTeamForEdit: string;
+  overrides: SimulatorOverrides;
+  multiRun: MultiRunSummary | null;
+  selectedTeam: string;
+  onAssumptionChange: (key: keyof SimulatorAssumptions, value: number) => void;
+  onPreset: (preset: ScenarioPreset) => void;
+  onPlayerSelect: (key: string) => void;
+  onProspectSelect: (key: string) => void;
+  onTeamEditSelect: (team: string) => void;
+  onOverridesChange: (overrides: SimulatorOverrides) => void;
+  onImport: (text: string) => void;
+  onExport: (kind: "json" | "csv") => void;
+}) {
+  return (
+    <section className="offseason-stack lab-console">
+      <section className="offseason-panel lab-settings-panel">
+        <div className="panel-heading compact-heading">
+          <div>
+            <h2>Simulation Lab</h2>
+            <p>{`${overrideStats.total} active overrides. Truth overlay: ${data.offseasonTruth?.generated_at ?? "not loaded"}.`}</p>
+          </div>
+          <div className="offseason-button-row">
+            <button className="hdr-btn" onClick={() => onExport("csv")}>Export CSV</button>
+            <button className="hdr-btn" onClick={() => onExport("json")}>Export JSON</button>
+          </div>
+        </div>
+        <div className="lab-settings-grid">
+          <div className="console-section">
+            <h3>Presets</h3>
+            <div className="scenario-preset-row">
+              {scenarioPresets.map((preset) => (
+                <button key={preset.id} className={cls("scenario-chip", activePreset === preset.id && "active")} title={preset.intent} onClick={() => onPreset(preset)}>
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="console-section">
+            <h3>Market Shape</h3>
+            <div className="command-slider-grid">
+              <AssumptionInput label="Variance" value={assumptions.variance} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("variance", value)} />
+              <AssumptionInput label="Market heat" value={assumptions.marketAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("marketAggression", value)} />
+              <AssumptionInput label="Trade rate" value={assumptions.tradeAggression} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("tradeAggression", value)} />
+              <AssumptionInput label="Draft fit" value={assumptions.draftFitWeight} min={0} max={0.55} step={0.01} onChange={(value) => onAssumptionChange("draftFitWeight", value)} />
+              <AssumptionInput label="Tax caution" value={assumptions.taxSensitivity} min={0} max={1} step={0.01} onChange={(value) => onAssumptionChange("taxSensitivity", value)} />
+              <AssumptionInput label="Batch sims" value={assumptions.runCount} min={10} max={500} step={10} onChange={(value) => onAssumptionChange("runCount", value)} />
+            </div>
+          </div>
+          <div className="console-section">
+            <h3>Cap Assumptions</h3>
+            <div className="offseason-cap-grid">
+              <MoneyInput label="Cap" value={assumptions.cap} onChange={(value) => onAssumptionChange("cap", value)} />
+              <MoneyInput label="Tax" value={assumptions.tax} onChange={(value) => onAssumptionChange("tax", value)} />
+              <MoneyInput label="First apron" value={assumptions.firstApron} onChange={(value) => onAssumptionChange("firstApron", value)} />
+              <MoneyInput label="Second apron" value={assumptions.secondApron} onChange={(value) => onAssumptionChange("secondApron", value)} />
+            </div>
+          </div>
+          {multiRun && (
+            <div className="console-section">
+              <h3>{`${multiRun.runs} Run Read`}</h3>
+              <div className="core-list">
+                {multiRun.volatileDecisions.slice(0, 6).map((row) => <span key={`${row.entity}-${row.outcome}`}>{`${row.entity}: ${formatNumber(row.pct * 100, 0)}% ${row.outcome}`}</span>)}
+                {multiRun.volatileDecisions.length === 0 && <span>No high-frequency volatility.</span>}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+      <DataEditor
+        players={players}
+        prospects={prospects}
+        teamCodes={teamCodes}
+        selectedPlayer={selectedPlayer}
+        selectedProspect={selectedProspect}
+        selectedTeam={selectedTeamForEdit}
+        overrides={overrides}
+        offseasonTruth={data.offseasonTruth}
+        season={season}
+        onPlayerSelect={onPlayerSelect}
+        onProspectSelect={onProspectSelect}
+        onTeamSelect={onTeamEditSelect}
+        onOverridesChange={onOverridesChange}
+        onImport={onImport}
+      />
+      <details className="offseason-panel raw-audit-drawer">
+        <summary>Raw offer audit</summary>
+        <OfferAuditPanel audit={run.marketAudit} selectedTeam={selectedTeam} />
+      </details>
+    </section>
+  );
+}
+
+function InspectorFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="inspector-fact">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function BidLadder({ bids }: { bids: MarketBid[] }) {
+  if (bids.length === 0) return null;
+  return (
+    <div className="inspector-section">
+      <h3>Bid Ladder</h3>
+      <table className="compact-console-table">
+        <thead><tr><th>Team</th><th>AAV</th><th>Years</th><th>Tool</th><th>Utility</th></tr></thead>
+        <tbody>
+          {bids.slice().sort((a, b) => b.submittedAav - a.submittedAav).slice(0, 8).map((bid) => (
+            <tr key={bid.id}>
+              <td><strong>{bid.team}</strong></td>
+              <td>{formatMoney(bid.submittedAav)}</td>
+              <td>{bid.years}</td>
+              <td>{bid.tool}</td>
+              <td>{formatNumber(bid.playerUtility, 2)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function LedgerRows({ rows }: { rows: MarketLedgerRow[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="inspector-section">
+      <h3>Offer Ledger</h3>
+      <table className="compact-console-table">
+        <thead><tr><th>Round</th><th>Team</th><th>Status</th><th>Offer</th><th>Reason</th></tr></thead>
+        <tbody>
+          {rows.slice(0, 10).map((row) => (
+            <tr key={row.id}>
+              <td>{row.round + 1}</td>
+              <td><strong>{row.team}</strong></td>
+              <td>{row.status}</td>
+              <td>{row.offer ? formatMoney(row.offer) : "-"}</td>
+              <td>{row.reason}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function groupEventsByPhase(events: OffseasonEvent[]): Array<{ phase: string; events: OffseasonEvent[] }> {
+  return ["Options", "Draft", "Trades", "Free Agency", "Final State"]
+    .map((phase) => ({ phase, events: events.filter((event) => event.phase === phase) }))
+    .filter((group) => group.events.length > 0);
+}
+
+function eventAmount(event: OffseasonEvent): string {
+  if (typeof event.amount !== "number") return "-";
+  if (event.kind === "cap_path") return formatSignedMoney(event.amount);
+  return `${formatMoney(event.amount)}${event.amountLabel ? ` ${event.amountLabel}` : ""}`;
+}
+
+function eventBatchSignalLabel(event: OffseasonEvent): string {
+  if (typeof event.outcomePct !== "number") return "-";
+  const pct = `${formatNumber(event.outcomePct * 100, 0)}%`;
+  const count = typeof event.outcomeCount === "number" ? ` / ${event.outcomeCount} runs` : "";
+  const pick = typeof event.outcomeAvgPick === "number" ? ` / avg pick ${formatNumber(event.outcomeAvgPick, 1)}` : "";
+  return `${pct} ${event.outcomeLabel ?? "batch outcome"}${count}${pick}`;
+}
+
+function eventBatchColumnLabel(event: OffseasonEvent): string {
+  if (typeof event.outcomePct !== "number") return "-";
+  const count = typeof event.outcomeCount === "number" ? ` / ${event.outcomeCount}` : "";
+  return `${formatNumber(event.outcomePct * 100, 0)}%${count}`;
+}
+
+function eventKindLabel(kind: OffseasonEventKind): string {
+  return {
+    option: "Option",
+    draft: "Draft",
+    trade: "Trade",
+    signing: "Signing",
+    rfa_match: "RFA",
+    unsigned: "Unsigned",
+    cap_path: "Cap"
+  }[kind];
+}
+
+function compactMoney(value: number): string {
+  if (!Number.isFinite(value)) return "-";
+  if (Math.abs(value) >= 1_000_000) return `$${formatNumber(value / 1_000_000, 0)}M`;
+  return formatMoney(value);
+}
+
+const eventKindOptions: OffseasonEventKind[] = ["option", "draft", "trade", "signing", "rfa_match", "unsigned", "cap_path"];
+
+export function DashboardView({ run, selectedTeam, multiRun }: { run: SimulationRun; selectedTeam: string; multiRun: MultiRunSummary | null }) {
   const scopedSignings = selectedTeam === "All" ? run.freeAgency : run.freeAgency.filter((item) => item.toTeam === selectedTeam || item.fromTeam === selectedTeam);
   const topPlayerOutcomes = scopedSignings
     .slice()
@@ -3051,6 +4359,26 @@ function DistributionSpotlight({ summary, selectedTeam }: { summary: MultiRunSum
     .filter((row) => !teamMode || row.destination === selectedTeam)
     .slice(0, 8)
     .map((row) => ({ label: `${row.player} -> ${row.destination}`, value: `${formatMoney(row.avgSalary)} avg`, pct: row.pct }));
+  const optionRows = summary.optionDecisions
+    .filter((row) => !teamMode || row.team === selectedTeam)
+    .slice(0, 8)
+    .map((row) => ({ label: `${row.player}: ${optionDecisionLabel(row.decision, row.optionType)}`, value: `${row.count}/${summary.runs} runs`, pct: row.pct }));
+  const draftRows = summary.draftOutcomes
+    .filter((row) => !teamMode || row.team === selectedTeam)
+    .slice(0, 8)
+    .map((row) => ({ label: `${row.prospect} -> ${row.team}`, value: `avg pick ${formatNumber(row.avgPick, 1)}`, pct: row.pct }));
+  const tradeRows = summary.tradeTeams
+    .filter((row) => !teamMode || row.team === selectedTeam)
+    .slice(0, 8)
+    .map((row) => ({ label: row.team, value: `${row.count}/${summary.runs} involved`, pct: row.pct }));
+  const rfaRows = summary.rfaMatches
+    .filter((row) => !teamMode || destinationRows.some((destination) => destination.label.startsWith(`${row.player} ->`)))
+    .slice(0, 8)
+    .map((row) => ({ label: row.player, value: `${row.matches}/${row.offers} matched`, pct: row.pct }));
+  const unresolvedRows = summary.unresolvedMarkets
+    .filter((row) => !teamMode || row.outcome.includes(selectedTeam) || row.entity.includes(selectedTeam))
+    .slice(0, 8)
+    .map((row) => ({ label: row.entity, value: "unsigned", pct: row.pct }));
   const taxRows = summary.taxOutcomes
     .filter((row) => !teamMode || row.entity === selectedTeam)
     .slice(0, 8)
@@ -3073,6 +4401,11 @@ function DistributionSpotlight({ summary, selectedTeam }: { summary: MultiRunSum
       </div>
       <div className="distribution-spotlight-grid">
         <DistributionBars title="Player Destinations" rows={destinationRows} empty="No repeated player destination signal yet" />
+        <DistributionBars title="Option Decisions" rows={optionRows} empty="No repeated option signal yet" />
+        <DistributionBars title="Draft Pairings" rows={draftRows} empty="No repeated draft pairing yet" />
+        <DistributionBars title="Trade Involvement" rows={tradeRows} empty="No repeated trade involvement yet" />
+        <DistributionBars title="RFA Matches" rows={rfaRows} empty="No RFA match signal in this scope" />
+        <DistributionBars title="Unresolved Markets" rows={unresolvedRows} empty="No unresolved market signal in this scope" />
         <DistributionBars title="Team Outcomes" rows={teamRows} empty="No team outcome signal yet" />
         <DistributionBars title="Volatile Calls" rows={volatilityRows} empty="No material volatility in this scope" />
         <DistributionBars title="Apron / Tax" rows={taxRows} empty="No tax outcome signal yet" />
@@ -3555,7 +4888,7 @@ function rfaIncumbentDecisionItems(signing: FreeAgentSigning): string[] {
   ];
 }
 
-function WarRoomView({
+export function WarRoomView({
   plans,
   selectedTeam,
   selectedPlan,
@@ -3624,7 +4957,7 @@ function WarRoomView({
   );
 }
 
-function LeagueBoardView({ plans, onSelectTeam }: { plans: TeamWarRoomPlan[]; onSelectTeam: (team: string) => void }) {
+export function LeagueBoardView({ plans, onSelectTeam }: { plans: TeamWarRoomPlan[]; onSelectTeam: (team: string) => void }) {
   return (
     <section className="offseason-panel">
       <div className="panel-heading compact-heading">
@@ -3659,7 +4992,7 @@ function LeagueBoardView({ plans, onSelectTeam }: { plans: TeamWarRoomPlan[]; on
   );
 }
 
-function DecisionBoard({ run, selectedTeam }: { run: SimulationRun; selectedTeam: string }) {
+export function DecisionBoard({ run, selectedTeam }: { run: SimulationRun; selectedTeam: string }) {
   const rows = run.explanations
     .filter((item) => selectedTeam === "All" || item.team === selectedTeam)
     .sort((a, b) => b.plausibility - a.plausibility)
@@ -3797,15 +5130,17 @@ function MeterCell({ value, tone = "neutral" }: { value: number; tone?: DriverTo
 
 function TeamDistributionStrip({ summary, team }: { summary: MultiRunSummary; team: string }) {
   const destinations = summary.playerDestinations.filter((row) => row.destination === team).slice(0, 3);
+  const options = summary.optionDecisions.filter((row) => row.team === team).slice(0, 2);
   const trades = summary.tradeTeams.find((row) => row.team === team);
   const tax = summary.taxOutcomes.filter((row) => row.entity === team).slice(0, 2);
   return (
     <div className="team-distribution-strip">
       <h3>{`${summary.runs} Run Read`}</h3>
       {destinations.map((row) => <span key={`${row.player}-${row.destination}`}>{`${row.player}: ${formatNumber(row.pct * 100, 0)}%`}</span>)}
+      {options.map((row) => <span key={`${row.player}-${row.decision}-${row.optionType}`}>{`${row.player}: ${formatNumber(row.pct * 100, 0)}% ${optionDecisionLabel(row.decision, row.optionType)}`}</span>)}
       {trades && <span>{`Trade involvement: ${formatNumber(trades.pct * 100, 0)}%`}</span>}
       {tax.map((row) => <span key={`${row.entity}-${row.outcome}`}>{`${row.outcome}: ${formatNumber(row.pct * 100, 0)}%`}</span>)}
-      {!destinations.length && !trades && !tax.length && <span>No strong multi-run signal yet</span>}
+      {!destinations.length && !options.length && !trades && !tax.length && <span>No strong multi-run signal yet</span>}
     </div>
   );
 }
@@ -3846,7 +5181,7 @@ function CapChip({ label, value, neutral = false }: { label: string; value: numb
   );
 }
 
-function MultiRunPanel({ summary }: { summary: MultiRunSummary }) {
+export function MultiRunPanel({ summary }: { summary: MultiRunSummary }) {
   return (
     <section className="offseason-panel">
       <div className="panel-heading compact-heading">
@@ -3857,6 +5192,7 @@ function MultiRunPanel({ summary }: { summary: MultiRunSummary }) {
       </div>
       <div className="multi-grid">
         <MiniRank title="Player Destinations" rows={summary.playerDestinations.slice(0, 8).map((row) => [`${row.player} -> ${row.destination}`, `${formatNumber(row.pct * 100, 0)}% / ${formatMoney(row.avgSalary)}`])} />
+        <MiniRank title="Option Decisions" rows={summary.optionDecisions.slice(0, 8).map((row) => [row.player, `${formatNumber(row.pct * 100, 0)}% ${optionDecisionLabel(row.decision, row.optionType)} / ${row.count} runs`])} />
         <MiniRank title="Draft Outcomes" rows={summary.draftOutcomes.slice(0, 8).map((row) => [`${row.prospect} -> ${row.team}`, `${formatNumber(row.pct * 100, 0)}% / pick ${formatNumber(row.avgPick, 1)}`])} />
         <MiniRank title="Trade Frequency" rows={summary.tradeTeams.slice(0, 8).map((row) => [row.team, `${formatNumber(row.pct * 100, 0)}%`])} />
         <MiniRank title="RFA Matches" rows={summary.rfaMatches.slice(0, 8).map((row) => [row.player, `${row.matches}/${row.offers} matched`])} />
@@ -3870,6 +5206,11 @@ function MultiRunPanel({ summary }: { summary: MultiRunSummary }) {
       </div>
     </section>
   );
+}
+
+function optionDecisionLabel(decision: string, optionType: string): string {
+  const action = decision === "exercise" ? "exercise" : decision === "decline" ? "decline" : decision;
+  return `${action} ${optionType}`;
 }
 
 function MiniRank({ title, rows }: { title: string; rows: Array<[string, string]> }) {
@@ -3887,7 +5228,7 @@ function MiniRank({ title, rows }: { title: string; rows: Array<[string, string]
   );
 }
 
-function DraftResultsTable({ selections, selectedTeam }: { selections: DraftSelection[]; selectedTeam: string }) {
+export function DraftResultsTable({ selections, selectedTeam }: { selections: DraftSelection[]; selectedTeam: string }) {
   const rows = selectedTeam === "All" ? selections : selections.filter((selection) => selection.team === selectedTeam);
   return (
     <section className="offseason-panel">
@@ -3926,7 +5267,7 @@ function DraftResultsTable({ selections, selectedTeam }: { selections: DraftSele
   );
 }
 
-function OptionResultsTable({ decisions, selectedTeam }: { decisions: OptionDecision[]; selectedTeam: string }) {
+export function OptionResultsTable({ decisions, selectedTeam }: { decisions: OptionDecision[]; selectedTeam: string }) {
   const rows = selectedTeam === "All" ? decisions : decisions.filter((decision) => decision.team === selectedTeam);
   return (
     <TablePanel title="Option Decisions" detail="Player, team, and non-guaranteed style choices use market value, risk, replacement, need, and tax pressure.">
@@ -3953,7 +5294,7 @@ function OptionResultsTable({ decisions, selectedTeam }: { decisions: OptionDeci
   );
 }
 
-function SigningResultsTable({ signings, audit, selectedTeam }: { signings: FreeAgentSigning[]; audit: OfferAudit[]; selectedTeam: string }) {
+export function SigningResultsTable({ signings, audit, selectedTeam }: { signings: FreeAgentSigning[]; audit: OfferAudit[]; selectedTeam: string }) {
   const groups = groupFreeAgentMarkets(signings, audit, selectedTeam);
   return (
     <section className="offseason-panel">
@@ -4069,7 +5410,7 @@ function MarketComponentBars({ components }: { components: MarketComponentBreakd
   );
 }
 
-function TradeResultsTable({ trades, diagnostics }: { trades: TradeMove[]; diagnostics: string[] }) {
+export function TradeResultsTable({ trades, diagnostics }: { trades: TradeMove[]; diagnostics: string[] }) {
   return (
     <section className="offseason-panel">
       <div className="panel-heading compact-heading">
@@ -4121,7 +5462,7 @@ function TradeResultsTable({ trades, diagnostics }: { trades: TradeMove[]; diagn
   );
 }
 
-function TeamCapTable({ teams }: { teams: TeamSummary[] }) {
+export function TeamCapTable({ teams }: { teams: TeamSummary[] }) {
   return (
     <section className="offseason-panel">
       <div className="panel-heading compact-heading">
@@ -4179,7 +5520,7 @@ function TeamCapTable({ teams }: { teams: TeamSummary[] }) {
   );
 }
 
-function AfterRosterView({ run, teams, selectedTeam }: { run: SimulationRun; teams: TeamSummary[]; selectedTeam: string }) {
+export function AfterRosterView({ run, teams, selectedTeam }: { run: SimulationRun; teams: TeamSummary[]; selectedTeam: string }) {
   const teamRows = teams
     .slice()
     .sort((a, b) => a.strength.rank - b.strength.rank || a.team.localeCompare(b.team));
@@ -4429,7 +5770,7 @@ function freeAgentOutcomeLabel(player: SimPlayer, signing: FreeAgentSigning | un
   return "Stayed under contract";
 }
 
-function MarketPlanView({ run, selectedTeam }: { run: SimulationRun; selectedTeam: string }) {
+export function MarketPlanView({ run, selectedTeam }: { run: SimulationRun; selectedTeam: string }) {
   const teams = selectedTeam === "All" ? run.teams.slice(0, 12) : run.teams.filter((team) => team.team === selectedTeam);
   const unsigned = run.players
     .filter((player) => player.status !== "Signed" && player.status !== "Rookie FA")
@@ -5160,13 +6501,13 @@ function readStoredString(key: string, fallback: string): string {
   }
 }
 
-function readStoredOffseasonTab(): OffseasonTab {
-  const value = readStoredString(OFFSEASON_TAB_STORAGE_KEY, "dashboard");
-  return isOffseasonTab(value) ? value : "dashboard";
+function readStoredOffseasonTab(): OffseasonLens {
+  const value = readStoredString(OFFSEASON_TAB_STORAGE_KEY, "story");
+  return isOffseasonTab(value) ? value : "story";
 }
 
-function isOffseasonTab(value: string): value is OffseasonTab {
-  return ["dashboard", "warRoom", "league", "draft", "options", "freeAgency", "after", "trades", "teams", "markets", "overrides"].includes(value);
+function isOffseasonTab(value: string): value is OffseasonLens {
+  return ["story", "teams", "markets", "lab"].includes(value);
 }
 
 function parseNeeds(value: string): SkillKey[] {

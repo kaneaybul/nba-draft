@@ -1,0 +1,9 @@
+metric,value
+latest_impact_year,2026
+fit_years,"2016,2017,2018,2019,2020,2021"
+out_years,2022
+eval_years,"2016,2017,2018,2019,2020,2021,2022"
+panel_rows_eval,319
+actual_rows_eval,342
+historical_board_feature_rows_eval,319
+historical_board_feature_rows_with_rank_eval,287

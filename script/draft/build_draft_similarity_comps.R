@@ -102,6 +102,110 @@ encode_similarity_comps <- function(comp_dt) {
   as.character(jsonlite::toJSON(comp_dt, dataframe = "rows", auto_unbox = TRUE, na = "null", digits = NA))
 }
 
+build_similarity_outputs <- function(draft, nba_candidates, draft_z, nba_candidate_z, weights, selected_skills, prefix, top_n) {
+  score_col <- paste0(prefix, "_score")
+  distance_col <- paste0(prefix, "_distance")
+  comp_player_col <- paste0(prefix, "_comp_player")
+  comp_year_col <- paste0(prefix, "_comp_year")
+  comp_total_col <- paste0(prefix, "_comp_total")
+  comp_off_col <- paste0(prefix, "_comp_off")
+  comp_def_col <- paste0(prefix, "_comp_def")
+  comp_minutes_col <- paste0(prefix, "_comp_minutes")
+  comps_col <- paste0(prefix, "_comps")
+  rank_col <- paste0(prefix, "_comp_rank")
+  selected_cols <- paste0("similarity_", selected_skills)
+  selected_idx <- match(selected_cols, colnames(draft_z))
+  selected_idx <- selected_idx[is.finite(selected_idx)]
+
+  result_rows <- vector("list", nrow(draft))
+  top_rows <- vector("list", nrow(draft))
+  for (i in seq_len(nrow(draft))) {
+    available <- selected_idx[is.finite(draft_z[i, selected_idx]) & weights[selected_idx] > 0]
+    base_row <- data.table(
+      player = as.character(draft$player[[i]]),
+      draft_year = as.integer(draft$draft_year[[i]])
+    )
+    base_row[[comp_player_col]] <- NA_character_
+    base_row[[comp_year_col]] <- NA_integer_
+    base_row[[score_col]] <- NA_real_
+    base_row[[distance_col]] <- NA_real_
+    base_row[[comp_total_col]] <- NA_real_
+    base_row[[comp_off_col]] <- NA_real_
+    base_row[[comp_def_col]] <- NA_real_
+    base_row[[comp_minutes_col]] <- NA_real_
+    base_row[[comps_col]] <- "[]"
+
+    if (!length(available)) {
+      result_rows[[i]] <- base_row
+      top_rows[[i]] <- data.table()
+      next
+    }
+
+    diffs <- sweep(nba_candidate_z[, available, drop = FALSE], 2L, draft_z[i, available], "-")
+    distance <- sqrt(rowSums(sweep(diffs^2, 2L, weights[available], "*")) / sum(weights[available]))
+    if (!any(is.finite(distance))) {
+      result_rows[[i]] <- base_row
+      top_rows[[i]] <- data.table()
+      next
+    }
+
+    best <- data.table(row_index = seq_along(distance), distance = distance)
+    best[, score := 100 * exp(-0.5 * distance^2)]
+    best[, comp_minutes := nba_candidates$similarity_comp_minutes]
+    best[, comp_total := nba_candidates$similarity_comp_total]
+    best[, comp_player := as.character(nba_candidates$player_name)]
+    setorder(best, distance, -comp_minutes, -comp_total, comp_player)
+    top <- head(best, top_n)
+    top[, rank := seq_len(.N)]
+    top_comp_rows <- data.table(
+      player = rep(as.character(draft$player[[i]]), nrow(top)),
+      draft_year = rep(as.integer(draft$draft_year[[i]]), nrow(top))
+    )
+    top_comp_rows[, (rank_col) := as.integer(top$rank)]
+    top_comp_rows[, (comp_player_col) := as.character(nba_candidates$player_name[top$row_index])]
+    top_comp_rows[, (comp_year_col) := as.integer(nba_candidates$year[top$row_index])]
+    top_comp_rows[, (score_col) := round(top$score, 1)]
+    top_comp_rows[, (distance_col) := round(top$distance, 4)]
+    top_comp_rows[, (comp_total_col) := round(nba_candidates$similarity_comp_total[top$row_index], 3)]
+    top_comp_rows[, (comp_off_col) := round(nba_candidates$similarity_comp_off[top$row_index], 3)]
+    top_comp_rows[, (comp_def_col) := round(nba_candidates$similarity_comp_def[top$row_index], 3)]
+    top_comp_rows[, (comp_minutes_col) := round(nba_candidates$similarity_comp_minutes[top$row_index], 1)]
+    top_rows[[i]] <- top_comp_rows
+    top_json <- encode_similarity_comps(data.table(
+      rank = top_comp_rows[[rank_col]],
+      player = top_comp_rows[[comp_player_col]],
+      year = top_comp_rows[[comp_year_col]],
+      score = top_comp_rows[[score_col]],
+      distance = top_comp_rows[[distance_col]],
+      total = top_comp_rows[[comp_total_col]],
+      off = top_comp_rows[[comp_off_col]],
+      def = top_comp_rows[[comp_def_col]],
+      minutes = top_comp_rows[[comp_minutes_col]]
+    ))
+    best_idx <- top$row_index[[1]]
+
+    result_row <- data.table(
+      player = as.character(draft$player[[i]]),
+      draft_year = as.integer(draft$draft_year[[i]])
+    )
+    result_row[[comp_player_col]] <- as.character(nba_candidates$player_name[[best_idx]])
+    result_row[[comp_year_col]] <- as.integer(nba_candidates$year[[best_idx]])
+    result_row[[score_col]] <- round(best$score[[1]], 1)
+    result_row[[distance_col]] <- round(best$distance[[1]], 4)
+    result_row[[comp_total_col]] <- round(nba_candidates$similarity_comp_total[[best_idx]], 3)
+    result_row[[comp_off_col]] <- round(nba_candidates$similarity_comp_off[[best_idx]], 3)
+    result_row[[comp_def_col]] <- round(nba_candidates$similarity_comp_def[[best_idx]], 3)
+    result_row[[comp_minutes_col]] <- round(nba_candidates$similarity_comp_minutes[[best_idx]], 1)
+    result_row[[comps_col]] <- top_json
+    result_rows[[i]] <- result_row
+  }
+
+  list(
+    out = rbindlist(result_rows, use.names = TRUE, fill = TRUE),
+    top = rbindlist(top_rows, use.names = TRUE, fill = TRUE)
+  )
+}
+
 base_dir <- resolve_base_dir()
 draft_dir <- file.path(base_dir, "processed", "draft")
 live_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
@@ -118,6 +222,8 @@ if (!is.finite(comp_year_min)) comp_year_min <- 2017L
 if (!is.finite(top_n) || top_n < 1L) top_n <- 10L
 
 skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT", "DPM", "DREB", "RIMPRO", "SWITCH")
+offense_skill_names <- c("FTD", "OREB", "PASS", "RIM", "SHOOT")
+defense_skill_names <- c("DPM", "DREB", "RIMPRO", "SWITCH")
 
 nba_path <- file.path(live_dir, "skilloutput.csv")
 draft_path <- choose_draft_skill_path(draft_dir)
@@ -180,102 +286,42 @@ nba_candidates[, similarity_comp_off := coalesce_numeric_columns(.SD, c("FINAL_O
 nba_candidates[, similarity_comp_def := coalesce_numeric_columns(.SD, c("FINAL_DEF", "DEF", "IMPACT_DEF"))]
 nba_candidates[, similarity_comp_minutes := coalesce_numeric_columns(.SD, c("skill_effective_minutes", "skill_window_minutes"))]
 
-result_rows <- vector("list", nrow(draft))
-top_rows <- vector("list", nrow(draft))
-for (i in seq_len(nrow(draft))) {
-  available <- is.finite(draft_z[i, ]) & weights > 0
-  base_row <- data.table(
-    player = as.character(draft$player[[i]]),
-    draft_year = as.integer(draft$draft_year[[i]]),
-    similarity_comp_player = NA_character_,
-    similarity_comp_year = NA_integer_,
-    similarity_score = NA_real_,
-    similarity_distance = NA_real_,
-    similarity_comp_total = NA_real_,
-    similarity_comp_off = NA_real_,
-    similarity_comp_def = NA_real_,
-    similarity_comp_minutes = NA_real_,
-    similarity_comps = "[]"
-  )
+total_outputs <- build_similarity_outputs(draft, nba_candidates, draft_z, nba_candidate_z, weights, skill_names, "similarity", top_n)
+off_outputs <- build_similarity_outputs(draft, nba_candidates, draft_z, nba_candidate_z, weights, offense_skill_names, "off_similarity", top_n)
+def_outputs <- build_similarity_outputs(draft, nba_candidates, draft_z, nba_candidate_z, weights, defense_skill_names, "def_similarity", top_n)
 
-  if (!any(available)) {
-    result_rows[[i]] <- base_row
-    top_rows[[i]] <- data.table()
-    next
-  }
-
-  diffs <- sweep(nba_candidate_z[, available, drop = FALSE], 2L, draft_z[i, available], "-")
-  distance <- sqrt(rowSums(sweep(diffs^2, 2L, weights[available], "*")) / sum(weights[available]))
-  if (!any(is.finite(distance))) {
-    result_rows[[i]] <- base_row
-    top_rows[[i]] <- data.table()
-    next
-  }
-
-  best <- data.table(row_index = seq_along(distance), similarity_distance = distance)
-  best[, similarity_score := 100 * exp(-0.5 * similarity_distance^2)]
-  best[, similarity_comp_minutes := nba_candidates$similarity_comp_minutes]
-  best[, similarity_comp_total := nba_candidates$similarity_comp_total]
-  best[, similarity_comp_player := as.character(nba_candidates$player_name)]
-  setorder(best, similarity_distance, -similarity_comp_minutes, -similarity_comp_total, similarity_comp_player)
-  top <- head(best, top_n)
-  top[, similarity_comp_rank := seq_len(.N)]
-  top_comp_rows <- data.table(
-    player = as.character(draft$player[[i]]),
-    draft_year = as.integer(draft$draft_year[[i]]),
-    similarity_comp_rank = as.integer(top$similarity_comp_rank),
-    similarity_comp_player = as.character(nba_candidates$player_name[top$row_index]),
-    similarity_comp_year = as.integer(nba_candidates$year[top$row_index]),
-    similarity_score = round(top$similarity_score, 1),
-    similarity_distance = round(top$similarity_distance, 4),
-    similarity_comp_total = round(nba_candidates$similarity_comp_total[top$row_index], 3),
-    similarity_comp_off = round(nba_candidates$similarity_comp_off[top$row_index], 3),
-    similarity_comp_def = round(nba_candidates$similarity_comp_def[top$row_index], 3),
-    similarity_comp_minutes = round(nba_candidates$similarity_comp_minutes[top$row_index], 1)
-  )
-  top_rows[[i]] <- top_comp_rows
-  top_json <- encode_similarity_comps(top_comp_rows[, .(
-    rank = similarity_comp_rank,
-    player = similarity_comp_player,
-    year = similarity_comp_year,
-    score = similarity_score,
-    distance = similarity_distance,
-    total = similarity_comp_total,
-    off = similarity_comp_off,
-    def = similarity_comp_def,
-    minutes = similarity_comp_minutes
-  )])
-  best_idx <- top$row_index[[1]]
-
-  result_rows[[i]] <- data.table(
-    player = as.character(draft$player[[i]]),
-    draft_year = as.integer(draft$draft_year[[i]]),
-    similarity_comp_player = as.character(nba_candidates$player_name[[best_idx]]),
-    similarity_comp_year = as.integer(nba_candidates$year[[best_idx]]),
-    similarity_score = round(best$similarity_score[[1]], 1),
-    similarity_distance = round(best$similarity_distance[[1]], 4),
-    similarity_comp_total = round(nba_candidates$similarity_comp_total[[best_idx]], 3),
-    similarity_comp_off = round(nba_candidates$similarity_comp_off[[best_idx]], 3),
-    similarity_comp_def = round(nba_candidates$similarity_comp_def[[best_idx]], 3),
-    similarity_comp_minutes = round(nba_candidates$similarity_comp_minutes[[best_idx]], 1),
-    similarity_comps = top_json
-  )
-}
-
-out <- rbindlist(result_rows, use.names = TRUE, fill = TRUE)
+out <- merge(total_outputs$out, off_outputs$out, by = c("player", "draft_year"), all = TRUE)
+out <- merge(out, def_outputs$out, by = c("player", "draft_year"), all = TRUE)
 setorder(out, -draft_year, player)
 fwrite(out, out_path, na = "")
 
-top_out <- rbindlist(top_rows, use.names = TRUE, fill = TRUE)
+top_out <- total_outputs$top
 top_out_path <- sub("\\.csv$", sprintf("_top%s.csv", top_n), out_path)
 if (!identical(top_out_path, out_path)) {
   setorder(top_out, -draft_year, player, similarity_comp_rank)
   fwrite(top_out, top_out_path, na = "")
 }
 
+off_top_out_path <- sub("\\.csv$", sprintf("_off_top%s.csv", top_n), out_path)
+def_top_out_path <- sub("\\.csv$", sprintf("_def_top%s.csv", top_n), out_path)
+if (!identical(off_top_out_path, out_path)) {
+  setorder(off_outputs$top, -draft_year, player, off_similarity_comp_rank)
+  fwrite(off_outputs$top, off_top_out_path, na = "")
+}
+if (!identical(def_top_out_path, out_path)) {
+  setorder(def_outputs$top, -draft_year, player, def_similarity_comp_rank)
+  fwrite(def_outputs$top, def_top_out_path, na = "")
+}
+
 complete_count <- sum(is.finite(out$similarity_score))
 message("Draft similarity comps written -> ", out_path)
 if (!identical(top_out_path, out_path)) {
   message("Draft similarity top-", top_n, " comps written -> ", top_out_path)
+}
+if (!identical(off_top_out_path, out_path)) {
+  message("Draft offense similarity top-", top_n, " comps written -> ", off_top_out_path)
+}
+if (!identical(def_top_out_path, out_path)) {
+  message("Draft defense similarity top-", top_n, " comps written -> ", def_top_out_path)
 }
 message("Rows: ", nrow(out), "; finite top comps: ", complete_count, "; NBA candidate seasons: ", nrow(nba_candidates))

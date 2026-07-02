@@ -92,10 +92,8 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
   };
   const loadCap = async () => {
     if (next.capTracker && next.capReview) return;
-    const [capTracker, capReview] = await Promise.all([
-      next.capTracker ? Promise.resolve(next.capTracker) : loadOptionalSingleton<CapTrackerData>(next.manifest, "cap_tracker", cacheBust),
-      next.capReview ? Promise.resolve(next.capReview) : loadOptionalSingleton<CapReviewData>(next.manifest, "cap_transaction_review", cacheBust)
-    ]);
+    const capTracker = next.capTracker ?? await loadOptionalSingleton<CapTrackerData>(next.manifest, "cap_tracker", cacheBust);
+    const capReview = next.capReview ?? await loadOptionalSingleton<CapReviewData>(next.manifest, "cap_transaction_review", cacheBust);
     next = { ...next, capTracker, capReview };
   };
 
@@ -106,9 +104,14 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
   } else if (view === "startingLineups") {
     await Promise.all([loadPlayers(), loadTeams(), loadLineups()]);
   } else if (view === "trade") {
-    await Promise.all([loadPlayers(), loadTeams(), loadPicks()]);
+    await Promise.all([loadPlayers(), loadTeams(), loadPicks(), loadCap()]);
   } else if (view === "offseason") {
-    await Promise.all([loadPlayers(), loadTeams(), loadPicks(), loadProspects(), loadOffseasonTruth(), loadCap()]);
+    await loadPlayers();
+    await loadTeams();
+    await loadPicks();
+    await loadProspects();
+    await loadOffseasonTruth();
+    await loadCap();
   } else if (view === "capTracker") {
     await loadCap();
   } else if (view === "draft" || view === "draftElo") {

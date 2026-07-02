@@ -340,6 +340,10 @@ export function simulateFreeAgencyMarket<TPlayer extends MarketPlayer, TTeam ext
 
   const fallbackSignings = resolveRfaFallbackOffers(freeAgents, unsigned, teams, assumptions, rng, ledger, resolutions, audit);
   fallbackSignings.forEach((signing) => signings.push(signing));
+  const ownRightsFallbackSignings = resolveOwnRightsFallbackOffers(freeAgents, unsigned, teams, assumptions, rng, ledger, resolutions, audit);
+  ownRightsFallbackSignings.forEach((signing) => signings.push(signing));
+  const rosterFallbackSignings = resolveRosterFillFallbackOffers(freeAgents, unsigned, teams, assumptions, rng, ledger, resolutions, audit);
+  rosterFallbackSignings.forEach((signing) => signings.push(signing));
 
   freeAgents
     .filter((player) => unsigned.has(player.id))
@@ -382,6 +386,214 @@ function resolveRfaFallbackOffers<TPlayer extends MarketPlayer, TTeam extends Ma
       signings.push(signing);
     });
   return signings;
+}
+
+function resolveOwnRightsFallbackOffers<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  freeAgents: TPlayer[],
+  unsigned: Set<string>,
+  teams: Map<string, TTeam>,
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  ledger: MarketLedgerRow[],
+  resolutions: MarketResolution[],
+  audit: LegacyAuditRow[]
+): MarketFreeAgentSigning<TPlayer>[] {
+  const signings: MarketFreeAgentSigning<TPlayer>[] = [];
+  freeAgents
+    .filter((player) => unsigned.has(player.id))
+    .filter((player) => player.status === "UFA" && player.rights !== "None" && player.holdAction !== "renounced")
+    .sort((a, b) => ownRightsFallbackPriority(teams.get(a.rightsTeam), a, assumptions) - ownRightsFallbackPriority(teams.get(b.rightsTeam), b, assumptions))
+    .reverse()
+    .forEach((player) => {
+      const incumbent = teams.get(player.rightsTeam);
+      if (!incumbent) return;
+      const plan = buildOwnRightsFallbackOffer(incumbent, player, freeAgents, assumptions, rng, marketTiers.length, "Own-rights fallback", ledger.length);
+      if (!plan || !canHonorOffer(plan, assumptions)) return;
+      ledger.push(ledgerFromBid(plan.bid, "submitted", "Incumbent used retained Bird rights after the open market failed to clear"));
+      audit.push(auditFromBid(plan.bid, player, "offer", "Submitted own-rights fallback"));
+      const choice = choosePlayerOffer(player, [plan], 0.14);
+      if (!choice) return;
+      const signing = resolveAcceptedOffer(choice, teams, assumptions, marketTiers.length, "Own-rights fallback", ledger, resolutions, audit, rng);
+      signing.marketResolution.clearingRule = "own Bird-rights fallback";
+      signing.context.selectionMethod = "Incumbent used retained Bird rights after cap, MLE, and outside bids failed to clear.";
+      signing.context.toolReason = "Own-player Bird rights can be used after cap room and exceptions; no cap room, MLE, room exception, or minimum slot was consumed.";
+      signing.explanation = `${incumbent.team} kept ${player.name} late because Bird rights created a non-consuming roster upgrade relative to the remaining market.`;
+      unsigned.delete(player.id);
+      signings.push(signing);
+    });
+  return signings;
+}
+
+function buildOwnRightsFallbackOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  marketPlayers: TPlayer[],
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  round: number,
+  tier: string,
+  pass: number
+): TeamBidPlan<TPlayer, TTeam> | null {
+  refreshTeamPayroll(team, assumptions);
+  const tool = bestSpendingTool(team, player, assumptions);
+  if (!tool || tool.kind !== "bird") return null;
+  const rosterFit = rosterOfferFit(team, player, assumptions, true);
+  if (!rosterFit.allowed) return null;
+  const maxOffer = maxLegalOffer(team, player, assumptions, "bird");
+  const legalMax = Math.min(tool.amount, maxOffer.legalMax);
+  const minSalary = minimumSalary(player);
+  if (legalMax < minSalary) return null;
+  const needFit = needFitScore(team, player.position, player.skills);
+  const timeline = timelineFit(team, player);
+  const taxPain = taxPainScore(team, Math.min(legalMax, player.marketValue), assumptions);
+  const redundancy = rosterRedundancyPenalty(team, player);
+  const alternatives = countAlternatives(team, player, marketPlayers);
+  const priority = teamPriorityForPlayer(team, player, legalMax, assumptions, needFit, timeline, taxPain, redundancy, alternatives) + rosterFit.priorityAdjustment;
+  const rightsBoost = clamp(rightsLeverageScore(team, player, assumptions) * 0.28 + (player.holdRetainScore ?? 0) * 0.1 + (player.scarcityScore ?? 0) * 0.08, 0, 0.38);
+  const openSlots = legalRosterSlotsRemaining(team);
+  const belowMinimum = teamRosterCount(team) < minimumRosterCount(team);
+  const usefulOwnPlayer = player.marketValue >= Math.max(4_000_000, assumptions.cap * 0.025) ||
+    player.score >= 55 ||
+    (player.expectedMarketMinutes ?? 0) >= 850 ||
+    (primaryPosition(player.position) === "C" && (player.skills.RIMPRO ?? 0) >= 1.1);
+  const financialStrain = Math.max(0, -team.taxRoom / assumptions.cap) + Math.max(0, -team.firstApronRoom / assumptions.cap) * 1.6 + Math.max(0, -team.secondApronRoom / assumptions.cap) * 2.4;
+  if (!usefulOwnPlayer || openSlots <= 0) return null;
+  if (!belowMinimum && priority + rightsBoost < (player.marketValue >= 8_000_000 ? 0.34 : 0.26)) return null;
+  if (financialStrain > 0.24 && priority + rightsBoost < 0.56) return null;
+
+  const years = player.age <= 29 && player.marketValue >= 8_000_000 ? 3 : 2;
+  const discount = player.marketValue >= 16_000_000 ? 0.82 : player.marketValue >= 7_000_000 ? 0.76 : 0.72;
+  const targetMultiplier = Math.min(0.98, discount + priority * 0.08 + needFit * 0.05 + rightsBoost - taxPain * 0.08 + centeredRandom(rng, assumptions.variance) * 0.012);
+  const salary = clamp(player.marketValue * targetMultiplier, minSalary, legalMax);
+  if (salary < Math.min(player.marketValue * 0.52, 6_000_000) && player.marketValue > 10_000_000) return null;
+  if (player.declinedOptionTeam === team.team && player.declinedOptionSalary && player.declinedOptionType !== "Player Option" && salary >= player.declinedOptionSalary * 0.92) return null;
+  const components = playerChoiceComponents(team, player, salary, years, needFit, 0.16, true);
+  const score = makeScore({
+    needFit,
+    value: valueScore(player, salary),
+    timeline,
+    urgency: urgencyScore(team),
+    taxPain,
+    assetValue: player.tradeValue / Math.max(assumptions.cap, 1),
+    replacement: player.replaceability,
+    upsideRisk: player.upside - player.declineRisk,
+    incumbency: clamp(0.82 + rightsBoost, 0, 1.2),
+    randomness: 0
+  });
+  const bid: MarketBid = {
+    id: `${round}-${pass}-${team.team}-${player.id}-own-rights-fallback`,
+    round,
+    tier,
+    team: team.team,
+    playerId: player.id,
+    player: player.name,
+    tool: tool.name,
+    toolKind: "bird",
+    submittedAav: salary,
+    years,
+    legalMax,
+    teamPriority: clamp(priority + rightsBoost, 0, 1.2),
+    teamUtility: clamp(priority + rightsBoost + valueScore(player, salary) * 0.16 - taxPain * 0.1, 0, 1.25),
+    playerUtility: components.total,
+    components,
+    capSnapshot: {
+      capSpace: team.capSpace,
+      heldCapSpace: team.heldCapSpace,
+      renouncedCapSpace: team.renouncedCapSpace,
+      taxRoom: team.taxRoom,
+      firstApronRoom: team.firstApronRoom,
+      secondApronRoom: team.secondApronRoom,
+      toolAmount: tool.amount,
+      toolRemaining: tool.amount
+    },
+    capPath: team.capPath ?? "retained_rights",
+    toolReason: "Own-player Bird rights preserve cap room and exceptions while filling an open roster job.",
+    holdAction: player.holdAction ?? "retained",
+    rightsValue: player.rightsValue,
+    holdRetainScore: player.holdRetainScore,
+    scarcityScore: player.scarcityScore,
+    expectedMarketMinutes: player.expectedMarketMinutes,
+    marketMinutesSource: player.marketMinutesSource,
+    limiter: maxOffer.limiter,
+    reason: `Own-rights fallback: priority ${formatNumber(priority, 2)}, rights leverage ${formatNumber(rightsBoost, 2)}, roster fit ${formatNumber(rosterFit.slotFit, 2)}, open slots ${openSlots}.`
+  };
+  return { bid, team, player, salary, years, tool: { ...tool, amount: legalMax }, score, needFit, timeline, taxPain, redundancy, affordability: clamp(legalMax / Math.max(player.marketValue, 1), 0, 1.35), alternatives, toolReason: bid.toolReason ?? "" };
+}
+
+function resolveRosterFillFallbackOffers<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  freeAgents: TPlayer[],
+  unsigned: Set<string>,
+  teams: Map<string, TTeam>,
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  ledger: MarketLedgerRow[],
+  resolutions: MarketResolution[],
+  audit: LegacyAuditRow[]
+): MarketFreeAgentSigning<TPlayer>[] {
+  const signings: MarketFreeAgentSigning<TPlayer>[] = [];
+  const orderedTeams = Array.from(teams.values())
+    .sort((a, b) => rosterFallbackUrgency(b, assumptions) - rosterFallbackUrgency(a, assumptions) || teamSpendingPower(b, assumptions) - teamSpendingPower(a, assumptions));
+  orderedTeams.forEach((team, teamIndex) => {
+    let guard = 0;
+    while (guard < 5 && unsigned.size > 0 && shouldRunRosterFallback(team, assumptions)) {
+      guard += 1;
+      const candidates = freeAgents
+        .filter((player) => unsigned.has(player.id))
+        .sort((a, b) => rosterFallbackPlayerPriority(team, b, assumptions, true) - rosterFallbackPlayerPriority(team, a, assumptions, true) || b.marketValue - a.marketValue)
+        .slice(0, 24);
+      const plan = candidates
+        .map((player, index) => buildRosterFallbackOffer(team, player, freeAgents, assumptions, rng, marketTiers.length, "Roster fill fallback", teamIndex * 10 + guard + index, ledger, audit))
+        .find((row): row is TeamBidPlan<TPlayer, TTeam> => Boolean(row && canHonorOffer(row, assumptions)));
+      if (!plan) break;
+      ledger.push(ledgerFromBid(plan.bid, "submitted", "Late roster-fill bid after primary market waves"));
+      audit.push(auditFromBid(plan.bid, plan.player, "offer", "Submitted late roster-fill fallback"));
+      const choice = choosePlayerOffer(plan.player, [plan], plan.player.marketValue <= minimumSalary(plan.player) * 2.2 ? 0.1 : 0.2);
+      if (!choice) break;
+      const signing = resolveAcceptedOffer(choice, teams, assumptions, marketTiers.length, "Roster fill fallback", ledger, resolutions, audit, rng);
+      signing.marketResolution.clearingRule = "late roster-fill fallback";
+      signing.context.selectionMethod = "Team used remaining legal roster room and spending tools after primary market waves.";
+      signing.explanation = `${team.team} used a remaining roster spot and ${signing.context.toolName} to add ${plan.player.name} after the market thinned.`;
+      unsigned.delete(plan.player.id);
+      signings.push(signing);
+    }
+  });
+  return signings;
+}
+
+function buildRosterFallbackOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  marketPlayers: TPlayer[],
+  assumptions: MarketAssumptions,
+  rng: () => number,
+  round: number,
+  tier: string,
+  pass: number,
+  ledger: MarketLedgerRow[],
+  audit: LegacyAuditRow[]
+): TeamBidPlan<TPlayer, TTeam> | null {
+  const plan = buildOfferForTarget(team, player, marketPlayers, assumptions, rng, round, tier, pass + 40, ledger, audit, false, new Set(), true);
+  if (!plan) return null;
+  const belowMinimum = teamRosterCount(team) < minimumRosterCount(team);
+  const meaningfulRotation = usefulLateRosterPlayer(team, player);
+  if (!belowMinimum && !meaningfulRotation && teamRosterCount(team) >= targetRosterCount(team)) return null;
+  plan.bid.reason = `${plan.bid.reason}; late fill priority ${formatNumber(rosterFallbackPlayerPriority(team, player, assumptions, true), 2)}`;
+  return plan;
+}
+
+function allowLateMinimumFallback<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  assumptions: MarketAssumptions,
+  slotFit: number,
+  enabled: boolean
+): boolean {
+  if (!enabled || legalRosterSlotsRemaining(team) <= 0) return false;
+  const usefulRotation = usefulLateRosterPlayer(team, player);
+  const strandedPrice = player.marketValue <= Math.max(minimumSalary(player) * 3.2, assumptions.cap * 0.055);
+  const formerIncumbent = (player.rightsTeam === team.team || player.incumbentTeam === team.team) && player.holdAction === "renounced";
+  const fillsRealJob = slotFit >= 0.44 || rosterFallbackPlayerPriority(team, player, assumptions, true) >= 0.42;
+  return usefulRotation && fillsRealJob && (strandedPrice || formerIncumbent);
 }
 
 function buildRfaFallbackOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
@@ -642,7 +854,8 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   ledger: MarketLedgerRow[],
   audit: LegacyAuditRow[],
   recordRejections: boolean,
-  excludedToolKinds: Set<MarketToolKind> = new Set()
+  excludedToolKinds: Set<MarketToolKind> = new Set(),
+  allowMinimumFallback = false
 ): TeamBidPlan<TPlayer, TTeam> | null {
   const reject = (reason: string, toolName?: string, offer?: number, legalMax?: number) => {
     if (recordRejections) recordRejectedOffer(team, player, round, tier, reason, toolName, offer, legalMax, ledger, audit);
@@ -651,7 +864,7 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   if (player.status === "RFA" && player.rightsTeam === team.team && player.rights !== "None" && tier !== "RFA fallback") {
     return reject("Incumbent is preserving RFA match leverage rather than bidding against itself before offer sheets");
   }
-  const rosterFit = rosterOfferFit(team, player, assumptions);
+  const rosterFit = rosterOfferFit(team, player, assumptions, allowMinimumFallback);
   if (!rosterFit.allowed) {
     return reject(rosterFit.reason);
   }
@@ -667,7 +880,7 @@ function buildOfferForTarget<TPlayer extends MarketPlayer, TTeam extends MarketT
   if (legalMax < minSalary) {
     return reject("Legal max below minimum salary", tool.name, legalMax, maxOffer.legalMax);
   }
-  if (tool.kind === "minimum" && player.marketValue > 4_000_000 && player.score > 55) {
+  if (tool.kind === "minimum" && player.marketValue > 4_000_000 && player.score > 55 && !allowLateMinimumFallback(team, player, assumptions, rosterFit.slotFit, allowMinimumFallback)) {
     return reject("Only minimum available for non-minimum market player", tool.name, minSalary, legalMax);
   }
   if (isMarketExceptionTool(tool.kind) && player.marketValue > legalMax * 1.65 && player.score > 68 && player.rightsTeam !== team.team) {
@@ -1087,7 +1300,8 @@ export function resolveAcceptedOffer<TPlayer extends MarketPlayer, TTeam extends
 
 function canHonorOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(offer: TeamBidPlan<TPlayer, TTeam>, assumptions: MarketAssumptions): boolean {
   refreshTeamPayroll(offer.team, assumptions);
-  if (!rosterOfferFit(offer.team, offer.player, assumptions).allowed) return false;
+  const lateFallbackTier = offer.bid.tier === "Roster fill fallback" || offer.bid.tier === "Own-rights fallback" || offer.bid.tier === "RFA fallback";
+  if (!rosterOfferFit(offer.team, offer.player, assumptions, lateFallbackTier).allowed) return false;
   if (offer.tool.kind === "bird") return offer.player.rightsTeam === offer.team.team && offer.player.rights !== "None" && offer.salary <= birdRightsAmount(offer.team, offer.player) + 100_000;
   if (offer.tool.kind === "cap") return offer.salary <= Math.max(0, offer.team.capSpace) + 100_000;
   if (offer.tool.kind === "non_taxpayer_mle" || offer.tool.kind === "bi_annual") {
@@ -1109,9 +1323,7 @@ function canHonorOffer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TP
     const remaining = tool ? tool.amount - tool.used : 0;
     return (offer.team.capPath ?? "retained_rights") === "cap_room" && offer.salary <= remaining + 100_000;
   }
-  const tool = liveExceptionTools(offer.team, assumptions).find((candidate) => candidate.kind === "minimum");
-  const remaining = tool ? tool.amount - tool.used : minimumSalary(offer.player);
-  return offer.salary <= remaining + 100_000;
+  return offer.salary <= minimumSalary(offer.player) + 100_000;
 }
 
 function recordUnresolved<TPlayer extends MarketPlayer>(
@@ -1185,7 +1397,7 @@ function rfaMatchDecision<TPlayer extends MarketPlayer, TTeam extends MarketTeam
   const needFit = needFitScore(team, player.position, player.skills);
   const taxPain = taxPainScore(team, salary, assumptions);
   const legalMax = maxLegalOffer(team, player, assumptions, "bird").legalMax;
-  const rosterFit = rosterOfferFit(team, player, assumptions);
+  const rosterFit = rosterOfferFit(team, player, assumptions, true);
   const canMatch = player.rightsTeam === team.team && player.rights !== "None" && salary <= legalMax + 100_000 && rosterFit.allowed;
   const rightsLeverage = rightsLeverageScore(team, player, assumptions);
   const score = makeScore({
@@ -1242,31 +1454,32 @@ function bestSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam
   refreshTeamPayroll(team, assumptions);
   const capPath = team.capPath ?? (team.capSpace > minimumSalary(player) ? "cap_room" : "retained_rights");
   const rightsAmount = birdRightsAmount(team, player);
+  const playerMinimum = minimumSalary(player);
   const tools: MarketTool[] = [];
-  if (player.rightsTeam === team.team && player.rights !== "None" && rightsAmount > minimumSalary(player)) {
+  if (player.rightsTeam === team.team && player.rights !== "None" && rightsAmount >= playerMinimum) {
     tools.push({ name: player.rights, amount: rightsAmount, used: 0, kind: "bird" });
   }
-  if (capPath === "cap_room" && team.capSpace > minimumSalary(player)) {
+  if (capPath === "cap_room" && team.capSpace >= playerMinimum) {
     tools.push({ name: "Cap Space", amount: Math.max(team.capSpace, 0), used: 0, kind: "cap" });
   }
   liveExceptionTools(team, assumptions).forEach((tool) => {
-    const remaining = tool.amount - tool.used;
-    if (remaining <= minimumSalary(player)) return;
+    const remaining = tool.kind === "minimum" ? Math.max(tool.amount, playerMinimum) : tool.amount - tool.used;
+    if (remaining < playerMinimum) return;
     if (tool.kind === "room_exception" && capPath !== "cap_room") return;
-    if (tool.kind === "room_exception" && team.capSpace > minimumSalary(player) && !capRoomMateriallyUsed(team)) return;
+    if (tool.kind === "room_exception" && team.capSpace > playerMinimum && !capRoomMateriallyUsed(team)) return;
     if (isOverCapException(tool.kind) && capPath !== "retained_rights") return;
-    if ((tool.kind === "non_taxpayer_mle" || tool.kind === "bi_annual") && team.firstApronRoom <= minimumSalary(player)) return;
-    if (tool.kind === "taxpayer_mle" && team.secondApronRoom <= minimumSalary(player)) return;
+    if ((tool.kind === "non_taxpayer_mle" || tool.kind === "bi_annual") && team.firstApronRoom < playerMinimum) return;
+    if (tool.kind === "taxpayer_mle" && team.secondApronRoom < playerMinimum) return;
     const apronLimitedAmount = hardCapsAtFirstApron(tool.kind)
       ? Math.min(remaining, Math.max(0, team.firstApronRoom))
       : tool.kind === "taxpayer_mle"
         ? Math.min(remaining, Math.max(0, team.secondApronRoom))
         : remaining;
-    if (apronLimitedAmount > minimumSalary(player)) tools.push({ ...tool, amount: apronLimitedAmount });
+    if (apronLimitedAmount >= playerMinimum) tools.push({ ...tool, amount: apronLimitedAmount, used: tool.kind === "minimum" ? 0 : tool.used });
   });
   return tools
     .map((tool) => ({ ...tool, amount: Math.max(0, tool.amount - tool.used) }))
-    .filter((tool) => tool.amount >= minimumSalary(player))
+    .filter((tool) => tool.amount >= playerMinimum)
     .filter((tool) => !excludedToolKinds.has(tool.kind))
     .sort((a, b) => Number(b.amount >= player.marketValue * 0.9) - Number(a.amount >= player.marketValue * 0.9) || toolRank(a.kind) - toolRank(b.kind) || b.amount - a.amount)[0] ?? null;
 }
@@ -1391,7 +1604,12 @@ type RosterOfferFit = {
   clearUpgrade: boolean;
 };
 
-function rosterOfferFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): RosterOfferFit {
+function rosterOfferFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  assumptions: MarketAssumptions,
+  allowLateTargetOverfill = false
+): RosterOfferFit {
   const count = teamRosterCount(team);
   const limit = standardRosterLimit(team);
   const legalRemaining = limit - count;
@@ -1404,18 +1622,20 @@ function rosterOfferFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<T
   if (legalRemaining <= 0) {
     return { allowed: false, reason: `Standard roster limit reached (${count}/${limit})`, priorityAdjustment: -1, slotFit, belowMinimum, clearUpgrade };
   }
-  if (targetRemaining <= 0 && !clearUpgrade) {
+  const lateUsefulOverfill = allowLateTargetOverfill && targetRemaining <= 0 && lateTargetOverfillCandidate(team, player, assumptions, slotFit);
+  if (targetRemaining <= 0 && !clearUpgrade && !lateUsefulOverfill) {
     return { allowed: false, reason: `Target roster size reached (${count}/${target}); only clear upgrades remain active`, priorityAdjustment: -0.6, slotFit, belowMinimum, clearUpgrade };
   }
   const finalSlotReserve = legalRemaining <= 1 &&
     !belowMinimum &&
     !clearUpgrade &&
+    !lateUsefulOverfill &&
     player.marketValue <= Math.max(minimumSalary(player) * 3, assumptions.cap * 0.025);
   if (finalSlotReserve) {
     return { allowed: false, reason: "Final standard roster slot reserved for a clearer rotation upgrade", priorityAdjustment: -0.5, slotFit, belowMinimum, clearUpgrade };
   }
   const priorityAdjustment = clamp(
-    (belowMinimum ? 0.16 : targetRemaining > 0 ? 0.06 : -0.08) +
+    (belowMinimum ? 0.16 : targetRemaining > 0 ? 0.06 : lateUsefulOverfill ? 0.01 : -0.08) +
       (slotFit - 0.5) * 0.16 +
       (clearUpgrade ? 0.05 : 0) -
       (legalRemaining <= 2 && !belowMinimum ? 0.04 : 0),
@@ -1423,6 +1643,85 @@ function rosterOfferFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<T
     0.28
   );
   return { allowed: true, reason: `Roster job fit ${formatNumber(slotFit, 2)} with ${legalRemaining} standard slot${legalRemaining === 1 ? "" : "s"} open`, priorityAdjustment, slotFit, belowMinimum, clearUpgrade };
+}
+
+function lateTargetOverfillCandidate<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  assumptions: MarketAssumptions,
+  slotFit: number
+): boolean {
+  if (legalRosterSlotsRemaining(team) <= 0) return false;
+  const usefulRotation = usefulLateRosterPlayer(team, player);
+  if (!usefulRotation) return false;
+  const formerIncumbent = player.rightsTeam === team.team || player.incumbentTeam === team.team;
+  const affordable = teamSpendingPower(team, assumptions) >= Math.min(Math.max(player.marketValue * 0.45, minimumSalary(player)), exceptionAmount("taxpayer_mle", assumptions));
+  return formerIncumbent || slotFit >= 0.42 || affordable;
+}
+
+function usefulLateRosterPlayer<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer
+): boolean {
+  const formerIncumbent = player.rightsTeam === team.team || player.incumbentTeam === team.team;
+  const minimum = minimumSalary(player);
+  const replacementOnly = !formerIncumbent && player.marketValue <= Math.max(minimum * 1.8, 3_000_000) && player.score <= 52;
+  if (replacementOnly) return false;
+  return player.score >= 54 ||
+    player.marketValue >= 3_500_000 ||
+    (player.expectedMarketMinutes ?? 0) >= 850 ||
+    (formerIncumbent && (player.score >= 50 || player.marketValue >= minimum || (player.expectedMarketMinutes ?? 0) >= 500));
+}
+
+function ownRightsFallbackPriority<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam | undefined, player: TPlayer, assumptions: MarketAssumptions): number {
+  if (!team) return -1;
+  const fit = rosterOfferFit(team, player, assumptions, true);
+  if (!fit.allowed) return -1;
+  return clamp(
+    player.marketValue / Math.max(assumptions.cap * 0.12, 1) * 0.18 +
+      clamp(player.score / 100, 0, 1) * 0.24 +
+      needFitScore(team, player.position, player.skills) * 0.22 +
+      rightsLeverageScore(team, player, assumptions) * 0.26 +
+      fit.priorityAdjustment +
+      (teamRosterCount(team) < minimumRosterCount(team) ? 0.12 : 0),
+    0,
+    1.3
+  );
+}
+
+function rosterFallbackUrgency<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): number {
+  refreshTeamPayroll(team, assumptions);
+  const count = teamRosterCount(team);
+  const minimumGap = Math.max(0, minimumRosterCount(team) - count);
+  const targetGap = Math.max(0, targetRosterCount(team) - count);
+  const legalGap = legalRosterSlotsRemaining(team);
+  if (legalGap <= 0) return 0;
+  return clamp(minimumGap * 0.34 + targetGap * 0.12 + teamSpendingPower(team, assumptions) / Math.max(assumptions.cap, 1) * 0.18 + urgencyScore(team) * 0.2, 0, 1.4);
+}
+
+function shouldRunRosterFallback<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): boolean {
+  if (legalRosterSlotsRemaining(team) <= 0) return false;
+  const count = teamRosterCount(team);
+  if (count < minimumRosterCount(team)) return true;
+  if (count < targetRosterCount(team) && teamSpendingPower(team, assumptions) >= minimumExceptionAmount(assumptions)) return true;
+  if (count < standardRosterLimit(team) && teamSpendingPower(team, assumptions) >= minimumExceptionAmount(assumptions)) return true;
+  return false;
+}
+
+function rosterFallbackPlayerPriority<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(
+  team: TTeam,
+  player: TPlayer,
+  assumptions: MarketAssumptions,
+  allowLateTargetOverfill = false
+): number {
+  const fit = rosterOfferFit(team, player, assumptions, allowLateTargetOverfill);
+  if (!fit.allowed) return -1;
+  const need = needFitScore(team, player.position, player.skills);
+  const role = clamp((player.expectedMarketMinutes ?? 0) / 1800, 0, 1);
+  const affordability = clamp(teamSpendingPower(team, assumptions) / Math.max(player.marketValue, minimumSalary(player)), 0, 1.4);
+  const formerIncumbent = player.rightsTeam === team.team || player.incumbentTeam === team.team;
+  const incumbentFamiliarity = formerIncumbent ? (player.holdAction === "renounced" ? 0.12 : 0.08) : 0;
+  return clamp(need * 0.28 + fit.slotFit * 0.22 + clamp(player.score / 100, 0, 1) * 0.22 + role * 0.12 + affordability * 0.08 + incumbentFamiliarity - rosterRedundancyPenalty(team, player) * 0.12, 0, 1.2);
 }
 
 function rosterJobFit<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, player: TPlayer, assumptions: MarketAssumptions): number {
@@ -1483,11 +1782,12 @@ function addPlayerToRoster<TPlayer extends MarketPlayer, TTeam extends MarketTea
 function teamSpendingPower<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, assumptions: MarketAssumptions): number {
   refreshTeamPayroll(team, assumptions);
   const capPath = team.capPath ?? "retained_rights";
-  const exceptionPower = team.exceptions.reduce((total, tool) => {
+  const exceptionPower = liveExceptionTools(team, assumptions).reduce((total, tool) => {
     if (isOverCapException(tool.kind) && capPath !== "retained_rights") return total;
     if (tool.kind === "room_exception" && capPath !== "cap_room") return total;
-    if ((tool.kind === "non_taxpayer_mle" || tool.kind === "bi_annual") && team.firstApronRoom <= 0) return total;
-    if (tool.kind === "taxpayer_mle" && team.secondApronRoom <= 0) return total;
+    if ((tool.kind === "non_taxpayer_mle" || tool.kind === "bi_annual") && team.firstApronRoom <= minimumExceptionAmount(assumptions)) return total;
+    if (tool.kind === "taxpayer_mle" && team.secondApronRoom <= minimumExceptionAmount(assumptions)) return total;
+    if (tool.kind === "minimum") return Math.max(total, minimumExceptionAmount(assumptions));
     const apronLimit = hardCapsAtFirstApron(tool.kind)
       ? team.firstApronRoom
       : tool.kind === "taxpayer_mle"
@@ -1541,6 +1841,7 @@ function releaseCapHold<TPlayer extends MarketPlayer, TTeam extends MarketTeam<T
 function consumeSpendingTool<TPlayer extends MarketPlayer, TTeam extends MarketTeam<TPlayer>>(team: TTeam, kind: MarketToolKind, salary: number, assumptions: MarketAssumptions): number {
   if (kind === "cap") return Math.max(0, team.capSpace - salary);
   if (kind === "bird") return 0;
+  if (kind === "minimum") return minimumExceptionAmount(assumptions);
   let tool = team.exceptions.find((candidate) => candidate.kind === kind && candidate.amount - candidate.used > 0);
   if (!tool) {
     const liveTool = liveExceptionTools(team, assumptions).find((candidate) => candidate.kind === kind);

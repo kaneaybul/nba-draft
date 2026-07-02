@@ -13,6 +13,7 @@ import {
   projectedTaxLevel,
   salaryFloor,
   statusBandForAmount,
+  stringValue,
   systemLevelSourceQuality
 } from "./cap_tracker_rules.mjs";
 
@@ -29,6 +30,7 @@ const teamProjectionsPath = path.join(dataDir, "team_projections.json");
 const contractsPath = path.join(root, "processed", "livedata", "impactrefresh", "contracts_2026_current.csv");
 const guaranteeOverridePath = path.join(root, "ref", "cap_tracker_guarantees.csv");
 const exceptionOverridePath = path.join(root, "ref", "cap_tracker_exceptions.csv");
+const hardCapOverridePath = path.join(root, "ref", "cap_tracker_hard_caps.csv");
 const pickOverridePath = path.join(root, "ref", "cap_tracker_picks.csv");
 const manifestPath = path.join(dataDir, "manifest.json");
 const outPath = path.join(dataDir, "cap_tracker.json");
@@ -82,19 +84,22 @@ export function buildSpotracCapTrackerData() {
   const capRows = readCsvFile(capPath);
   const impactPlayers = readJson(impactPlayersPath, []);
   const teamProjectionRows = readJson(teamProjectionsPath, []);
+  const databallrRows = readCsvFile(contractsPath);
+  const databallrContractMeta = buildDataballrContractMetaLookup(databallrRows);
   const guaranteeOverrides = buildGuaranteeOverrideMap(readCsvFile(guaranteeOverridePath));
   const seasons = buildSeasons(capRows);
   const teamMeta = buildTeamMeta(teamProjectionRows, spotracRows);
   const contractRows = [
-    ...buildContractRows(spotracRows, teamMeta, guaranteeOverrides),
+    ...buildContractRows(spotracRows, teamMeta, guaranteeOverrides, databallrContractMeta),
     ...buildProjectedRookieContractRows(impactPlayers)
   ].sort(contractRowSort);
   const deadMoney = buildDeadMoneyRows(spotracRows);
   const teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
   const exceptions = buildExceptions(teamSeasons, seasons, readCsvFile(exceptionOverridePath));
+  const hardCaps = buildOverrideHardCaps(readCsvFile(hardCapOverridePath));
   const picks = buildOverridePicks(readCsvFile(pickOverridePath));
   const maxContracts = buildMaxContracts(seasons);
-  const discrepancyRows = buildDataballrDiscrepancies(contractRows, readCsvFile(contractsPath));
+  const discrepancyRows = buildDataballrDiscrepancies(contractRows, databallrRows);
 
   const warnings = [
     ...buildAuditWarnings(),
@@ -106,11 +111,12 @@ export function buildSpotracCapTrackerData() {
   const payload = {
     schema_version: CAP_TRACKER_SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
-    source_policy: "Spotrac-first cap tracker v1: active roster, cap holds, and visible money cells come from Spotrac multi-year team pages. Databallr is QA-only and does not override displayed rows.",
+    source_policy: "Spotrac-first cap tracker v1: pending transactions, active roster, cap holds, and visible money cells come from Spotrac multi-year team pages. Databallr contract metadata is retained for CBA rule inference and QA, but does not override displayed salary rows.",
     notes: [
       "Season years use NBA season end year: 2027 is 2026-27, 2028 is 2027-28, and so on.",
       "The Spotrac-powered tracker starts at 2026-27 and intentionally drops the prior 2025-26 tracker season.",
       "Guarantee percentages are hover-only on Spotrac and are not captured at scale in v1.",
+      "Databallr contract metadata is preserved for CBA rule inference, but Spotrac remains the displayed salary source.",
       "Manual guarantee, pick, and exception override CSVs remain available for targeted additions."
     ],
     seasons,
@@ -118,6 +124,7 @@ export function buildSpotracCapTrackerData() {
     team_seasons: teamSeasons,
     contracts: contractRows,
     exceptions,
+    hard_caps: hardCaps,
     picks,
     dead_money: deadMoney,
     max_contracts: maxContracts,
@@ -130,10 +137,11 @@ export function buildSpotracCapTrackerData() {
     },
     warnings,
     source_audit: [
-      { label: "Primary cap source", detail: "Spotrac all-team scrape: Active Roster and Cap Hold sections.", quality: "spotrac" },
+      { label: "Primary cap source", detail: "Spotrac all-team scrape: Pending Transactions, Active Roster, and Cap Hold sections.", quality: "spotrac" },
       { label: "Guarantees", detail: "Manual override only; Spotrac hover-only guarantee percentages are not scraped in v1.", quality: "unavailable" },
       { label: "Dead money", detail: "Supported by this builder when Spotrac dead-money rows are present in the normalized input; current scrape does not include a persisted dead-money section.", quality: "unavailable" },
       { label: "Projected rookie scale", detail: "Consensus/mock first-round rookies are added from impact_players.json with salaries seeded from ref/cap_tracker_rookie_scale.csv.", quality: "projected" },
+      { label: "Contract metadata", detail: "Databallr contract_type, signed_using, and free-agent status are retained for trade-machine CBA rule inference only.", quality: "contract" },
       { label: "Databallr comparison", detail: `QA discrepancy report written to ${path.relative(root, discrepancyPath)}`, quality: "spotrac" },
       { label: "Cap levels", detail: "Existing salary_cap_assumptions.csv is retained until Spotrac summary rows are persisted.", quality: "projected" }
     ]
@@ -222,7 +230,7 @@ function buildTeamMeta(teamProjectionRows, spotracRows) {
     .sort((a, b) => a.team.localeCompare(b.team));
 }
 
-function buildContractRows(rows, teamMeta, guaranteeOverrides) {
+function buildContractRows(rows, teamMeta, guaranteeOverrides, databallrContractMeta) {
   const teamSet = new Set(teamMeta.map((row) => row.team));
   const byPlayer = new Map();
   for (const row of rows) {
@@ -263,9 +271,12 @@ function buildContractRows(rows, teamMeta, guaranteeOverrides) {
     .map((row, index) => {
       const synthetic = { player_name: row.player_name, team: row.team };
       const cells = YEARS.map((year) => row.cellByYear.get(year) || emptyCell(year));
+      const spotracNote = `Spotrac sections: ${Array.from(row.raw_sections).join(", ")}`;
+      const databallrMeta = databallrContractMeta.get(`${row.team}||${normalizeName(row.player_name)}`);
+      const databallrNote = databallrMeta?.contract_notes;
       return cleanObject({
         id: canonicalContractRowId(synthetic, row.team),
-        nba_id: null,
+        nba_id: numberValue(databallrMeta?.nba_id),
         player_name: row.player_name,
         team: row.team,
         row_type: "player",
@@ -273,7 +284,12 @@ function buildContractRows(rows, teamMeta, guaranteeOverrides) {
         position: row.position,
         age: row.age,
         rank: null,
-        contract_notes: `Spotrac sections: ${Array.from(row.raw_sections).join(", ")}`,
+        contract_type: databallrMeta?.contract_type ?? null,
+        contract_status_source: databallrMeta?.contract_status_source ?? null,
+        signed_using: databallrMeta?.signed_using ?? null,
+        free_agent_status: databallrMeta?.free_agent_status ?? null,
+        free_agent_year: numberValue(databallrMeta?.free_agent_year),
+        contract_notes: databallrNote ? `${spotracNote}; Databallr notes: ${databallrNote}` : spotracNote,
         source: row.source_url || SOURCE,
         source_quality: "spotrac",
         cells
@@ -281,6 +297,43 @@ function buildContractRows(rows, teamMeta, guaranteeOverrides) {
     })
     .filter((row) => row.cells.some((cell) => cell.amount > 0))
     .sort(contractRowSort);
+}
+
+function buildDataballrContractMetaLookup(rows) {
+  const out = new Map();
+  for (const row of rows) {
+    const team = cleanTeam(row.team);
+    const name = normalizeName(row.player_name);
+    if (!team || !name) continue;
+    const key = `${team}||${name}`;
+    const prior = out.get(key);
+    const meta = cleanObject({
+      nba_id: numberValue(row.nba_id),
+      databallr_player_id: numberValue(row.databallr_player_id),
+      contract_type: stringValue(row.contract_type) || null,
+      contract_status_source: stringValue(row.contract_status_source) || null,
+      signed_using: stringValue(row.signed_using) || null,
+      free_agent_status: stringValue(row.free_agent_status) || null,
+      free_agent_year: numberValue(row.free_agent_year),
+      contract_notes: stringValue(row.contract_notes) || null
+    });
+    if (!prior) {
+      out.set(key, meta);
+      continue;
+    }
+    out.set(key, {
+      ...prior,
+      ...Object.fromEntries(Object.entries(meta).filter(([, value]) => value !== null && value !== "")),
+      contract_notes: mergeDataballrNotes(prior.contract_notes, meta.contract_notes)
+    });
+  }
+  return out;
+}
+
+function mergeDataballrNotes(left, right) {
+  if (!left) return right || null;
+  if (!right || left.includes(right)) return left;
+  return `${left} | ${right}`;
 }
 
 function buildProjectedRookieContractRows(players) {
@@ -565,8 +618,31 @@ function buildOverrideExceptions(rows) {
       amount: Math.round(amount),
       path: row.path || "override",
       expires: row.expires || null,
+      first_apron_restriction_starts: row.first_apron_restriction_starts || null,
+      signed_and_traded_contract: booleanValue(row.signed_and_traded_contract),
       note: row.note || null,
       source: row.source || "Manual exception override",
+      source_quality: "override"
+    });
+  }).filter(Boolean);
+}
+
+function buildOverrideHardCaps(rows) {
+  return rows.map((row, index) => {
+    const year = numberValue(row.year);
+    const team = cleanTeam(row.team);
+    const hardCap = hardCapValue(row.hard_cap || row.apron || row.level);
+    if (!year || !team || !YEARS.includes(year) || !hardCap) return null;
+    return cleanObject({
+      id: row.id || `hard-cap-${team}-${year}-${hardCap}-${index}`,
+      team,
+      year,
+      hard_cap: hardCap,
+      trigger: row.trigger || "Manual hard-cap override",
+      transaction_date: row.transaction_date || row.date || null,
+      expires: row.expires || null,
+      note: row.note || null,
+      source: row.source || "Manual hard-cap override",
       source_quality: "override"
     });
   }).filter(Boolean);
@@ -600,6 +676,7 @@ function buildOverridePicks(rows) {
       round,
       label: row.label || row.pick || `${year} Round ${round}`,
       protection: row.protection || null,
+      second_apron_frozen: booleanValue(row.second_apron_frozen ?? row.frozen_second_apron ?? row.frozen),
       source: row.source || "Manual pick override",
       source_quality: "override"
     });
@@ -841,6 +918,21 @@ function cleanObject(value) {
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, item === undefined || Number.isNaN(item) ? null : item]));
 }
 
+function booleanValue(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const text = String(value).trim().toLowerCase();
+  if (["1", "true", "yes", "y"].includes(text)) return true;
+  if (["0", "false", "no", "n"].includes(text)) return false;
+  return null;
+}
+
+function hardCapValue(value) {
+  const text = String(value ?? "").trim().toLowerCase().replaceAll("-", "_").replaceAll(" ", "_");
+  if (["first_apron", "first", "1st_apron", "1st"].includes(text)) return "first_apron";
+  if (["second_apron", "second", "2nd_apron", "2nd"].includes(text)) return "second_apron";
+  return null;
+}
+
 function duplicates(values) {
   const seen = new Set();
   const duplicate = new Set();
@@ -853,4 +945,8 @@ function duplicates(values) {
 
 function sum(values) {
   return values.reduce((total, value) => total + (Number.isFinite(value) ? value : 0), 0);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  buildSpotracCapTrackerData();
 }

@@ -68,8 +68,11 @@ jobs:
       - name: Run frontend regressions
         run: |
           npm run test:offseason-market
+          npm run test:offseason-view-models
           npm run test:cap-sandbox
           npm run test:cap-tracker
+          npm run test:trade-scenarios
+          npm run test:trade-machine
         working-directory: frontend
 
       - name: Build frontend

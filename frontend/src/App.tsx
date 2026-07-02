@@ -1,7 +1,55 @@
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadPlayerCareerHistory, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
-import type { AppData, DraftProspect, DraftSimilarityComp as DraftSimilarityCompRow, DraftTrackerProspectScore, PickAsset, PlayerCareerHistoryRow, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
+import {
+  capTrackerSeasonForYear,
+  evaluateTradeMachine,
+  pickTradeMachineAsset,
+  playerTradeMachineAsset,
+  tradeSalaryForPlayer,
+  tradeTeamContextFromCapTracker,
+  type TradeMachineAsset,
+  type TradeMachineResult,
+  type TradeMachineRuleCheck,
+  type TradeMachineSide,
+  type TradeMachineSides,
+  type TradeMachineStatus,
+  type TradeMachineTeamContext,
+  type TradeMachineTeamResult,
+  type TradeMachineTeamValueBalance,
+  type TradeMachineValueVerdict
+} from "./tradeMachine";
+import {
+  SAVED_SCENARIO_FILTERS,
+  SAVED_SCENARIO_SORTS,
+  buildSavedTradeScenarioExportPayload,
+  clearVisibleSavedTradeScenarios,
+  DEFAULT_SAVED_SCENARIO_FILTER,
+  DEFAULT_SAVED_SCENARIO_SORT,
+  duplicateSavedTradeScenario,
+  hydrateTradeSide,
+  mergeImportedSavedTradeScenarioResult,
+  normalizeSavedTradeScenarios,
+  retainSavedTradeScenarios,
+  restoreSavedTradeScenarios,
+  savedTradeScenarioFilterCounts,
+  savedTradeScenarioMatchesFilter,
+  savedTradeScenarioMatchesQuery,
+  savedTradeScenarioCopyName,
+  savedTradeScenarioSides,
+  savedTradeScenarioViewSummary,
+  savedTradeScenarioViewIsDefault,
+  sortSavedTradeScenarios,
+  upsertSavedTradeScenario,
+  type SavedScenarioFilter,
+  type SavedScenarioSort,
+  type SavedTradeScenario,
+  type SavedTradeScenarioSnapshot,
+  type TradeAsset,
+  type TradeCalendarState,
+  type TradeSideState
+} from "./tradeScenarios";
+import type { AppData, CapTrackerContractRow, DraftProspect, DraftSimilarityComp as DraftSimilarityCompRow, DraftTrackerProspectScore, PickAsset, PlayerCareerHistoryRow, PlayerImpact, TeamLineupRow, TeamProjection, TeamScheduleGame } from "./types";
 import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./utils";
 
 const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
@@ -149,13 +197,12 @@ type CareerChartPoint = {
   kind: "actual" | "projection";
   isCurrent?: boolean;
 };
-type TradeAsset = { kind: "player" | "pick"; id: string; player?: PlayerImpact; pick?: PickAsset };
-type TradeSideState = { team: string; assets: TradeAsset[] };
-type SavedTradeScenario = { id: string; name: string; createdAt: string; left: TradeSideState; right: TradeSideState };
-type TradePickKind = "first" | "second";
+type TradePickKind = "first" | "second" | "swap";
 type TradePickBuilderState = {
   assetType: TradePickKind;
+  draftYear: number;
   protectionCutoff: number;
+  counterpartyTeam?: string;
 };
 type PickDistributionPoint = { pick: number; probability: number };
 type TradePickContext = {
@@ -170,6 +217,37 @@ type TradeImpactSummary = {
   total: number;
   outgoingSalary: number;
 };
+type TradeRouteSummary = {
+  team: string;
+  sends: TradeAsset[];
+  receives: TradeAsset[];
+  outgoingValue: number;
+  incomingValue: number;
+  netValue: number;
+  outgoingSalary: number;
+  incomingSalary: number;
+  netSalary: number;
+  outgoingImpact: TradeImpactSummary;
+  incomingImpact: TradeImpactSummary;
+  netImpact: TradeImpactSummary;
+  modelBalance?: TradeMachineTeamValueBalance | null;
+  cbaResult?: TradeMachineTeamResult | null;
+};
+type TradeRouteLane = {
+  fromTeam: string;
+  toTeam: string;
+  assets: TradeAsset[];
+  value: number;
+  salary: number;
+  impact: TradeImpactSummary;
+};
+type TradeReviewItem = {
+  severity: "fail" | "warn";
+  label: string;
+  detail: string;
+  hint?: string;
+  source: "Value" | "CBA" | "Setup";
+};
 type DraftEloTab = "compare" | "results";
 type DraftEloResponse = {
   id: string;
@@ -180,6 +258,7 @@ type DraftEloResponse = {
   winnerKey: string;
 };
 type DraftEloStorageMode = "loading" | "indexeddb" | "localstorage";
+type DraftSimilarityDimension = "total" | "off" | "def";
 type DraftEloStanding = {
   key: string;
   prospect: DraftProspect;
@@ -299,12 +378,14 @@ const draftFilterFields: Array<{ key: DraftFilterKey; label: string; type: Filte
   ...skillKeys.map((key) => ({ key: `${key}_pred` as DraftFilterKey, label: key, type: "number" as const }))
 ];
 
-function useSessionState<T>(key: string, initialValue: T): [T, (value: T | ((current: T) => T)) => void] {
+function useSessionState<T>(key: string, initialValue: T, deserialize?: (value: unknown) => T): [T, (value: T | ((current: T) => T)) => void] {
   const [state, setState] = useState<T>(() => {
     if (typeof window === "undefined") return initialValue;
     try {
       const stored = window.sessionStorage.getItem(key);
-      return stored ? (JSON.parse(stored) as T) : initialValue;
+      if (!stored) return initialValue;
+      const parsed = JSON.parse(stored) as unknown;
+      return deserialize ? deserialize(parsed) : parsed as T;
     } catch {
       return initialValue;
     }
@@ -1887,6 +1968,7 @@ const TRADE_PICK_PROTECTIONS = [
   { label: "Top-10 protected", cutoff: 10 },
   { label: "Top-14 protected", cutoff: 14 }
 ];
+const TRADE_SWAP_VALUE_FACTOR = 0.35;
 
 function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
   const players = useMemo(
@@ -1895,6 +1977,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
   );
   const playerMap = useMemo(() => new Map(players.map((player) => [player.nba_id, player])), [players]);
   const pickMap = useMemo(() => new Map(data.picks.map((pick) => [pick.asset_id, pick])), [data.picks]);
+  const contractMap = useMemo(() => buildTradeContractMap(data.capTracker?.contracts ?? []), [data.capTracker]);
   const teamOptions = useMemo(() => {
     const baseTeams = data.teams
       .filter((team) => team.year === season && ((team.scenario_id ?? "base") === "base"))
@@ -1936,156 +2019,515 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
   const teamMeta = useMemo(() => new Map(teamOptions.map((team) => [team.team, team])), [teamOptions]);
   const defaultLeftTeam = teamOptions[0]?.team ?? players[0]?.team ?? "";
   const defaultRightTeam = teamOptions[1]?.team ?? teamOptions[0]?.team ?? players[1]?.team ?? defaultLeftTeam;
+  const calendarDefaults = useMemo(() => defaultTradeCalendar(data.schedules, season), [data.schedules, season]);
   const [left, setLeft] = useSessionState<TradeSideState>("trade:left", { team: defaultLeftTeam, assets: [] });
   const [right, setRight] = useSessionState<TradeSideState>("trade:right", { team: defaultRightTeam, assets: [] });
-  const [savedScenarios, setSavedScenarios] = useSessionState<SavedTradeScenario[]>("trade:savedScenarios", []);
+  const [third, setThird] = useSessionState<TradeSideState | null>("trade:third", null);
+  const [savedScenarios, setSavedScenarios] = useSessionState<SavedTradeScenario[]>(
+    "trade:savedScenarios",
+    [],
+    (stored) => normalizeSavedTradeScenarios(stored, playerMap, pickMap)
+  );
+  const [loadedScenarioId, setLoadedScenarioId] = useSessionState<string | null>("trade:loadedScenarioId", null);
   const [scenarioName, setScenarioName] = useSessionState("trade:scenarioName", "");
+  const [scenarioUserNote, setScenarioUserNote] = useSessionState("trade:scenarioUserNote", "");
+  const [savedScenarioFilter, setSavedScenarioFilter] = useSessionState<SavedScenarioFilter>("trade:savedScenarioFilter", DEFAULT_SAVED_SCENARIO_FILTER);
+  const [savedScenarioQuery, setSavedScenarioQuery] = useSessionState("trade:savedScenarioQuery", "");
+  const [savedScenarioSort, setSavedScenarioSort] = useSessionState<SavedScenarioSort>("trade:savedScenarioSort", DEFAULT_SAVED_SCENARIO_SORT);
+  const [scenarioImportNote, setScenarioImportNote] = useState("");
+  const [lastDeletedScenarios, setLastDeletedScenarios] = useState<SavedTradeScenario[]>([]);
+  const [lastDeletedScenarioMode, setLastDeletedScenarioMode] = useState<"single" | "bulk">("single");
+  const scenarioImportRef = useRef<HTMLInputElement | null>(null);
+  const [calendar, setCalendar] = useSessionState<TradeCalendarState>("trade:calendar", calendarDefaults);
+  const [leftCashAmount, setLeftCashAmount] = useSessionState("trade:leftCashAmount", "");
+  const [rightCashAmount, setRightCashAmount] = useSessionState("trade:rightCashAmount", "");
+  const [thirdCashAmount, setThirdCashAmount] = useSessionState("trade:thirdCashAmount", "");
+  const [leftRosterQuery, setLeftRosterQuery] = useSessionState("trade:leftRosterQuery", "");
+  const [rightRosterQuery, setRightRosterQuery] = useSessionState("trade:rightRosterQuery", "");
+  const [thirdRosterQuery, setThirdRosterQuery] = useSessionState("trade:thirdRosterQuery", "");
   const [leftPickBuilder, setLeftPickBuilder] = useSessionState<TradePickBuilderState>(
     "trade:leftPickBuilder",
-    defaultTradePickBuilder()
+    defaultTradePickBuilder(season)
   );
   const [rightPickBuilder, setRightPickBuilder] = useSessionState<TradePickBuilderState>(
     "trade:rightPickBuilder",
-    defaultTradePickBuilder()
+    defaultTradePickBuilder(season)
+  );
+  const [thirdPickBuilder, setThirdPickBuilder] = useSessionState<TradePickBuilderState>(
+    "trade:thirdPickBuilder",
+    defaultTradePickBuilder(season)
   );
 
   const leftSide = useMemo(() => hydrateTradeSide(left, playerMap, pickMap), [left, pickMap, playerMap]);
   const rightSide = useMemo(() => hydrateTradeSide(right, playerMap, pickMap), [right, pickMap, playerMap]);
+  const thirdSide = useMemo(() => third ? hydrateTradeSide(third, playerMap, pickMap) : null, [pickMap, playerMap, third]);
+  const activeSides = useMemo(() => [leftSide, rightSide, ...(thirdSide ? [thirdSide] : [])], [leftSide, rightSide, thirdSide]);
+  const activeSideTeams = useMemo(() => activeSides.map((side) => side.team), [activeSides]);
+  const isMultiTeamTrade = activeSides.length > 2;
   const pickContext = useMemo(() => buildTradePickContext(data.picks), [data.picks]);
   const hasAssets = players.length > 0 || data.picks.length > 0;
-  const leftTotal = assetTotal(leftSide.assets);
-  const rightTotal = assetTotal(rightSide.assets);
-  const diff = Math.abs(leftTotal - rightTotal);
-  const verdict = tradeVerdict(diff);
-  const whoSaysNo = whoSaysNoLabel(leftSide, rightSide, diff);
+  const tradeMachineResult = useMemo(
+    () => buildTradeMachineResult(data, season, players, activeSides, contractMap, calendar),
+    [activeSides, calendar, contractMap, data, players, season]
+  );
+  const routeSummaries = useMemo(() => buildTradeRouteSummaries(activeSides, tradeMachineResult), [activeSides, tradeMachineResult]);
+  const routeLanes = useMemo(() => buildTradeRouteLanes(activeSides), [activeSides]);
+  const reviewItems = useMemo(() => buildTradeReviewItems(tradeMachineResult, teamMeta), [teamMeta, tradeMachineResult]);
+  const valueBalance = !isMultiTeamTrade ? tradeMachineResult?.valueBalance : undefined;
+  const teamValueBalances = isMultiTeamTrade ? tradeMachineResult?.teamValueBalances : undefined;
+  const leftTeamBalance = tradeMachineTeamValueBalance(tradeMachineResult, leftSide.team);
+  const rightTeamBalance = tradeMachineTeamValueBalance(tradeMachineResult, rightSide.team);
+  const thirdTeamBalance = thirdSide ? tradeMachineTeamValueBalance(tradeMachineResult, thirdSide.team) : null;
+  const leftTotal = valueBalance?.leftOutgoingValue ?? leftTeamBalance?.outgoingValue ?? assetTotal(leftSide.assets);
+  const rightTotal = valueBalance?.rightOutgoingValue ?? rightTeamBalance?.outgoingValue ?? assetTotal(rightSide.assets);
+  const thirdTotal = thirdSide ? thirdTeamBalance?.outgoingValue ?? assetTotal(thirdSide.assets) : 0;
+  const leftScaleTotal = valueBalance?.leftOutgoingScaleAdjustedValue ?? leftTeamBalance?.outgoingScaleAdjustedValue ?? scaleAdjustedAssetTotal(leftSide.assets);
+  const rightScaleTotal = valueBalance?.rightOutgoingScaleAdjustedValue ?? rightTeamBalance?.outgoingScaleAdjustedValue ?? scaleAdjustedAssetTotal(rightSide.assets);
+  const multiValueDeficit = Math.max(0, ...(teamValueBalances?.map((balance) => balance.valueDeficit) ?? []));
+  const multiScaleDeficit = Math.max(0, ...(teamValueBalances?.map((balance) => balance.scaleAdjustedDeficit) ?? []));
+  const multiBalanceDeficit = Math.max(0, ...(teamValueBalances?.map((balance) => balance.balanceDeficit) ?? []));
+  const diff = isMultiTeamTrade ? multiValueDeficit : valueBalance?.valueDiff ?? Math.abs(leftTotal - rightTotal);
+  const scaleDiff = isMultiTeamTrade ? multiScaleDeficit : valueBalance?.scaleAdjustedDiff ?? Math.abs(leftScaleTotal - rightScaleTotal);
+  const balanceDiff = isMultiTeamTrade ? multiBalanceDeficit : valueBalance?.balanceDiff ?? Math.max(diff, scaleDiff);
+  const verdict = tradeMachineResult && !tradeMachineResult.legal
+    ? "Declined"
+    : isMultiTeamTrade
+      ? tradeMachineMultiTeamVerdictLabel(tradeMachineResult) ?? tradeVerdict(balanceDiff)
+      : tradeMachineValueVerdictLabel(valueBalance?.verdict) ?? tradeVerdict(balanceDiff);
+  const whoSaysNo = tradeMachineResult && !tradeMachineResult.legal
+    ? tradeMachineSaysNoLabel(tradeMachineResult)
+    : isMultiTeamTrade
+      ? tradeMachineMultiTeamSaysNoLabel(tradeMachineResult, teamMeta) ?? whoSaysNoLabel(leftSide, rightSide, balanceDiff)
+      : tradeMachineValueSaysNoLabel(valueBalance) ?? whoSaysNoLabel(leftSide, rightSide, balanceDiff);
   const leftImpact = tradeImpactSummary(leftSide.assets);
   const rightImpact = tradeImpactSummary(rightSide.assets);
-  const leftDelta = subtractTradeImpact(rightImpact, leftImpact);
-  const rightDelta = subtractTradeImpact(leftImpact, rightImpact);
-  const selectedPlayerIds = useMemo(() => selectedTradePlayerIds(leftSide.assets, rightSide.assets), [leftSide.assets, rightSide.assets]);
+  const thirdImpact = thirdSide ? tradeImpactSummary(thirdSide.assets) : null;
+  const leftDelta = subtractTradeImpact(tradeIncomingImpactForTeam(activeSides, leftSide.team), leftImpact);
+  const rightDelta = subtractTradeImpact(tradeIncomingImpactForTeam(activeSides, rightSide.team), rightImpact);
+  const thirdDelta = thirdSide ? subtractTradeImpact(tradeIncomingImpactForTeam(activeSides, thirdSide.team), thirdImpact ?? emptyTradeImpactSummary()) : null;
+  const selectedPlayerIds = useMemo(() => selectedTradePlayerIds(...activeSides.map((side) => side.assets)), [activeSides]);
+  const savedScenarioCounts = useMemo(() => savedTradeScenarioFilterCounts(savedScenarios), [savedScenarios]);
+  const hasCustomSavedScenarioView = !savedTradeScenarioViewIsDefault(savedScenarioFilter, savedScenarioQuery, savedScenarioSort);
+  const visibleSavedScenarios = useMemo(
+    () => sortSavedTradeScenarios(
+      savedScenarios.filter((scenario) =>
+        savedTradeScenarioMatchesFilter(scenario, savedScenarioFilter)
+        && savedTradeScenarioMatchesQuery(scenario, savedScenarioQuery, savedTradeScenarioSearchDisplayTerms(scenario, teamMeta))
+      ),
+      savedScenarioSort
+    ),
+    [savedScenarioFilter, savedScenarioQuery, savedScenarioSort, savedScenarios, teamMeta]
+  );
+  const savedScenarioViewSummary = useMemo(
+    () => savedTradeScenarioViewSummary(visibleSavedScenarios.length, savedScenarios.length, savedScenarioFilter, savedScenarioQuery, savedScenarioSort),
+    [savedScenarioFilter, savedScenarioQuery, savedScenarioSort, savedScenarios.length, visibleSavedScenarios.length]
+  );
+  const clearableVisibleSavedScenarios = useMemo(
+    () => visibleSavedScenarios.filter((scenario) => savedScenarioFilter === "pinned" || !scenario.pinned),
+    [savedScenarioFilter, visibleSavedScenarios]
+  );
+  const editingSavedScenario = useMemo(
+    () => loadedScenarioId ? savedScenarios.find((scenario) => scenario.id === loadedScenarioId) ?? null : null,
+    [loadedScenarioId, savedScenarios]
+  );
   const leftRoster = useMemo(() => tradeRoster(players, leftSide.team), [leftSide.team, players]);
   const rightRoster = useMemo(() => tradeRoster(players, rightSide.team), [rightSide.team, players]);
+  const thirdRoster = useMemo(() => thirdSide ? tradeRoster(players, thirdSide.team) : [], [players, thirdSide]);
   const leftPickPreview = useMemo(
-    () => buildTradePickAsset(leftPickBuilder, pickContext),
-    [leftPickBuilder, pickContext]
+    () => buildTradePickAsset(leftPickBuilder, pickContext, season, leftSide.team, teamOptions),
+    [leftPickBuilder, leftSide.team, pickContext, season, teamOptions]
   );
   const rightPickPreview = useMemo(
-    () => buildTradePickAsset(rightPickBuilder, pickContext),
-    [pickContext, rightPickBuilder]
+    () => buildTradePickAsset(rightPickBuilder, pickContext, season, rightSide.team, teamOptions),
+    [pickContext, rightPickBuilder, rightSide.team, season, teamOptions]
+  );
+  const thirdPickPreview = useMemo(
+    () => buildTradePickAsset(thirdPickBuilder, pickContext, season, thirdSide?.team ?? "", teamOptions),
+    [pickContext, season, thirdPickBuilder, thirdSide?.team, teamOptions]
   );
 
   useEffect(() => {
     if (teamOptions.length === 0) return;
     setLeft((current) => teamOptions.some((team) => team.team === current.team) ? current : { ...current, team: defaultLeftTeam });
     setRight((current) => teamOptions.some((team) => team.team === current.team) ? current : { ...current, team: defaultRightTeam });
-  }, [defaultLeftTeam, defaultRightTeam, setLeft, setRight, teamOptions]);
+    setThird((current) => {
+      if (!current) return current;
+      return teamOptions.some((team) => team.team === current.team) ? current : null;
+    });
+  }, [defaultLeftTeam, defaultRightTeam, setLeft, setRight, setThird, teamOptions]);
 
-  const setSideTeam = (side: "left" | "right", team: string) => {
+  const setSideTeam = (side: "left" | "right" | "third", team: string) => {
+    const previousTeam = side === "left" ? leftSide.team : side === "right" ? rightSide.team : thirdSide?.team ?? "";
     if (side === "left") setLeft({ team, assets: [] });
-    else setRight({ team, assets: [] });
+    else if (side === "right") setRight({ team, assets: [] });
+    else setThird({ team, assets: [] });
+    if (previousTeam && previousTeam !== team) {
+      retargetTradeDestinations(previousTeam, team, side);
+    }
   };
-  const updatePickBuilder = (side: "left" | "right", patch: Partial<TradePickBuilderState>) => {
+  const updatePickBuilder = (side: "left" | "right" | "third", patch: Partial<TradePickBuilderState>) => {
     if (side === "left") setLeftPickBuilder((current) => ({ ...current, ...patch }));
-    else setRightPickBuilder((current) => ({ ...current, ...patch }));
+    else if (side === "right") setRightPickBuilder((current) => ({ ...current, ...patch }));
+    else setThirdPickBuilder((current) => ({ ...current, ...patch }));
   };
-  const togglePlayer = (side: "left" | "right", player: PlayerImpact) => {
-    const target = side === "left" ? leftSide : rightSide;
-    const opposite = side === "left" ? rightSide : leftSide;
+  const togglePlayer = (side: "left" | "right" | "third", player: PlayerImpact) => {
+    const target = side === "left" ? leftSide : side === "right" ? rightSide : thirdSide;
+    if (!target) return;
+    const oppositeSides = activeSides.filter((item) => item.team !== target.team);
     const onTarget = target.assets.some((asset) => asset.kind === "player" && asset.player?.nba_id === player.nba_id);
-    const onOpposite = opposite.assets.some((asset) => asset.kind === "player" && asset.player?.nba_id === player.nba_id);
+    const onOpposite = oppositeSides.some((opposite) => opposite.assets.some((asset) => asset.kind === "player" && asset.player?.nba_id === player.nba_id));
     if (onOpposite) return;
     const nextAssets = onTarget
       ? target.assets.filter((asset) => !(asset.kind === "player" && asset.player?.nba_id === player.nba_id))
-      : [...target.assets, playerTradeAsset(player)];
+      : [...target.assets, withDefaultTradeDestination(playerTradeAsset(player), target.team, activeSides)];
     if (side === "left") setLeft({ ...target, assets: nextAssets });
-    else setRight({ ...target, assets: nextAssets });
+    else if (side === "right") setRight({ ...target, assets: nextAssets });
+    else setThird({ ...target, assets: nextAssets });
   };
-  const addPick = (side: "left" | "right") => {
-    const selectedPick = side === "left" ? leftPickPreview : rightPickPreview;
+  const addPick = (side: "left" | "right" | "third") => {
+    const selectedPick = side === "left" ? leftPickPreview : side === "right" ? rightPickPreview : thirdPickPreview;
+    const target = side === "left" ? leftSide : side === "right" ? rightSide : thirdSide;
     if (!selectedPick) return;
-    const asset = pickTradeAsset(selectedPick);
+    if (!target) return;
+    const asset = withDefaultTradeDestination(pickTradeAsset(selectedPick), target.team, activeSides);
     if (side === "left") setLeft((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
-    else setRight((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
+    else if (side === "right") setRight((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
+    else setThird((current) => current ? { ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] } : current);
   };
-  const removeAsset = (side: "left" | "right", index: number) => {
+  const addCash = (side: "left" | "right" | "third") => {
+    const value = side === "left" ? leftCashAmount : side === "right" ? rightCashAmount : thirdCashAmount;
+    const target = side === "left" ? leftSide : side === "right" ? rightSide : thirdSide;
+    const amount = parseTradeCashInput(value);
+    if (amount <= 0) return;
+    if (!target) return;
+    const asset = withDefaultTradeDestination(cashTradeAsset(amount), target.team, activeSides);
+    if (side === "left") {
+      setLeft((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
+      setLeftCashAmount("");
+    } else if (side === "right") {
+      setRight((current) => ({ ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] }));
+      setRightCashAmount("");
+    } else {
+      setThird((current) => current ? { ...current, assets: [...hydrateTradeSide(current, playerMap, pickMap).assets, asset] } : current);
+      setThirdCashAmount("");
+    }
+  };
+  const removeAsset = (side: "left" | "right" | "third", index: number) => {
     if (side === "left") setLeft((current) => ({ ...current, assets: hydrateTradeSide(current, playerMap, pickMap).assets.filter((_, i) => i !== index) }));
-    else setRight((current) => ({ ...current, assets: hydrateTradeSide(current, playerMap, pickMap).assets.filter((_, i) => i !== index) }));
+    else if (side === "right") setRight((current) => ({ ...current, assets: hydrateTradeSide(current, playerMap, pickMap).assets.filter((_, i) => i !== index) }));
+    else setThird((current) => current ? { ...current, assets: hydrateTradeSide(current, playerMap, pickMap).assets.filter((_, i) => i !== index) } : current);
   };
-  const clearSide = (side: "left" | "right") => {
+  const updateAssetDestination = (side: "left" | "right" | "third", index: number, toTeam: string) => {
+    const update = (current: TradeSideState) => ({
+      ...current,
+      assets: hydrateTradeSide(current, playerMap, pickMap).assets.map((asset, i) => i === index ? { ...asset, toTeam } : asset)
+    });
+    if (side === "left") setLeft(update);
+    else if (side === "right") setRight(update);
+    else setThird((current) => current ? update(current) : current);
+  };
+  const clearSide = (side: "left" | "right" | "third") => {
     if (side === "left") setLeft((current) => ({ ...current, assets: [] }));
-    else setRight((current) => ({ ...current, assets: [] }));
+    else if (side === "right") setRight((current) => ({ ...current, assets: [] }));
+    else setThird((current) => current ? { ...current, assets: [] } : current);
+  };
+  const addThirdTeam = () => {
+    const team = defaultThirdTradeTeam(teamOptions, leftSide.team, rightSide.team);
+    if (!team) return;
+    setLeft((current) => routeTradeSideAssetsToTeam(hydrateTradeSide(current, playerMap, pickMap), rightSide.team));
+    setRight((current) => routeTradeSideAssetsToTeam(hydrateTradeSide(current, playerMap, pickMap), leftSide.team));
+    setThird({ team, assets: [] });
+  };
+  const removeThirdTeam = () => {
+    setLeft((current) => routeTradeSideAssetsToTeam(hydrateTradeSide(current, playerMap, pickMap), rightSide.team));
+    setRight((current) => routeTradeSideAssetsToTeam(hydrateTradeSide(current, playerMap, pickMap), leftSide.team));
+    setThird(null);
+    setThirdPickBuilder(defaultTradePickBuilder(season));
+    setThirdCashAmount("");
+    setThirdRosterQuery("");
+  };
+  const retargetTradeDestinations = (fromTeam: string, toTeam: string, changedSide: "left" | "right" | "third") => {
+    const retarget = (current: TradeSideState) => ({
+      ...current,
+      assets: hydrateTradeSide(current, playerMap, pickMap).assets.map((asset) => asset.toTeam === fromTeam ? { ...asset, toTeam } : asset)
+    });
+    if (changedSide !== "left") setLeft(retarget);
+    if (changedSide !== "right") setRight(retarget);
+    if (changedSide !== "third") setThird((current) => current ? retarget(current) : current);
   };
   const resetTrade = () => {
     setLeft({ team: defaultLeftTeam, assets: [] });
     setRight({ team: defaultRightTeam, assets: [] });
-    setLeftPickBuilder(defaultTradePickBuilder());
-    setRightPickBuilder(defaultTradePickBuilder());
+    setThird(null);
+    setLeftPickBuilder(defaultTradePickBuilder(season));
+    setRightPickBuilder(defaultTradePickBuilder(season));
+    setThirdPickBuilder(defaultTradePickBuilder(season));
+    setLeftCashAmount("");
+    setRightCashAmount("");
+    setThirdCashAmount("");
+    setLeftRosterQuery("");
+    setRightRosterQuery("");
+    setThirdRosterQuery("");
+    setCalendar(calendarDefaults);
+    setLoadedScenarioId(null);
     setScenarioName("");
+    setScenarioUserNote("");
+  };
+  const clearSavedScenarioView = () => {
+    setSavedScenarioFilter(DEFAULT_SAVED_SCENARIO_FILTER);
+    setSavedScenarioQuery("");
+    setSavedScenarioSort(DEFAULT_SAVED_SCENARIO_SORT);
+  };
+  const clearScenarioForm = () => {
+    setLoadedScenarioId(null);
+    setScenarioName("");
+    setScenarioUserNote("");
+    setScenarioImportNote("Cleared scenario form");
   };
   const saveScenario = () => {
     const name = scenarioName.trim() || `Scenario ${savedScenarios.length + 1}`;
+    const existingByName = savedScenarios.find((scenario) => scenario.name.trim().toLowerCase() === name.trim().toLowerCase());
+    const editingId = editingSavedScenario?.id ?? null;
+    const scenario: SavedTradeScenario = {
+      id: editingId ?? `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name,
+      createdAt: new Date().toISOString(),
+      userNote: scenarioUserNote.trim() || undefined,
+      left: leftSide,
+      right: rightSide,
+      third: thirdSide,
+      calendar,
+      snapshot: currentSavedTradeSnapshot(verdict, tradeMachineResult, diff, scaleDiff, whoSaysNo)
+    };
+    setSavedScenarios((current) => upsertSavedTradeScenario(current, scenario, { match: editingId ? "id" : "name" }));
+    setLoadedScenarioId(editingId ?? existingByName?.id ?? scenario.id);
+    setScenarioName(name);
+    setScenarioUserNote(scenario.userNote ?? "");
+    setScenarioImportNote(editingId ? "Updated scenario" : "Saved scenario");
+  };
+  const saveScenarioCopy = () => {
+    const baseName = scenarioName.trim() || editingSavedScenario?.name || `Scenario ${savedScenarios.length + 1}`;
+    const name = savedTradeScenarioCopyName(baseName, savedScenarios.map((scenario) => scenario.name));
     const scenario: SavedTradeScenario = {
       id: `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       name,
       createdAt: new Date().toISOString(),
+      userNote: scenarioUserNote.trim() || undefined,
       left: leftSide,
-      right: rightSide
+      right: rightSide,
+      third: thirdSide,
+      calendar,
+      snapshot: currentSavedTradeSnapshot(verdict, tradeMachineResult, diff, scaleDiff, whoSaysNo)
     };
-    setSavedScenarios((current) => [scenario, ...current.filter((item) => item.name !== name)].slice(0, 12));
+    setSavedScenarios((current) => retainSavedTradeScenarios([scenario, ...current.filter((item) => item.id !== scenario.id)]));
+    setLoadedScenarioId(scenario.id);
     setScenarioName(name);
+    setScenarioUserNote(scenario.userNote ?? "");
+    setScenarioImportNote(`Saved copy ${name}`);
   };
   const loadScenario = (scenario: SavedTradeScenario) => {
     setLeft(hydrateTradeSide(scenario.left, playerMap, pickMap));
     setRight(hydrateTradeSide(scenario.right, playerMap, pickMap));
+    setThird(scenario.third ? hydrateTradeSide(scenario.third, playerMap, pickMap) : null);
+    if (scenario.calendar) setCalendar(scenario.calendar);
+    setLoadedScenarioId(scenario.id);
     setScenarioName(scenario.name);
+    setScenarioUserNote(scenario.userNote ?? "");
   };
-  const deleteScenario = (id: string) => {
-    setSavedScenarios((current) => current.filter((scenario) => scenario.id !== id));
+  const deleteScenario = (scenario: SavedTradeScenario) => {
+    setSavedScenarios((current) => current.filter((item) => item.id !== scenario.id));
+    if (loadedScenarioId === scenario.id) setLoadedScenarioId(null);
+    setLastDeletedScenarios([scenario]);
+    setLastDeletedScenarioMode("single");
+    setScenarioImportNote(`Deleted ${scenario.name}`);
+  };
+  const restoreDeletedScenarios = () => {
+    if (lastDeletedScenarios.length === 0) return;
+    setSavedScenarios((current) => restoreSavedTradeScenarios(current, lastDeletedScenarios));
+    setLoadedScenarioId(lastDeletedScenarios[0].id);
+    setScenarioName(lastDeletedScenarios[0].name);
+    setScenarioUserNote(lastDeletedScenarios[0].userNote ?? "");
+    setScenarioImportNote(`Restored ${lastDeletedScenarios.length} scenario${lastDeletedScenarios.length === 1 ? "" : "s"}`);
+    setLastDeletedScenarios([]);
+    setLastDeletedScenarioMode("single");
+  };
+  const clearVisibleSavedScenarios = () => {
+    if (clearableVisibleSavedScenarios.length === 0) {
+      setScenarioImportNote(savedScenarioFilter === "pinned" ? "No pinned scenarios to clear" : "No visible unpinned scenarios to clear");
+      return;
+    }
+    const result = clearVisibleSavedTradeScenarios(savedScenarios, visibleSavedScenarios, { includePinned: savedScenarioFilter === "pinned" });
+    setSavedScenarios(result.scenarios);
+    if (loadedScenarioId && result.deleted.some((scenario) => scenario.id === loadedScenarioId)) setLoadedScenarioId(null);
+    setLastDeletedScenarios(result.deleted);
+    setLastDeletedScenarioMode("bulk");
+    setScenarioImportNote(`Cleared ${result.deleted.length} visible scenario${result.deleted.length === 1 ? "" : "s"}`);
+  };
+  const duplicateScenario = (scenario: SavedTradeScenario) => {
+    const duplicated = duplicateSavedTradeScenario(scenario, { existingNames: savedScenarios.map((item) => item.name) });
+    setSavedScenarios((current) => retainSavedTradeScenarios([duplicated, ...current.filter((item) => item.id !== duplicated.id)]));
+    setLoadedScenarioId(duplicated.id);
+    setScenarioName(duplicated.name);
+    setScenarioUserNote(duplicated.userNote ?? "");
+    setScenarioImportNote(`Duplicated ${duplicated.name}`);
+  };
+  const togglePinnedScenario = (scenario: SavedTradeScenario) => {
+    const pinned = !scenario.pinned;
+    setSavedScenarios((current) => current.map((item) => item.id === scenario.id ? { ...item, pinned } : item));
+    setScenarioImportNote(`${pinned ? "Pinned" : "Unpinned"} ${scenario.name}`);
+  };
+  const refreshSavedScenarioStatuses = () => {
+    const evaluatedAt = new Date().toISOString();
+    setSavedScenarios((current) => current.map((scenario) => {
+      const sides = savedTradeScenarioSides(scenario).map((side) => hydrateTradeSide(side, playerMap, pickMap));
+      const scenarioCalendar = scenario.calendar ?? calendarDefaults;
+      return {
+        ...scenario,
+        left: sides[0],
+        right: sides[1],
+        third: sides[2] ?? null,
+        calendar: scenarioCalendar,
+        snapshot: evaluateSavedTradeScenarioSnapshot(data, season, players, sides, contractMap, scenarioCalendar, teamMeta, evaluatedAt)
+      };
+    }));
+    setScenarioImportNote(`Refreshed ${savedScenarios.length} saved status${savedScenarios.length === 1 ? "" : "es"}`);
+  };
+  const exportSavedScenarioSet = (
+    scenariosToExport: SavedTradeScenario[],
+    options: { visible?: boolean } = {}
+  ) => {
+    if (scenariosToExport.length === 0) {
+      setScenarioImportNote(options.visible ? "No visible scenarios to export" : "No saved scenarios to export");
+      return;
+    }
+    const payload = JSON.stringify(buildSavedTradeScenarioExportPayload(scenariosToExport, {
+      season,
+      scope: options.visible
+        ? { kind: "visible", filter: savedScenarioFilter, query: savedScenarioQuery.trim(), sort: savedScenarioSort }
+        : { kind: "all", sort: savedScenarioSort }
+    }), null, 2);
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `trade-scenarios-${season}${options.visible ? "-visible" : ""}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setScenarioImportNote(`Exported ${scenariosToExport.length} ${options.visible ? "visible " : ""}scenario${scenariosToExport.length === 1 ? "" : "s"}`);
+  };
+  const importSavedScenarios = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result ?? "[]")) as unknown;
+        const imported = normalizeSavedTradeScenarios(parsed, playerMap, pickMap);
+        if (imported.length === 0) {
+          setScenarioImportNote("No valid trade scenarios found");
+          return;
+        }
+        const importResult = mergeImportedSavedTradeScenarioResult(savedScenarios, imported);
+        setSavedScenarios(importResult.scenarios);
+        setScenarioImportNote(savedScenarioImportMergeNote(importResult.added, importResult.updated));
+      } catch {
+        setScenarioImportNote("Import failed: invalid JSON");
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
-    <main className="workspace trade-grid">
+    <main className={cls("workspace trade-grid", thirdSide && "three-team")}>
       {hasAssets ? <>
         <TradeSide
           title="Team 1 Sends"
+          season={season}
           side={leftSide}
           roster={leftRoster}
+          rosterQuery={leftRosterQuery}
           selectedPlayerIds={selectedPlayerIds}
           teamOptions={teamOptions}
           teamMeta={teamMeta}
           total={leftTotal}
           impact={leftImpact}
           delta={leftDelta}
-          oppositeTeam={rightSide.team}
+          unavailableTeams={activeSideTeams.filter((team) => team !== leftSide.team)}
+          destinationOptions={tradeDestinationOptions(leftSide.team, activeSides)}
+          showDestinations={isMultiTeamTrade}
           pickBuilder={leftPickBuilder}
           pickPreview={leftPickPreview}
+          cashAmount={leftCashAmount}
           onTeamChange={(team) => setSideTeam("left", team)}
+          onRosterQueryChange={setLeftRosterQuery}
           onTogglePlayer={(player) => togglePlayer("left", player)}
           onPickBuilderChange={(patch) => updatePickBuilder("left", patch)}
           onAddPick={() => addPick("left")}
+          onCashAmountChange={setLeftCashAmount}
+          onAddCash={() => addCash("left")}
           onRemove={(index) => removeAsset("left", index)}
+          onDestinationChange={(index, toTeam) => updateAssetDestination("left", index, toTeam)}
           onClear={() => clearSide("left")}
         />
         <TradeSide
           title="Team 2 Sends"
+          season={season}
           side={rightSide}
           roster={rightRoster}
+          rosterQuery={rightRosterQuery}
           selectedPlayerIds={selectedPlayerIds}
           teamOptions={teamOptions}
           teamMeta={teamMeta}
           total={rightTotal}
           impact={rightImpact}
           delta={rightDelta}
-          oppositeTeam={leftSide.team}
+          unavailableTeams={activeSideTeams.filter((team) => team !== rightSide.team)}
+          destinationOptions={tradeDestinationOptions(rightSide.team, activeSides)}
+          showDestinations={isMultiTeamTrade}
           pickBuilder={rightPickBuilder}
           pickPreview={rightPickPreview}
+          cashAmount={rightCashAmount}
           onTeamChange={(team) => setSideTeam("right", team)}
+          onRosterQueryChange={setRightRosterQuery}
           onTogglePlayer={(player) => togglePlayer("right", player)}
           onPickBuilderChange={(patch) => updatePickBuilder("right", patch)}
           onAddPick={() => addPick("right")}
+          onCashAmountChange={setRightCashAmount}
+          onAddCash={() => addCash("right")}
           onRemove={(index) => removeAsset("right", index)}
+          onDestinationChange={(index, toTeam) => updateAssetDestination("right", index, toTeam)}
           onClear={() => clearSide("right")}
         />
+        {thirdSide && <TradeSide
+          title="Team 3 Sends"
+          season={season}
+          side={thirdSide}
+          roster={thirdRoster}
+          rosterQuery={thirdRosterQuery}
+          selectedPlayerIds={selectedPlayerIds}
+          teamOptions={teamOptions}
+          teamMeta={teamMeta}
+          total={thirdTotal}
+          impact={thirdImpact ?? emptyTradeImpactSummary()}
+          delta={thirdDelta ?? emptyTradeImpactSummary()}
+          unavailableTeams={activeSideTeams.filter((team) => team !== thirdSide.team)}
+          destinationOptions={tradeDestinationOptions(thirdSide.team, activeSides)}
+          showDestinations={isMultiTeamTrade}
+          pickBuilder={thirdPickBuilder}
+          pickPreview={thirdPickPreview}
+          cashAmount={thirdCashAmount}
+          onTeamChange={(team) => setSideTeam("third", team)}
+          onRosterQueryChange={setThirdRosterQuery}
+          onTogglePlayer={(player) => togglePlayer("third", player)}
+          onPickBuilderChange={(patch) => updatePickBuilder("third", patch)}
+          onAddPick={() => addPick("third")}
+          onCashAmountChange={setThirdCashAmount}
+          onAddCash={() => addCash("third")}
+          onRemove={(index) => removeAsset("third", index)}
+          onDestinationChange={(index, toTeam) => updateAssetDestination("third", index, toTeam)}
+          onClear={() => clearSide("third")}
+        />}
       </> : <section className="table-panel trade-side"><EmptyState title="No trade assets" detail={`No players or picks are available for ${season}.`} /></section>}
       <section className="detail-panel trade-verdict">
         <div className="trade-verdict-head">
@@ -2094,35 +2536,113 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
               <h2>Trade Sandbox</h2>
               <p>4-year value: current season plus three projected seasons</p>
             </div>
-            <button className="clear-filters" onClick={resetTrade}>Reset</button>
+            <div className="trade-summary-actions">
+              <button className="clear-filters" disabled={!thirdSide && teamOptions.length < 3} onClick={thirdSide ? removeThirdTeam : addThirdTeam}>
+                {thirdSide ? "Remove 3rd team" : "Add 3rd team"}
+              </button>
+              <button className="clear-filters" onClick={resetTrade}>Reset</button>
+            </div>
           </div>
           <p>Value Diff</p>
           <h2>{formatMoney(diff)}</h2>
           <div className={cls("verdict", verdictClass(verdict))}>{verdict}</div>
           <span>{whoSaysNo}</span>
         </div>
-        <div className="trade-scoreboard">
-          <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} sends`} value={formatMoney(leftTotal)} tone="gold" />
-          <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} sends`} value={formatMoney(rightTotal)} tone="gold" />
-          <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} net`} value={formatSigned(leftDelta.total, 2)} tone={leftDelta.total >= 0 ? "green" : "teal"} />
-          <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} net`} value={formatSigned(rightDelta.total, 2)} tone={rightDelta.total >= 0 ? "green" : "teal"} />
-        </div>
+          <div className="trade-scoreboard">
+            <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} sends`} value={formatMoney(leftTotal)} tone="gold" />
+            <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} sends`} value={formatMoney(rightTotal)} tone="gold" />
+            {thirdSide && <MetricPill label={`${teamLabel(thirdSide.team, teamMeta)} sends`} value={formatMoney(thirdTotal)} tone="gold" />}
+            <MetricPill label="Scale diff" value={formatMoney(scaleDiff)} tone={scaleDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
+            <MetricPill label="CBA status" value={tradeMachineStatusLabel(tradeMachineResult?.status)} tone={tradeMachineTone(tradeMachineResult?.status)} />
+            <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} net`} value={formatSigned(leftDelta.total, 2)} tone={leftDelta.total >= 0 ? "green" : "teal"} />
+            <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} net`} value={formatSigned(rightDelta.total, 2)} tone={rightDelta.total >= 0 ? "green" : "teal"} />
+            {thirdSide && thirdDelta && <MetricPill label={`${teamLabel(thirdSide.team, teamMeta)} net`} value={formatSigned(thirdDelta.total, 2)} tone={thirdDelta.total >= 0 ? "green" : "teal"} />}
+          </div>
+          <TradeRouteSummaryPanel summaries={routeSummaries} lanes={routeLanes} teamMeta={teamMeta} />
+          <TradeReviewPanel items={reviewItems} />
+          <TradeMachinePanel result={tradeMachineResult} teamMeta={teamMeta} />
         <div className="scenario-tools">
+          <label>
+            Trade date
+            <input type="date" value={calendar.tradeDate} onChange={(event) => setCalendar((current) => ({ ...current, tradeDate: event.target.value }))} />
+          </label>
+          <label>
+            Trade deadline
+            <input type="date" value={calendar.tradeDeadlineDate} onChange={(event) => setCalendar((current) => ({ ...current, tradeDeadlineDate: event.target.value }))} />
+          </label>
+          <label>
+            Regular season end
+            <input type="date" value={calendar.regularSeasonEndDate} onChange={(event) => setCalendar((current) => ({ ...current, regularSeasonEndDate: event.target.value }))} />
+          </label>
+          <button disabled={!calendarDefaults.regularSeasonEndDate || calendar.regularSeasonEndDate === calendarDefaults.regularSeasonEndDate} onClick={() => setCalendar((current) => ({ ...current, regularSeasonEndDate: calendarDefaults.regularSeasonEndDate }))}>Use schedule end</button>
+        </div>
+        <div className="scenario-tools scenario-save-tools">
           <label>
             Scenario
             <input value={scenarioName} onChange={(event) => setScenarioName(event.target.value)} placeholder="Name this trade" />
           </label>
-          <button onClick={saveScenario} disabled={leftSide.assets.length === 0 && rightSide.assets.length === 0}>Save</button>
+          <button onClick={saveScenario} disabled={activeSides.every((side) => side.assets.length === 0)}>{editingSavedScenario ? "Update" : "Save"}</button>
+          {editingSavedScenario && <button onClick={saveScenarioCopy} disabled={activeSides.every((side) => side.assets.length === 0)}>Save copy</button>}
+          <button onClick={clearScenarioForm} disabled={!editingSavedScenario && !scenarioName.trim() && !scenarioUserNote.trim()}>Clear form</button>
+          <label className="scenario-note-field">
+            Note
+            <textarea value={scenarioUserNote} onChange={(event) => setScenarioUserNote(event.target.value)} placeholder="Why save this deal?" rows={2} />
+          </label>
+        </div>
+        <div className="scenario-tools scenario-file-tools">
+          <button onClick={() => exportSavedScenarioSet(savedScenarios)} disabled={savedScenarios.length === 0}>Export saved</button>
+          <button onClick={() => exportSavedScenarioSet(visibleSavedScenarios, { visible: true })} disabled={visibleSavedScenarios.length === 0}>Export visible</button>
+          <button onClick={() => scenarioImportRef.current?.click()}>Import saved</button>
+          <button onClick={refreshSavedScenarioStatuses} disabled={savedScenarios.length === 0}>Refresh statuses</button>
+          <button onClick={clearVisibleSavedScenarios} disabled={clearableVisibleSavedScenarios.length === 0}>{savedScenarioFilter === "pinned" ? "Clear visible" : "Clear unpinned"}</button>
+          {lastDeletedScenarios.length > 0 && <button onClick={restoreDeletedScenarios}>{lastDeletedScenarioMode === "bulk" ? "Restore cleared" : "Restore deleted"}</button>}
+          <input ref={scenarioImportRef} type="file" accept="application/json,.json" onChange={importSavedScenarios} hidden />
+          {scenarioImportNote && <span className="scenario-import-note">{scenarioImportNote}</span>}
         </div>
         <div className="saved-scenarios">
           {savedScenarios.length === 0 && <p className="empty">No saved scenarios</p>}
-          {savedScenarios.map((scenario) => (
-            <div key={scenario.id} className="saved-scenario-row">
+          {savedScenarios.length > 0 && <div className="saved-scenario-filters" aria-label="Saved scenario filters">
+            {SAVED_SCENARIO_FILTERS.map((filter) => (
+              <button
+                key={filter.key}
+                className={cls(savedScenarioFilter === filter.key && "active")}
+                onClick={() => setSavedScenarioFilter(filter.key)}
+              >
+                <span>{filter.label}</span>
+                <strong>{savedScenarioCounts[filter.key]}</strong>
+              </button>
+            ))}
+          </div>}
+          {savedScenarios.length > 0 && <label className="saved-scenario-search">
+            Search saved deals
+            <input value={savedScenarioQuery} onChange={(event) => setSavedScenarioQuery(event.target.value)} placeholder="Name, team, asset, status" />
+          </label>}
+          {savedScenarios.length > 0 && <label className="saved-scenario-sort">
+            Sort saved deals
+            <select value={savedScenarioSort} onChange={(event) => setSavedScenarioSort(event.target.value as SavedScenarioSort)}>
+              {SAVED_SCENARIO_SORTS.map((sort) => (
+                <option key={sort.key} value={sort.key}>{sort.label}</option>
+              ))}
+            </select>
+          </label>}
+          {savedScenarios.length > 0 && hasCustomSavedScenarioView && <button className="clear-saved-view" onClick={clearSavedScenarioView}>Clear saved view</button>}
+          {savedScenarios.length > 0 && <p className="saved-scenario-summary">{savedScenarioViewSummary}</p>}
+          {savedScenarios.length > 0 && visibleSavedScenarios.length === 0 && <p className="empty">No saved scenarios match {savedScenarioFilterLabel(savedScenarioFilter)}{savedScenarioQuery.trim() ? ` and "${savedScenarioQuery.trim()}"` : ""}.</p>}
+          {visibleSavedScenarios.map((scenario) => (
+            <div key={scenario.id} className={cls("saved-scenario-row", scenario.pinned && "pinned")}>
               <button onClick={() => loadScenario(scenario)}>
                 <strong>{scenario.name}</strong>
-                <span>{new Date(scenario.createdAt).toLocaleString()}</span>
+                {scenario.pinned && <span className="saved-scenario-pin">Pinned</span>}
+                <span className={cls("saved-scenario-status", savedTradeScenarioStatusClass(scenario))}>{savedTradeScenarioStatusLabel(scenario)}</span>
+                <span>{savedTradeScenarioTeamsLabel(scenario, teamMeta)}</span>
+                <small>{savedTradeScenarioAssetSummary(scenario)}</small>
+                {scenario.userNote && <small className="saved-scenario-user-note">{scenario.userNote}</small>}
+                {scenario.snapshot?.note && <small className="saved-scenario-note">{scenario.snapshot.note}</small>}
+                <em>{savedTradeScenarioMeta(scenario)} / {new Date(scenario.createdAt).toLocaleString()}</em>
               </button>
-              <button className="remove-scenario" onClick={() => deleteScenario(scenario.id)}>Delete</button>
+              <button className="pin-scenario" onClick={() => togglePinnedScenario(scenario)}>{scenario.pinned ? "Unpin" : "Pin"}</button>
+              <button className="duplicate-scenario" onClick={() => duplicateScenario(scenario)}>Duplicate</button>
+              <button className="remove-scenario" onClick={() => deleteScenario(scenario)}>Delete</button>
             </div>
           ))}
         </div>
@@ -2131,43 +2651,233 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
   );
 }
 
+function TradeReviewPanel({ items }: { items: TradeReviewItem[] }) {
+  const visibleItems = items.slice(0, 6);
+  const remaining = Math.max(0, items.length - visibleItems.length);
+  return (
+    <div className="trade-review-panel">
+      <div className="trade-route-head">
+        <span>Review queue</span>
+        <strong>{items.length === 0 ? "Clean" : `${items.length} item${items.length === 1 ? "" : "s"}`}</strong>
+      </div>
+      {visibleItems.length === 0
+        ? <p className="empty">No value or CBA blockers surfaced.</p>
+        : <div className="trade-review-list">
+          {visibleItems.map((item, index) => (
+            <div key={`${item.source}-${item.label}-${index}`} className={cls("trade-review-item", item.severity)}>
+              <span>{item.source}</span>
+              <strong>{item.label}</strong>
+              <p>{item.detail}</p>
+              {item.hint && <em>{item.hint}</em>}
+            </div>
+          ))}
+          {remaining > 0 && <p className="trade-review-more">+{remaining} more in the CBA audit</p>}
+        </div>}
+    </div>
+  );
+}
+
+function TradeRouteSummaryPanel({ summaries, lanes, teamMeta }: { summaries: TradeRouteSummary[]; lanes: TradeRouteLane[]; teamMeta: Map<string, TeamProjection> }) {
+  return (
+    <div className="trade-route-panel">
+      <div className="trade-route-head">
+        <span>Route summary</span>
+        <strong>{summaries.length}-team flow</strong>
+      </div>
+      <div className="trade-flow-grid">
+        {lanes.length === 0 && <p className="empty">No routed assets yet.</p>}
+        {lanes.map((lane) => (
+          <div key={`${lane.fromTeam}-${lane.toTeam}`} className="trade-flow-lane">
+            <div className="trade-flow-teams">
+              <span>{teamLabel(lane.fromTeam, teamMeta)}</span>
+              <strong>to</strong>
+              <span>{teamLabel(lane.toTeam, teamMeta)}</span>
+            </div>
+            <div className="trade-flow-main">
+              <strong>{routeAssetLabels(lane.assets).join(", ")}</strong>
+              <small>{formatMoney(lane.value)} value / {formatMoney(lane.salary)} salary / {formatSigned(lane.impact.total, 2)} impact</small>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="trade-route-grid">
+        {summaries.map((summary) => (
+          <div key={summary.team} className="trade-route-card">
+            <div className="trade-route-team">
+              <span>{teamLabel(summary.team, teamMeta)}</span>
+              <strong>{formatSignedMoney(summary.netValue)}</strong>
+            </div>
+            <div className="trade-route-model">
+              <span className={cls("trade-route-verdict", tradeMachineRouteVerdictClass(summary.modelBalance?.verdict))}>
+                {tradeMachineValueVerdictLabel(summary.modelBalance?.verdict) ?? "No model"}
+              </span>
+              <span>{tradeMachineRouteDeficitLabel(summary.modelBalance)}</span>
+            </div>
+            <div className="trade-route-model">
+              <span className={cls("trade-route-verdict", tradeMachineStatusClass(summary.cbaResult?.status))}>
+                {tradeMachineShortStatusLabel(summary.cbaResult?.status)}
+              </span>
+              <span>{tradeMachineRouteCbaLabel(summary.cbaResult)}</span>
+            </div>
+            <div className="trade-route-metrics">
+              <span>In {formatMoney(summary.incomingValue)}</span>
+              <span>Out {formatMoney(summary.outgoingValue)}</span>
+              <span>Salary {formatSignedMoney(summary.netSalary)}</span>
+              <span>Impact {formatSigned(summary.netImpact.total, 2)}</span>
+            </div>
+            <div className="trade-route-assets">
+              <div>
+                <span>Receives</span>
+                {routeAssetLabels(summary.receives).map((label, index) => <small key={`${label}-${index}`}>{label}</small>)}
+              </div>
+              <div>
+                <span>Sends</span>
+                {routeAssetLabels(summary.sends).map((label, index) => <small key={`${label}-${index}`}>{label}</small>)}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TradeMachinePanel({ result, teamMeta }: { result: TradeMachineResult | null; teamMeta: Map<string, TeamProjection> }) {
+  if (!result) {
+    return (
+      <div className="trade-cba-panel warning">
+        <div className="trade-cba-head">
+          <span>CBA legality</span>
+          <strong>Cap data unavailable</strong>
+        </div>
+        <p>Load cap tracker data for this league year to evaluate salary matching, apron limits, BYC, and pick-trading rules.</p>
+      </div>
+    );
+  }
+
+  const checks = primaryTradeMachineChecks(result);
+  const allChecks = tradeMachineAuditChecks(result);
+  return (
+    <div className={cls("trade-cba-panel", result.status)}>
+      <div className="trade-cba-head">
+        <span>CBA legality</span>
+        <strong>{tradeMachineStatusLabel(result.status)}</strong>
+        <small>{result.season.label} / cap {formatMoney(result.season.salary_cap)} / 1st apron {formatMoney(result.season.first_apron)} / 2nd apron {formatMoney(result.season.second_apron)}</small>
+      </div>
+      <div className="trade-cba-team-grid">
+        {result.teams.map((team) => (
+          <div key={team.team} className={cls("trade-cba-team", team.status)}>
+            <span>{teamLabel(team.team, teamMeta)}</span>
+            <strong>{formatMoney(team.afterSalary)}</strong>
+            <small>{tradeMachineApronLabel(team.apronAfter)} / {team.salaryMatch.rule}</small>
+            <small>Incoming {formatMoney(team.salaryMatch.incomingSalaryForMatching)} vs max {formatMoney(team.salaryMatch.maxIncomingSalary)}</small>
+            {tradeMachineSalaryMatchDetails(team).map((detail) => (
+              <small key={detail}>{detail}</small>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="trade-cba-checks">
+        {checks.map((check) => (
+          <div key={check.code} className={cls("trade-cba-check", check.status)}>
+            <span>{check.label}</span>
+            <p>{check.detail}</p>
+          </div>
+        ))}
+      </div>
+      <details className="trade-cba-audit">
+        <summary>All CBA checks ({allChecks.length})</summary>
+        <div className="trade-cba-checks">
+          {allChecks.map((check, index) => (
+            <div key={`${check.code}-${index}`} className={cls("trade-cba-check", check.status)}>
+              <span>{check.label}</span>
+              <p>{check.detail}</p>
+            </div>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function tradeMachineSalaryMatchDetails(team: TradeMachineTeamResult): string[] {
+  const match = team.salaryMatch;
+  const details: string[] = [];
+  if (match.existingTradeExceptionName) {
+    details.push(`Uses ${match.existingTradeExceptionName}${match.existingTradeExceptionExpires ? `, expires ${match.existingTradeExceptionExpires}` : ""}`);
+    if (match.existingTradeExceptionFirstApronRestrictionApplies === true) details.push("Existing TPE triggers first-apron timing");
+    if (match.existingTradeExceptionSignedAndTradedContract === true) details.push("S&T-origin TPE triggers second-apron timing");
+  }
+  if (match.disabledPlayerExceptionName) {
+    details.push(`Uses ${match.disabledPlayerExceptionName} ${formatMoney(match.disabledPlayerExceptionAmount ?? 0)}${match.disabledPlayerExceptionExpires ? `, expires ${match.disabledPlayerExceptionExpires}` : ""}`);
+  }
+  if (match.assignmentExceptionName) {
+    details.push(`Uses ${match.assignmentExceptionName} ${formatMoney(match.assignmentExceptionAmount ?? 0)}`);
+  }
+  if (match.minimumSalaryExceptionSalary > 0) {
+    details.push(`Minimum exception covers ${formatMoney(match.minimumSalaryExceptionSalary)}`);
+  }
+  if (match.tradeExceptionCreated > 0) {
+    details.push(`Creates TPE ${formatMoney(match.tradeExceptionCreated)}`);
+  }
+  return details;
+}
+
 function TradeSide({
   title,
+  season,
   side,
   roster,
+  rosterQuery,
   selectedPlayerIds,
   teamOptions,
   teamMeta,
   total,
   impact,
   delta,
-  oppositeTeam,
+  unavailableTeams,
+  destinationOptions,
+  showDestinations,
   pickBuilder,
   pickPreview,
+  cashAmount,
   onTeamChange,
+  onRosterQueryChange,
   onTogglePlayer,
   onPickBuilderChange,
   onAddPick,
+  onCashAmountChange,
+  onAddCash,
   onRemove,
+  onDestinationChange,
   onClear
 }: {
   title: string;
+  season: number;
   side: TradeSideState;
   roster: PlayerImpact[];
+  rosterQuery: string;
   selectedPlayerIds: Set<number>;
   teamOptions: TeamProjection[];
   teamMeta: Map<string, TeamProjection>;
   total: number;
   impact: TradeImpactSummary;
   delta: TradeImpactSummary;
-  oppositeTeam: string;
+  unavailableTeams: string[];
+  destinationOptions: string[];
+  showDestinations: boolean;
   pickBuilder: TradePickBuilderState;
   pickPreview: PickAsset | null;
+  cashAmount: string;
   onTeamChange: (team: string) => void;
+  onRosterQueryChange: (value: string) => void;
   onTogglePlayer: (player: PlayerImpact) => void;
   onPickBuilderChange: (patch: Partial<TradePickBuilderState>) => void;
   onAddPick: () => void;
+  onCashAmountChange: (value: string) => void;
+  onAddCash: () => void;
   onRemove: (index: number) => void;
+  onDestinationChange: (index: number, toTeam: string) => void;
   onClear: () => void;
 }) {
   const selectedOnSide = new Set(
@@ -2175,6 +2885,7 @@ function TradeSide({
       .filter((asset) => asset.kind === "player" && asset.player)
       .map((asset) => asset.player!.nba_id)
   );
+  const filteredRoster = filterTradeRoster(roster, rosterQuery);
   return (
     <section className="trade-side">
       <div className="panel-heading">
@@ -2188,7 +2899,7 @@ function TradeSide({
         Team
         <select value={side.team} onChange={(event) => onTeamChange(event.target.value)}>
           {teamOptions.map((team) => (
-            <option key={team.team} value={team.team} disabled={teamOptions.length > 1 && team.team === oppositeTeam}>
+            <option key={team.team} value={team.team} disabled={teamOptions.length > 1 && unavailableTeams.includes(team.team)}>
               {team.team_name ?? team.team}
             </option>
           ))}
@@ -2200,8 +2911,12 @@ function TradeSide({
         <MetricPill label="Out Impact" value={formatSigned(impact.total, 2)} tone="teal" />
         <MetricPill label="Net Impact" value={formatSigned(delta.total, 2)} tone={delta.total >= 0 ? "green" : "teal"} />
       </div>
+      <label className="trade-roster-search">
+        Find player
+        <input value={rosterQuery} onChange={(event) => onRosterQueryChange(event.target.value)} placeholder="Name, position, tier, salary" />
+      </label>
       <div className="trade-roster-list" aria-label={`${teamFullName(side.team, teamMeta)} roster`}>
-        {roster.map((player) => {
+        {filteredRoster.map((player) => {
           const selectedHere = selectedOnSide.has(player.nba_id);
           const selectedElsewhere = selectedPlayerIds.has(player.nba_id) && !selectedHere;
           return (
@@ -2220,6 +2935,7 @@ function TradeSide({
           );
         })}
         {roster.length === 0 && <p className="empty">No roster rows for this team.</p>}
+        {roster.length > 0 && filteredRoster.length === 0 && <p className="empty">No matching players.</p>}
       </div>
       <div className="trade-pick-adder compact">
         <div className="trade-pick-fields">
@@ -2228,6 +2944,15 @@ function TradeSide({
             <select value={coerceTradePickKind(pickBuilder.assetType)} onChange={(event) => onPickBuilderChange({ assetType: event.target.value as TradePickKind })}>
               <option value="first">1st round pick</option>
               <option value="second">2nd round pick</option>
+              <option value="swap">1st swap right</option>
+            </select>
+          </label>
+          <label>
+            Draft
+            <select value={coerceTradePickDraftYear(pickBuilder, season)} onChange={(event) => onPickBuilderChange({ draftYear: Number(event.target.value) })}>
+              {tradePickDraftYears(season).map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
             </select>
           </label>
           {coerceTradePickKind(pickBuilder.assetType) !== "second" && <label>
@@ -2238,6 +2963,16 @@ function TradeSide({
               ))}
             </select>
           </label>}
+          {coerceTradePickKind(pickBuilder.assetType) === "swap" && <label>
+            Counterparty
+            <select value={coerceTradePickCounterparty(pickBuilder, side.team, teamOptions)} onChange={(event) => onPickBuilderChange({ counterpartyTeam: event.target.value })}>
+              {teamOptions
+                .filter((team) => team.team !== side.team)
+                .map((team) => (
+                  <option key={team.team} value={team.team}>{team.team_name ?? team.team}</option>
+                ))}
+            </select>
+          </label>}
         </div>
         <div className="trade-pick-preview">
           <span>{pickPreview ? assetLabel({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "No pick value"}</span>
@@ -2246,16 +2981,48 @@ function TradeSide({
         </div>
         <button disabled={!pickPreview} onClick={onAddPick}>Add pick</button>
       </div>
+      <div className="trade-pick-adder compact">
+        <div className="trade-pick-fields">
+          <label>
+            Cash ($M)
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={cashAmount}
+              onChange={(event) => onCashAmountChange(event.target.value)}
+              placeholder="0.0"
+            />
+          </label>
+        </div>
+        <div className="trade-pick-preview">
+          <span>Cash considerations</span>
+          <strong>{formatMoney(parseTradeCashInput(cashAmount))}</strong>
+          <small>Counts toward annual cash paid/received limits</small>
+        </div>
+        <button disabled={parseTradeCashInput(cashAmount) <= 0} onClick={onAddCash}>Add cash</button>
+      </div>
       <div className="asset-list">
         {side.assets.length === 0 && <p className="empty">No assets</p>}
         {side.assets.map((asset, index) => (
-          <button key={`${asset.id}-${index}`} onClick={() => onRemove(index)} title="Remove asset">
-            <span>
-              <strong>{assetLabel(asset)}</strong>
-              <small>{assetMeta(asset)}</small>
-            </span>
-            <em>{formatMoney(assetValue(asset))}</em>
-          </button>
+          <div key={`${asset.id}-${index}`} className="asset-row">
+            <button className="asset-remove" onClick={() => onRemove(index)} title="Remove asset">
+              <span>
+                <strong>{assetLabel(asset)}</strong>
+                <small>{assetMeta(asset)}</small>
+              </span>
+              <em>{formatMoney(assetValue(asset))}</em>
+            </button>
+            {showDestinations && <label className="asset-destination">
+              To
+              <select value={asset.toTeam ?? ""} onChange={(event) => onDestinationChange(index, event.target.value)}>
+                <option value="" disabled>Choose</option>
+                {destinationOptions.map((team) => (
+                  <option key={team} value={team}>{teamFullName(team, teamMeta)}</option>
+                ))}
+              </select>
+            </label>}
+          </div>
         ))}
       </div>
     </section>
@@ -2665,7 +3432,7 @@ function ProspectTable({
                 />
               </td>
               <td className="draft-comp-cell">
-                <DraftSimilarityComp prospect={prospect} />
+                <DraftSimilarityCompStack prospect={prospect} />
               </td>
             </tr>
           ))}
@@ -2675,8 +3442,23 @@ function ProspectTable({
   );
 }
 
-function DraftSimilarityComp({ prospect }: { prospect: DraftProspect }) {
-  const comps = draftSimilarityComps(prospect);
+function DraftSimilarityCompStack({ prospect }: { prospect: DraftProspect }) {
+  const offComps = draftSimilarityComps(prospect, "off");
+  const defComps = draftSimilarityComps(prospect, "def");
+  if (!offComps.length && !defComps.length) {
+    return <span className="muted-cell">-</span>;
+  }
+
+  return (
+    <div className="draft-comp-stack">
+      <DraftSimilarityComp prospect={prospect} dimension="off" label="Off" />
+      <DraftSimilarityComp prospect={prospect} dimension="def" label="Def" />
+    </div>
+  );
+}
+
+function DraftSimilarityComp({ prospect, dimension, label }: { prospect: DraftProspect; dimension: DraftSimilarityDimension; label: string }) {
+  const comps = draftSimilarityComps(prospect, dimension);
   const topComp = comps[0];
   if (!topComp) {
     return <span className="muted-cell">-</span>;
@@ -2684,21 +3466,25 @@ function DraftSimilarityComp({ prospect }: { prospect: DraftProspect }) {
 
   const scoreText = typeof topComp.score === "number" && Number.isFinite(topComp.score) ? `${formatNumber(topComp.score, 1)} sim` : "-";
   const title = [
+    `${label} comp`,
     `${topComp.year} ${topComp.player}`,
     `Similarity: ${scoreText}`,
     `Total: ${formatSigned(topComp.total, 2)}`,
+    `Off: ${formatSigned(topComp.off, 2)}`,
+    `Def: ${formatSigned(topComp.def, 2)}`,
     `Minutes: ${formatNumber(topComp.minutes, 0)}`
   ].join("\n");
 
   return (
     <details className="draft-comp-details">
       <summary className="draft-comp" title={title}>
+        <span className={cls("draft-comp-label", dimension)}>{label}</span>
         <strong>{topComp.year} {topComp.player}</strong>
-        <span>{scoreText} / top {comps.length}</span>
+        <span>{scoreText}</span>
       </summary>
       <div className="draft-comp-list">
         {comps.map((comp) => (
-          <div className="draft-comp-row" key={`${comp.rank}-${comp.year}-${comp.player}`}>
+          <div className="draft-comp-row" key={`${dimension}-${comp.rank}-${comp.year}-${comp.player}`}>
             <strong>{comp.rank}. {comp.year} {comp.player}</strong>
             <span>{formatNumber(comp.score, 1)} sim</span>
             <span>{formatSigned(comp.total, 2)} tot</span>
@@ -2710,8 +3496,8 @@ function DraftSimilarityComp({ prospect }: { prospect: DraftProspect }) {
   );
 }
 
-function draftSimilarityComps(prospect: DraftProspect): DraftSimilarityCompRow[] {
-  const raw = prospect.similarity_comps;
+function draftSimilarityComps(prospect: DraftProspect, dimension: DraftSimilarityDimension = "total"): DraftSimilarityCompRow[] {
+  const raw = draftSimilarityRawComps(prospect, dimension);
   let parsed: unknown = null;
   if (Array.isArray(raw)) {
     parsed = raw;
@@ -2731,20 +3517,64 @@ function draftSimilarityComps(prospect: DraftProspect): DraftSimilarityCompRow[]
     return comps.sort((a, b) => a.rank - b.rank);
   }
 
-  const player = prospect.similarity_comp_player?.trim();
-  const year = prospect.similarity_comp_year;
+  const fallback = draftSimilarityFallback(prospect, dimension);
+  const player = fallback.player?.trim();
+  const year = fallback.year;
   if (!player || typeof year !== "number" || !Number.isFinite(year)) return [];
   return [{
     rank: 1,
     player,
     year,
+    score: fallback.score,
+    distance: fallback.distance,
+    total: fallback.total,
+    off: fallback.off,
+    def: fallback.def,
+    minutes: fallback.minutes
+  }];
+}
+
+function draftSimilarityRawComps(prospect: DraftProspect, dimension: DraftSimilarityDimension): DraftProspect["similarity_comps"] {
+  if (dimension === "off") return prospect.off_similarity_comps;
+  if (dimension === "def") return prospect.def_similarity_comps;
+  return prospect.similarity_comps;
+}
+
+function draftSimilarityFallback(prospect: DraftProspect, dimension: DraftSimilarityDimension) {
+  if (dimension === "off") {
+    return {
+      player: prospect.off_similarity_comp_player,
+      year: prospect.off_similarity_comp_year,
+      score: finiteNumberOrNull(prospect.off_similarity_score),
+      distance: finiteNumberOrNull(prospect.off_similarity_distance),
+      total: finiteNumberOrNull(prospect.off_similarity_comp_total),
+      off: finiteNumberOrNull(prospect.off_similarity_comp_off),
+      def: finiteNumberOrNull(prospect.off_similarity_comp_def),
+      minutes: finiteNumberOrNull(prospect.off_similarity_comp_minutes)
+    };
+  }
+  if (dimension === "def") {
+    return {
+      player: prospect.def_similarity_comp_player,
+      year: prospect.def_similarity_comp_year,
+      score: finiteNumberOrNull(prospect.def_similarity_score),
+      distance: finiteNumberOrNull(prospect.def_similarity_distance),
+      total: finiteNumberOrNull(prospect.def_similarity_comp_total),
+      off: finiteNumberOrNull(prospect.def_similarity_comp_off),
+      def: finiteNumberOrNull(prospect.def_similarity_comp_def),
+      minutes: finiteNumberOrNull(prospect.def_similarity_comp_minutes)
+    };
+  }
+  return {
+    player: prospect.similarity_comp_player,
+    year: prospect.similarity_comp_year,
     score: finiteNumberOrNull(prospect.similarity_score),
     distance: finiteNumberOrNull(prospect.similarity_distance),
     total: finiteNumberOrNull(prospect.similarity_comp_total),
     off: finiteNumberOrNull(prospect.similarity_comp_off),
     def: finiteNumberOrNull(prospect.similarity_comp_def),
     minutes: finiteNumberOrNull(prospect.similarity_comp_minutes)
-  }];
+  };
 }
 
 function toDraftSimilarityComp(value: unknown): DraftSimilarityCompRow | null {
@@ -4797,7 +5627,7 @@ function ProjectionChart({ points, currentYear }: { points: CareerChartPoint[]; 
   );
 }
 
-function MetricPill({ label, value, tone }: { label: string; value: string; tone?: "green" | "teal" | "gold" }) {
+function MetricPill({ label, value, tone }: { label: string; value: string; tone?: "green" | "teal" | "gold" | "red" }) {
   return (
     <div className={cls("metric-pill", tone)}>
       <span>{label}</span>
@@ -4806,15 +5636,741 @@ function MetricPill({ label, value, tone }: { label: string; value: string; tone
   );
 }
 
-function defaultTradePickBuilder(): TradePickBuilderState {
+function buildTradeMachineResult(
+  data: AppData,
+  season: number,
+  players: PlayerImpact[],
+  sides: TradeSideState[],
+  contractMap: Map<string, CapTrackerContractRow>,
+  calendar: TradeCalendarState
+): TradeMachineResult | null {
+  const capSeason = capTrackerSeasonForYear(data.capTracker, season);
+  if (!capSeason) return null;
+  if (sides.length < 2) return null;
+  const machineSides = sides.map<TradeMachineSide>((side) => {
+    const context = tradeTeamContextFromCapTracker(data.capTracker, side.team, season, tradeRoster(players, side.team).length)
+      ?? fallbackTradeMachineContext(side.team, season, players);
+    return {
+      team: context,
+      sends: tradeMachineAssets(side.assets, side.team, season, contractMap)
+    };
+  });
+  return evaluateTradeMachine({
+    season: capSeason,
+    tradeDate: blankToNull(calendar.tradeDate),
+    tradeDeadlineDate: blankToNull(calendar.tradeDeadlineDate),
+    regularSeasonEndDate: blankToNull(calendar.regularSeasonEndDate),
+    sides: machineSides as TradeMachineSides
+  });
+}
+
+function currentSavedTradeSnapshot(
+  verdict: TradeVerdict,
+  result: TradeMachineResult | null | undefined,
+  valueDiff: number,
+  scaleDiff: number,
+  note: string
+): SavedTradeScenarioSnapshot {
+  return {
+    verdict,
+    cbaStatus: result?.status ?? null,
+    valueDiff,
+    scaleDiff,
+    note,
+    evaluatedAt: new Date().toISOString()
+  };
+}
+
+function evaluateSavedTradeScenarioSnapshot(
+  data: AppData,
+  season: number,
+  players: PlayerImpact[],
+  sides: TradeSideState[],
+  contractMap: Map<string, CapTrackerContractRow>,
+  calendar: TradeCalendarState,
+  teamMeta: Map<string, TeamProjection>,
+  evaluatedAt: string
+): SavedTradeScenarioSnapshot {
+  const result = buildTradeMachineResult(data, season, players, sides, contractMap, calendar);
+  const isMultiTeam = sides.length > 2;
+  const valueBalance = !isMultiTeam ? result?.valueBalance : undefined;
+  const teamValueBalances = isMultiTeam ? result?.teamValueBalances : undefined;
+  const leftBalance = tradeMachineTeamValueBalance(result, sides[0]?.team ?? "");
+  const rightBalance = tradeMachineTeamValueBalance(result, sides[1]?.team ?? "");
+  const leftTotal = valueBalance?.leftOutgoingValue ?? leftBalance?.outgoingValue ?? assetTotal(sides[0]?.assets ?? []);
+  const rightTotal = valueBalance?.rightOutgoingValue ?? rightBalance?.outgoingValue ?? assetTotal(sides[1]?.assets ?? []);
+  const leftScaleTotal = valueBalance?.leftOutgoingScaleAdjustedValue ?? leftBalance?.outgoingScaleAdjustedValue ?? scaleAdjustedAssetTotal(sides[0]?.assets ?? []);
+  const rightScaleTotal = valueBalance?.rightOutgoingScaleAdjustedValue ?? rightBalance?.outgoingScaleAdjustedValue ?? scaleAdjustedAssetTotal(sides[1]?.assets ?? []);
+  const multiValueDeficit = Math.max(0, ...(teamValueBalances?.map((balance) => balance.valueDeficit) ?? []));
+  const multiScaleDeficit = Math.max(0, ...(teamValueBalances?.map((balance) => balance.scaleAdjustedDeficit) ?? []));
+  const multiBalanceDeficit = Math.max(0, ...(teamValueBalances?.map((balance) => balance.balanceDeficit) ?? []));
+  const valueDiff = isMultiTeam ? multiValueDeficit : valueBalance?.valueDiff ?? Math.abs(leftTotal - rightTotal);
+  const scaleDiff = isMultiTeam ? multiScaleDeficit : valueBalance?.scaleAdjustedDiff ?? Math.abs(leftScaleTotal - rightScaleTotal);
+  const balanceDiff = isMultiTeam ? multiBalanceDeficit : valueBalance?.balanceDiff ?? Math.max(valueDiff, scaleDiff);
+  const verdict = result && !result.legal
+    ? "Declined"
+    : isMultiTeam
+      ? tradeMachineMultiTeamVerdictLabel(result) ?? tradeVerdict(balanceDiff)
+      : tradeMachineValueVerdictLabel(valueBalance?.verdict) ?? tradeVerdict(balanceDiff);
+  const note = result && !result.legal
+    ? tradeMachineSaysNoLabel(result)
+    : isMultiTeam
+      ? tradeMachineMultiTeamSaysNoLabel(result, teamMeta) ?? "No model blockers"
+      : tradeMachineValueSaysNoLabel(valueBalance) ?? whoSaysNoLabel(sides[0], sides[1], balanceDiff);
+  return {
+    verdict,
+    cbaStatus: result?.status ?? null,
+    valueDiff,
+    scaleDiff,
+    note,
+    evaluatedAt
+  };
+}
+
+function defaultTradeCalendar(schedules: TeamScheduleGame[] = [], season?: number): TradeCalendarState {
+  return {
+    tradeDate: "",
+    tradeDeadlineDate: "",
+    regularSeasonEndDate: regularSeasonEndDateFromSchedule(schedules, season)
+  };
+}
+
+function regularSeasonEndDateFromSchedule(schedules: TeamScheduleGame[], season?: number): string {
+  const dates = schedules
+    .filter((game) => (season === undefined || game.season === season) && game.season_type === "Regular Season" && isIsoDateString(game.date))
+    .map((game) => game.date)
+    .sort();
+  return dates[dates.length - 1] ?? "";
+}
+
+function isIsoDateString(value: string | null | undefined): value is string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""));
+}
+
+function blankToNull(value: string): string | null {
+  const clean = value.trim();
+  return clean ? clean : null;
+}
+
+function fallbackTradeMachineContext(team: string, season: number, players: PlayerImpact[]): TradeMachineTeamContext {
+  const roster = tradeRoster(players, team);
+  return {
+    team,
+    seasonYear: season,
+    teamSalary: roster.reduce((sum, player) => sum + tradeSalaryForPlayer(player), 0),
+    rosterCount: roster.length,
+    firstRoundPickYears: []
+  };
+}
+
+function tradeMachineAssets(assets: TradeAsset[], team: string, season: number, contractMap: Map<string, CapTrackerContractRow>): TradeMachineAsset[] {
+  return assets
+    .map((asset) => tradeMachineAsset(asset, team, season, contractMap))
+    .filter((asset): asset is TradeMachineAsset => Boolean(asset));
+}
+
+function tradeMachineAsset(asset: TradeAsset, team: string, season: number, contractMap: Map<string, CapTrackerContractRow>): TradeMachineAsset | null {
+  if (asset.kind === "player" && asset.player) {
+    const playerAsset = playerTradeMachineAsset(asset.player, team, currentScale(asset.player));
+    const contractRow = tradeContractRowForPlayer(asset.player, team, contractMap);
+    return {
+      ...playerAsset,
+      toTeam: asset.toTeam ?? null,
+      tradeValue: playerTradeValue(asset.player),
+      scaleValue: currentScale(asset.player),
+      ...tradeContractRulesFromNotes(asset.player, contractRow, season)
+    };
+  }
+  if (asset.kind === "pick" && asset.pick) return { ...pickTradeMachineAsset(asset.pick, team), toTeam: asset.toTeam ?? null };
+  if (asset.kind === "cash") {
+    const amount = Math.max(0, Number(asset.cashAmount ?? 0));
+    if (amount <= 0) return null;
+    return {
+      id: asset.id,
+      kind: "cash",
+      label: "Cash considerations",
+      team,
+      toTeam: asset.toTeam ?? null,
+      cashAmount: amount,
+      tradeValue: amount
+    };
+  }
+  return null;
+}
+
+function buildTradeContractMap(rows: CapTrackerContractRow[]): Map<string, CapTrackerContractRow> {
+  const out = new Map<string, CapTrackerContractRow>();
+  rows
+    .filter((row) => row.row_type === "player")
+    .forEach((row) => {
+      const team = cleanTeamValue(row.team);
+      if (typeof row.nba_id === "number" && Number.isFinite(row.nba_id)) out.set(tradeContractIdKey(row.nba_id), row);
+      out.set(tradeContractNameKey(row.player_name, team), row);
+    });
+  return out;
+}
+
+function tradeContractRowForPlayer(player: PlayerImpact, team: string, contractMap: Map<string, CapTrackerContractRow>): CapTrackerContractRow | undefined {
+  const byId = contractMap.get(tradeContractIdKey(player.nba_id));
+  if (byId) return byId;
+  const teams = [
+    team,
+    player.current_roster_team,
+    player.roster_truth_team,
+    player.rights_team,
+    player.incumbent_team,
+    player.team
+  ].map(cleanTeamValue);
+  const seen = new Set<string>();
+  for (const teamValue of teams) {
+    if (seen.has(teamValue)) continue;
+    seen.add(teamValue);
+    const row = contractMap.get(tradeContractNameKey(player.player_name, teamValue));
+    if (row) return row;
+  }
+  return undefined;
+}
+
+function tradeContractRulesFromNotes(
+  player: PlayerImpact,
+  row: CapTrackerContractRow | undefined,
+  season: number
+): Pick<
+  TradeMachineAsset,
+  | "tradeBonus"
+  | "noTradeConsentRequired"
+  | "noTradeConsentGranted"
+  | "noTradeConsentUntil"
+  | "tradeRestrictionUntil"
+  | "tradeRestrictionDestinationTeam"
+  | "couldBeLastContractSeason"
+  | "lastContractSeasonReason"
+  | "acquiredByTradeDate"
+  | "acquiredByTradeDateUnknown"
+  | "acquiredByTradeSource"
+  | "signingTradeRestrictionType"
+  | "signingTradeRestrictionSignedDate"
+  | "signingTradeRestrictionUntil"
+  | "signingTradeRestrictionReason"
+  | "currentSeasonGuaranteedSalary"
+  | "nextSeasonSalary"
+  | "nextSeasonGuaranteedSalary"
+  | "contractSeasonsRemaining"
+  | "isTwoWay"
+  | "isMinimumSalary"
+> {
+  const notes = row?.contract_notes ?? "";
+  const tradeBonus = tradeBonusFromContractNotes(notes, row, player, season);
+  const timedRestriction = tradeRestrictionFromContractNotes(notes);
+  const deadlineContract = tradeDeadlineContractFacts(row, season);
+  const signingRestriction = signingTradeRestrictionFacts(row, notes, season);
+  const recentAcquisition = recentTradeAcquisitionFacts(notes);
+  const implicitConsent = implicitNoTradeConsentFacts(row, season, notes);
+  const noTradeClause = findContractNoteClause(notes, /\b(?:full\s+)?no[- ]trade clause\b|\bimplicit no[- ]trade\b/i);
+  const explicitNoTradeWaived = Boolean(noTradeClause && /\bwaived\b/i.test(noTradeClause));
+  const explicitNoTradeRequired = Boolean(noTradeClause && !explicitNoTradeWaived);
+  const noTradeConsentRequired = Boolean(explicitNoTradeRequired || timedRestriction?.noTradeConsentRequired || (implicitConsent?.noTradeConsentRequired && !explicitNoTradeWaived));
+  const noTradeConsentGranted = Boolean(explicitNoTradeWaived && !noTradeConsentRequired);
+  return {
+    ...tradeContractSalaryProtection(row, season),
+    ...deadlineContract,
+    ...(signingRestriction ? signingRestriction : {}),
+    ...(recentAcquisition ? recentAcquisition : {}),
+    ...(tradeBonus ? { tradeBonus } : {}),
+    ...(timedRestriction ? timedRestriction : {}),
+    ...(noTradeClause || timedRestriction?.noTradeConsentRequired || implicitConsent
+      ? { noTradeConsentRequired, noTradeConsentGranted, noTradeConsentUntil: timedRestriction?.noTradeConsentUntil ?? null }
+      : {})
+  };
+}
+
+function implicitNoTradeConsentFacts(
+  row: CapTrackerContractRow | undefined,
+  season: number,
+  notes: string
+): Pick<TradeMachineAsset, "noTradeConsentRequired" | "noTradeConsentGranted"> | null {
+  if (!isImplicitNoTradeConsentContract(row, season)) return null;
+  if (/\bwaived\s+implicit\s+no[- ]trade\b/i.test(notes)) {
+    return {
+      noTradeConsentRequired: false,
+      noTradeConsentGranted: true
+    };
+  }
+  return {
+    noTradeConsentRequired: true,
+    noTradeConsentGranted: false
+  };
+}
+
+function isImplicitNoTradeConsentContract(row: CapTrackerContractRow | undefined, season: number): boolean {
+  if (!row) return false;
+  const current = row.cells.find((cell) => cell.year === season);
+  if (!current || !isTradeBonusBaseCellKind(current.kind) || current.kind === "player_option" || current.kind === "team_option") return false;
+  const signedUsing = String(row.signed_using ?? "").trim().toLowerCase();
+  if (signedUsing !== "bird rights" && signedUsing !== "early bird rights") return false;
+  return !row.cells.some((cell) =>
+    cell.year > season &&
+    cell.amount > 0 &&
+    isTradeBonusBaseCellKind(cell.kind) &&
+    cell.kind !== "player_option" &&
+    cell.kind !== "team_option"
+  );
+}
+
+function recentTradeAcquisitionFacts(
+  notes: string
+): Pick<TradeMachineAsset, "acquiredByTradeDate" | "acquiredByTradeDateUnknown" | "acquiredByTradeSource"> | null {
+  const clause = findContractNoteClause(notes, /\bacquired via\b|\btriggered\s+(?:via|with)\b.*\btrade\b|\bvia\s+[A-Z]{2,3}-[A-Z]{2,3}\s+trade\b/i);
+  if (!clause) return null;
+  const date = parseSlashDateFromText(clause);
+  const source = recentTradeAcquisitionSource(clause);
+  return {
+    ...(date ? { acquiredByTradeDate: isoDate(date) } : { acquiredByTradeDateUnknown: true }),
+    ...(source ? { acquiredByTradeSource: source } : {})
+  };
+}
+
+function recentTradeAcquisitionSource(clause: string): string | null {
+  const acquired = clause.match(/\bacquired via\s+([^|;,\[]+)/i);
+  if (acquired?.[1]) return acquired[1].trim();
+  const teams = clause.match(/\b([A-Z]{2,3}-[A-Z]{2,3}(?:-[A-Z]{2,3})?)\s+trade\b/i);
+  return teams?.[1] ?? null;
+}
+
+function signingTradeRestrictionFacts(
+  row: CapTrackerContractRow | undefined,
+  notes: string,
+  season: number
+): Pick<
+  TradeMachineAsset,
+  "signingTradeRestrictionType" | "signingTradeRestrictionSignedDate" | "signingTradeRestrictionUntil" | "signingTradeRestrictionReason"
+> | null {
+  const current = row?.cells.find((cell) => cell.year === season);
+  if (row?.row_type === "draft_pick" && current?.kind === "draft_pick") {
+    return {
+      signingTradeRestrictionType: "draft_rookie_or_two_way",
+      signingTradeRestrictionReason: "30-day draft rookie signing restriction"
+    };
+  }
+  const clause = findContractNoteClause(notes, /\bsigned\b|\bconverted\b|\bdraft rookie\b|\btwo[-\s]?way\b/i);
+  if (!clause) return null;
+  const type = signingTradeRestrictionTypeFromClause(clause);
+  if (!type) return null;
+  const signedDate = parseSlashDateFromText(clause);
+  return {
+    signingTradeRestrictionType: type,
+    ...(signedDate ? { signingTradeRestrictionSignedDate: isoDate(signedDate) } : {}),
+    signingTradeRestrictionReason: signingTradeRestrictionReason(type)
+  };
+}
+
+function signingTradeRestrictionTypeFromClause(clause: string): TradeMachineAsset["signingTradeRestrictionType"] | null {
+  if (/\bdraft rookie\b|\brookie[-\s]?scale\b|\btwo[-\s]?way\b/i.test(clause)) return "draft_rookie_or_two_way";
+  if (/\b(?:qualifying|early qualifying)\s+veteran\b|\b120\s*%\b|\bbird[-\s]?rights raise\b/i.test(clause)) return "bird_raise";
+  if (/\bsigned\b|\bconverted\b|\bstandard nba contract\b|\bfree agent\b/i.test(clause)) return "free_agent";
+  return null;
+}
+
+function signingTradeRestrictionReason(type: NonNullable<TradeMachineAsset["signingTradeRestrictionType"]>): string {
+  if (type === "draft_rookie_or_two_way") return "30-day rookie/Two-Way signing restriction";
+  if (type === "bird_raise") return "three-month/Jan. 15 Bird-rights signing restriction";
+  return "three-month/Dec. 15 free-agent signing restriction";
+}
+
+function tradeDeadlineContractFacts(
+  row: CapTrackerContractRow | undefined,
+  season: number
+): Pick<TradeMachineAsset, "couldBeLastContractSeason" | "lastContractSeasonReason"> {
+  const current = row?.cells.find((cell) => cell.year === season);
+  if (!current || !isTradeBonusBaseCellKind(current.kind)) return {};
+  const next = row?.cells.find((cell) => cell.year === season + 1);
+  if (!next || isEmptyContractCell(next)) {
+    return {
+      couldBeLastContractSeason: true,
+      lastContractSeasonReason: "last contract season"
+    };
+  }
+  if (isOptionOrEtoContractSeason(next, row?.contract_notes, season + 1)) {
+    return {
+      couldBeLastContractSeason: true,
+      lastContractSeasonReason: `${seasonLabel(season + 1)} option/ETO could make this the last season`
+    };
+  }
+  return {};
+}
+
+function isEmptyContractCell(cell: CapTrackerContractRow["cells"][number]): boolean {
+  return cell.kind === "empty" || cell.kind === "cap_hold" || cell.kind === "dead" || cell.amount <= 0;
+}
+
+function isOptionOrEtoContractSeason(cell: CapTrackerContractRow["cells"][number], notes: string | null | undefined, season: number): boolean {
+  const text = `${cell.kind} ${cell.status ?? ""} ${cell.label ?? ""} ${cell.note ?? ""}`;
+  if (/\b(?:player|team|club)\s+option\b|\beto\b|\bearly termination option\b/i.test(text)) return true;
+  const label = escapeRegex(seasonLabel(season));
+  const optionForSeason = new RegExp(`${label}\\s*:[^|;]*(?:player\\s+option|team\\s+option|club\\s+option|\\bETO\\b|early termination option)`, "i");
+  return optionForSeason.test(notes ?? "");
+}
+
+function seasonLabel(season: number): string {
+  return `${season - 1}-${String(season).slice(-2)}`;
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tradeRestrictionFromContractNotes(
+  notes: string
+): Pick<TradeMachineAsset, "noTradeConsentRequired" | "noTradeConsentUntil" | "tradeRestrictionUntil" | "tradeRestrictionDestinationTeam"> | null {
+  const clause = findContractNoteClause(notes, /\bright to veto any trade\b|\bcannot be traded to\b/i);
+  if (!clause) return null;
+  const rightToVeto = /\bright to veto any trade\b/i.test(clause);
+  const destination = tradeRestrictionDestinationFromClause(clause);
+  const until = tradeRestrictionUntilFromNotes(notes, clause);
+  if (!rightToVeto && !destination && !until) return null;
+  return {
+    ...(rightToVeto ? { noTradeConsentRequired: true, noTradeConsentUntil: until } : {}),
+    ...(until ? { tradeRestrictionUntil: until } : {}),
+    ...(destination ? { tradeRestrictionDestinationTeam: destination } : {})
+  };
+}
+
+function tradeRestrictionDestinationFromClause(clause: string): string | null {
+  const match = clause.match(/\bcannot be traded to\s+([A-Z]{2,3})\b/i);
+  return match?.[1]?.toUpperCase() ?? null;
+}
+
+function tradeRestrictionUntilFromNotes(notes: string, clause: string): string | null {
+  if (!/\b(?:one|1)\s+(?:season|year)\b/i.test(clause)) return null;
+  const start = parseRestrictionStartDate(notes, clause);
+  return start ? addYearsIso(start, 1) : null;
+}
+
+function parseRestrictionStartDate(notes: string, clause: string): Date | null {
+  const marker = clause ? notes.indexOf(clause) : -1;
+  const beforeClause = marker > 0 ? notes.slice(0, marker) : notes;
+  const matches = Array.from(beforeClause.matchAll(/\((\d{1,2})\/(\d{1,2})\/(\d{2,4})\)/g));
+  const match = matches[matches.length - 1];
+  return match ? dateFromSlashMatch(match) : null;
+}
+
+function parseSlashDateFromText(text: string): Date | null {
+  const match = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/);
+  if (!match) return null;
+  return dateFromSlashMatch(match);
+}
+
+function dateFromSlashMatch(match: RegExpMatchArray | RegExpExecArray): Date | null {
+  const month = Number(match[1]);
+  const day = Number(match[2]);
+  const rawYear = Number(match[3]);
+  const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+  if (!Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(year)) return null;
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function addYearsIso(date: Date, years: number): string {
+  const out = new Date(date.getTime());
+  out.setFullYear(out.getFullYear() + years);
+  return isoDate(out);
+}
+
+function isoDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function tradeContractSalaryProtection(
+  row: CapTrackerContractRow | undefined,
+  season: number
+): Pick<TradeMachineAsset, "currentSeasonGuaranteedSalary" | "nextSeasonSalary" | "nextSeasonGuaranteedSalary" | "contractSeasonsRemaining" | "isTwoWay" | "isMinimumSalary"> {
+  const current = row?.cells.find((cell) => cell.year === season);
+  const next = row?.cells.find((cell) => cell.year === season + 1);
+  return {
+    currentSeasonGuaranteedSalary: protectedCellAmount(current),
+    nextSeasonSalary: salaryCellAmount(next),
+    nextSeasonGuaranteedSalary: protectedCellAmount(next),
+    contractSeasonsRemaining: remainingContractSeasons(row, season),
+    isTwoWay: isTwoWayContractCell(current, row),
+    isMinimumSalary: isMinimumSalaryContractCell(current, row)
+  };
+}
+
+function remainingContractSeasons(row: CapTrackerContractRow | undefined, season: number): number | null {
+  if (!row) return null;
+  const count = row.cells.filter((cell) => cell.year >= season && salaryCellAmount(cell) !== null).length;
+  return count > 0 ? count : null;
+}
+
+function protectedCellAmount(cell: CapTrackerContractRow["cells"][number] | undefined): number | null {
+  if (!cell || !isTradeBonusBaseCellKind(cell.kind)) return null;
+  const guaranteed = Number(cell.guaranteed_amount);
+  if (Number.isFinite(guaranteed)) return Math.max(0, guaranteed);
+  return null;
+}
+
+function salaryCellAmount(cell: CapTrackerContractRow["cells"][number] | undefined): number | null {
+  if (!cell || !isTradeBonusBaseCellKind(cell.kind)) return null;
+  const amount = Number(cell.amount);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+function isTwoWayContractCell(cell: CapTrackerContractRow["cells"][number] | undefined, row: CapTrackerContractRow | undefined): boolean {
+  const text = `${cell?.status ?? ""} ${cell?.label ?? ""} ${cell?.note ?? ""} ${row?.contract_notes ?? ""}`;
+  return /\btwo[-\s]?way\b/i.test(text);
+}
+
+function isMinimumSalaryContractCell(cell: CapTrackerContractRow["cells"][number] | undefined, row: CapTrackerContractRow | undefined): boolean {
+  const text = `${cell?.status ?? ""} ${cell?.label ?? ""} ${cell?.note ?? ""} ${row?.signed_using ?? ""} ${row?.contract_notes ?? ""}`;
+  return /\bminimum\b/i.test(text) && !/\btwo[-\s]?way\b/i.test(text);
+}
+
+function tradeBonusFromContractNotes(
+  notes: string,
+  row: CapTrackerContractRow | undefined,
+  player: PlayerImpact,
+  season: number
+): TradeMachineAsset["tradeBonus"] | undefined {
+  const clause = findContractNoteClause(notes, /\btrade\s+(?:bonus|kicker)\b/i);
+  if (!clause) return undefined;
+  const percent = parseTradeBonusPercent(clause);
+  const amount = parseTradeBonusAmount(clause);
+  return {
+    percent,
+    amount,
+    remainingBaseCompensation: remainingTradeBonusBase(row, season),
+    waived: /\b(?:waived|voided)\b/i.test(clause),
+    previouslyEarned: /\b(?:paid|triggered|trigged)\b/i.test(clause),
+    yoe: typeof player.yoe === "number" && Number.isFinite(player.yoe) ? player.yoe : null,
+    priorYearSalary: salaryCellAmountForYear(row, season - 1),
+    maxSalaryPercent: parseMaxSalaryPercent(notes)
+  };
+}
+
+function remainingTradeBonusBase(row: CapTrackerContractRow | undefined, season: number): number | null {
+  if (!row) return null;
+  const total = row.cells
+    .filter((cell) => cell.year >= season && isTradeBonusBaseCellKind(cell.kind))
+    .reduce((sum, cell) => sum + Math.max(0, Number(cell.amount) || 0), 0);
+  return total > 0 ? total : null;
+}
+
+function salaryCellAmountForYear(row: CapTrackerContractRow | undefined, year: number): number | null {
+  if (!row) return null;
+  const total = row.cells
+    .filter((cell) => cell.year === year && isTradeBonusBaseCellKind(cell.kind))
+    .reduce((sum, cell) => sum + Math.max(0, Number(cell.amount) || 0), 0);
+  return total > 0 ? total : null;
+}
+
+function isTradeBonusBaseCellKind(kind: CapTrackerContractRow["cells"][number]["kind"]): boolean {
+  return kind === "guaranteed" || kind === "partial_guarantee" || kind === "player_option" || kind === "team_option" || kind === "non_guaranteed";
+}
+
+function parseTradeBonusPercent(clause: string): number | null {
+  const direct = clause.match(/(\d+(?:\.\d+)?)\s*%\s*trade\s+(?:bonus|kicker)/i);
+  if (direct) return clamp(Number(direct[1]) / 100, 0, 0.15);
+  const markerIndex = clause.search(/\btrade\s+(?:bonus|kicker)\b/i);
+  const beforeMarker = markerIndex >= 0 ? clause.slice(0, markerIndex) : clause;
+  const matches = Array.from(beforeMarker.matchAll(/(\d+(?:\.\d+)?)\s*%/g));
+  const match = matches[matches.length - 1];
+  return match ? clamp(Number(match[1]) / 100, 0, 0.15) : null;
+}
+
+function parseTradeBonusAmount(clause: string): number | null {
+  const match = clause.match(/\$([0-9][\d,.]*)(?:\s*([mk]))?/i);
+  if (!match) return null;
+  const amount = parseNumericToken(`$${match[1]}${match[2] ?? ""}`);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+function parseMaxSalaryPercent(notes: string): number | null {
+  const match = notes.match(/(\d+(?:\.\d+)?)\s*%\s*max/i);
+  if (!match) return null;
+  const percent = Number(match[1]) / 100;
+  return Number.isFinite(percent) && percent > 0 ? percent : null;
+}
+
+function findContractNoteClause(notes: string, pattern: RegExp): string {
+  const chunks = String(notes ?? "")
+    .split(/\s*[;|]\s*/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+  return chunks.find((chunk) => pattern.test(chunk)) ?? (pattern.test(notes) ? notes : "");
+}
+
+function tradeContractIdKey(nbaId: number): string {
+  return `id:${nbaId}`;
+}
+
+function tradeContractNameKey(playerName: string, team: string): string {
+  return `name:${normalizeTradeNameKey(playerName)}|${cleanTeamValue(team)}`;
+}
+
+function normalizeTradeNameKey(value: string | null | undefined): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function tradeMachineStatusLabel(status: TradeMachineStatus | undefined): string {
+  if (status === "legal") return "CBA legal";
+  if (status === "illegal") return "CBA illegal";
+  if (status === "warning") return "Needs review";
+  return "Needs cap data";
+}
+
+function tradeMachineTone(status: TradeMachineStatus | undefined): "green" | "gold" | "red" {
+  if (status === "legal") return "green";
+  if (status === "illegal") return "red";
+  return "gold";
+}
+
+function tradeMachineSaysNoLabel(result: TradeMachineResult): string {
+  const blockingTeam = result.teams.find((team) => team.checks.some((check) => check.status === "fail"));
+  return blockingTeam ? `${blockingTeam.team} CBA block` : "CBA block";
+}
+
+function tradeMachineValueVerdictLabel(verdict: TradeMachineValueVerdict | undefined): TradeVerdict | null {
+  if (verdict === "accepted") return "Accepted";
+  if (verdict === "maybe") return "Maybe";
+  if (verdict === "declined") return "Declined";
+  return null;
+}
+
+function tradeMachineValueSaysNoLabel(balance: TradeMachineResult["valueBalance"] | undefined): string | null {
+  if (!balance) return null;
+  if (!balance.teamSaysNo) return "Toss-up";
+  const basis = balance.imbalanceBasis === "scale_adjusted_value" ? "scale-adjusted value" : "trade value";
+  return `${balance.teamSaysNo} says no (${basis})`;
+}
+
+function tradeMachineTeamValueBalance(result: TradeMachineResult | null | undefined, team: string) {
+  const target = cleanTeamValue(team);
+  return result?.teamValueBalances.find((balance) => cleanTeamValue(balance.team) === target) ?? null;
+}
+
+function tradeMachineMultiTeamVerdictLabel(result: TradeMachineResult | null | undefined): TradeVerdict | null {
+  if (!result) return null;
+  if (result.modelAccepted) return "Accepted";
+  if (result.modelViable) return "Maybe";
+  return "Declined";
+}
+
+function tradeMachineMultiTeamSaysNoLabel(result: TradeMachineResult | null | undefined, teamMeta: Map<string, TeamProjection>): string | null {
+  if (!result) return null;
+  const blockers = result.teamValueBalances.filter((balance) => balance.teamSaysNo);
+  if (blockers.length === 0) return "Toss-up";
+  const basis = blockers.some((balance) => balance.imbalanceBasis === "scale_adjusted_value") ? "scale-adjusted value" : "trade value";
+  return `${blockers.map((balance) => teamLabel(balance.team, teamMeta)).join(", ")} says no (${basis})`;
+}
+
+function buildTradeReviewItems(result: TradeMachineResult | null | undefined, teamMeta: Map<string, TeamProjection>): TradeReviewItem[] {
+  if (!result) {
+    return [{
+      severity: "warn",
+      source: "Setup",
+      label: "Cap data unavailable",
+      detail: "Load cap tracker data to evaluate salary matching, apron limits, cash, and pick-trading rules."
+    }];
+  }
+  const valueItems = result.teamValueBalances
+    .filter((balance) => balance.verdict !== "accepted")
+    .map<TradeReviewItem>((balance) => ({
+      severity: balance.verdict === "declined" ? "fail" : "warn",
+      source: "Value",
+      label: `${teamLabel(balance.team, teamMeta)} ${balance.verdict === "declined" ? "declines" : "needs value"}`,
+      detail: tradeMachineRouteDeficitLabel(balance),
+      hint: tradeMachineValueRepairHint(balance)
+    }));
+  const cbaItems = result.checks
+    .filter(isTradeReviewRuleCheck)
+    .map<TradeReviewItem>((check) => ({
+      severity: check.status,
+      source: "CBA",
+      label: check.label,
+      detail: check.detail
+    }));
+  const deduped = new Map<string, TradeReviewItem>();
+  [...valueItems, ...cbaItems].forEach((item) => {
+    const key = `${item.severity}|${item.source}|${item.label}|${item.detail}`;
+    if (!deduped.has(key)) deduped.set(key, item);
+  });
+  return Array.from(deduped.values()).sort((a, b) => reviewSeverityRank(a.severity) - reviewSeverityRank(b.severity));
+}
+
+function reviewSeverityRank(severity: TradeReviewItem["severity"]): number {
+  return severity === "fail" ? 0 : 1;
+}
+
+function isTradeReviewRuleCheck(check: TradeMachineRuleCheck): check is TradeMachineRuleCheck & { status: TradeReviewItem["severity"] } {
+  return check.status === "fail" || check.status === "warn";
+}
+
+function primaryTradeMachineChecks(result: TradeMachineResult): TradeMachineRuleCheck[] {
+  const review = result.checks.filter((check) => check.status !== "pass");
+  if (review.length > 0) return review.slice(0, 6);
+  const priority = result.teams.flatMap((team) =>
+    team.checks.filter((check) =>
+      check.code.includes(":salary-match") ||
+      check.code.includes(":first-apron") ||
+      check.code.includes(":second-apron-aggregation") ||
+      check.code.includes(":stepien")
+    )
+  );
+  return priority.slice(0, 6);
+}
+
+function tradeMachineAuditChecks(result: TradeMachineResult): TradeMachineRuleCheck[] {
+  const review = result.checks.filter((check) => check.status !== "pass");
+  const passes = result.checks.filter((check) => check.status === "pass");
+  return [...review, ...passes];
+}
+
+function tradeMachineApronLabel(band: TradeMachineTeamResult["apronAfter"]): string {
+  if (band === "second_apron") return "Over second apron";
+  if (band === "first_apron") return "Over first apron";
+  if (band === "tax") return "Tax team";
+  if (band === "over_cap") return "Over cap";
+  return "Cap room";
+}
+
+function defaultTradePickBuilder(season: number): TradePickBuilderState {
   return {
     assetType: "first",
-    protectionCutoff: 0
+    draftYear: season,
+    protectionCutoff: 0,
+    counterpartyTeam: ""
   };
 }
 
 function coerceTradePickKind(value: string | null | undefined): TradePickKind {
+  if (value === "swap") return "swap";
   return value === "second" ? "second" : "first";
+}
+
+function coerceTradePickDraftYear(builder: TradePickBuilderState, season: number): number {
+  const year = Number(builder.draftYear);
+  const years = tradePickDraftYears(season);
+  return years.includes(year) ? year : season;
+}
+
+function tradePickDraftYears(season: number): number[] {
+  return Array.from({ length: 8 }, (_, index) => season + index);
+}
+
+function coerceTradePickCounterparty(builder: TradePickBuilderState, sideTeam: string, teamOptions: TeamProjection[]): string {
+  const rawSelected = String(builder.counterpartyTeam ?? "").trim();
+  const selected = rawSelected ? cleanTeamValue(rawSelected) : "";
+  if (selected && selected !== cleanTeamValue(sideTeam) && teamOptions.some((team) => cleanTeamValue(team.team) === selected)) {
+    return rawSelected;
+  }
+  return teamOptions.find((team) => cleanTeamValue(team.team) !== cleanTeamValue(sideTeam))?.team ?? "";
 }
 
 function buildTradePickContext(slotAssets: PickAsset[]): TradePickContext {
@@ -4881,32 +6437,40 @@ function averageDistributions(distributions: PickDistributionPoint[][]): PickDis
     .sort((a, b) => a.pick - b.pick);
 }
 
-function buildTradePickAsset(builder: TradePickBuilderState, context: TradePickContext): PickAsset | null {
+function buildTradePickAsset(builder: TradePickBuilderState, context: TradePickContext, season: number, sideTeam: string, teamOptions: TeamProjection[]): PickAsset | null {
   const assetType = coerceTradePickKind(builder.assetType);
+  const draftYear = coerceTradePickDraftYear(builder, season);
   const protectionCutoff = assetType === "second" ? 0 : Number(builder.protectionCutoff ?? 0);
   const protection = protectionLabel(protectionCutoff);
   const distribution = assetType === "second" ? context.secondRound : context.firstRound;
   if (!distribution) return null;
   const summary = tradePickSummary(distribution, context.slotValues, protectionCutoff);
   const round = assetType === "second" ? 2 : 1;
+  const counterpartyTeam = assetType === "swap" ? coerceTradePickCounterparty(builder, sideTeam, teamOptions) : null;
+  if (assetType === "swap" && !counterpartyTeam) return null;
   const ordinal = round === 1 ? "1st" : "2nd";
-  const label = round === 1
-    ? `${protectionCutoff > 0 ? `${protection[0].toUpperCase()}${protection.slice(1)} ` : "Unprotected "}${ordinal}`
-    : `Generic ${ordinal}`;
+  const label = assetType === "swap"
+    ? `${draftYear} ${protectionCutoff > 0 ? `${protection[0].toUpperCase()}${protection.slice(1)} ` : ""}Swap Right vs ${counterpartyTeam}`
+    : round === 1
+    ? `${draftYear} ${protectionCutoff > 0 ? `${protection[0].toUpperCase()}${protection.slice(1)} ` : "Unprotected "}${ordinal}`
+    : `${draftYear} Generic ${ordinal}`;
+  const value = assetType === "swap" ? summary.value * TRADE_SWAP_VALUE_FACTOR : summary.value;
   return {
-    asset_id: `generic-pick-r${round}-${protectionCutoff}`,
+    asset_id: assetType === "swap"
+      ? `generic-swap-${draftYear}-${counterpartyTeam}-${protectionCutoff}`
+      : `generic-pick-${draftYear}-r${round}-${protectionCutoff}`,
     label,
     pick: Math.round(summary.expectedPick),
     round,
-    normalized: normalizedPickValue(summary.value, context.slotValues),
-    value: Math.round(summary.value),
-    asset_type: "generic_pick",
+    normalized: normalizedPickValue(value, context.slotValues),
+    value: Math.round(value),
+    asset_type: assetType === "swap" ? "pick_swap" : "generic_pick",
     origin_team: null,
-    draft_year: null,
+    draft_year: draftYear,
     protection,
     protection_cutoff: protectionCutoff,
-    counterparty_team: null,
-    convey_probability: roundProbability(summary.conveyProbability),
+    counterparty_team: counterpartyTeam,
+    convey_probability: assetType === "swap" ? 0.5 : roundProbability(summary.conveyProbability),
     expected_pick: roundTo(summary.expectedPick, 1)
   };
 }
@@ -4966,22 +6530,9 @@ function pickTradeAsset(pick: PickAsset): TradeAsset {
   return { kind: "pick", id: `pick-${pick.asset_id}-${Date.now()}-${Math.random().toString(16).slice(2)}`, pick };
 }
 
-function hydrateTradeAsset(asset: TradeAsset, playerMap: Map<number, PlayerImpact>, pickMap: Map<string, PickAsset>): TradeAsset | null {
-  if (asset.kind === "player") {
-    const playerId = asset.player?.nba_id ?? Number(String(asset.id).replace("player-", ""));
-    const player = playerMap.get(playerId) ?? asset.player;
-    return player ? playerTradeAsset(player) : null;
-  }
-  const pickAssetId = asset.pick?.asset_id ?? String(asset.id).replace(/^pick-/, "").split("-").slice(0, 2).join("-");
-  const pick = pickMap.get(pickAssetId) ?? asset.pick;
-  return pick ? { ...asset, kind: "pick", pick } : null;
-}
-
-function hydrateTradeSide(side: TradeSideState, playerMap: Map<number, PlayerImpact>, pickMap: Map<string, PickAsset>): TradeSideState {
-  return {
-    team: side.team,
-    assets: side.assets.map((asset) => hydrateTradeAsset(asset, playerMap, pickMap)).filter((asset): asset is TradeAsset => Boolean(asset))
-  };
+function cashTradeAsset(amount: number): TradeAsset {
+  const cleanAmount = Math.max(0, Math.round(amount));
+  return { kind: "cash", id: `cash-${Date.now()}-${Math.random().toString(16).slice(2)}`, cashAmount: cleanAmount };
 }
 
 function selectedTradePlayerIds(...assetGroups: TradeAsset[][]): Set<number> {
@@ -5007,17 +6558,32 @@ function playerTradeValue(player: PlayerImpact): number {
 
 function assetValue(asset: TradeAsset): number {
   if (asset.kind === "player") return asset.player ? playerTradeValue(asset.player) : 0;
+  if (asset.kind === "cash") return Math.max(0, Number(asset.cashAmount ?? 0));
   return Number(asset.pick?.value ?? 0);
 }
 
+function scaleAdjustedAssetValue(asset: TradeAsset): number {
+  const value = assetValue(asset);
+  if (asset.kind !== "player" || !asset.player) return value;
+  const premium = clamp((currentScale(asset.player) - 1) / 5, -0.2, 0.35);
+  return value * (1 + premium);
+}
+
+function scaleAdjustedAssetTotal(assets: TradeAsset[]): number {
+  return assets.reduce((sum, asset) => sum + scaleAdjustedAssetValue(asset), 0);
+}
+
 function assetLabel(asset: TradeAsset): string {
-  return asset.kind === "player" ? asset.player?.player_name ?? "Unknown player" : asset.pick?.label ?? "Pick asset";
+  if (asset.kind === "player") return asset.player?.player_name ?? "Unknown player";
+  if (asset.kind === "cash") return "Cash considerations";
+  return asset.pick?.label ?? "Pick asset";
 }
 
 function assetMeta(asset: TradeAsset): string {
   if (asset.kind === "player" && asset.player) {
     return `${asset.player.team} / ${displayPosition(asset.player.position)} / ${formatSalarySlot(asset.player)}`;
   }
+  if (asset.kind === "cash") return formatMoney(Math.max(0, Number(asset.cashAmount ?? 0)));
   if (asset.pick?.asset_type === "generic_pick") {
     const convey = typeof asset.pick.convey_probability === "number" ? `${formatNumber(asset.pick.convey_probability * 100, 1)}% convey` : "EV";
     const expected = typeof asset.pick.expected_pick === "number" ? `xPick ${formatNumber(asset.pick.expected_pick, 1)}` : `Pick ${asset.pick.pick}`;
@@ -5043,10 +6609,31 @@ function assetTotal(assets: TradeAsset[]): number {
   return assets.reduce((sum, asset) => sum + assetValue(asset), 0);
 }
 
+function parseTradeCashInput(value: string): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 1_000_000)) : 0;
+}
+
 function tradeRoster(players: PlayerImpact[], team: string): PlayerImpact[] {
   return players
     .filter((player) => player.team === team)
     .sort((a, b) => playerTradeValue(b) - playerTradeValue(a) || b.total - a.total);
+}
+
+function filterTradeRoster(roster: PlayerImpact[], query: string): PlayerImpact[] {
+  const clean = query.trim().toLowerCase();
+  if (!clean) return roster;
+  return roster.filter((player) => {
+    const haystack = [
+      player.player_name,
+      player.team,
+      displayPosition(player.position),
+      player.tier,
+      player.contract_status,
+      formatSalarySlot(player)
+    ].join(" ").toLowerCase();
+    return haystack.includes(clean);
+  });
 }
 
 function tradeImpactSummary(assets: TradeAsset[]): TradeImpactSummary {
@@ -5069,6 +6656,242 @@ function subtractTradeImpact(incoming: TradeImpactSummary, outgoing: TradeImpact
     total: incoming.total - outgoing.total,
     outgoingSalary: incoming.outgoingSalary - outgoing.outgoingSalary
   };
+}
+
+function emptyTradeImpactSummary(): TradeImpactSummary {
+  return { offense: 0, defense: 0, total: 0, outgoingSalary: 0 };
+}
+
+function buildTradeRouteSummaries(sides: TradeSideState[], result: TradeMachineResult | null | undefined): TradeRouteSummary[] {
+  const balances = new Map((result?.teamValueBalances ?? []).map((balance) => [cleanTeamValue(balance.team), balance]));
+  const cbaResults = new Map((result?.teams ?? []).map((team) => [cleanTeamValue(team.team), team]));
+  return sides.map((side) => {
+    const sends = side.assets;
+    const receives = tradeAssetsReceivedByTeam(sides, side.team);
+    const outgoingImpact = tradeImpactSummary(sends);
+    const incomingImpact = tradeImpactSummary(receives);
+    const outgoingValue = assetTotal(sends);
+    const incomingValue = assetTotal(receives);
+    const outgoingSalary = tradeAssetSalaryTotal(sends);
+    const incomingSalary = tradeAssetSalaryTotal(receives);
+    return {
+      team: side.team,
+      sends,
+      receives,
+      outgoingValue,
+      incomingValue,
+      netValue: incomingValue - outgoingValue,
+      outgoingSalary,
+      incomingSalary,
+      netSalary: incomingSalary - outgoingSalary,
+      outgoingImpact,
+      incomingImpact,
+      netImpact: subtractTradeImpact(incomingImpact, outgoingImpact),
+      modelBalance: balances.get(cleanTeamValue(side.team)) ?? null,
+      cbaResult: cbaResults.get(cleanTeamValue(side.team)) ?? null
+    };
+  });
+}
+
+function buildTradeRouteLanes(sides: TradeSideState[]): TradeRouteLane[] {
+  const lanes = new Map<string, TradeRouteLane>();
+  sides.forEach((side) => {
+    side.assets.forEach((asset) => {
+      const toTeam = tradeAssetRouteDestination(asset, side, sides);
+      const laneKey = `${cleanTeamValue(side.team)}|${cleanTeamValue(toTeam)}`;
+      const existing = lanes.get(laneKey);
+      const assets = [...(existing?.assets ?? []), asset];
+      lanes.set(laneKey, {
+        fromTeam: side.team,
+        toTeam,
+        assets,
+        value: assetTotal(assets),
+        salary: tradeAssetSalaryTotal(assets),
+        impact: tradeImpactSummary(assets)
+      });
+    });
+  });
+  return Array.from(lanes.values()).sort((a, b) =>
+    a.fromTeam.localeCompare(b.fromTeam) || a.toTeam.localeCompare(b.toTeam)
+  );
+}
+
+function tradeAssetRouteDestination(asset: TradeAsset, side: TradeSideState, sides: TradeSideState[]): string {
+  if (sides.length === 2) {
+    return sides.find((item) => cleanTeamValue(item.team) !== cleanTeamValue(side.team))?.team ?? "Unassigned";
+  }
+  return asset.toTeam || "Unassigned";
+}
+
+function tradeAssetsReceivedByTeam(sides: TradeSideState[], team: string): TradeAsset[] {
+  const target = cleanTeamValue(team);
+  if (sides.length === 2) {
+    return sides.find((side) => cleanTeamValue(side.team) !== target)?.assets ?? [];
+  }
+  return sides
+    .filter((side) => cleanTeamValue(side.team) !== target)
+    .flatMap((side) => side.assets.filter((asset) => cleanTeamValue(asset.toTeam) === target));
+}
+
+function tradeAssetSalaryTotal(assets: TradeAsset[]): number {
+  return assets.reduce((sum, asset) => {
+    if (asset.kind !== "player" || !asset.player) return sum;
+    return sum + tradeSalaryForPlayer(asset.player);
+  }, 0);
+}
+
+function routeAssetLabels(assets: TradeAsset[]): string[] {
+  if (assets.length === 0) return ["None"];
+  const labels = assets.slice(0, 3).map(assetLabel);
+  if (assets.length > labels.length) labels.push(`+${assets.length - labels.length} more`);
+  return labels;
+}
+
+function savedTradeScenarioTeamsLabel(scenario: SavedTradeScenario, teamMeta: Map<string, TeamProjection>): string {
+  return savedTradeScenarioSides(scenario)
+    .map((side) => teamLabel(side.team, teamMeta))
+    .join(" / ");
+}
+
+function savedTradeScenarioAssetSummary(scenario: SavedTradeScenario): string {
+  const summaries = savedTradeScenarioSides(scenario)
+    .filter((side) => side.assets.length > 0)
+    .map((side) => `${side.team}: ${routeAssetLabels(side.assets).join(", ")}`);
+  return summaries.length > 0 ? summaries.join(" | ") : "No assets";
+}
+
+function savedTradeScenarioMeta(scenario: SavedTradeScenario): string {
+  const sides = savedTradeScenarioSides(scenario);
+  const assetCount = sides.reduce((sum, side) => sum + side.assets.length, 0);
+  const teamLabel = `${sides.length}-team`;
+  const assetLabel = `${assetCount} asset${assetCount === 1 ? "" : "s"}`;
+  return `${teamLabel} / ${assetLabel}`;
+}
+
+function savedTradeScenarioStatusLabel(scenario: SavedTradeScenario): string {
+  const snapshot = scenario.snapshot;
+  if (!snapshot) return "Not evaluated";
+  const verdict = snapshot.verdict ?? "Review";
+  const cba = snapshot.cbaStatus ? tradeMachineStatusLabel(snapshot.cbaStatus as TradeMachineStatus) : "No CBA";
+  const diff = typeof snapshot.valueDiff === "number" ? ` / ${formatMoney(snapshot.valueDiff)} diff` : "";
+  const evaluated = snapshot.evaluatedAt ? ` / eval ${new Date(snapshot.evaluatedAt).toLocaleDateString()}` : "";
+  return `${verdict} / ${cba}${diff}${evaluated}`;
+}
+
+function savedTradeScenarioStatusClass(scenario: SavedTradeScenario): "ok" | "warn" | "bad" | "neutral" {
+  const snapshot = scenario.snapshot;
+  if (!snapshot) return "neutral";
+  if (snapshot.cbaStatus === "illegal" || snapshot.verdict === "Declined") return "bad";
+  if (snapshot.cbaStatus === "warning" || snapshot.verdict === "Maybe") return "warn";
+  if (snapshot.cbaStatus === "legal" && snapshot.verdict === "Accepted") return "ok";
+  return "neutral";
+}
+
+function savedTradeScenarioSearchDisplayTerms(scenario: SavedTradeScenario, teamMeta: Map<string, TeamProjection>): string[] {
+  return [
+    scenario.name,
+    scenario.userNote ?? "",
+    savedTradeScenarioStatusLabel(scenario),
+    savedTradeScenarioTeamsLabel(scenario, teamMeta),
+    savedTradeScenarioAssetSummary(scenario),
+    savedTradeScenarioMeta(scenario),
+    scenario.snapshot?.note ?? "",
+    ...savedTradeScenarioSides(scenario).flatMap((side) => [side.team, teamLabel(side.team, teamMeta), teamFullName(side.team, teamMeta)])
+  ];
+}
+
+function savedScenarioFilterLabel(filter: SavedScenarioFilter): string {
+  return SAVED_SCENARIO_FILTERS.find((item) => item.key === filter)?.label.toLowerCase() ?? "this filter";
+}
+
+function savedScenarioImportMergeNote(added: number, updated: number): string {
+  const parts = [
+    added > 0 ? `${added} added` : "",
+    updated > 0 ? `${updated} updated` : ""
+  ].filter(Boolean);
+  return parts.length > 0 ? `Imported scenarios: ${parts.join(", ")}` : "No saved scenarios changed";
+}
+
+function tradeMachineRouteVerdictClass(verdict: TradeMachineValueVerdict | undefined): "ok" | "warn" | "bad" | "neutral" {
+  if (verdict === "accepted") return "ok";
+  if (verdict === "maybe") return "warn";
+  if (verdict === "declined") return "bad";
+  return "neutral";
+}
+
+function tradeMachineStatusClass(status: TradeMachineStatus | undefined): "ok" | "warn" | "bad" | "neutral" {
+  if (status === "legal") return "ok";
+  if (status === "warning") return "warn";
+  if (status === "illegal") return "bad";
+  return "neutral";
+}
+
+function tradeMachineShortStatusLabel(status: TradeMachineStatus | undefined): string {
+  if (status === "legal") return "CBA legal";
+  if (status === "warning") return "Review";
+  if (status === "illegal") return "CBA block";
+  return "No CBA";
+}
+
+function tradeMachineRouteDeficitLabel(balance: TradeMachineTeamValueBalance | null | undefined): string {
+  if (!balance) return "Awaiting cap/value model";
+  const basis = balance.imbalanceBasis === "scale_adjusted_value" ? "scale gap" : "value gap";
+  if (balance.balanceDeficit <= TRADE_ACCEPTED_DIFF) return `Within model range (${basis})`;
+  return `${basis} ${formatMoney(balance.balanceDeficit)}`;
+}
+
+function tradeMachineValueRepairHint(balance: TradeMachineTeamValueBalance): string {
+  const basis = balance.imbalanceBasis === "scale_adjusted_value" ? "scale-adjusted value" : "trade value";
+  return `Add about ${formatMoney(balance.balanceDeficit)} in ${basis} to ${balance.team}.`;
+}
+
+function tradeMachineRouteCbaLabel(result: TradeMachineTeamResult | null | undefined): string {
+  if (!result) return "Awaiting cap model";
+  const issue = result.checks.find((check) => check.status === "fail") ?? result.checks.find((check) => check.status === "warn");
+  if (!issue) return `${tradeMachineApronLabel(result.apronAfter)} after trade`;
+  return issue.detail;
+}
+
+function tradeIncomingImpactForTeam(sides: TradeSideState[], team: string): TradeImpactSummary {
+  const target = cleanTeamValue(team);
+  if (sides.length === 2) {
+    const sender = sides.find((side) => cleanTeamValue(side.team) !== target);
+    return sender ? tradeImpactSummary(sender.assets) : emptyTradeImpactSummary();
+  }
+  return tradeImpactSummary(
+    sides
+      .filter((side) => cleanTeamValue(side.team) !== target)
+      .flatMap((side) => side.assets.filter((asset) => cleanTeamValue(asset.toTeam) === target))
+  );
+}
+
+function tradeDestinationOptions(team: string, sides: TradeSideState[]): string[] {
+  const source = cleanTeamValue(team);
+  return sides.map((side) => side.team).filter((sideTeam) => cleanTeamValue(sideTeam) !== source);
+}
+
+function defaultTradeDestination(team: string, sides: TradeSideState[]): string | null {
+  return tradeDestinationOptions(team, sides)[0] ?? null;
+}
+
+function withDefaultTradeDestination(asset: TradeAsset, team: string, sides: TradeSideState[]): TradeAsset {
+  if (sides.length < 3) return asset;
+  const destination = asset.toTeam && cleanTeamValue(asset.toTeam) !== cleanTeamValue(team)
+    ? asset.toTeam
+    : defaultTradeDestination(team, sides);
+  return destination ? { ...asset, toTeam: destination } : asset;
+}
+
+function routeTradeSideAssetsToTeam(side: TradeSideState, toTeam: string): TradeSideState {
+  return {
+    ...side,
+    assets: side.assets.map((asset) => ({ ...asset, toTeam }))
+  };
+}
+
+function defaultThirdTradeTeam(teamOptions: TeamProjection[], leftTeam: string, rightTeam: string): string {
+  const used = new Set([leftTeam, rightTeam].map(cleanTeamValue));
+  return teamOptions.find((team) => !used.has(cleanTeamValue(team.team)))?.team ?? "";
 }
 
 function tradeVerdict(diff: number): TradeVerdict {

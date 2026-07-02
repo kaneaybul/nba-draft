@@ -83,6 +83,7 @@ function testGeneratedPayloadInvariants() {
   assert.deepEqual(payload.seasons.map((season) => season.year), [2027, 2028, 2029, 2030, 2031]);
   assert.equal(payload.teams.length, 30);
   assert.equal(payload.team_seasons.length, 150);
+  assert.equal(Array.isArray(payload.hard_caps), true);
   assert.equal(duplicateCount(payload.contracts.map((row) => row.id)), 0);
   assert.equal(payload.validation_summary.duplicate_contract_ids, 0);
   assert.equal(payload.validation_summary.duplicate_team_seasons, 0);
@@ -98,11 +99,11 @@ function testGeneratedPayloadInvariants() {
   const jalen = payload.contracts.find((row) => row.team === "ATL" && row.player_name === "Jalen Johnson");
   assert.ok(jalen, "Jalen Johnson should be present in generated Spotrac cap tracker payload");
   const jalen2027 = jalen.cells.find((cell) => cell.year === 2027);
-  const jalen2031 = jalen.cells.find((cell) => cell.year === 2031);
+  const jalen2030 = jalen.cells.find((cell) => cell.year === 2030);
   assert.equal(jalen2027?.kind, "guaranteed");
   assert.equal(jalen2027?.amount, 30_000_000);
-  assert.equal(jalen2031?.kind, "cap_hold");
-  assert.equal(jalen2031?.amount, 45_000_000);
+  assert.equal(jalen2030?.kind, "cap_hold");
+  assert.equal(jalen2030?.amount, 45_000_000);
 }
 
 function duplicateCount(values) {

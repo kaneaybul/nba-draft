@@ -271,9 +271,13 @@ function normalizePlayers(players, truth) {
   return players.map((player) => {
     const row = truth.players[`${player.year}-${player.nba_id}-${player.player_name}`];
     if (!row) return player;
-    const currentTeam = cleanTeam(row.current_roster_team);
-    const rightsTeam = cleanTeam(row.rights_team);
-    const truthStatus = normalizeTruthStatus(row.contract_status, row.current_roster_team);
+    const exportedTruthTeam = cleanTeam(player.roster_truth_team);
+    const explicitFreeAgentTruth = exportedTruthTeam === "FA";
+    const currentTeam = explicitFreeAgentTruth ? "FA" : cleanTeam(row.current_roster_team);
+    const rightsTeam = cleanTeam(player.rights_team ?? row.rights_team);
+    const truthStatus = explicitFreeAgentTruth
+      ? normalizeTruthStatus(player.contract_status, "FA")
+      : normalizeTruthStatus(row.contract_status, row.current_roster_team);
     const isActiveRoster = currentTeam !== "FA";
     const seasonContract = numberValue(player.contract);
     const hasSeasonContract = isActiveRoster && seasonContract !== null && seasonContract > 0;
@@ -290,7 +294,7 @@ function normalizePlayers(players, truth) {
       guaranteed_salary: row.guaranteed_salary,
       dead_cap: row.dead_cap,
       waived_date: row.waived_date,
-      roster_status_source: row.roster_status_source,
+      roster_status_source: explicitFreeAgentTruth ? player.roster_status_source : row.roster_status_source,
       team: isActiveRoster ? currentTeam : "FA",
       incumbent_team: rightsTeam !== "FA" ? rightsTeam : currentTeam,
       market_team: isActiveRoster ? currentTeam : "FA",

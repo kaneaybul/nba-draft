@@ -1,5 +1,5 @@
 import { choosePlayerOffer, resolveAcceptedOffer, simulateFreeAgencyMarket, type LegacyAuditRow, type TeamBidPlan } from "./offseasonMarket";
-import { capYearForSeason } from "./OffseasonSimulator";
+import { capYearForSeason, evaluateBirdHoldCompression } from "./OffseasonSimulator";
 import type { MarketBid, MarketLedgerRow, MarketResolution, MarketToolKind } from "./types";
 
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
@@ -39,6 +39,7 @@ export function runOffseasonMarketRegressionTests(): string[] {
     spendingToolsCannotBeSpentTwice(),
     birdRightsCanExceedCapRoom(),
     birdRightsBeatCapRoomForOwnPlayer(),
+    birdHoldCompressionProtectsUsefulOwnUfa(),
     capRoomRequiresCapPath(),
     roomExceptionRequiresCapPath(),
     capRoomTeamsSubmitMultipleCapBids(),
@@ -54,6 +55,10 @@ export function runOffseasonMarketRegressionTests(): string[] {
     selectedSeasonCapYearWins(),
     rfaFallbackSignsWhenNoOutsideBid(),
     rfaFallbackUsesExpectedMarketMinutes(),
+    ownBirdFallbackSignsUsefulUfa(),
+    rosterFillUsesRemainingLegalTools(),
+    rosterTargetDoesNotBlockUsefulLateFill(),
+    renouncedIncumbentCanReturnOnMinimumFallback(),
     rfaMatchUsesExactOutsideTerms(),
     rfaIncumbentEqualBidForcesMatch(),
     rfaDeclineUsesExactOutsideTerms(),
@@ -137,15 +142,15 @@ function spendingToolsCannotBeSpentTwice(): string {
     player("p10", "Room One", "FA", "UFA", 58, 6_000_000),
     player("p11", "Room Two", "FA", "UFA", 57, 6_000_000)
   ], mapTeams([roomTeam]), assumptions, fixedRng);
-  expect(roomResult.signings.filter((row) => row.toTeam === "ROM").length <= 1, "room exception should not be spent twice");
+  expect(roomResult.signings.filter((row) => row.toTeam === "ROM" && row.tool === "room_exception").length <= 1, "room exception should not be spent twice");
 
   const minTeam = team("MIN", 212_000_000, ["RIM"], 0.9, [{ name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }]);
   const minResult = simulateFreeAgencyMarket([
     player("p12", "Minimum One", "FA", "UFA", 49, 2_000_000),
     player("p13", "Minimum Two", "FA", "UFA", 48, 2_000_000)
   ], mapTeams([minTeam]), assumptions, fixedRng);
-  expect(minResult.signings.filter((row) => row.toTeam === "MIN").length === 1, "minimum path should respect its remaining amount in this simplified cap model");
-  return "cap room, MLE, room exception, and minimum paths cannot be double-spent";
+  expect(minResult.signings.filter((row) => row.toTeam === "MIN").length === 2, "minimum exception should be reusable for open roster spots");
+  return "cap room, MLE, and room exception cannot be double-spent while minimums remain reusable";
 }
 
 function birdRightsCanExceedCapRoom(): string {
@@ -163,6 +168,44 @@ function birdRightsBeatCapRoomForOwnPlayer(): string {
   expect(result.signings[0]?.tool === "bird", `own Bird FA should use Bird rights before cap room; got ${result.signings[0]?.tool}`);
   expect(result.signings[0]?.context.capPath === "cap_room", "signing should still report the team's cap-room path");
   return "Bird rights beat cap room for eligible own players";
+}
+
+function birdHoldCompressionProtectsUsefulOwnUfa(): string {
+  const nurkicLike = evaluateBirdHoldCompression({
+    status: "UFA",
+    rights: "Bird",
+    hold: 29_062_500,
+    marketValue: 7_100_000,
+    minimumSalary: 2_500_000,
+    cap: assumptions.cap,
+    score: 56,
+    expectedMarketMinutes: 1539,
+    position: "C",
+    rimProtection: 1.15,
+    retainScore: 0.52,
+    scarcity: 0.2,
+    standardRosterSlots: 1
+  });
+  expect(nurkicLike.compressible, "useful own Bird UFA with a materially oversized hold should be treated as hold-compressible");
+  expect(nurkicLike.projectedSalary < 6_000_000, `below-hold Bird return should project near cheap rotation salary, got ${nurkicLike.projectedSalary}`);
+  expect(nurkicLike.savings > 20_000_000, "compression should recognize that re-signing replaces the full hold with actual salary");
+
+  const fringeVeteran = evaluateBirdHoldCompression({
+    status: "UFA",
+    rights: "Bird",
+    hold: 10_000_000,
+    marketValue: 2_000_000,
+    minimumSalary: 2_500_000,
+    cap: assumptions.cap,
+    score: 42,
+    expectedMarketMinutes: 300,
+    position: "F",
+    retainScore: 0.3,
+    scarcity: 0.1,
+    standardRosterSlots: 1
+  });
+  expect(!fringeVeteran.compressible, "hold compression should not force fringe veterans back just because a roster spot is open");
+  return "oversized useful Bird holds can compress without forcing fringe veteran returns";
 }
 
 function capRoomRequiresCapPath(): string {
@@ -359,6 +402,88 @@ function rfaFallbackUsesExpectedMarketMinutes(): string {
   return "RFA fallback carries expected market minutes context";
 }
 
+function ownBirdFallbackSignsUsefulUfa(): string {
+  const ufa = player("p14z", "Useful Bird Center", "UTA", "UFA", 62, 7_500_000, "UTA", "Bird", {
+    age: 30,
+    position: "C",
+    holdAction: "retained",
+    rightsValue: 0.72,
+    holdRetainScore: 0.78,
+    scarcityScore: 0.86,
+    expectedMarketMinutes: 1150,
+    skills: { ...skills, RIMPRO: 2.1, DREB: 1.6 }
+  });
+  const jazz = team("UTA", 182_000_000, ["RIMPRO", "DREB"], 0.66, undefined, { capPath: "retained_rights", mode: "playoff hopeful" });
+  jazz.roster = signedRoster("UTA", 12);
+  const result = simulateFreeAgencyMarket([ufa], mapTeams([jazz]), assumptions, fixedRng);
+  const signing = result.signings.find((row) => row.player.id === ufa.id);
+  expect(signing?.toTeam === "UTA", "incumbent should keep a useful own Bird-rights UFA when roster spots remain");
+  expect(signing?.tool === "bird", `own UFA fallback should use Bird rights, got ${signing?.tool}`);
+  expect(Boolean(signing?.context.toolReason?.includes("no cap room") || signing?.context.toolReason?.includes("Bird rights")), "context should explain Bird rights do not consume cap or exceptions");
+  return "own Bird-rights fallback signs useful UFA without consuming cap/MLE";
+}
+
+function rosterFillUsesRemainingLegalTools(): string {
+  const fillTeam = team("FIL", 176_000_000, ["DPM", "RIMPRO"], 0.82, [
+    { name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" },
+    { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }
+  ], { capPath: "retained_rights", mode: "playoff hopeful" });
+  fillTeam.roster = signedRoster("FIL", 11);
+  const result = simulateFreeAgencyMarket([
+    player("p14fill1", "Late Defensive Wing", "FA", "UFA", 60, 5_500_000, "FA", "None", { position: "F", skills: { ...skills, DPM: 1.9, SWITCH: 1.6 } }),
+    player("p14fill2", "Late Minimum Big", "FA", "UFA", 49, 2_000_000, "FA", "None", { position: "C", skills: { ...skills, RIMPRO: 1.7 } })
+  ], mapTeams([fillTeam]), assumptions, fixedRng);
+  const finalCount = fillTeam.roster.length + (fillTeam.rosterCountAdjustment ?? 0);
+  expect(finalCount >= 12, `late roster fill should get team to minimum roster count; got ${finalCount}`);
+  expect(result.signings.some((row) => row.toTeam === "FIL" && (row.tool === "non_taxpayer_mle" || row.tool === "minimum")), "open roster team should use an available legal tool");
+  return "late roster fill uses remaining legal tools for open roster spots";
+}
+
+function rosterTargetDoesNotBlockUsefulLateFill(): string {
+  const fillTeam = team("UTA", 176_000_000, ["DPM", "SWITCH"], 0.66, [
+    { name: "Non-Taxpayer MLE", amount: 12_000_000, used: 0, kind: "non_taxpayer_mle" },
+    { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }
+  ], { capPath: "retained_rights", mode: "rising" });
+  fillTeam.roster = signedRoster("UTA", 14);
+  const rosterSalary = fillTeam.roster.reduce((total, row) => total + row.salary, 0);
+  fillTeam.activeSalaryAdjustment = 176_000_000 - rosterSalary;
+  fillTeam.guaranteedSalaryAdjustment = 176_000_000 - rosterSalary;
+
+  const usefulWing = player("p14target", "Late Useful Wing", "FA", "UFA", 59, 5_500_000, "FA", "None", {
+    position: "F",
+    expectedMarketMinutes: 950,
+    skills: { ...skills, DPM: 1.8, SWITCH: 1.7 }
+  });
+  const result = simulateFreeAgencyMarket([usefulWing], mapTeams([fillTeam]), assumptions, fixedRng);
+  const signing = result.signings.find((row) => row.player.id === usefulWing.id);
+  const finalCount = fillTeam.roster.length + (fillTeam.rosterCountAdjustment ?? 0);
+  expect(signing?.toTeam === "UTA", "14-player target should not block a useful late signing when a standard roster spot and MLE/minimum remain");
+  expect(finalCount === 15, `late useful fill should use the open standard roster spot; got ${finalCount}`);
+  expect(signing?.tool === "non_taxpayer_mle" || signing?.tool === "minimum", `late fill should use a legal remaining tool; got ${signing?.tool}`);
+  return "soft roster target does not block useful late fill with an open standard spot";
+}
+
+function renouncedIncumbentCanReturnOnMinimumFallback(): string {
+  const nurkicShape = player("p14nurk", "Renounced Veteran Center", "UTA", "UFA", 56, 7_100_000, "UTA", "None", {
+    age: 32,
+    position: "C",
+    holdAction: "renounced",
+    expectedMarketMinutes: 1000,
+    skills: { ...skills, RIMPRO: 1.6, DREB: 2.4, DPM: 0.7 }
+  });
+  const jazz = team("UTA", 185_000_000, ["RIMPRO", "DREB"], 0.66, [
+    { name: "Room Exception", amount: 9_000_000, used: 9_000_000, kind: "room_exception" },
+    { name: "Minimum", amount: 2_500_000, used: 0, kind: "minimum" }
+  ], { capPath: "cap_room", mode: "playoff hopeful" });
+  jazz.roster = [...jazz.roster, ...signedRoster("UTA", 12)];
+  const result = simulateFreeAgencyMarket([nurkicShape], mapTeams([jazz]), assumptions, fixedRng);
+  const signing = result.signings.find((row) => row.player.id === nurkicShape.id);
+  expect(signing?.toTeam === "UTA", "renounced incumbent should still be able to return through ordinary tools when a roster spot remains");
+  expect(signing?.tool === "minimum", `renounced incumbent should use the reusable minimum fallback when other tools are gone; got ${signing?.tool}`);
+  expect(signing?.context.selectionMethod?.includes("remaining legal roster room") === true, "signing should be marked as a late roster-fill decision");
+  return "renounced incumbents can return via minimum fallback after Bird rights are gone";
+}
+
 function rfaMatchUsesExactOutsideTerms(): string {
   const rfa = player("p15", "Matched RFA", "AAA", "RFA", 78, 18_000_000, "AAA", "Bird", { age: 24, upside: 0.85, declineRisk: 0.05 });
   const outsideTeam = team("BBB", 118_000_000, ["SHOOT"], 0.95);
@@ -429,8 +554,8 @@ function rfaDeclineUsesExactOutsideTerms(): string {
 function secondApronBlocksMle(): string {
   const mleTeam = team("AAA", 212_000_000, ["SHOOT"], 0.9, [{ name: "Taxpayer MLE", amount: 7_000_000, used: 0, kind: "taxpayer_mle" }]);
   const result = simulateFreeAgencyMarket([player("p17", "Apron Target", "FA", "UFA", 63, 8_000_000)], mapTeams([mleTeam]), assumptions, fixedRng);
-  expect(result.signings.length === 0, "second-apron team should not use MLE");
-  return "second apron blocks MLE";
+  expect(!result.signings.some((row) => row.tool === "taxpayer_mle"), "second-apron team should not use MLE");
+  return "second apron blocks MLE while leaving minimum fallback available";
 }
 
 function unresolvedMarketsAreExplained(): string {
@@ -609,6 +734,8 @@ function team(
     payroll: activeSalary,
     activeSalary,
     guaranteedSalary: activeSalary,
+    activeSalaryAdjustment: 0,
+    guaranteedSalaryAdjustment: 0,
     deadCap: 0,
     capHolds: 0,
     rosterCharges: 0,
