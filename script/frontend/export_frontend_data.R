@@ -1646,6 +1646,37 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows$market_team <- "FA"
   rows$team_projection_base <- "FA"
   rows$projection_roster_status <- "rookie_fa"
+  rookie_truth <- load_current_roster_truth(base_dir, target_year - 1L)
+  if (nrow(rookie_truth)) {
+    roster_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(rookie_truth$nba_id)))
+    matched_rookie <- !is.na(roster_match) &
+      rookie_truth$roster_state[roster_match] == "rookie_cap_hold" &
+      rookie_truth$roster_truth_team[roster_match] != "FA"
+    if (any(matched_rookie, na.rm = TRUE)) {
+      matched_idx <- roster_match[matched_rookie]
+      truth_team <- rookie_truth$roster_truth_team[matched_idx]
+      rows$team[matched_rookie] <- truth_team
+      if ("current_roster_team" %in% names(rows)) rows$current_roster_team[matched_rookie] <- truth_team
+      if ("roster_truth_team" %in% names(rows)) rows$roster_truth_team[matched_rookie] <- truth_team
+      if ("roster_status_source" %in% names(rows)) rows$roster_status_source[matched_rookie] <- rookie_truth$roster_truth_source[matched_idx]
+      if ("roster_truth_pulled_at" %in% names(rows)) rows$roster_truth_pulled_at[matched_rookie] <- rookie_truth$roster_truth_pulled_at[matched_idx]
+      if ("roster_state" %in% names(rows)) rows$roster_state[matched_rookie] <- rookie_truth$roster_state[matched_idx]
+      if ("roster_contract_status" %in% names(rows)) rows$roster_contract_status[matched_rookie] <- rookie_truth$roster_contract_status[matched_idx]
+      if ("rights_team" %in% names(rows)) rows$rights_team[matched_rookie] <- rookie_truth$rights_team[matched_idx]
+      rows$incumbent_team[matched_rookie] <- truth_team
+      rows$market_team[matched_rookie] <- truth_team
+      rows$team_projection_base[matched_rookie] <- truth_team
+    }
+  }
+  spotrac_contracts <- read_spotrac_contracts(base_dir, target_year - 1L)
+  if (nrow(spotrac_contracts)) {
+    spotrac_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(spotrac_contracts$nba_id)))
+    has_spotrac_contract <- !is.na(spotrac_match) &
+      suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match])) > 0
+    missing_contract <- !is.finite(suppressWarnings(as.numeric(rows$contract))) | suppressWarnings(as.numeric(rows$contract)) <= 0
+    fill_contract <- has_spotrac_contract & missing_contract
+    rows$contract[fill_contract] <- suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match[fill_contract]]))
+  }
   if ("overall_pick" %in% names(rows)) rows$overall_pick <- rank_proxy
   if ("draft_year" %in% names(rows)) rows$draft_year <- draft$draft_year
   if ("source_note" %in% names(rows)) {
@@ -2861,6 +2892,29 @@ apply_current_roster_truth <- function(x, base_dir, roster_year) {
     ifelse(x$contract_status[inactive] %in% c("RFA", "Rookie FA"), x$contract_status[inactive], "UFA")
   )
   x$rights_team[inactive & is_blank_text(x$rights_team)] <- "FA"
+
+  projected_rookies <- !latest_rows &
+    row_ids < 0 &
+    !is.na(id_match) &
+    roster$roster_state[id_match] == "rookie_cap_hold" &
+    roster$roster_truth_team[id_match] != "FA"
+  if (any(projected_rookies, na.rm = TRUE)) {
+    rookie_roster_idx <- id_match[projected_rookies]
+    rookie_team <- roster$roster_truth_team[rookie_roster_idx]
+    x$roster_truth_team[projected_rookies] <- rookie_team
+    x$roster_status_source[projected_rookies] <- roster$roster_truth_source[rookie_roster_idx]
+    x$roster_truth_pulled_at[projected_rookies] <- roster$roster_truth_pulled_at[rookie_roster_idx]
+    x$roster_contract_status[projected_rookies] <- roster$roster_contract_status[rookie_roster_idx]
+    x$roster_state[projected_rookies] <- roster$roster_state[rookie_roster_idx]
+    x$rights_team[projected_rookies] <- roster$rights_team[rookie_roster_idx]
+    x$team[projected_rookies] <- rookie_team
+    x$incumbent_team[projected_rookies] <- rookie_team
+    x$market_team[projected_rookies] <- rookie_team
+    x$team_projection_base[projected_rookies] <- rookie_team
+    x$current_roster_team[projected_rookies] <- rookie_team
+    x$contract_status[projected_rookies] <- "Rookie FA"
+    x$projection_roster_status[projected_rookies] <- "rookie_fa"
+  }
 
   message(
     "Roster truth applied for ", roster_year, ": active=", sum(active, na.rm = TRUE),

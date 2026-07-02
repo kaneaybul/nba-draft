@@ -411,6 +411,36 @@ build_player_universe <- function(base_dir) {
       )
     }
   }
+  draft_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_adjusted.csv")
+  if (!file.exists(draft_path)) {
+    draft_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_output.csv")
+  }
+  if (file.exists(draft_path)) {
+    draft <- read.csv(draft_path, stringsAsFactors = FALSE, check.names = FALSE)
+    if (all(c("player", "draft_year") %in% names(draft))) {
+      latest_draft_year <- suppressWarnings(max(as.integer(draft$draft_year), na.rm = TRUE))
+      draft <- draft[suppressWarnings(as.integer(draft$draft_year)) == latest_draft_year, , drop = FALSE]
+      if (nrow(draft)) {
+        if ("FINAL_rank" %in% names(draft)) {
+          draft$rank_in_class <- suppressWarnings(as.numeric(draft$FINAL_rank))
+        } else if ("TOTAL_pred" %in% names(draft)) {
+          draft$rank_in_class <- ave(-suppressWarnings(as.numeric(draft$TOTAL_pred)), draft$draft_year, FUN = rank, ties.method = "first")
+        } else {
+          draft$rank_in_class <- seq_len(nrow(draft))
+        }
+        draft <- draft[order(draft$rank_in_class, as.character(draft$player)), , drop = FALSE]
+        target_year <- latest_draft_year + 1L
+        frames[[length(frames) + 1L]] <- data.frame(
+          nba_id = -as.integer(target_year * 1000L + seq_len(nrow(draft))),
+          player_name = as.character(draft$player),
+          team = NA_character_,
+          year = target_year,
+          source = basename(draft_path),
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
   if (!length(frames)) return(data.frame())
   universe <- do.call(rbind, frames)
   universe <- universe[is.finite(universe$nba_id) & nzchar(normalize_name(universe$player_name)), , drop = FALSE]
@@ -466,6 +496,16 @@ match_spotrac_players <- function(wide, universe, aliases) {
   wide
 }
 
+classify_rookie_cap_holds <- function(wide, labels) {
+  if (!nrow(wide) || !length(labels)) return(wide)
+  first_label <- labels[[1]]
+  if (!(first_label %in% names(wide))) return(wide)
+  current_status <- mapply(parse_status, as.character(wide[[first_label]]), wide$section, USE.NAMES = FALSE)
+  rookie_hold <- wide$roster_state == "cap_hold" & current_status == "Rookie FA"
+  wide$roster_state[rookie_hold] <- "rookie_cap_hold"
+  wide
+}
+
 build_current_roster_truth <- function(wide, roster_year, labels) {
   if (!nrow(wide)) return(data.frame())
   wide <- wide[wide$entity_type == "player", , drop = FALSE]
@@ -478,15 +518,21 @@ build_current_roster_truth <- function(wide, roster_year, labels) {
     wide$current_status
   )
   active <- wide[wide$roster_state %in% c("active", "active_pending_done"), , drop = FALSE]
+  rookies <- wide[wide$roster_state == "rookie_cap_hold", , drop = FALSE]
   holds <- wide[wide$roster_state == "cap_hold", , drop = FALSE]
   if (nrow(active)) {
     active$dedupe_key <- ifelse(is.finite(active$nba_id), paste0("id:", active$nba_id), paste0("name:", active$name_key))
   } else {
     active$dedupe_key <- character()
   }
+  if (nrow(rookies)) {
+    rookies$dedupe_key <- ifelse(is.finite(rookies$nba_id), paste0("id:", rookies$nba_id), paste0("name:", rookies$name_key))
+    rookies <- rookies[!(rookies$dedupe_key %in% active$dedupe_key), , drop = FALSE]
+  }
   if (nrow(holds)) {
     holds$dedupe_key <- ifelse(is.finite(holds$nba_id), paste0("id:", holds$nba_id), paste0("name:", holds$name_key))
-    holds <- holds[!(holds$dedupe_key %in% active$dedupe_key), , drop = FALSE]
+    occupied_keys <- unique(c(active$dedupe_key, if (nrow(rookies)) rookies$dedupe_key else character()))
+    holds <- holds[!(holds$dedupe_key %in% occupied_keys), , drop = FALSE]
   }
   active_out <- if (nrow(active)) data.frame(
     year = roster_year,
@@ -501,6 +547,21 @@ build_current_roster_truth <- function(wide, roster_year, labels) {
     spotrac_player_id = suppressWarnings(as.integer(active$spotrac_player_id)),
     match_method = active$match_method,
     match_confidence = active$match_confidence,
+    stringsAsFactors = FALSE
+  ) else data.frame()
+  rookie_out <- if (nrow(rookies)) data.frame(
+    year = roster_year,
+    nba_id = suppressWarnings(as.integer(rookies$nba_id)),
+    player_name = rookies$player_or_entity,
+    team = rookies$team_abbr,
+    rights_team = rookies$team_abbr,
+    contract_status = "Rookie FA",
+    roster_state = rookies$roster_state,
+    roster_source = "Spotrac Rookie Cap Hold",
+    pulled_at = rookies$scraped_at,
+    spotrac_player_id = suppressWarnings(as.integer(rookies$spotrac_player_id)),
+    match_method = rookies$match_method,
+    match_confidence = rookies$match_confidence,
     stringsAsFactors = FALSE
   ) else data.frame()
   hold_out <- if (nrow(holds)) data.frame(
@@ -518,7 +579,7 @@ build_current_roster_truth <- function(wide, roster_year, labels) {
     match_confidence = holds$match_confidence,
     stringsAsFactors = FALSE
   ) else data.frame()
-  out <- rbind(active_out, hold_out)
+  out <- rbind(active_out, rookie_out, hold_out)
   if (!nrow(out)) return(out)
   out$name_key <- normalize_name(out$player_name)
   out$priority <- ifelse(out$team != "FA", 1L, 2L)
@@ -538,6 +599,7 @@ contract_status_from_spotrac_cell <- function(cell, section) {
   if (grepl("(team|club) option", cell, ignore.case = TRUE)) return("Team Option")
   if (grepl("non[- ]guaranteed", cell, ignore.case = TRUE)) return("Non-Guaranteed")
   if (grepl("two-way", cell, ignore.case = TRUE)) return("Two-Way")
+  if (grepl("1ST RD|2ND RD|draft", cell, ignore.case = TRUE)) return("Rookie FA")
   if (identical(section, "Cap Hold")) return("Cap Hold")
   if (is.finite(parse_money(cell))) return("Signed")
   NA_character_
@@ -564,7 +626,7 @@ build_spotrac_contract_export <- function(wide, roster_year, labels) {
   if (!nrow(wide)) return(data.frame())
   active <- wide[
     wide$entity_type == "player" &
-      wide$roster_state %in% c("active", "active_pending_done"),
+      wide$roster_state %in% c("active", "active_pending_done", "rookie_cap_hold"),
     ,
     drop = FALSE
   ]
@@ -634,6 +696,7 @@ audit <- do.call(rbind, lapply(results, `[[`, "audit"))
 universe <- build_player_universe(base_dir)
 aliases <- read_aliases(base_dir)
 wide <- match_spotrac_players(wide, universe, aliases)
+wide <- classify_rookie_cap_holds(wide, labels)
 long <- to_long(wide, labels)
 roster_truth <- build_current_roster_truth(wide, roster_year, labels)
 spotrac_contracts <- build_spotrac_contract_export(wide, roster_year, labels)
