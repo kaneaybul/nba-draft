@@ -1436,6 +1436,32 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     });
     return map;
   }, [data.teams]);
+  const contributorsByTeam = useMemo(() => {
+    const map = new Map<string, PlayerImpact[]>();
+    data.players.forEach((player) => {
+      if (player.year !== season) return;
+      const team = teamForProjectionScenario(player, scenario);
+      const rows = map.get(team);
+      if (rows) rows.push(player);
+      else map.set(team, [player]);
+    });
+    map.forEach((rows) => rows.sort((a, b) => b.Minutes - a.Minutes));
+    return map;
+  }, [data.players, scenario, season]);
+  const schedulesByTeam = useMemo(() => {
+    const map = new Map<string, TeamScheduleGame[]>();
+    data.schedules.forEach((game) => {
+      if (game.season !== season) return;
+      const teamsForGame = game.home_team === game.away_team ? [game.home_team] : [game.home_team, game.away_team];
+      teamsForGame.forEach((team) => {
+        const rows = map.get(team);
+        if (rows) rows.push(game);
+        else map.set(team, [game]);
+      });
+    });
+    map.forEach((rows) => rows.sort((a, b) => `${a.date ?? ""} ${a.time ?? ""}`.localeCompare(`${b.date ?? ""} ${b.time ?? ""}`)));
+    return map;
+  }, [data.schedules, season]);
   if (!currentTeam) {
     return (
       <main className="workspace team-board-workspace">
@@ -1446,13 +1472,8 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     );
   }
 
-  const contributors = data.players
-    .filter((player) => player.year === season && teamForProjectionScenario(player, scenario) === currentTeam.team)
-    .sort((a, b) => b.Minutes - a.Minutes)
-    .slice(0, 14);
-  const schedule = data.schedules
-    .filter((game) => game.season === season && (game.home_team === currentTeam.team || game.away_team === currentTeam.team))
-    .sort((a, b) => `${a.date ?? ""} ${a.time ?? ""}`.localeCompare(`${b.date ?? ""} ${b.time ?? ""}`));
+  const contributors = (contributorsByTeam.get(currentTeam.team) ?? []).slice(0, 14);
+  const schedule = schedulesByTeam.get(currentTeam.team) ?? [];
   const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
   const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
   const playoffSchedule = schedule.filter((game) => game.season_type === "Playoffs");
@@ -1832,10 +1853,11 @@ function TeamSortButton({ label, sortKey, active, direction, onSort }: { label: 
 function TeamLogo({ team, size = "normal" }: { team: TeamProjection; size?: "normal" | "large" }) {
   const [failed, setFailed] = useState(false);
   const label = team.team_abbr ?? team.team;
+  useEffect(() => setFailed(false), [team.team_logo_url, label]);
   if (!team.team_logo_url || failed) {
     return <span className={cls("team-logo-fallback", size === "large" && "large")}>{label}</span>;
   }
-  return <img className={cls("team-logo", size === "large" && "large")} src={team.team_logo_url} alt="" onError={() => setFailed(true)} />;
+  return <img className={cls("team-logo", size === "large" && "large")} src={team.team_logo_url} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />;
 }
 
 function TeamSkillStrip({ team, activeSkill, onSort }: { team: TeamProjection; activeSkill: SkillKey | null; onSort: (key: TeamSortKey) => void }) {

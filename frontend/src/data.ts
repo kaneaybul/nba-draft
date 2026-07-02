@@ -189,6 +189,7 @@ async function loadSeasonDataset<T>(manifest: Manifest, datasetName: string, sea
   const dataset = manifest.static_data?.datasets[datasetName];
   const shard = dataset?.shards?.find((item) => Number(item.year) === season || Number(item.key) === season);
   if (shard) return loadJson<T[]>(`/data/${shard.file}`, cacheBust ?? shard.sha256);
+  if (dataset?.strategy === "season") return [];
   return loadSingletonDataset<T>(manifest, datasetName, cacheBust).catch(() => []);
 }
 
