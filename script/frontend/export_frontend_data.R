@@ -3631,7 +3631,8 @@ assign_team_projection_scenario <- function(players, scenario_id) {
   if (scenario_id == "base") {
     scenario_team[is_projected] <- base[is_projected]
   } else if (scenario_id == "guaranteed") {
-    scenario_team[is_projected] <- ifelse(roster_status[is_projected] == "signed", incumbent[is_projected], "FA")
+    controlled <- roster_status[is_projected] %in% c("signed", "rookie_fa")
+    scenario_team[is_projected] <- ifelse(controlled, incumbent[is_projected], "FA")
   } else if (scenario_id == "open_market") {
     scenario_team[is_projected] <- market[is_projected]
   }

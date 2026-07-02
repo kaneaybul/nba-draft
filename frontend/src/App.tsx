@@ -7025,7 +7025,7 @@ function teamForProjectionScenario(player: PlayerImpact, scenario: TeamProjectio
   if (!isProjected) return cleanTeamValue(player.team);
   const rosterStatus = player.projection_roster_status ?? "";
   const incumbentTeam = cleanTeamValue(player.incumbent_team ?? player.team);
-  if (scenario === "guaranteed") return rosterStatus === "signed" ? incumbentTeam : "FA";
+  if (scenario === "guaranteed") return rosterStatus === "signed" || rosterStatus === "rookie_fa" ? incumbentTeam : "FA";
   if (scenario === "open_market") return cleanTeamValue(player.market_team ?? player.team);
   return cleanTeamValue(player.team_projection_base ?? player.team);
 }
