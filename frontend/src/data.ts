@@ -51,27 +51,33 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
 
   const loadPlayers = async () => {
     if (hasSeasonRows(next.players, "year", season)) return;
-    next = { ...next, players: replaceSeasonRows(next.players, await loadSeasonDataset<PlayerImpact>(next.manifest, "impact_players", season, cacheBust), "year", season) };
+    const rows = await loadSeasonDataset<PlayerImpact>(next.manifest, "impact_players", season, cacheBust);
+    if (rows.length > 0) next = { ...next, players: replaceSeasonRows(next.players, rows, "year", season) };
   };
   const loadTeams = async () => {
     if (hasSeasonRows(next.teams, "year", season)) return;
-    next = { ...next, teams: replaceSeasonRows(next.teams, await loadSeasonDataset<TeamProjection>(next.manifest, "team_projections", season, cacheBust), "year", season) };
+    const rows = await loadSeasonDataset<TeamProjection>(next.manifest, "team_projections", season, cacheBust);
+    if (rows.length > 0) next = { ...next, teams: replaceSeasonRows(next.teams, rows, "year", season) };
   };
   const loadLineups = async () => {
     if (hasSeasonRows(next.lineups, "year", season)) return;
-    next = { ...next, lineups: replaceSeasonRows(next.lineups, await loadSeasonDataset<TeamLineupRow>(next.manifest, "team_lineups", season, cacheBust), "year", season) };
+    const rows = await loadSeasonDataset<TeamLineupRow>(next.manifest, "team_lineups", season, cacheBust);
+    if (rows.length > 0) next = { ...next, lineups: replaceSeasonRows(next.lineups, rows, "year", season) };
   };
   const loadSchedules = async () => {
     if (hasSeasonRows(next.schedules, "season", season)) return;
-    next = { ...next, schedules: replaceSeasonRows(next.schedules, await loadSeasonDataset<TeamScheduleGame>(next.manifest, "team_schedules", season, cacheBust), "season", season) };
+    const rows = await loadSeasonDataset<TeamScheduleGame>(next.manifest, "team_schedules", season, cacheBust);
+    if (rows.length > 0) next = { ...next, schedules: replaceSeasonRows(next.schedules, rows, "season", season) };
   };
   const loadPicks = async () => {
     if (next.picks.length > 0) return;
-    next = { ...next, picks: await loadSingletonDataset<PickAsset>(next.manifest, "pick_assets", cacheBust) };
+    const rows = await loadSingletonDataset<PickAsset>(next.manifest, "pick_assets", cacheBust);
+    if (rows.length > 0) next = { ...next, picks: rows };
   };
   const loadProspects = async () => {
     if (next.prospects.length > 0) return;
-    next = { ...next, prospects: await loadSingletonDataset<DraftProspect>(next.manifest, "draft_prospects", cacheBust) };
+    const rows = await loadSingletonDataset<DraftProspect>(next.manifest, "draft_prospects", cacheBust);
+    if (rows.length > 0) next = { ...next, prospects: rows };
   };
   const loadTracker = async () => {
     if (next.trackerBoardSummary.length > 0 || next.trackerProspectScores.length > 0) return;
@@ -84,17 +90,19 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
   };
   const loadModelSummary = async () => {
     if (next.modelSummary.length > 0) return;
-    next = { ...next, modelSummary: await loadSingletonDataset<ModelSummary>(next.manifest, "draft_model_summary", cacheBust) };
+    const rows = await loadSingletonDataset<ModelSummary>(next.manifest, "draft_model_summary", cacheBust);
+    if (rows.length > 0) next = { ...next, modelSummary: rows };
   };
   const loadOffseasonTruth = async () => {
     if (next.offseasonTruth) return;
-    next = { ...next, offseasonTruth: await loadOptionalSingleton<OffseasonTruthData>(next.manifest, "offseason_truth", cacheBust) };
+    const offseasonTruth = await loadOptionalSingleton<OffseasonTruthData>(next.manifest, "offseason_truth", cacheBust);
+    if (offseasonTruth) next = { ...next, offseasonTruth };
   };
   const loadCap = async () => {
     if (next.capTracker && next.capReview) return;
     const capTracker = next.capTracker ?? await loadOptionalSingleton<CapTrackerData>(next.manifest, "cap_tracker", cacheBust);
     const capReview = next.capReview ?? await loadOptionalSingleton<CapReviewData>(next.manifest, "cap_transaction_review", cacheBust);
-    next = { ...next, capTracker, capReview };
+    if (capTracker || capReview) next = { ...next, capTracker, capReview };
   };
 
   if (["impact", "lineups"].includes(view)) {
