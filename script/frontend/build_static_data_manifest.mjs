@@ -312,7 +312,8 @@ function enforceExportedFreeAgentTruth(players) {
 }
 
 function freeAgentPlayerRow(player) {
-  const status = normalizeTruthStatus(player.contract_status, "FA");
+  const currentStatus = String(player.contract_status ?? "").trim();
+  const status = currentStatus === "RFA" || currentStatus === "Rookie FA" ? currentStatus : "UFA";
   return {
     ...player,
     team: "FA",
@@ -321,7 +322,19 @@ function freeAgentPlayerRow(player) {
     market_team: "FA",
     team_projection_base: "FA",
     projection_roster_status: projectionRosterStatus(status, player.contract),
-    contract_status: status
+    contract_status: status,
+    contract: null,
+    value_add: null,
+    projection_contract_y1: null,
+    projection_contract_y2: null,
+    projection_contract_y3: null,
+    projection_contract_y4: null,
+    projection_contract_y5: null,
+    projection_effective_contract_y1: null,
+    projection_effective_contract_y2: null,
+    projection_effective_contract_y3: null,
+    projection_effective_contract_y4: null,
+    projection_effective_contract_y5: null
   };
 }
 

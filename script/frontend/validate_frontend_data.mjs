@@ -117,6 +117,22 @@ function validateRosterTruthPlacements(manifest) {
       misplacedFreeAgents.length === 0,
       `Roster truth FA players assigned to teams in ${season}: ${misplacedFreeAgents.slice(0, 8).map((row) => `${row.player_name}@${row.team}`).join(", ")}`
     );
+    const freeAgentsWithContracts = rows.filter((row) =>
+      cleanTeam(row.roster_truth_team) === "FA" &&
+      Number(row.contract) > 0
+    );
+    assert(
+      freeAgentsWithContracts.length === 0,
+      `Roster truth FA players carry active contracts in ${season}: ${freeAgentsWithContracts.slice(0, 8).map((row) => `${row.player_name}: ${row.contract}`).join(", ")}`
+    );
+    const implausibleContracts = rows.filter((row) =>
+      Number(row.contract) > 150_000_000 ||
+      [1, 2, 3, 4, 5].some((horizon) => Number(row[`projection_contract_y${horizon}`]) > 150_000_000)
+    );
+    assert(
+      implausibleContracts.length === 0,
+      `Implausible contract amount in ${season}: ${implausibleContracts.slice(0, 8).map((row) => row.player_name).join(", ")}`
+    );
     const lineupsShard = manifest.static_data.datasets.team_lineups?.shards?.find((lineupShard) => Number(lineupShard.year ?? lineupShard.key) === season);
     if (!lineupsShard) continue;
     const lineupRows = readJson(path.join(dataDir, lineupsShard.file));

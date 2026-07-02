@@ -111,7 +111,8 @@ clean_cell <- function(x) {
 
 parse_money <- function(x) {
   x <- as.character(x)
-  hit <- regmatches(x, regexpr("\\$[0-9,.]+[MK]?", x, ignore.case = TRUE))
+  money_pattern <- "\\$(?:[0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]+)?|[0-9]+(?:\\.[0-9]+)?[MK]|[0-9]+(?:\\.[0-9]+)?)"
+  hit <- regmatches(x, regexpr(money_pattern, x, ignore.case = TRUE, perl = TRUE))
   if (!length(hit) || is.na(hit) || !nzchar(hit)) return(NA_real_)
   mult <- if (grepl("M$", hit, ignore.case = TRUE)) 1000000 else if (grepl("K$", hit, ignore.case = TRUE)) 1000 else 1
   as.numeric(gsub("[^0-9.]", "", hit)) * mult
@@ -486,6 +487,92 @@ build_current_roster_truth <- function(wide, roster_year, labels) {
   out
 }
 
+contract_status_from_spotrac_cell <- function(cell, section) {
+  cell <- as.character(cell)
+  if (!nzchar(trimws(cell))) return(NA_character_)
+  if (grepl("\\bRFA\\b", cell, ignore.case = TRUE)) return("RFA")
+  if (grepl("\\bUFA\\b", cell, ignore.case = TRUE)) return("UFA")
+  if (grepl("player option", cell, ignore.case = TRUE)) return("Player Option")
+  if (grepl("(team|club) option", cell, ignore.case = TRUE)) return("Team Option")
+  if (grepl("non[- ]guaranteed", cell, ignore.case = TRUE)) return("Non-Guaranteed")
+  if (grepl("two-way", cell, ignore.case = TRUE)) return("Two-Way")
+  if (identical(section, "Cap Hold")) return("Cap Hold")
+  if (is.finite(parse_money(cell))) return("Signed")
+  NA_character_
+}
+
+contract_amount_from_spotrac_cell <- function(cell, section) {
+  status <- contract_status_from_spotrac_cell(cell, section)
+  if (status %in% c("UFA", "RFA", "Cap Hold")) return(NA_real_)
+  amount <- parse_money(cell)
+  ifelse(is.finite(amount), amount, NA_real_)
+}
+
+first_fa_status <- function(statuses) {
+  statuses <- statuses[statuses %in% c("UFA", "RFA")]
+  if (length(statuses)) statuses[[1]] else NA_character_
+}
+
+first_fa_year <- function(statuses, roster_year) {
+  idx <- which(statuses %in% c("UFA", "RFA"))[1]
+  if (length(idx) && is.finite(idx)) roster_year + idx - 1L else NA_integer_
+}
+
+build_spotrac_contract_export <- function(wide, roster_year, labels) {
+  if (!nrow(wide)) return(data.frame())
+  active <- wide[
+    wide$entity_type == "player" &
+      wide$roster_state %in% c("active", "active_pending_done"),
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(active)) return(data.frame())
+  active <- active[order(active$team_abbr, active$player_or_entity), , drop = FALSE]
+
+  salary_cols <- paste0("salary_y", seq_along(labels) - 1L)
+  status_cols <- paste0("contract_status_y", seq_along(labels) - 1L)
+  salaries <- as.data.frame(setNames(replicate(length(labels), numeric(nrow(active)), simplify = FALSE), salary_cols))
+  statuses <- as.data.frame(setNames(replicate(length(labels), character(nrow(active)), simplify = FALSE), status_cols), stringsAsFactors = FALSE)
+
+  for (i in seq_along(labels)) {
+    label <- labels[[i]]
+    cell <- as.character(active[[label]])
+    salaries[[salary_cols[[i]]]] <- mapply(contract_amount_from_spotrac_cell, cell, active$section, USE.NAMES = FALSE)
+    statuses[[status_cols[[i]]]] <- mapply(contract_status_from_spotrac_cell, cell, active$section, USE.NAMES = FALSE)
+  }
+
+  status_matrix <- as.matrix(statuses[, status_cols, drop = FALSE])
+  free_agent_status <- apply(status_matrix, 1, first_fa_status)
+  free_agent_year <- apply(status_matrix, 1, first_fa_year, roster_year = roster_year)
+
+  out <- data.frame(
+    rank = seq_len(nrow(active)),
+    nba_id = suppressWarnings(as.integer(active$nba_id)),
+    spotrac_player_id = suppressWarnings(as.integer(active$spotrac_player_id)),
+    player_name = active$player_or_entity,
+    team = active$team_abbr,
+    position = active$pos,
+    age = suppressWarnings(as.numeric(active$age)),
+    salaries,
+    statuses,
+    free_agent_status = free_agent_status,
+    free_agent_year = suppressWarnings(as.integer(free_agent_year)),
+    guaranteed = NA_real_,
+    contract_type = NA_character_,
+    contract_status_source = "Spotrac roster table",
+    signed_using = NA_character_,
+    contract_notes = paste0("Spotrac section: ", active$section, "; state: ", active$roster_state),
+    match_method = active$match_method,
+    match_confidence = active$match_confidence,
+    source = active$source_url,
+    source_contract_year = roster_year,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  out <- out[is.finite(out$nba_id), , drop = FALSE]
+  out[!duplicated(out$nba_id), , drop = FALSE]
+}
+
 base_dir <- resolve_base_dir()
 roster_year <- infer_roster_year(base_dir)
 labels <- season_labels(roster_year)
@@ -507,6 +594,7 @@ aliases <- read_aliases(base_dir)
 wide <- match_spotrac_players(wide, universe, aliases)
 long <- to_long(wide, labels)
 roster_truth <- build_current_roster_truth(wide, roster_year, labels)
+spotrac_contracts <- build_spotrac_contract_export(wide, roster_year, labels)
 
 wide_path <- file.path(spotrac_dir, "spotrac_active_roster_cap_hold_allteams_wide.csv")
 long_path <- file.path(spotrac_dir, "spotrac_active_roster_cap_hold_allteams_long.csv")
@@ -514,6 +602,7 @@ audit_path <- file.path(spotrac_dir, "scrape_audit.csv")
 state_path <- file.path(spotrac_dir, paste0("spotrac_roster_state_", roster_year, ".csv"))
 review_path <- file.path(spotrac_dir, paste0("spotrac_roster_match_review_", roster_year, ".csv"))
 roster_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("current_rosters_", roster_year, ".csv"))
+contract_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("contracts_", roster_year, "_spotrac.csv"))
 
 write.csv(wide, wide_path, row.names = FALSE, na = "")
 write.csv(long, long_path, row.names = FALSE, na = "")
@@ -526,6 +615,7 @@ write.csv(
   na = ""
 )
 write.csv(roster_truth, roster_path, row.names = FALSE, na = "")
+write.csv(spotrac_contracts, contract_path, row.names = FALSE, na = "")
 
 summary_path <- file.path(spotrac_dir, "benchmark_summary.json")
 summary <- paste0(
@@ -547,4 +637,6 @@ writeLines(summary, summary_path)
 message("Spotrac roster state written: ", state_path)
 message("Spotrac cap wide written: ", wide_path)
 message("Roster truth written: ", roster_path)
+message("Spotrac contracts written: ", contract_path)
 message("Rows: active=", sum(roster_truth$team != "FA"), "; FA/cap-hold=", sum(roster_truth$team == "FA"), "; review=", nrow(read.csv(review_path)))
+message("Contracts: ", nrow(spotrac_contracts), " active/pending rows")

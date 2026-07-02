@@ -2371,6 +2371,123 @@ option_note_exercised_for_year <- function(contracts, impact_year) {
   }, logical(1))
 }
 
+spotrac_contract_path <- function(base_dir, contract_year = NULL) {
+  contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
+  if (!is.null(contract_year) && is.finite(contract_year)) {
+    path <- file.path(contract_dir, paste0("contracts_", as.integer(contract_year), "_spotrac.csv"))
+    if (file.exists(path)) return(path)
+  }
+  paths <- list.files(contract_dir, pattern = "^contracts_[0-9]{4}_spotrac\\.csv$", full.names = TRUE)
+  if (!length(paths)) return(NA_character_)
+  years <- suppressWarnings(as.integer(sub("^contracts_([0-9]{4})_spotrac\\.csv$", "\\1", basename(paths))))
+  paths[order(years, decreasing = TRUE)][[1]]
+}
+
+normalize_spotrac_contract_status <- function(status, amount) {
+  status <- as.character(status)
+  amount <- suppressWarnings(as.numeric(amount))
+  status <- ifelse(status %in% c("Signed", "UFA", "RFA", "Player Option", "Team Option", "Non-Guaranteed", "Two-Way", "Rookie FA"), status, NA_character_)
+  ifelse(is.na(status) & is.finite(amount) & amount > 0, "Signed", status)
+}
+
+read_spotrac_contracts <- function(base_dir, contract_year = NULL) {
+  path <- spotrac_contract_path(base_dir, contract_year)
+  if (is.na(path) || !file.exists(path)) return(data.frame())
+  x <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!all(c("nba_id", "player_name", "team") %in% names(x))) return(data.frame())
+  if (!("rank" %in% names(x))) x$rank <- seq_len(nrow(x))
+  if (!("source_contract_year" %in% names(x))) {
+    source_year <- suppressWarnings(as.integer(sub("^contracts_([0-9]{4})_spotrac\\.csv$", "\\1", basename(path))))
+    x$source_contract_year <- ifelse(is.finite(source_year), source_year, contract_year)
+  }
+  salary_cols <- grep("^salary_y[0-9]+$", names(x), value = TRUE)
+  status_cols <- paste0("contract_status_y", sub("^salary_y", "", salary_cols))
+  for (col in salary_cols) x[[col]] <- suppressWarnings(as.numeric(x[[col]]))
+  for (col in status_cols) {
+    if (!(col %in% names(x))) x[[col]] <- NA_character_
+  }
+  for (salary_col in salary_cols) {
+    horizon <- sub("^salary_y", "", salary_col)
+    status_col <- paste0("contract_status_y", horizon)
+    x[[status_col]] <- normalize_spotrac_contract_status(x[[status_col]], x[[salary_col]])
+  }
+  x
+}
+
+overlay_spotrac_contracts <- function(contracts, spotrac) {
+  if (!nrow(spotrac)) return(contracts)
+  for (col in names(spotrac)) {
+    if (!(col %in% names(contracts))) contracts[[col]] <- NA
+  }
+  salary_cols <- grep("^salary_y[0-9]+$", names(spotrac), value = TRUE)
+  status_cols <- paste0("contract_status_y", sub("^salary_y", "", salary_cols))
+  for (col in c(salary_cols, status_cols)) {
+    if (!(col %in% names(contracts))) contracts[[col]] <- NA
+  }
+
+  for (i in seq_len(nrow(spotrac))) {
+    nba_id <- suppressWarnings(as.integer(spotrac$nba_id[[i]]))
+    if (!is.finite(nba_id)) next
+    idx <- match(nba_id, suppressWarnings(as.integer(contracts$nba_id)))
+    if (is.na(idx)) {
+      new_row <- contracts[NA_integer_, , drop = FALSE]
+      new_row[1, ] <- NA
+      contracts <- rbind(contracts, new_row)
+      idx <- nrow(contracts)
+      contracts$nba_id[[idx]] <- nba_id
+      if ("rank" %in% names(contracts)) contracts$rank[[idx]] <- 10000L + i
+    }
+
+    for (col in intersect(c("player_name", "team", "free_agent_status", "free_agent_year", "contract_type", "contract_status_source", "signed_using", "contract_notes", "match_method", "source"), names(contracts))) {
+      value <- spotrac[[col]][[i]]
+      if (!is.na(value) && nzchar(trimws(as.character(value)))) contracts[[col]][[idx]] <- value
+    }
+    if ("source" %in% names(contracts)) contracts$source[[idx]] <- "Spotrac roster table"
+    for (salary_col in salary_cols) {
+      horizon <- sub("^salary_y", "", salary_col)
+      status_col <- paste0("contract_status_y", horizon)
+      amount <- suppressWarnings(as.numeric(spotrac[[salary_col]][[i]]))
+      status <- if (status_col %in% names(spotrac)) as.character(spotrac[[status_col]][[i]]) else NA_character_
+      has_status <- !is.na(status) && nzchar(trimws(status))
+      has_amount <- is.finite(amount) && amount > 0
+      if (has_status || has_amount) {
+        contracts[[salary_col]][[idx]] <- if (has_amount) amount else NA_real_
+        contracts[[status_col]][[idx]] <- normalize_spotrac_contract_status(status, amount)
+      }
+    }
+  }
+  contracts
+}
+
+spotrac_contract_year_rows <- function(base_dir, contract_year = NULL) {
+  spotrac <- read_spotrac_contracts(base_dir, contract_year)
+  if (!nrow(spotrac)) return(data.frame())
+  source_year <- suppressWarnings(as.integer(spotrac$source_contract_year))
+  source_year[!is.finite(source_year)] <- ifelse(is.null(contract_year), NA_integer_, as.integer(contract_year))
+  rows <- lapply(grep("^salary_y[0-9]+$", names(spotrac), value = TRUE), function(salary_col) {
+    horizon <- suppressWarnings(as.integer(sub("^salary_y", "", salary_col)))
+    status_col <- paste0("contract_status_y", horizon)
+    salary <- suppressWarnings(as.numeric(spotrac[[salary_col]]))
+    status <- if (status_col %in% names(spotrac)) as.character(spotrac[[status_col]]) else NA_character_
+    data.frame(
+      nba_id = suppressWarnings(as.integer(spotrac$nba_id)),
+      player_name = as.character(spotrac$player_name),
+      team = normalize_team(spotrac$team),
+      year = source_year + horizon,
+      contract = salary,
+      contract_status = normalize_spotrac_contract_status(status, salary),
+      free_agent_status = as.character(spotrac$free_agent_status),
+      free_agent_year = suppressWarnings(as.integer(spotrac$free_agent_year)),
+      source_contract_year = source_year,
+      contract_horizon = horizon,
+      contract_rank = -1L,
+      stringsAsFactors = FALSE
+    )
+  })
+  out <- do.call(rbind, rows)
+  out[is.finite(out$nba_id) & is.finite(out$year), , drop = FALSE]
+}
+
 load_contract_reference <- function(base_dir) {
   contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
   current_files <- list.files(contract_dir, pattern = "^contracts_[0-9]{4}_current\\.csv$", full.names = TRUE)
@@ -2390,6 +2507,7 @@ load_contract_reference <- function(base_dir) {
   if (!all(c("nba_id", "salary_y0") %in% names(contracts))) {
     return(data.frame(nba_id = integer(), contract = numeric(), stringsAsFactors = FALSE))
   }
+  contracts <- overlay_spotrac_contracts(contracts, read_spotrac_contracts(base_dir, contract_year))
   if (!("player_name" %in% names(contracts))) contracts$player_name <- NA_character_
   if (!("team" %in% names(contracts))) contracts$team <- NA_character_
   if (!("rank" %in% names(contracts))) contracts$rank <- seq_len(nrow(contracts))
@@ -2468,6 +2586,12 @@ load_contract_year_reference <- function(base_dir) {
   if (!("source_contract_year" %in% names(contracts))) contracts$source_contract_year <- NA_integer_
   if (!("contract_horizon" %in% names(contracts))) contracts$contract_horizon <- NA_integer_
   if (!("contract_rank" %in% names(contracts))) contracts$contract_rank <- seq_len(nrow(contracts))
+  spotrac_rows <- spotrac_contract_year_rows(base_dir)
+  if (nrow(spotrac_rows)) {
+    for (col in setdiff(names(contracts), names(spotrac_rows))) spotrac_rows[[col]] <- NA
+    for (col in setdiff(names(spotrac_rows), names(contracts))) contracts[[col]] <- NA
+    contracts <- rbind(contracts, spotrac_rows[, names(contracts), drop = FALSE])
+  }
 
   contracts <- contracts[is.finite(suppressWarnings(as.numeric(contracts$contract))) & suppressWarnings(as.numeric(contracts$contract)) > 0, , drop = FALSE]
   contracts <- contracts[order(
@@ -2762,6 +2886,10 @@ enforce_roster_truth_placements <- function(x, roster_year) {
     x$current_roster_team[inactive] <- "FA"
     x$market_team[inactive] <- "FA"
     x$team_projection_base[inactive] <- "FA"
+    if ("contract" %in% names(x)) x$contract[inactive] <- NA_real_
+    if ("value_add" %in% names(x)) x$value_add[inactive] <- NA_real_
+    for (col in grep("^projection_contract_y[0-9]+$", names(x), value = TRUE)) x[[col]][inactive] <- NA_real_
+    for (col in grep("^projection_effective_contract_y[0-9]+$", names(x), value = TRUE)) x[[col]][inactive] <- NA_real_
     x$projection_roster_status[inactive] <- "open_market"
     if ("roster_contract_status" %in% names(x)) {
       roster_status <- as.character(x$roster_contract_status[inactive])
