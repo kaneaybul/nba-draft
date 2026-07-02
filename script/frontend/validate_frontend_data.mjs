@@ -84,9 +84,9 @@ function validateRookieProjectionAssignments(manifest) {
     const rows = readJson(path.join(dataDir, shard.file));
     const rookies = rows.filter((row) => row.availability_status === "rookie_projection");
     if (rookies.length === 0) continue;
-    const spotracRookieHold = (row) =>
-      row.roster_state === "rookie_cap_hold" &&
-      row.roster_status_source === "Spotrac Rookie Cap Hold" &&
+    const teamControlledRookie = (row) =>
+      ["rookie_cap_hold", "draft_order_rookie"].includes(row.roster_state) &&
+      ["Spotrac Rookie Cap Hold", "Draft Order Rookie Projection"].includes(row.roster_status_source) &&
       cleanTeam(row.roster_truth_team) !== "FA" &&
       cleanTeam(row.team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.current_roster_team) === cleanTeam(row.roster_truth_team) &&
@@ -95,8 +95,8 @@ function validateRookieProjectionAssignments(manifest) {
       cleanTeam(row.team_projection_base) === cleanTeam(row.roster_truth_team) &&
       row.projection_roster_status === "rookie_fa" &&
       row.contract_status === "Rookie FA" &&
-      Number(row.contract) > 0;
-    const assigned = rookies.filter((row) => !spotracRookieHold(row) && (
+      (row.roster_status_source === "Draft Order Rookie Projection" || Number(row.contract) > 0);
+    const assigned = rookies.filter((row) => !teamControlledRookie(row) && (
       cleanTeam(row.team) !== "FA" ||
       cleanTeam(row.current_roster_team) !== "FA" ||
       cleanTeam(row.incumbent_team) !== "FA" ||
@@ -105,7 +105,7 @@ function validateRookieProjectionAssignments(manifest) {
       row.projection_roster_status !== "rookie_fa" ||
       row.contract_status !== "Rookie FA"
     ));
-    assert(assigned.length === 0, `Rookie projections must remain unassigned or explicit Spotrac rookie holds in ${season}: ${assigned.slice(0, 5).map((row) => row.player_name).join(", ")}`);
+    assert(assigned.length === 0, `Rookie projections must remain unassigned or explicit team-controlled rookie rows in ${season}: ${assigned.slice(0, 5).map((row) => row.player_name).join(", ")}`);
     const missingMinutes = rookies.filter((row) => !(Number(row.Minutes) > 0));
     assert(missingMinutes.length === 0, `Rookie projections must keep positive minutes in ${season}: ${missingMinutes.slice(0, 5).map((row) => row.player_name).join(", ")}`);
   }

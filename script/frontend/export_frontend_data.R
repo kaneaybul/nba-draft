@@ -1646,6 +1646,20 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows$market_team <- "FA"
   rows$team_projection_base <- "FA"
   rows$projection_roster_status <- "rookie_fa"
+  draft_order_assigned <- !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team))
+  if (any(draft_order_assigned, na.rm = TRUE)) {
+    draft_team <- normalize_team(projected_pick_team[draft_order_assigned])
+    rows$team[draft_order_assigned] <- draft_team
+    if ("current_roster_team" %in% names(rows)) rows$current_roster_team[draft_order_assigned] <- draft_team
+    if ("roster_truth_team" %in% names(rows)) rows$roster_truth_team[draft_order_assigned] <- draft_team
+    if ("roster_status_source" %in% names(rows)) rows$roster_status_source[draft_order_assigned] <- "Draft Order Rookie Projection"
+    if ("roster_state" %in% names(rows)) rows$roster_state[draft_order_assigned] <- "draft_order_rookie"
+    if ("roster_contract_status" %in% names(rows)) rows$roster_contract_status[draft_order_assigned] <- "Rookie FA"
+    if ("rights_team" %in% names(rows)) rows$rights_team[draft_order_assigned] <- draft_team
+    rows$incumbent_team[draft_order_assigned] <- draft_team
+    rows$market_team[draft_order_assigned] <- draft_team
+    rows$team_projection_base[draft_order_assigned] <- draft_team
+  }
   rookie_truth <- load_current_roster_truth(base_dir, target_year - 1L)
   if (nrow(rookie_truth)) {
     roster_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(rookie_truth$nba_id)))
@@ -1682,7 +1696,7 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   if ("source_note" %in% names(rows)) {
     pick_note <- ifelse(
       !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team)),
-      paste0("Consensus/mock pick team ", projected_pick_team, " is used only for pick/salary context; player remains unassigned."),
+      paste0("Assigned to ", projected_pick_team, " from draft order/pick context; Spotrac rookie hold overrides when available."),
       "Consensus/mock rookie projection remains unassigned until actually drafted."
     )
     rows$source_note <- pick_note
