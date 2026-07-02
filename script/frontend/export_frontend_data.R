@@ -2999,10 +2999,15 @@ write_roster_truth_audit <- function(base_dir, players, teams, team_lineups, ros
       by = "team",
       all.x = TRUE
     )
-    bad_counts <- team_counts[is.na(team_counts$roster_count) | team_counts$expected_count != team_counts$roster_count, , drop = FALSE]
+    team_counts$expected_projection_count <- pmin(team_counts$expected_count, TEAM_PROJECTION_PLAYER_LIMIT)
+    bad_counts <- team_counts[
+      is.na(team_counts$roster_count) | team_counts$expected_projection_count != team_counts$roster_count,
+      ,
+      drop = FALSE
+    ]
     if (nrow(bad_counts)) {
-      bad <- paste(utils::head(paste0(bad_counts$team, " expected ", bad_counts$expected_count, " got ", bad_counts$roster_count), 20), collapse = ", ")
-      stop("Roster truth audit failed: team projection roster counts do not match corrected player pools: ", bad)
+      bad <- paste(utils::head(paste0(bad_counts$team, " expected ", bad_counts$expected_projection_count, " got ", bad_counts$roster_count), 20), collapse = ", ")
+      stop("Roster truth audit failed: team projection top-player roster counts do not match corrected player pools: ", bad)
     }
   }
 
@@ -3510,6 +3515,36 @@ team_projection_scenarios <- function() {
   )
 }
 
+TEAM_PROJECTION_PLAYER_LIMIT <- 10L
+
+team_projection_minutes_rank <- function(players) {
+  projected <- if ("projection_minutes_y1" %in% names(players)) {
+    suppressWarnings(as.numeric(players$projection_minutes_y1))
+  } else {
+    rep(NA_real_, nrow(players))
+  }
+  adjusted <- if ("lineup_adjusted_minutes" %in% names(players)) {
+    suppressWarnings(as.numeric(players$lineup_adjusted_minutes))
+  } else {
+    rep(NA_real_, nrow(players))
+  }
+  actual <- if ("Minutes" %in% names(players)) {
+    suppressWarnings(as.numeric(players$Minutes))
+  } else {
+    rep(NA_real_, nrow(players))
+  }
+  minutes <- coalesce_numeric(projected, coalesce_numeric(adjusted, actual))
+  minutes[!is.finite(minutes)] <- 0
+  minutes
+}
+
+limit_team_projection_players <- function(players, limit = TEAM_PROJECTION_PLAYER_LIMIT) {
+  if (!nrow(players) || nrow(players) <= limit) return(players)
+  minutes <- team_projection_minutes_rank(players)
+  order_idx <- order(-minutes, players$player_name, players$nba_id, na.last = TRUE)
+  players[order_idx[seq_len(limit)], , drop = FALSE]
+}
+
 assign_team_projection_scenario <- function(players, scenario_id) {
   assigned <- players
   projected_year <- max(suppressWarnings(as.numeric(assigned$year)), na.rm = TRUE)
@@ -3553,6 +3588,7 @@ build_team_projections_for_scenario <- function(players, scenario_id, scenario_l
   split_key <- paste(players$year, players$team, sep = "||")
   grouped <- split(players, split_key)
   out <- do.call(rbind, lapply(grouped, function(df) {
+    df <- limit_team_projection_players(df)
     minutes <- sum(suppressWarnings(as.numeric(df$Minutes)), na.rm = TRUE)
     weighted <- function(v) {
       v <- suppressWarnings(as.numeric(v))
