@@ -403,24 +403,6 @@ function useSessionState<T>(key: string, initialValue: T, deserialize?: (value: 
   return [state, setState];
 }
 
-function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-    return window.matchMedia(query).matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return undefined;
-    const media = window.matchMedia(query);
-    const update = () => setMatches(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, [query]);
-
-  return matches;
-}
-
 function useDraftEloResponses() {
   const [responses, setResponses] = useState<DraftEloResponse[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -1429,7 +1411,6 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   const [sortKey, setSortKey] = useSessionState<TeamSortKey>("teams:sortKey", "projected_wins");
   const [sortDirection, setSortDirection] = useSessionState<SortDirection>("teams:sortDirection", "desc");
   const [selectedTeam, setSelectedTeam] = useSessionState<string>("teams:selected", "");
-  const isCompactTeams = useMediaQuery("(max-width: 720px)");
   const allTeams = useMemo(() => {
     const selected = data.teams.filter((team) => team.year === season && ((team.scenario_id ?? "base") === scenario));
     if (selected.length > 0) return selected;
@@ -1491,14 +1472,11 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     );
   }
 
-  const contributors = (contributorsByTeam.get(currentTeam.team) ?? []).slice(0, isCompactTeams ? 8 : 14);
-  const schedule = isCompactTeams ? [] : schedulesByTeam.get(currentTeam.team) ?? [];
-  const regularSchedule = isCompactTeams ? [] : schedule.filter((game) => game.season_type === "Regular Season");
-  const playInSchedule = isCompactTeams ? [] : schedule.filter((game) => game.season_type === "Play-In");
-  const playoffSchedule = isCompactTeams ? [] : schedule.filter((game) => game.season_type === "Playoffs");
-  const selectTeam = (team: string) => {
-    if (team !== selectedTeam) setSelectedTeam(team);
-  };
+  const contributors = (contributorsByTeam.get(currentTeam.team) ?? []).slice(0, 14);
+  const schedule = schedulesByTeam.get(currentTeam.team) ?? [];
+  const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
+  const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
+  const playoffSchedule = schedule.filter((game) => game.season_type === "Playoffs");
   const handleSort = (key: TeamSortKey) => {
     if (sortKey === key) {
       setSortDirection(sortDirection === "desc" ? "asc" : "desc");
@@ -1535,64 +1513,56 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
             <span>{teams.length} teams</span>
           </div>
         </div>
-        {isCompactTeams ? (
-          <div className="team-mobile-list">
-            {teams.map((team) => (
-              <TeamMobileCard key={team.team} team={team} selected={currentTeam.team === team.team} onSelect={selectTeam} />
-            ))}
-          </div>
-        ) : (
-          <div className="table-wrap team-board-wrap">
-            <table className="data-table team-board-table">
-              <thead>
-                <tr>
-                  <th><TeamSortButton label="Rank" sortKey="projected_wins" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th>Team</th>
-                  <th><TeamSortButton label="W-L" sortKey="projected_wins" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th><TeamSortButton label="Win %" sortKey="win_pct" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th><TeamSortButton label="Adj" sortKey="adjusted_total" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th><TeamSortButton label="Off" sortKey="offense" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th><TeamSortButton label="Def" sortKey="defense" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th><TeamSortButton label="Min" sortKey="minutes" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
-                  <th className="team-skills-head">Skills</th>
+        <div className="table-wrap team-board-wrap">
+          <table className="data-table team-board-table">
+            <thead>
+              <tr>
+                <th><TeamSortButton label="Rank" sortKey="projected_wins" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th>Team</th>
+                <th><TeamSortButton label="W-L" sortKey="projected_wins" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Win %" sortKey="win_pct" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Adj" sortKey="adjusted_total" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Off" sortKey="offense" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Def" sortKey="defense" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th><TeamSortButton label="Min" sortKey="minutes" active={sortKey} direction={sortDirection} onSort={handleSort} /></th>
+                <th className="team-skills-head">Skills</th>
+              </tr>
+            </thead>
+            <tbody>
+              {teams.map((team) => (
+                <tr key={team.team} className={cls(currentTeam.team === team.team && "selected-row")} onClick={() => setSelectedTeam(team.team)}>
+                  <td className="team-rank-cell">{formatNumber(team.league_rank ?? team.rank, 0)}</td>
+                  <td className="team-cell">
+                    <div className="team-cell-inner">
+                      <TeamLogo team={team} />
+                      <div>
+                        <strong>{team.team_name ?? team.team}</strong>
+                      </div>
+                      <span className={cls("playoff-badge", playoffBadgeClass(team.playoff_status))}>{team.playoff_status}</span>
+                    </div>
+                  </td>
+                  <td className="team-record-cell">
+                    <div className="team-record-stack">
+                      <strong>{formatNumber(team.projected_wins, 1)}-{formatNumber(team.projected_losses, 1)}</strong>
+                      <span>{formatNumber(team.expected_wins, 1)} xW</span>
+                    </div>
+                  </td>
+                  <td>{formatPercent(team.win_pct, 1)}</td>
+                  <td><StatValue value={team.adjusted_total} /></td>
+                  <td><StatValue value={team.offense} tone="secondary" /></td>
+                  <td><StatValue value={team.defense} tone="secondary" /></td>
+                  <td>
+                    <div className="minutes-coverage">
+                      <strong>{formatNumber(team.minutes, 0)}</strong>
+                      <span style={{ width: `${clamp(Number(team.minutes_coverage ?? team.minutes / 19680), 0, 1) * 100}%` }} />
+                    </div>
+                  </td>
+                  <td><TeamSkillStrip team={team} activeSkill={skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null} onSort={handleSort} /></td>
                 </tr>
-              </thead>
-              <tbody>
-                {teams.map((team) => (
-                  <tr key={team.team} className={cls(currentTeam.team === team.team && "selected-row")} onClick={() => selectTeam(team.team)}>
-                    <td className="team-rank-cell">{formatNumber(team.league_rank ?? team.rank, 0)}</td>
-                    <td className="team-cell">
-                      <div className="team-cell-inner">
-                        <TeamLogo team={team} />
-                        <div>
-                          <strong>{team.team_name ?? team.team}</strong>
-                        </div>
-                        <span className={cls("playoff-badge", playoffBadgeClass(team.playoff_status))}>{team.playoff_status}</span>
-                      </div>
-                    </td>
-                    <td className="team-record-cell">
-                      <div className="team-record-stack">
-                        <strong>{formatNumber(team.projected_wins, 1)}-{formatNumber(team.projected_losses, 1)}</strong>
-                        <span>{formatNumber(team.expected_wins, 1)} xW</span>
-                      </div>
-                    </td>
-                    <td>{formatPercent(team.win_pct, 1)}</td>
-                    <td><StatValue value={team.adjusted_total} /></td>
-                    <td><StatValue value={team.offense} tone="secondary" /></td>
-                    <td><StatValue value={team.defense} tone="secondary" /></td>
-                    <td>
-                      <div className="minutes-coverage">
-                        <strong>{formatNumber(team.minutes, 0)}</strong>
-                        <span style={{ width: `${clamp(Number(team.minutes_coverage ?? team.minutes / 19680), 0, 1) * 100}%` }} />
-                      </div>
-                    </td>
-                    <td><TeamSkillStrip team={team} activeSkill={skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null} onSort={handleSort} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
       <section className="detail-panel team-detail-panel">
         <div className="team-detail-head">
@@ -1876,40 +1846,6 @@ function TeamSortButton({ label, sortKey, active, direction, onSort }: { label: 
     <button className={cls("sort-header sort-btn", active === sortKey && "active on")} onClick={() => onSort(sortKey)}>
       {label}
       {active === sortKey && <span className="sort-arr">{direction === "desc" ? "v" : "^"}</span>}
-    </button>
-  );
-}
-
-function TeamMobileCard({ team, selected, onSelect }: { team: TeamProjection; selected: boolean; onSelect: (team: string) => void }) {
-  return (
-    <button type="button" className={cls("team-mobile-card", selected && "selected")} onClick={() => onSelect(team.team)}>
-      <span className="team-mobile-card-head">
-        <span className="team-mobile-rank">{formatNumber(team.league_rank ?? team.rank, 0)}</span>
-        <TeamLogo team={team} />
-        <span className="team-mobile-name">
-          <strong>{team.team_name ?? team.team}</strong>
-          <span>{team.conference} #{formatNumber(team.conference_rank, 0)}</span>
-        </span>
-        <span className={cls("playoff-badge", playoffBadgeClass(team.playoff_status))}>{team.playoff_status}</span>
-      </span>
-      <span className="team-mobile-card-body">
-        <span>
-          <small>W-L</small>
-          <strong>{formatNumber(team.projected_wins, 1)}-{formatNumber(team.projected_losses, 1)}</strong>
-        </span>
-        <span>
-          <small>Adj</small>
-          <strong>{formatSigned(team.adjusted_total, 1)}</strong>
-        </span>
-        <span>
-          <small>Off</small>
-          <strong>{formatSigned(team.offense, 1)}</strong>
-        </span>
-        <span>
-          <small>Def</small>
-          <strong>{formatSigned(team.defense, 1)}</strong>
-        </span>
-      </span>
     </button>
   );
 }
