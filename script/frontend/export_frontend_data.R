@@ -1646,7 +1646,7 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows$market_team <- "FA"
   rows$team_projection_base <- "FA"
   rows$projection_roster_status <- "rookie_fa"
-  draft_order_assigned <- !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team))
+  draft_order_assigned <- first_round_scale & !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team))
   if (any(draft_order_assigned, na.rm = TRUE)) {
     draft_team <- normalize_team(projected_pick_team[draft_order_assigned])
     rows$team[draft_order_assigned] <- draft_team

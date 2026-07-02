@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-07-02T21:05:34.856Z",
+  "generated_at": "2026-07-02T21:13:04.065Z",
   "source_policy": "Spotrac-first cap tracker v1: pending transactions, active roster, cap holds, and visible money cells come from Spotrac multi-year team pages. Databallr contract metadata is retained for CBA rule inference and QA, but does not override displayed salary rows.",
   "notes": [
     "Season years use NBA season end year: 2027 is 2026-27, 2028 is 2027-28, and so on.",

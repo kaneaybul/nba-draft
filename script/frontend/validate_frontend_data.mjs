@@ -95,7 +95,7 @@ function validateRookieProjectionAssignments(manifest) {
       cleanTeam(row.team_projection_base) === cleanTeam(row.roster_truth_team) &&
       row.projection_roster_status === "rookie_fa" &&
       row.contract_status === "Rookie FA" &&
-      (row.roster_status_source === "Draft Order Rookie Projection" || Number(row.contract) > 0);
+      Number(row.contract) > 0;
     const assigned = rookies.filter((row) => !teamControlledRookie(row) && (
       cleanTeam(row.team) !== "FA" ||
       cleanTeam(row.current_roster_team) !== "FA" ||
