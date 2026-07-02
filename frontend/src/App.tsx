@@ -1472,7 +1472,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     );
   }
 
-  const contributors = (contributorsByTeam.get(currentTeam.team) ?? []).slice(0, 14);
+  const contributors = (contributorsByTeam.get(currentTeam.team) ?? []).slice(0, 10);
   const schedule = schedulesByTeam.get(currentTeam.team) ?? [];
   const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
   const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");

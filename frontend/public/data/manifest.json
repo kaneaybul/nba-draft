@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-02T21:23:50Z",
+  "generated_at": "2026-07-02T21:38:50Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -80,7 +80,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-07-02T21:23:50.191Z",
+    "generated_at": "2026-07-02T21:38:50.901Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -302,16 +302,16 @@
             "year": 2026,
             "rows": 90,
             "file": "v2/team_projections/2026.json",
-            "bytes": 79424,
-            "sha256": "c357e66d88337ab3f8628b9dccda2872f55307ca1d2c5b814cebc22a24c7d27c"
+            "bytes": 79472,
+            "sha256": "5e99c22b6fc6622f186b4623d9d04112cee55e843ceb23e0c6dde588085c0b3c"
           },
           {
             "key": "2027",
             "year": 2027,
             "rows": 90,
             "file": "v2/team_projections/2027.json",
-            "bytes": 80942,
-            "sha256": "61e015ebf4046031981c643249247d93890ff25849ef811cab4ab0e09e88fe29"
+            "bytes": 80908,
+            "sha256": "44fae73fb80103568d1c9f40ff6680eea055501cb8d7bc0324dc96b105e8bad2"
           }
         ]
       },
@@ -506,8 +506,8 @@
             "year": 2026,
             "rows": 1313,
             "file": "v2/team_schedules/2026.json",
-            "bytes": 370085,
-            "sha256": "13c65d0442fcc77b3584fdef246dc8d1d368e33ffbb95da7c5a51a4a9b299d2b"
+            "bytes": 370119,
+            "sha256": "97af1672552d108739dd630b7b1ceab4879c34a8a2d42ff647469ea63d7b78ed"
           }
         ]
       },
@@ -572,14 +572,14 @@
         "rows": 603,
         "file": "offseason_truth.json",
         "bytes": 389701,
-        "sha256": "10bf38f20d2b589a637ad7b970ae49a1cb22599145399594a9aaa0faec75554d"
+        "sha256": "4155cd75a1bdea4989a416d617924720793aa87cfc0e7a8ed37d5f4b7c9fd632"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
         "bytes": 1624105,
-        "sha256": "9aa851752112a4a49623f9370c0e2b5f3b3cff60fe2697356423c2fdfeb39f00"
+        "sha256": "4c68ac8f9e1421968c7b0a9b09baffe40b3ba171eebc3a470fc5b1d7d85be104"
       },
       "cap_transaction_review": {
         "strategy": "singleton",

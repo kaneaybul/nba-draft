@@ -3586,11 +3586,6 @@ team_projection_scenarios <- function() {
 TEAM_PROJECTION_PLAYER_LIMIT <- 10L
 
 team_projection_minutes_rank <- function(players) {
-  projected <- if ("projection_minutes_y1" %in% names(players)) {
-    suppressWarnings(as.numeric(players$projection_minutes_y1))
-  } else {
-    rep(NA_real_, nrow(players))
-  }
   adjusted <- if ("lineup_adjusted_minutes" %in% names(players)) {
     suppressWarnings(as.numeric(players$lineup_adjusted_minutes))
   } else {
@@ -3601,7 +3596,12 @@ team_projection_minutes_rank <- function(players) {
   } else {
     rep(NA_real_, nrow(players))
   }
-  minutes <- coalesce_numeric(projected, coalesce_numeric(adjusted, actual))
+  projected <- if ("projection_minutes_y1" %in% names(players)) {
+    suppressWarnings(as.numeric(players$projection_minutes_y1))
+  } else {
+    rep(NA_real_, nrow(players))
+  }
+  minutes <- coalesce_numeric(adjusted, coalesce_numeric(actual, projected))
   minutes[!is.finite(minutes)] <- 0
   minutes
 }
