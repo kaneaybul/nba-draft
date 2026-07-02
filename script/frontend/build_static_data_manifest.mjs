@@ -267,12 +267,12 @@ function roundNumber(value, digits) {
 }
 
 function normalizePlayers(players, truth) {
-  if (!truth?.players) return players;
+  if (!truth?.players) return enforceExportedFreeAgentTruth(players);
   return players.map((player) => {
     const row = truth.players[`${player.year}-${player.nba_id}-${player.player_name}`];
-    if (!row) return player;
     const exportedTruthTeam = cleanTeam(player.roster_truth_team);
     const explicitFreeAgentTruth = exportedTruthTeam === "FA";
+    if (!row) return explicitFreeAgentTruth ? freeAgentPlayerRow(player) : player;
     const currentTeam = explicitFreeAgentTruth ? "FA" : cleanTeam(row.current_roster_team);
     const rightsTeam = cleanTeam(player.rights_team ?? row.rights_team);
     const truthStatus = explicitFreeAgentTruth
@@ -307,14 +307,34 @@ function normalizePlayers(players, truth) {
   });
 }
 
+function enforceExportedFreeAgentTruth(players) {
+  return players.map((player) => cleanTeam(player.roster_truth_team) === "FA" ? freeAgentPlayerRow(player) : player);
+}
+
+function freeAgentPlayerRow(player) {
+  const status = normalizeTruthStatus(player.contract_status, "FA");
+  return {
+    ...player,
+    team: "FA",
+    current_roster_team: "FA",
+    incumbent_team: cleanTeam(player.rights_team) !== "FA" ? cleanTeam(player.rights_team) : "FA",
+    market_team: "FA",
+    team_projection_base: "FA",
+    projection_roster_status: projectionRosterStatus(status, player.contract),
+    contract_status: status
+  };
+}
+
 function normalizeLineups(lineups, players) {
   const playersByIdYear = new Map(players.map((player) => [`${player.year}-${player.nba_id}`, player]));
   return lineups
     .map((lineup) => {
       const player = playersByIdYear.get(`${lineup.year}-${lineup.nba_id}`);
       if (!player) return lineup;
-      const currentTeam = cleanTeam(player.current_roster_team);
-      if (currentTeam === "FA") return null;
+      const truthTeam = optionalTeam(player.roster_truth_team);
+      if (!truthTeam) return lineup;
+      const currentTeam = truthTeam === "FA" ? "FA" : cleanTeam(player.current_roster_team);
+      if (truthTeam === "FA" || currentTeam === "FA") return null;
       return {
         ...lineup,
         team: currentTeam,
@@ -326,6 +346,11 @@ function normalizeLineups(lineups, players) {
 
 function cleanTeam(value) {
   return String(value ?? "").trim().toUpperCase() || "FA";
+}
+
+function optionalTeam(value) {
+  const team = String(value ?? "").trim().toUpperCase();
+  return team || null;
 }
 
 function normalizeTruthStatus(status, currentTeam) {

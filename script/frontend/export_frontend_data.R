@@ -2738,7 +2738,8 @@ apply_current_roster_truth <- function(x, base_dir, roster_year) {
 
 enforce_roster_truth_placements <- function(x, roster_year) {
   if (!("roster_truth_team" %in% names(x))) return(x)
-  latest_rows <- suppressWarnings(as.integer(x$year)) == roster_year
+  player_year <- suppressWarnings(as.integer(x$year))
+  latest_rows <- player_year >= roster_year & !is_blank_text(x$roster_truth_team)
   truth_team <- normalize_team(x$roster_truth_team)
   truth_team[is_blank_text(truth_team)] <- NA_character_
   active <- latest_rows & !is.na(truth_team) & truth_team != "FA"

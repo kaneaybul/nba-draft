@@ -35,6 +35,7 @@ function main() {
 
   validateRowCounts(manifest);
   validateInitialPayload(manifest);
+  validateRosterTruthPlacements(manifest);
   validateRookieProjectionAssignments(manifest);
   console.log(`frontend data contract passed: ${files.length} manifest files`);
 }
@@ -95,6 +96,39 @@ function validateRookieProjectionAssignments(manifest) {
     assert(assigned.length === 0, `Rookie projections must remain unassigned in ${season}: ${assigned.slice(0, 5).map((row) => row.player_name).join(", ")}`);
     const missingMinutes = rookies.filter((row) => !(Number(row.Minutes) > 0));
     assert(missingMinutes.length === 0, `Rookie projections must keep positive minutes in ${season}: ${missingMinutes.slice(0, 5).map((row) => row.player_name).join(", ")}`);
+  }
+}
+
+function validateRosterTruthPlacements(manifest) {
+  const playerShards = manifest.static_data.datasets.impact_players?.shards ?? [];
+  const currentRosterSeason = Math.min(...playerShards
+    .map((shard) => Number(shard.year ?? shard.key))
+    .filter(Number.isFinite)
+    .filter((season) => season >= 2026));
+  for (const shard of playerShards) {
+    const season = Number(shard.year ?? shard.key);
+    if (!Number.isFinite(season) || season < currentRosterSeason) continue;
+    const rows = readJson(path.join(dataDir, shard.file));
+    const misplacedFreeAgents = rows.filter((row) =>
+      cleanTeam(row.roster_truth_team) === "FA" &&
+      cleanTeam(row.team) !== "FA"
+    );
+    assert(
+      misplacedFreeAgents.length === 0,
+      `Roster truth FA players assigned to teams in ${season}: ${misplacedFreeAgents.slice(0, 8).map((row) => `${row.player_name}@${row.team}`).join(", ")}`
+    );
+    const lineupsShard = manifest.static_data.datasets.team_lineups?.shards?.find((lineupShard) => Number(lineupShard.year ?? lineupShard.key) === season);
+    if (!lineupsShard) continue;
+    const lineupRows = readJson(path.join(dataDir, lineupsShard.file));
+    const lineupKeys = new Set(lineupRows.map((row) => `${row.year}-${row.nba_id}-${cleanTeam(row.team)}`));
+    const staleLineups = rows.filter((row) =>
+      cleanTeam(row.roster_truth_team) === "FA" &&
+      lineupKeys.has(`${row.year}-${row.nba_id}-${cleanTeam(row.team)}`)
+    );
+    assert(
+      staleLineups.length === 0,
+      `Roster truth FA players present in team lineups in ${season}: ${staleLineups.slice(0, 8).map((row) => row.player_name).join(", ")}`
+    );
   }
 }
 
