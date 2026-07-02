@@ -1646,60 +1646,50 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   rows$market_team <- "FA"
   rows$team_projection_base <- "FA"
   rows$projection_roster_status <- "rookie_fa"
-  draft_order_assigned <- first_round_scale & !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team))
-  if (any(draft_order_assigned, na.rm = TRUE)) {
-    draft_team <- normalize_team(projected_pick_team[draft_order_assigned])
-    rows$team[draft_order_assigned] <- draft_team
-    if ("current_roster_team" %in% names(rows)) rows$current_roster_team[draft_order_assigned] <- draft_team
-    if ("roster_truth_team" %in% names(rows)) rows$roster_truth_team[draft_order_assigned] <- draft_team
-    if ("roster_status_source" %in% names(rows)) rows$roster_status_source[draft_order_assigned] <- "Draft Order Rookie Projection"
-    if ("roster_state" %in% names(rows)) rows$roster_state[draft_order_assigned] <- "draft_order_rookie"
-    if ("roster_contract_status" %in% names(rows)) rows$roster_contract_status[draft_order_assigned] <- "Rookie FA"
-    if ("rights_team" %in% names(rows)) rows$rights_team[draft_order_assigned] <- draft_team
-    rows$incumbent_team[draft_order_assigned] <- draft_team
-    rows$market_team[draft_order_assigned] <- draft_team
-    rows$team_projection_base[draft_order_assigned] <- draft_team
-  }
   rookie_truth <- load_current_roster_truth(base_dir, target_year - 1L)
+  matched_rookie <- rep(FALSE, nrow(rows))
+  matched_idx <- integer()
   if (nrow(rookie_truth)) {
     roster_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(rookie_truth$nba_id)))
     matched_rookie <- !is.na(roster_match) &
-      rookie_truth$roster_state[roster_match] == "rookie_cap_hold" &
+      rookie_truth$roster_state[roster_match] %in% c("active", "active_pending_done", "rookie_cap_hold") &
       rookie_truth$roster_truth_team[roster_match] != "FA"
     if (any(matched_rookie, na.rm = TRUE)) {
       matched_idx <- roster_match[matched_rookie]
       truth_team <- rookie_truth$roster_truth_team[matched_idx]
+      truth_status <- as.character(rookie_truth$roster_contract_status[matched_idx])
+      truth_status[is.na(truth_status) | !nzchar(trimws(truth_status))] <- "Rookie FA"
       rows$team[matched_rookie] <- truth_team
       if ("current_roster_team" %in% names(rows)) rows$current_roster_team[matched_rookie] <- truth_team
       if ("roster_truth_team" %in% names(rows)) rows$roster_truth_team[matched_rookie] <- truth_team
       if ("roster_status_source" %in% names(rows)) rows$roster_status_source[matched_rookie] <- rookie_truth$roster_truth_source[matched_idx]
       if ("roster_truth_pulled_at" %in% names(rows)) rows$roster_truth_pulled_at[matched_rookie] <- rookie_truth$roster_truth_pulled_at[matched_idx]
       if ("roster_state" %in% names(rows)) rows$roster_state[matched_rookie] <- rookie_truth$roster_state[matched_idx]
-      if ("roster_contract_status" %in% names(rows)) rows$roster_contract_status[matched_rookie] <- rookie_truth$roster_contract_status[matched_idx]
+      if ("roster_contract_status" %in% names(rows)) rows$roster_contract_status[matched_rookie] <- truth_status
       if ("rights_team" %in% names(rows)) rows$rights_team[matched_rookie] <- rookie_truth$rights_team[matched_idx]
       rows$incumbent_team[matched_rookie] <- truth_team
       rows$market_team[matched_rookie] <- truth_team
       rows$team_projection_base[matched_rookie] <- truth_team
+      rows$contract_status[matched_rookie] <- truth_status
+      rows$projection_roster_status[matched_rookie] <- projection_roster_status(truth_status, rows$contract[matched_rookie])
     }
   }
   spotrac_contracts <- read_spotrac_contracts(base_dir, target_year - 1L)
   if (nrow(spotrac_contracts)) {
     spotrac_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(spotrac_contracts$nba_id)))
-    has_spotrac_contract <- !is.na(spotrac_match) &
-      suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match])) > 0
+    spotrac_salary_y0 <- suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match]))
+    has_positive_spotrac_contract <- !is.na(spotrac_match) & spotrac_salary_y0 > 0
+    has_spotrac_zero_or_positive <- !is.na(spotrac_match) & is.finite(spotrac_salary_y0) & spotrac_salary_y0 >= 0
     missing_contract <- !is.finite(suppressWarnings(as.numeric(rows$contract))) | suppressWarnings(as.numeric(rows$contract)) <= 0
-    fill_contract <- has_spotrac_contract & missing_contract
-    rows$contract[fill_contract] <- suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match[fill_contract]]))
+    fill_contract <- (has_positive_spotrac_contract & missing_contract) | (matched_rookie & has_spotrac_zero_or_positive)
+    rows$contract[fill_contract] <- spotrac_salary_y0[fill_contract]
+    rows$projection_roster_status[fill_contract] <- projection_roster_status(rows$contract_status[fill_contract], rows$contract[fill_contract])
   }
   if ("overall_pick" %in% names(rows)) rows$overall_pick <- rank_proxy
   if ("draft_year" %in% names(rows)) rows$draft_year <- draft$draft_year
   if ("source_note" %in% names(rows)) {
-    pick_note <- ifelse(
-      !is.na(projected_pick_team) & nzchar(trimws(projected_pick_team)),
-      paste0("Assigned to ", projected_pick_team, " from draft order/pick context; Spotrac rookie hold overrides when available."),
-      "Consensus/mock rookie projection remains unassigned until actually drafted."
-    )
-    rows$source_note <- pick_note
+    rows$source_note <- "Consensus/mock rookie projection remains unassigned until Spotrac lists the player as active or a rookie cap hold."
+    rows$source_note[matched_rookie] <- paste0("Assigned from ", rows$roster_status_source[matched_rookie], ".")
   }
 
   if ("skill_model_off" %in% names(rows)) rows$skill_model_off <- rows$offense

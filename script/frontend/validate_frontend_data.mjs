@@ -85,17 +85,19 @@ function validateRookieProjectionAssignments(manifest) {
     const rookies = rows.filter((row) => row.availability_status === "rookie_projection");
     if (rookies.length === 0) continue;
     const teamControlledRookie = (row) =>
-      ["rookie_cap_hold", "draft_order_rookie"].includes(row.roster_state) &&
-      ["Spotrac Rookie Cap Hold", "Draft Order Rookie Projection"].includes(row.roster_status_source) &&
+      ["active", "active_pending_done", "rookie_cap_hold"].includes(row.roster_state) &&
+      ["Spotrac Active Roster", "Spotrac Pending Transactions", "Spotrac Rookie Cap Hold"].includes(row.roster_status_source) &&
       cleanTeam(row.roster_truth_team) !== "FA" &&
       cleanTeam(row.team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.current_roster_team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.incumbent_team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.market_team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.team_projection_base) === cleanTeam(row.roster_truth_team) &&
-      row.projection_roster_status === "rookie_fa" &&
-      row.contract_status === "Rookie FA" &&
-      Number(row.contract) > 0;
+      ["signed", "rookie_fa"].includes(row.projection_roster_status) &&
+      ["Signed", "Rookie FA"].includes(row.contract_status) &&
+      row.contract !== null &&
+      row.contract !== undefined &&
+      Number(row.contract) >= 0;
     const assigned = rookies.filter((row) => !teamControlledRookie(row) && (
       cleanTeam(row.team) !== "FA" ||
       cleanTeam(row.current_roster_team) !== "FA" ||
