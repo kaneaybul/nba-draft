@@ -4076,7 +4076,7 @@ apply_schedule_projections <- function(teams, schedules) {
 
 build_pick_assets <- function(base_dir, players) {
   picks <- 1:60
-  fallback_value <- ifelse(picks <= 30, 34000000 * exp(-(picks - 1) / 19), 4200000 * exp(-(picks - 31) / 18))
+  fallback_value <- ifelse(picks <= 30, 90000000 * exp(-(picks - 1) / 28), 30000000 * exp(-(picks - 31) / 25))
   value <- fallback_value
   training_n <- rep(0L, length(picks))
 
@@ -4130,18 +4130,32 @@ build_pick_assets <- function(base_dir, players) {
         training_n[as.integer(names(training_counts))] <- as.integer(training_counts)
 
         if (nrow(target) >= 30 && length(unique(target$pick)) >= 20) {
-          target_by_pick <- aggregate(target$value, by = list(pick = target$pick), FUN = median)
+          target_by_pick <- aggregate(target$value, by = list(pick = target$pick), FUN = mean)
           names(target_by_pick)[2] <- "target_value"
+          target_by_pick$training_n <- as.integer(training_counts[as.character(target_by_pick$pick)])
           target_by_pick <- target_by_pick[order(target_by_pick$pick), , drop = FALSE]
-          fit <- isoreg(target_by_pick$pick, -log1p(target_by_pick$target_value))
-          fitted_curve <- approx(
-            x = target_by_pick$pick,
-            y = fit$yf,
-            xout = picks,
-            rule = 2,
-            ties = mean
-          )$y
-          trained_value <- pmax(0, expm1(-fitted_curve))
+          if (requireNamespace("mgcv", quietly = TRUE)) {
+            spline_k <- min(10L, max(4L, length(unique(target_by_pick$pick)) - 1L))
+            fit <- mgcv::gam(
+              log1p(target_value) ~ s(pick, k = spline_k, bs = "cs"),
+              data = target_by_pick,
+              weights = sqrt(target_by_pick$training_n),
+              method = "REML"
+            )
+            trained_value <- pmax(0, expm1(as.numeric(predict(fit, newdata = data.frame(pick = picks), type = "response"))))
+            fit <- isoreg(picks, -trained_value)
+            trained_value <- pmax(0, -fit$yf)
+          } else {
+            fit <- isoreg(target_by_pick$pick, -log1p(target_by_pick$target_value))
+            fitted_curve <- approx(
+              x = target_by_pick$pick,
+              y = fit$yf,
+              xout = picks,
+              rule = 2,
+              ties = mean
+            )$y
+            trained_value <- pmax(0, expm1(-fitted_curve))
+          }
           if (all(is.finite(trained_value)) && max(trained_value, na.rm = TRUE) > 0) {
             value <- trained_value
           }

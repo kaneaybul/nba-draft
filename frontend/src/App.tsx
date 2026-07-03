@@ -2129,7 +2129,7 @@ function formatDateLabel(value: string | null | undefined): string {
 const TRADE_ACCEPTED_DIFF = 10_000_000;
 const TRADE_MAYBE_DIFF = 20_000_000;
 const TRADE_IMPACT_DENOMINATOR = 48 * 82 * 0.9;
-const TRADE_PICK_VALUE_YEARS = 4;
+const TRADE_PICK_VALUE_YEARS = 1;
 const TRADE_PICK_PROTECTIONS = [
   { label: "Unprotected", cutoff: 0 },
   { label: "Top-3 protected", cutoff: 3 },
@@ -6734,11 +6734,11 @@ function buildTradePickContext(slotAssets: PickAsset[]): TradePickContext {
     const value = Number(asset.value);
     if (Number.isFinite(pick) && Number.isFinite(value)) slotValues.set(pick, value);
   });
-  const lotteryWeights = [2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1];
+  const lotteryWeights = [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5];
   const lotteryDistributions = weightedLotteryDistributions(lotteryWeights);
   const firstRound = averageDistributions([
     ...lotteryDistributions,
-    ...Array.from({ length: 14 }, (_, index) => [{ pick: 17 + index, probability: 1 }])
+    ...Array.from({ length: 16 }, (_, index) => [{ pick: 15 + index, probability: 1 }])
   ]);
   const secondRound = Array.from({ length: 30 }, (_, index) => ({ pick: 31 + index, probability: 1 / 30 }));
   return { firstRound, secondRound, slotValues };
@@ -6747,34 +6747,31 @@ function buildTradePickContext(slotAssets: PickAsset[]): TradePickContext {
 function weightedLotteryDistributions(weights: number[]): PickDistributionPoint[][] {
   const n = weights.length;
   if (n === 0) return [];
-  const stateCount = 1 << n;
+  const topPicks = Math.min(4, n);
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-  const maskWeight = new Float64Array(stateCount);
-  const pickCounts = new Uint8Array(stateCount);
-  for (let mask = 1; mask < stateCount; mask += 1) {
-    const bit = mask & -mask;
-    const index = Math.log2(bit);
-    const previous = mask ^ bit;
-    maskWeight[mask] = maskWeight[previous] + weights[index];
-    pickCounts[mask] = pickCounts[previous] + 1;
-  }
-  const stateProbability = new Float64Array(stateCount);
   const teamPickProbability: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
-  stateProbability[0] = 1;
-  for (let mask = 0; mask < stateCount; mask += 1) {
-    const probability = stateProbability[mask];
-    if (probability <= 0) continue;
-    const pickIndex = pickCounts[mask];
-    if (pickIndex >= n) continue;
-    const remainingWeight = totalWeight - maskWeight[mask];
-    for (let index = 0; index < n; index += 1) {
-      const bit = 1 << index;
-      if ((mask & bit) !== 0) continue;
-      const nextProbability = probability * weights[index] / remainingWeight;
-      teamPickProbability[index][pickIndex] += nextProbability;
-      stateProbability[mask | bit] += nextProbability;
+
+  const draw = (selected: number[], probability: number, remainingWeight: number) => {
+    if (selected.length === topPicks) {
+      selected.forEach((teamIndex, pickIndex) => {
+        teamPickProbability[teamIndex][pickIndex] += probability;
+      });
+      const selectedSet = new Set(selected);
+      const remainingTeams = Array.from({ length: n }, (_, index) => index).filter((index) => !selectedSet.has(index));
+      remainingTeams.forEach((teamIndex, index) => {
+        teamPickProbability[teamIndex][topPicks + index] += probability;
+      });
+      return;
     }
-  }
+    for (let index = 0; index < n; index += 1) {
+      if (selected.includes(index)) continue;
+      const weight = weights[index];
+      if (weight <= 0 || remainingWeight <= 0) continue;
+      draw([...selected, index], probability * weight / remainingWeight, remainingWeight - weight);
+    }
+  };
+
+  draw([], 1, totalWeight);
   return teamPickProbability.map((distribution) => distribution.map((probability, pickIndex) => ({ pick: pickIndex + 1, probability })));
 }
 
