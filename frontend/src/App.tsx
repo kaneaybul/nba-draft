@@ -1465,7 +1465,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }:
             Replacement math: ({formatSigned(player.total, 2)} total - {formatSigned(Number(player.replacement_total ?? 0), 2)} replacement) x {formatNumber(player.Minutes, 0)} minutes = {formatNumber(player.timin, 0)} TIMIN.
           </p>
           <p className="note note-text">
-            Replacement level uses a trailing 3-year, fractional position-share cutoff at the 65th rotation-useful player per position-season; this row is weighted as {replacementPositionShareText(player)}.
+            Replacement level uses a trailing 3-year plurality-position cutoff at the 75th rotation-useful player per position-season; this row is then weighted as {replacementPositionShareText(player)}.
           </p>
           <p className="note note-text">
             FA uses projected TIMIN, max salary tier {player.fa_max_tier ?? "-"}, and {formatNumber(player.fa_missing_roster_slots, 0)} reserved roster slots.

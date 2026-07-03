@@ -444,7 +444,7 @@ rotation_slots_per_position <- function() {
 }
 
 replacement_slots_per_position <- function() {
-  65L
+  75L
 }
 
 replacement_pool_years <- function() {
@@ -751,7 +751,7 @@ draft_replacement_total <- function(position, replacement_reference = NULL, shar
   }, numeric(1))
 }
 
-replacement_from_data <- function(df, side) {
+replacement_position_levels_from_data <- function(df, side) {
   metric <- if (identical(side, "offense")) {
     df$offense
   } else if (identical(side, "defense")) {
@@ -759,9 +759,8 @@ replacement_from_data <- function(df, side) {
   } else {
     df$total
   }
-  fallback <- replacement_level(df$position, side)
-  out <- rep(NA_real_, nrow(df))
   shares <- normalize_position_share_matrix(df[, intersect(position_share_columns(), names(df)), drop = FALSE], df$position)
+  pool_position <- primary_position_labels_from_share_matrix(shares, df$position)
   cutoff <- replacement_slots_per_position()
   pool_years <- replacement_pool_years()
   replacement_minutes <- if ("Minutes" %in% names(df)) suppressWarnings(as.numeric(df$Minutes)) else rep(Inf, nrow(df))
@@ -777,15 +776,14 @@ replacement_from_data <- function(df, side) {
 
   for (target_year in years) {
     for (target_pos in positions) {
-      pos_col <- match(tolower(target_pos), sub("_share$", "", position_share_columns()))
       pool_idx <- eligible &
         df$year <= target_year &
         df$year > target_year - pool_years &
-        shares[, pos_col] > 0
+        pool_position == target_pos
       pool_seasons <- unique(df$year[pool_idx])
       pooled_cutoff <- cutoff * max(1, length(pool_seasons))
       min_sample <- pooled_cutoff * 0.75
-      weights <- shares[pool_idx, pos_col]
+      weights <- rep(1, sum(pool_idx, na.rm = TRUE))
       if (sum(weights[is.finite(weights)], na.rm = TRUE) >= min_sample) {
         levels[as.character(target_year), target_pos] <- weighted_rank_cutoff_value(metric[pool_idx], weights, pooled_cutoff)
       }
@@ -794,17 +792,16 @@ replacement_from_data <- function(df, side) {
 
   recent_year <- max(df$year, na.rm = TRUE) - pool_years + 1
   for (target_pos in positions) {
-    pos_col <- match(tolower(target_pos), sub("_share$", "", position_share_columns()))
     values_idx <-
       eligible &
         df$year >= recent_year &
-        shares[, pos_col] > 0
+        pool_position == target_pos
     recent_seasons <- unique(df$year[
       values_idx
     ])
     pooled_cutoff <- cutoff * max(1, length(recent_seasons))
     min_sample <- pooled_cutoff * 0.75
-    weights <- shares[values_idx, pos_col]
+    weights <- rep(1, sum(values_idx, na.rm = TRUE))
     recent_level <- if (sum(weights[is.finite(weights)], na.rm = TRUE) >= min_sample) {
       weighted_rank_cutoff_value(metric[values_idx], weights, pooled_cutoff)
     } else {
@@ -815,6 +812,15 @@ replacement_from_data <- function(df, side) {
       levels[needs_recent, target_pos] <- recent_level
     }
   }
+
+  levels
+}
+
+replacement_from_data <- function(df, side) {
+  fallback <- replacement_level(df$position, side)
+  out <- rep(NA_real_, nrow(df))
+  shares <- normalize_position_share_matrix(df[, intersect(position_share_columns(), names(df)), drop = FALSE], df$position)
+  levels <- replacement_position_levels_from_data(df, side)
 
   for (i in seq_len(nrow(df))) {
     year_key <- as.character(df$year[[i]])
@@ -843,16 +849,11 @@ replacement_reference_from_players <- function(players, latest_year = NULL) {
     ,
     drop = FALSE
   ]
-  shares <- normalize_position_share_matrix(players[, intersect(position_share_columns(), names(players)), drop = FALSE], players$position)
-  ref_total <- replacement_from_data(players, "total")
+  levels <- replacement_position_levels_from_data(players, "total")
   rows <- data.frame(position = valid_positions(), replacement_total = NA_real_, stringsAsFactors = FALSE)
-  latest_rows <- players$year == latest_year
-  for (pos in valid_positions()) {
-    pos_col <- match(tolower(pos), sub("_share$", "", position_share_columns()))
-    pos_rows <- latest_rows & shares[, pos_col] > 0 & is.finite(ref_total)
-    if (any(pos_rows)) {
-      rows$replacement_total[rows$position == pos] <- stats::weighted.mean(ref_total[pos_rows], shares[pos_rows, pos_col], na.rm = TRUE)
-    }
+  latest_key <- as.character(latest_year)
+  if (latest_key %in% rownames(levels)) {
+    rows$replacement_total <- suppressWarnings(as.numeric(levels[latest_key, rows$position]))
   }
   missing_pos <- setdiff(valid_positions(), rows$position)
   if (length(missing_pos) > 0) {
@@ -3536,7 +3537,7 @@ build_impact_players <- function(base_dir) {
 
   x <- enforce_roster_truth_placements(x, contract_year)
 
-  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Position is built from Basketball-Reference play-by-play position-share estimates when available, and replacement is a trailing 3-year fractional position-share cutoff at the 65th rotation-useful player per position-season. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
+  x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Position is built from Basketball-Reference play-by-play position-share estimates when available, and replacement is a trailing 3-year plurality-position cutoff at the 75th rotation-useful player per position-season; each player's replacement value is then weighted by his position shares. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
   cols <- c(
     "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "rights_team", "roster_state", "roster_status_source", "roster_truth_pulled_at",
