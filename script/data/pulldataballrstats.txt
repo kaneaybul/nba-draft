@@ -2,6 +2,9 @@ library(jsonlite)
 library(dplyr)
 library(purrr)
 library(tibble)
+library(httr)
+library(openssl)
+library(uuid)
 
 resolve_base_dir <- function() {
   candidates <- c(
@@ -31,13 +34,51 @@ START_YEAR <- as.integer(Sys.getenv("DATABALLR_START_YEAR", unset = "2016"))
 END_YEAR   <- as.integer(Sys.getenv("DATABALLR_END_YEAR", unset = "2026"))
 MIN_MINUTES <- as.integer(Sys.getenv("DATABALLR_MIN_MINUTES", unset = "0"))
 DATABALLR_LIMIT <- as.integer(Sys.getenv("DATABALLR_LIMIT", unset = "2000"))
+DATABALLR_API_BASE <- "https://api.databallr.com/api"
+DATABALLR_API_KEY <- "d4c3b65c6bc3db82b1bf0bcf11659bfe2413c5bfdfdec5f545941e2a93a848aa"
+DATABALLR_SIGNING_SECRET <- "a7f8e2c9d4b1f6a3e0c5d8b2f7a4e1c6d9b3f0a5e8c2d7b4f1a6e3c0d5b8f2a9"
 
 years <- START_YEAR:END_YEAR
 
+databallr_headers <- function(method, path, query) {
+  timestamp <- as.character(as.integer(Sys.time()))
+  nonce <- uuid::UUIDgenerate()
+  message <- paste(timestamp, nonce, toupper(method), path, query, sep = ":")
+  signature <- as.character(openssl::sha256(charToRaw(message), key = charToRaw(DATABALLR_SIGNING_SECRET)))
+
+  httr::add_headers(
+    `Content-Type` = "application/json",
+    `X-API-Key` = DATABALLR_API_KEY,
+    `X-Timestamp` = timestamp,
+    `X-Nonce` = nonce,
+    `X-Signature` = signature
+  )
+}
+
+read_databallr_json <- function(path, query) {
+  url <- paste0(DATABALLR_API_BASE, path, "?", query)
+  resp <- httr::GET(
+    url,
+    databallr_headers("GET", paste0("/api", path), query),
+    httr::user_agent("Mozilla/5.0"),
+    httr::timeout(60)
+  )
+
+  if (httr::http_error(resp)) {
+    stop(
+      "Databallr request failed: HTTP ", httr::status_code(resp), " ",
+      httr::content(resp, as = "text", encoding = "UTF-8"),
+      call. = FALSE
+    )
+  }
+
+  jsonlite::fromJSON(httr::content(resp, as = "text", encoding = "UTF-8"), flatten = TRUE)
+}
+
 pull_one_year <- function(yr) {
-  url <- paste0(
-    "https://api.databallr.com/api/supabase/player_stats_with_metrics",
-    "?year=", yr,
+  path <- "/supabase/player_stats_with_metrics"
+  query <- paste0(
+    "year=", yr,
     "&playoffs=0",
     "&min_minutes=", MIN_MINUTES,
     "&limit=", DATABALLR_LIMIT,
@@ -47,7 +88,7 @@ pull_one_year <- function(yr) {
 
   message("Pulling year ", yr)
 
-  dat <- fromJSON(url, flatten = TRUE)
+  dat <- read_databallr_json(path, query)
   df <- as_tibble(dat)
 
   if (nrow(df) == 0) {

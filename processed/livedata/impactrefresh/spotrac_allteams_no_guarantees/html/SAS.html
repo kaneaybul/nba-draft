@@ -56,7 +56,7 @@
 	<link rel="preload" as="script" href="https://media.spotrac.com/assets/vendor-a4c5c0fc.js" crossorigin>
 	<!-- Styles -->
 	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/theme-B8LD6b6y.css">
-	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/spotrac-DWLcubKt.css">
+	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/spotrac-B2JLJ0kp.css">
 	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/custom-colors-Cwqmarfn.css">
 	<!-- Font preconnect + preload critical weights -->
 	<link rel="preconnect" href="https://cdn.datatables.net">
@@ -138,7 +138,7 @@
           site: 'datadoghq.com',
           service: 'spotrac',
           env: 'prod',
-          version: '9431e0e2',
+          version: '130e1b48',
           sessionSampleRate: 100,
           sessionReplaySampleRate: 20,
           trackUserInteractions: true,
@@ -214,40 +214,15 @@
                
     
     <!-- BEGIN THM AUTO CODE -->
-    <!-- Reserve space for THM slots to prevent CLS. Sizing is CSS-based (not PHP
-         device detection) because CloudFront serves one cached HTML variant to all
-         devices. THM only targets .ad-wrapper / .table_banner on desktop-width
-         viewports with 728x90 units; mobile gets in-content slots THM injects
-         itself, so no mobile reservation. -->
-    <style>
-      .ad-wrapper, .table_banner { min-height: 0; }
-      @media (min-width: 992px) {
-        .ad-wrapper, .table_banner { min-height: 90px; }
-      }
-    </style>
+    <!-- Ad containers intentionally stay unsized (see docs/SEOOptimization/CLS.md):
+         RUM data showed reservation + collapse strategies made desktop CLS worse
+         (0.085 -> 0.151 p75). THM's injected placeholders carry their own sizing. -->
     <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
     <script type="text/javascript">
     var googletag = googletag || {};
     googletag.cmd = googletag.cmd || [];
     googletag.cmd.push(function() {
       googletag.pubads().disableInitialLoad(); googletag.pubads().enableSingleRequest();
-      // Collapse reserved ad space when a slot renders empty (no-fill), so the
-      // min-height on .ad-wrapper / .table_banner doesn't leave permanent whitespace.
-      googletag.pubads().addEventListener('slotRenderEnded', function(event) {
-        if (!event.isEmpty) return;
-        var slotEl = document.getElementById(event.slot.getSlotElementId());
-        var wrapper = slotEl && slotEl.closest('.ad-wrapper, .table_banner');
-        if (wrapper) wrapper.style.minHeight = '0';
-      });
-    });
-    // Fallback: collapse reserved containers THM never placed a slot in
-    // (e.g. second .ad-wrapper on a page, or table banners on pages THM skips).
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        document.querySelectorAll('.ad-wrapper, .table_banner').forEach(function(w) {
-          if (!w.querySelector('iframe')) w.style.minHeight = '0';
-        });
-      }, 10000);
     });
     var _hbopts = { alias: '/', type: 'banner' };
     var _hbwrap = _hbwrap || [];
@@ -610,10 +585,10 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/47619">Brandon Aiyuk</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21751">Patrick Mahomes</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90353">Terrion Arnold</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90353">Terrion Arnold</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21751">Patrick Mahomes</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/3941">Calais Campbell</a>
@@ -782,13 +757,13 @@ table.summary td{
                               <h6 class="fs-base mb-3">Trending Players</h6>
                               <ul class="widget-list">
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/26990">Anfernee Simons</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/6892">Paul George</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/20208">Jaylen Brown</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/26990">Anfernee Simons</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/2257">LeBron James</a>
@@ -947,16 +922,16 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/24661">Shohei Ohtani</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78625">Jacob Misiorowski</a>
-                                </li>
-                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/11887">Bobby Bonilla</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/14316">Christian Yelich</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/25959">Juan Soto</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/25959">Juan Soto</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78625">Jacob Misiorowski</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21295">Vladimir Guerrero Jr.</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1109,16 +1084,16 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/2179">Alex Ovechkin</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/17953">Blake Coleman</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/62997">Jakub Dobes</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/10769">Olli Maatta</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/24472">Jacob Middleton</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/17953">Blake Coleman</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/2018">Sidney Crosby</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/24472">Jacob Middleton</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1268,10 +1243,10 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90251">Caitlin Clark</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90257">Angel Reese</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/82155">Maïa Hirsch</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/29875">A'ja Wilson</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/29856">Kelsey Mitchell</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/29807">Alyssa Thomas</a>
@@ -1380,16 +1355,16 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78262">Erling Haaland</a>
                                 </li>
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/74369">Marc Cucurella</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/32039">Christian Pulisic</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/23033">Harry Kane</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/32747">Pedro Porro</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/85403">André Onana</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/74369">Marc Cucurella</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1512,7 +1487,7 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21363">Jukka Raitala</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/108835">Brais Méndez</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/86231">Emil Forsberg</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1633,19 +1608,19 @@ table.summary td{
                               <h6 class="fs-base mb-3">Trending Players</h6>
                               <ul class="widget-list">
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/71144">Trinity Rodman</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78089">Jordyn Huitema</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/87078">Croix Bethune</a>
                                 </li>
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90171">Kennedy Fuller</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/48908">Erin Simon</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78089">Jordyn Huitema</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90171">Kennedy Fuller</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/95283">McKenna Whitham</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1737,19 +1712,19 @@ table.summary td{
                               <h6 class="fs-base mb-3">Trending Players</h6>
                               <ul class="widget-list">
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/36574">Michael Block</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/35146">Scottie Scheffler</a>
-                                </li>
-                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/33860">Rickie Fowler</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/33831">Tony Finau</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/34723">Keith Mitchell</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/34666">Rory McIlroy</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/34276">Zach Johnson</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/36574">Michael Block</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/33376">Zac Blair</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1892,8 +1867,8 @@ table.summary td{
                     <div class="ps-3">
 
                         <h6 class="blog-entry-title fs-sm mb-0">
-                            <a href="https://www.spotrac.com/redirect/player/6892">
-                                Paul George <small>(SG, PHI)</small> 
+                            <a href="https://www.spotrac.com/redirect/player/26990">
+                                Anfernee Simons <small>(SG, PHI)</small> 
                             </a>
                         </h6>
 
@@ -1903,8 +1878,8 @@ table.summary td{
                     <div class="ps-3">
 
                         <h6 class="blog-entry-title fs-sm mb-0">
-                            <a href="https://www.spotrac.com/redirect/player/20208">
-                                Jaylen Brown <small>(SF, BOS)</small> 
+                            <a href="https://www.spotrac.com/redirect/player/6892">
+                                Paul George <small>(SG, PHI)</small> 
                             </a>
                         </h6>
 
@@ -1914,8 +1889,8 @@ table.summary td{
                     <div class="ps-3">
 
                         <h6 class="blog-entry-title fs-sm mb-0">
-                            <a href="https://www.spotrac.com/redirect/player/26990">
-                                Anfernee Simons <small>(SG, PHI)</small> 
+                            <a href="https://www.spotrac.com/redirect/player/20208">
+                                Jaylen Brown <small>(SF, BOS)</small> 
                             </a>
                         </h6>
 
@@ -13403,24 +13378,24 @@ function bindDragScroll($container, $scroller) {
                 </div>
         
         <ul class="list-group">                              
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/6892/paul-george'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/26990/anfernee-simons'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">1</span>
+              <span class="text-body fs-sm">Anfernee Simons <small>(SG, PHI)</small> </span>
+            </span>
+            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
+          </li>
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/6892/paul-george'" style="cursor: pointer;">
+            <span>
+              <span class="me-2 text-danger fw-bold">2</span>
               <span class="text-body fs-sm">Paul George <small>(SG, PHI)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/20208/jaylen-brown'" style="cursor: pointer;">
-            <span>
-              <span class="me-2 text-danger fw-bold">2</span>
-              <span class="text-body fs-sm">Jaylen Brown <small>(SF, BOS)</small> </span>
-            </span>
-            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
-          </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/26990/anfernee-simons'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/20208/jaylen-brown'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">3</span>
-              <span class="text-body fs-sm">Anfernee Simons <small>(SG, PHI)</small> </span>
+              <span class="text-body fs-sm">Jaylen Brown <small>(SF, BOS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
@@ -13445,10 +13420,10 @@ function bindDragScroll($container, $scroller) {
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/13328/giannis-antetokounmpo'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/74124/trey-murphy-iii'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">7</span>
-              <span class="text-body fs-sm">Giannis Antetokounmpo <small>(PF, MIL)</small> </span>
+              <span class="text-body fs-sm">Trey Murphy III <small>(SF, NOP)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
@@ -13459,52 +13434,52 @@ function bindDragScroll($container, $scroller) {
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/74124/trey-murphy-iii'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/13328/giannis-antetokounmpo'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">9</span>
-              <span class="text-body fs-sm">Trey Murphy III <small>(SF, NOP)</small> </span>
+              <span class="text-body fs-sm">Giannis Antetokounmpo <small>(PF, MIL)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/27002/mitchell-robinson'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/92960/bronny-james'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">10</span>
-              <span class="text-body fs-sm">Mitchell Robinson <small>(C, BOS)</small> </span>
-            </span>
-            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
-          </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/92960/bronny-james'" style="cursor: pointer;">
-            <span>
-              <span class="me-2 text-danger fw-bold">11</span>
               <span class="text-body fs-sm">Bronny James <small>(PG, LAL)</small> </span>
-            </span>
-            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
-          </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/107917/aj-dybantsa'" style="cursor: pointer;">
-            <span>
-              <span class="me-2 text-danger fw-bold">12</span>
-              <span class="text-body fs-sm">AJ Dybantsa <small>(SF, WAS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
                     <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/78133/walker-kessler'" style="cursor: pointer;">
             <span>
-              <span class="me-2 text-danger fw-bold">13</span>
+              <span class="me-2 text-danger fw-bold">11</span>
               <span class="text-body fs-sm">Walker Kessler <small>(C, LAL)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/13337/tim-hardaway-jr'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/27002/mitchell-robinson'" style="cursor: pointer;">
             <span>
-              <span class="me-2 text-danger fw-bold">14</span>
-              <span class="text-body fs-sm">Tim Hardaway Jr. <small>(SG, MIA)</small> </span>
+              <span class="me-2 text-danger fw-bold">12</span>
+              <span class="text-body fs-sm">Mitchell Robinson <small>(C, BOS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/26969/luka-doncic'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/2536/kyle-lowry'" style="cursor: pointer;">
+            <span>
+              <span class="me-2 text-danger fw-bold">13</span>
+              <span class="text-body fs-sm">Kyle Lowry <small>(PG, PHI)</small> </span>
+            </span>
+            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
+          </li>
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/27758/kenrich-williams'" style="cursor: pointer;">
+            <span>
+              <span class="me-2 text-danger fw-bold">14</span>
+              <span class="text-body fs-sm">Kenrich Williams <small>(PF, OKC)</small> </span>
+            </span>
+            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
+          </li>
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/23598/jayson-tatum'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">15</span>
-              <span class="text-body fs-sm">Luka Doncic <small>(PG, LAL)</small> </span>
+              <span class="text-body fs-sm">Jayson Tatum <small>(PF, BOS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
@@ -13550,14 +13525,14 @@ function bindDragScroll($container, $scroller) {
                     <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/https:/www.spotrac.com/nba/free-agents/signed'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">4</span>
-              <span class="text-body fs-sm">2026 Center Free Agents</span>
+              <span class="text-body fs-sm">2026 NBA Free Agents</span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
                     <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/https:/www.spotrac.com/nba/contracts'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">5</span>
-              <span class="text-body fs-sm">Center Contracts</span>
+              <span class="text-body fs-sm">Golden State Warriors Contracts</span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>

@@ -56,7 +56,7 @@
 	<link rel="preload" as="script" href="https://media.spotrac.com/assets/vendor-a4c5c0fc.js" crossorigin>
 	<!-- Styles -->
 	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/theme-B8LD6b6y.css">
-	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/spotrac-DWLcubKt.css">
+	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/spotrac-B2JLJ0kp.css">
 	<link rel="stylesheet" media="screen" href="https://media.spotrac.com/assets/css/custom-colors-Cwqmarfn.css">
 	<!-- Font preconnect + preload critical weights -->
 	<link rel="preconnect" href="https://cdn.datatables.net">
@@ -138,7 +138,7 @@
           site: 'datadoghq.com',
           service: 'spotrac',
           env: 'prod',
-          version: '9431e0e2',
+          version: '130e1b48',
           sessionSampleRate: 100,
           sessionReplaySampleRate: 20,
           trackUserInteractions: true,
@@ -214,40 +214,15 @@
                
     
     <!-- BEGIN THM AUTO CODE -->
-    <!-- Reserve space for THM slots to prevent CLS. Sizing is CSS-based (not PHP
-         device detection) because CloudFront serves one cached HTML variant to all
-         devices. THM only targets .ad-wrapper / .table_banner on desktop-width
-         viewports with 728x90 units; mobile gets in-content slots THM injects
-         itself, so no mobile reservation. -->
-    <style>
-      .ad-wrapper, .table_banner { min-height: 0; }
-      @media (min-width: 992px) {
-        .ad-wrapper, .table_banner { min-height: 90px; }
-      }
-    </style>
+    <!-- Ad containers intentionally stay unsized (see docs/SEOOptimization/CLS.md):
+         RUM data showed reservation + collapse strategies made desktop CLS worse
+         (0.085 -> 0.151 p75). THM's injected placeholders carry their own sizing. -->
     <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
     <script type="text/javascript">
     var googletag = googletag || {};
     googletag.cmd = googletag.cmd || [];
     googletag.cmd.push(function() {
       googletag.pubads().disableInitialLoad(); googletag.pubads().enableSingleRequest();
-      // Collapse reserved ad space when a slot renders empty (no-fill), so the
-      // min-height on .ad-wrapper / .table_banner doesn't leave permanent whitespace.
-      googletag.pubads().addEventListener('slotRenderEnded', function(event) {
-        if (!event.isEmpty) return;
-        var slotEl = document.getElementById(event.slot.getSlotElementId());
-        var wrapper = slotEl && slotEl.closest('.ad-wrapper, .table_banner');
-        if (wrapper) wrapper.style.minHeight = '0';
-      });
-    });
-    // Fallback: collapse reserved containers THM never placed a slot in
-    // (e.g. second .ad-wrapper on a page, or table banners on pages THM skips).
-    window.addEventListener('load', function() {
-      setTimeout(function() {
-        document.querySelectorAll('.ad-wrapper, .table_banner').forEach(function(w) {
-          if (!w.querySelector('iframe')) w.style.minHeight = '0';
-        });
-      }, 10000);
     });
     var _hbopts = { alias: '/', type: 'banner' };
     var _hbwrap = _hbwrap || [];
@@ -610,13 +585,13 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/47619">Brandon Aiyuk</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21751">Patrick Mahomes</a>
-                                </li>
-                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90353">Terrion Arnold</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/3941">Calais Campbell</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21751">Patrick Mahomes</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21753">Deshaun Watson</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -782,19 +757,19 @@ table.summary td{
                               <h6 class="fs-base mb-3">Trending Players</h6>
                               <ul class="widget-list">
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/26990">Anfernee Simons</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/6892">Paul George</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/20208">Jaylen Brown</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/26990">Anfernee Simons</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/8070">Tobias Harris</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/2257">LeBron James</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/8070">Tobias Harris</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -947,10 +922,10 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/24661">Shohei Ohtani</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78625">Jacob Misiorowski</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/11887">Bobby Bonilla</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/11887">Bobby Bonilla</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78625">Jacob Misiorowski</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/14316">Christian Yelich</a>
@@ -1109,16 +1084,16 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/2179">Alex Ovechkin</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/17953">Blake Coleman</a>
-                                </li>
-                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/10769">Olli Maatta</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/24472">Jacob Middleton</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/17953">Blake Coleman</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/2018">Sidney Crosby</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/62997">Jakub Dobes</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/24472">Jacob Middleton</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1268,10 +1243,10 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90251">Caitlin Clark</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90257">Angel Reese</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/82155">Maïa Hirsch</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/29875">A'ja Wilson</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/29856">Kelsey Mitchell</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/29807">Alyssa Thomas</a>
@@ -1380,16 +1355,16 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78262">Erling Haaland</a>
                                 </li>
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/74369">Marc Cucurella</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/32039">Christian Pulisic</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/23033">Harry Kane</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/32747">Pedro Porro</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/85403">André Onana</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/74369">Marc Cucurella</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1503,16 +1478,16 @@ table.summary td{
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/84437">Lionel Messi</a>
                                 </li>
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21363">Jukka Raitala</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/108822">Robert Lewandowski</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/28278">Matt Freese</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/21363">Jukka Raitala</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/108835">Brais Méndez</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/9458">Landon Donovan</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1633,19 +1608,19 @@ table.summary td{
                               <h6 class="fs-base mb-3">Trending Players</h6>
                               <ul class="widget-list">
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/71144">Trinity Rodman</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/87078">Croix Bethune</a>
-                                </li>
-                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/48908">Erin Simon</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/78089">Jordyn Huitema</a>
                                 </li>
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/87078">Croix Bethune</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/90171">Kennedy Fuller</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/105253">Nicki Hernández</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1737,19 +1712,19 @@ table.summary td{
                               <h6 class="fs-base mb-3">Trending Players</h6>
                               <ul class="widget-list">
                                                                 <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/33860">Rickie Fowler</a>
+                                </li>
+                                                                <li class="widget-list-item">
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/34723">Keith Mitchell</a>
+                                </li>
+                                                                <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/36574">Michael Block</a>
                                 </li>
                                                                 <li class="widget-list-item">
                                   <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/35146">Scottie Scheffler</a>
                                 </li>
                                                                 <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/33860">Rickie Fowler</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/33831">Tony Finau</a>
-                                </li>
-                                                                <li class="widget-list-item">
-                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/34666">Rory McIlroy</a>
+                                  <a class="widget-list-link" href="https://www.spotrac.com/redirect/player/34276">Zach Johnson</a>
                                 </li>
                                                               </ul>
                             </div>
@@ -1892,8 +1867,8 @@ table.summary td{
                     <div class="ps-3">
 
                         <h6 class="blog-entry-title fs-sm mb-0">
-                            <a href="https://www.spotrac.com/redirect/player/6892">
-                                Paul George <small>(SG, PHI)</small> 
+                            <a href="https://www.spotrac.com/redirect/player/26990">
+                                Anfernee Simons <small>(SG, PHI)</small> 
                             </a>
                         </h6>
 
@@ -1903,8 +1878,8 @@ table.summary td{
                     <div class="ps-3">
 
                         <h6 class="blog-entry-title fs-sm mb-0">
-                            <a href="https://www.spotrac.com/redirect/player/20208">
-                                Jaylen Brown <small>(SF, BOS)</small> 
+                            <a href="https://www.spotrac.com/redirect/player/6892">
+                                Paul George <small>(SG, PHI)</small> 
                             </a>
                         </h6>
 
@@ -1914,8 +1889,8 @@ table.summary td{
                     <div class="ps-3">
 
                         <h6 class="blog-entry-title fs-sm mb-0">
-                            <a href="https://www.spotrac.com/redirect/player/26990">
-                                Anfernee Simons <small>(SG, PHI)</small> 
+                            <a href="https://www.spotrac.com/redirect/player/20208">
+                                Jaylen Brown <small>(SF, BOS)</small> 
                             </a>
                         </h6>
 
@@ -3907,7 +3882,7 @@ table.dataTable-yearly{
                 <thead>
                     <tr>
                         <th class="text-left " id="team" style="z-index: 100; width:200px !important">
-                            Player (6)
+                            Player (7)
                         </th>
 
                         <th class="text-center w-50px" id=""  data-sort="">
@@ -4558,6 +4533,134 @@ table.dataTable-yearly{
                  
                   <tr class="">
 
+                    <td class="text-left  " style="z-index: 100" data-export="Kyle Anderson" >
+                            <span class="d-none">Anderson</span>
+
+                        <a href="https://www.spotrac.com/nba/player/_/id/15382/kyle-anderson" class="link">Kyle Anderson</a>       
+
+                                                                                                
+                        
+                        
+                        
+                                                <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="Trade Restriction: 12/15/2026"><i class="fa-regular fa-location-pin-lock text-muted ms-1"></i></a>
+                        
+                        
+                                                <a href="javascript:void(0)" class="text-dark float-end" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="Pending Signing"><i class="fa-solid fa-money-check-dollar-pen"></i></a>
+                                            
+						                
+						
+												
+			
+						
+						
+
+						
+                    </td>
+
+                    <td class=" text-center details-sm  "  data-export="PF">
+                        PF                    </td>
+
+                    <td class=" text-center details-sm  " data-export="33">
+                        33                    </td>
+
+                                        
+                    
+                    <!-- contract -->
+                                                            
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="2449421" data-export="2449421">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    <div class='pill pill-normal pill-nba text-center pill-estimate'><div class='pill-start float-start text-center text-white' >$2,449,421</div><div class='pill-end float-end text-center'>1.5%</div></div>
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="5" data-export="2449421">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    <div class='pill pill-normal pill-nba text-center pill-ufa'><div class='pill-start float-start text-center text-white' >UFA <span style='font-size:8px'> / $2.4M</span></div></div>
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                    
+                 </tr>
+                 
+                  <tr class="">
+
                     <td class="text-left  " style="z-index: 100" data-export="Mouhamadou Gueye" >
                             <span class="d-none">Gueye</span>
 
@@ -4732,7 +4835,7 @@ table.dataTable-yearly{
                 <thead>
                     <tr>
                         <th class="text-left " id="team" style="z-index: 100; width:200px !important">
-                            Player (10)
+                            Player (11)
                         </th>
 
                         <th class="text-center w-50px" id=""  data-sort="">
@@ -5712,6 +5815,135 @@ table.dataTable-yearly{
 
 
                                     <div class='pill pill-normal pill-nba text-center pill-rfa'><div class='pill-start float-start text-center text-white' >RFA <span style='font-size:8px'> / $15.2M</span></div><div class='pill-end float-end text-center'>8.3%</div></div>
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                
+
+                    </td>            
+                    
+                 </tr>
+                 
+                  <tr class="">
+
+                    <td class="text-left  " style="z-index: 100" data-export="Enrique Freeman" >
+                            <span class="d-none">Freeman</span>
+
+                        <a href="https://www.spotrac.com/nba/player/_/id/93958/enrique-freeman" class="link">Enrique Freeman</a>       
+
+                                                                                                
+                        
+                        
+                        
+                                                <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="Trade Restriction: 08/01/2026"><i class="fa-regular fa-location-pin-lock text-muted ms-1"></i></a>
+                        
+                        
+                                                <a href="javascript:void(0)" class="text-dark float-end" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="Pending Signing"><i class="fa-solid fa-money-check-dollar-pen"></i></a>
+                                            
+						                
+						
+												
+			
+						
+						
+
+						
+                    </td>
+
+                    <td class=" text-center details-sm  "  data-export="PF">
+                        PF                    </td>
+
+                    <td class=" text-center details-sm  " data-export="26">
+                        26                    </td>
+
+                                        
+                    
+                    <!-- contract -->
+                                                            
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="0" data-export="0">
+
+                        
+                        
+                                                        <a href="javascript:void(0)" class="player-modal" data-breakdown_id="489975"  data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="GTD: $91,000" style="">                                
+                                    
+
+
+                                    <div class='pill pill-normal pill-nba text-center'><div class='pill-start float-start text-center' >Two-Way</div><div class='pill-end float-end text-center'>&nbsp;</div></div>
+                                                                                                                            </a>
+                            
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="4" data-export="2294371">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    <div class='pill pill-normal pill-nba text-center pill-rfa'><div class='pill-start float-start text-center text-white' >RFA <span style='font-size:8px'> / $2.3M</span></div><div class='pill-end float-end text-center'>1.3%</div></div>
+                                                                                                
+
+                    </td>            
+                                        
+                    <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10" data-export=" ">
+
+                        
+                        
+                                                            
+                                    
+
+
+                                    
+                                    
+                                    <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
                                                                                                 
 
                     </td>            
@@ -7776,7 +8008,7 @@ table.dataTable-yearly{
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $69,916,194                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                $76,190,380                                            </td>
+                                                $78,484,751                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $173,857,745                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -7798,7 +8030,7 @@ table.dataTable-yearly{
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $257,897,854                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                $264,973,841                                            </td>
+                                                $267,268,212                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $293,166,684                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -7820,7 +8052,7 @@ table.dataTable-yearly{
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $-92,936,854                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                $-91,723,841                                            </td>
+                                                $-94,018,212                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $-111,253,684                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -8314,7 +8546,7 @@ table.dataTable-yearly{
                     </td>
 
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                $187,981,660                                            </td>
+                                                $188,660,542                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                 $188,783,461                                            </td>
                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -8436,7 +8668,7 @@ table.dataTable-yearly{
                     <thead>
                         <tr>
                             <th class="text-left " id="team" style="z-index: 100; width:200px !important">
-                                Player (14)
+                                Player (16)
                             </th>
 
                             <th class="text-center w-50px" id=""  data-sort="">
@@ -9736,6 +9968,124 @@ table.dataTable-yearly{
                       <tr class="">
 
                         <td class="text-left  " style="z-index: 100" >
+                                <span class="d-none">Anderson</span>
+
+                            <a href="https://www.spotrac.com/nba/player/_/id/15382/kyle-anderson" class="link">Kyle Anderson</a>       
+
+                                                                                                                
+                            
+                            
+                                                        <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="Trade Restriction: 12/15/2026"><i class="fa-regular fa-location-pin-lock text-muted ms-1"></i></a>
+                            
+                                           
+                        </td>
+
+                        <td class=" text-center details-sm  ">
+                            PF                        </td>
+
+                        <td class=" text-center details-sm  ">
+                            33                        </td>
+
+                        
+                        
+                        
+                        <!-- contract -->
+                                                                        
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="2449421">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                        <div class='pill pill-normal pill-nba text-center pill-estimate'><div class='pill-start float-start text-center text-white' >$2,449,421</div><div class='pill-end float-end text-center'>1.5%</div></div>  
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="5">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                        <div class='pill pill-normal pill-nba text-center pill-ufa'><div class='pill-start float-start text-center text-white' >UFA <span style='font-size:8px'> / $2.4M</span></div></div>  
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                        
+                     </tr>
+                     
+                      <tr class="">
+
+                        <td class="text-left  " style="z-index: 100" >
                                 <span class="d-none">Gueye</span>
 
                             <a href="https://www.spotrac.com/nba/player/_/id/79540/mouhamadou-gueye" class="link">Mouhamadou Gueye</a>       
@@ -9781,6 +10131,125 @@ table.dataTable-yearly{
 
 
                                         <div class='pill pill-normal pill-nba text-center pill-rfa'><div class='pill-start float-start text-center text-white' >RFA <span style='font-size:8px'> / $3.3M</span></div><div class='pill-end float-end text-center'>1.9%</div></div>  
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="-10">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                          
+                                        
+                                        <div class="pill pill-normal pill-nba text-center" style="visibility: hidden"><div class="pill-start float-start text-center">&nbsp;</div></div>
+
+                                                                                                            
+
+                        </td>            
+                        
+                     </tr>
+                     
+                      <tr class="">
+
+                        <td class="text-left  " style="z-index: 100" >
+                                <span class="d-none">Freeman</span>
+
+                            <a href="https://www.spotrac.com/nba/player/_/id/93958/enrique-freeman" class="link">Enrique Freeman</a>       
+
+                                                                                                                
+                            
+                            
+                                                        <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="Trade Restriction: 08/01/2026"><i class="fa-regular fa-location-pin-lock text-muted ms-1"></i></a>
+                            
+                                           
+                        </td>
+
+                        <td class=" text-center details-sm  ">
+                            PF                        </td>
+
+                        <td class=" text-center details-sm  ">
+                            26                        </td>
+
+                        
+                        
+                        
+                        <!-- contract -->
+                                                                        
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="0">
+
+                            
+                            
+                                                                <a href="javascript:void(0)" class="player-modal" data-breakdown_id="489975"  data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="" data-bs-original-title="GTD: $91,000">                                    
+                                        
+
+
+                                        <div class='pill pill-normal pill-nba text-center'><div class='pill-start float-start text-center' >Two-Way</div><div class='pill-end float-end text-center'>&nbsp;</div></div>  
+                                                                                                                                            </a>
+                                
+
+                        </td>            
+                                                
+                        <td class=" text-center py-2 px-2 " style="vertical-align: middle; position:relative !important;" data-sort="4">
+
+                            
+                            
+                                                                    
+                                        
+
+
+                                        <div class='pill pill-normal pill-nba text-center pill-rfa'><div class='pill-start float-start text-center text-white' >RFA <span style='font-size:8px'> / $2.3M</span></div><div class='pill-end float-end text-center'>1.3%</div></div>  
                                                                                                             
 
                         </td>            
@@ -11633,9 +12102,9 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $278,960,876                                                            </td>
+                                                                $281,410,297                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $290,087,393                                                            </td>
+                                                                $294,831,185                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $273,134,795                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -11655,9 +12124,9 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $-113,999,876                                                            </td>
+                                                                $-116,449,297                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $-116,837,393                                                            </td>
+                                                                $-121,581,185                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $-91,221,795                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -11670,7 +12139,7 @@ table.dataTable-yearly{
                         </tr> 
 
                         <script>
-                            $("#pending-cap-space").html("$-113,999,876")
+                            $("#pending-cap-space").html("$-116,449,297")
                         </script>
 
                         <tr class="">
@@ -11754,9 +12223,9 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $216,225,734                                                            </td>
+                                                                $218,675,155                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $253,079,023                                                            </td>
+                                                                $255,373,394                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $238,259,495                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -11775,9 +12244,9 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $-7,210,734                                                            </td>
+                                                                $-9,660,155                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $-33,629,023                                                            </td>
+                                                                $-35,923,394                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $-7,836,495                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -11874,9 +12343,9 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $216,225,734                                                            </td>
+                                                                $218,675,155                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $253,079,023                                                            </td>
+                                                                $255,373,394                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $238,259,495                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -11895,9 +12364,9 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $5,460,266                                                            </td>
+                                                                $3,010,845                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $-19,979,023                                                            </td>
+                                                                $-22,273,394                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $6,495,505                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -11911,9 +12380,9 @@ table.dataTable-yearly{
                                                                         
                         
                         <script>
-                            $("#pending-apron-space").html("$-7,210,734")
+                            $("#pending-apron-space").html("$-9,660,155")
 							
-                            $("#pending-apron2-space").html("$5,460,266")
+                            $("#pending-apron2-space").html("$3,010,845")
                         </script>
 
                         
@@ -11994,7 +12463,7 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $214,475,734                                                            </td>
+                                                                $216,925,155                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $195,751,778                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -12017,7 +12486,7 @@ table.dataTable-yearly{
 
 
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $-14,047,734                                                            </td>
+                                                                $-16,497,155                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
                                                                 $14,747,222                                                            </td>
                                                         <td class=" text-center " style="vertical-align: middle; position:relative;">
@@ -12032,7 +12501,7 @@ table.dataTable-yearly{
                         </tr> 
                                                 
                         <script>
-                            $("#pending-tax-space").html("$-14,047,734")
+                            $("#pending-tax-space").html("$-16,497,155")
                         </script>
 
 
@@ -12047,10 +12516,10 @@ table.dataTable-yearly{
                         
                         
                             <td class=" text-center " style="vertical-align: middle; position:relative;">
-                                                                $20,363,988                                                            </td>
+                                                                $28,936,961                                                            </td>
                             
                                                          <script>
-                                $("#pending-tax-bill").html("$20,363,988")
+                                $("#pending-tax-bill").html("$28,936,961")
                             </script>
                                                         
                                                 
@@ -12237,27 +12706,6 @@ table.dataTable-yearly{
                     10/31/2026                </td>
 
                 <td class=" text-left   ">
-                    <a href="https://www.spotrac.com/nba/player/_/id/91774/terrence-shannon-jr" class="link">Terrence Shannon Jr.</a>   
-
-                </td>
-
-                <td class=" text-left   ">
-                    <div class="d-inline-block me-2 option option-club" style="width: 120px">CLUB</div>
-
-                    2027-28 Club Option                 </td>
-
-                <td class=" text-right   ">
-                                        $5,054,159                                    </td>
-
-
-             </tr>
-             
-              <tr class="">
-
-                <td class="text-left" >
-                    10/31/2026                </td>
-
-                <td class=" text-left   ">
                     <a href="https://www.spotrac.com/nba/player/_/id/98624/joan-beringer" class="link">Joan Beringer</a>   
 
                 </td>
@@ -12276,20 +12724,20 @@ table.dataTable-yearly{
               <tr class="">
 
                 <td class="text-left" >
-                    6/29/2027                </td>
+                    10/31/2026                </td>
 
                 <td class=" text-left   ">
-                    <a href="https://www.spotrac.com/nba/player/_/id/13340/rudy-gobert" class="link">Rudy Gobert</a>   
+                    <a href="https://www.spotrac.com/nba/player/_/id/91774/terrence-shannon-jr" class="link">Terrence Shannon Jr.</a>   
 
                 </td>
 
                 <td class=" text-left   ">
-                    <div class="d-inline-block me-2 option option-player" style="width: 120px">PLAYER</div>
+                    <div class="d-inline-block me-2 option option-club" style="width: 120px">CLUB</div>
 
-                    2027-28 Player Option                 </td>
+                    2027-28 Club Option                 </td>
 
                 <td class=" text-right   ">
-                                        $38,000,000                                    </td>
+                                        $5,054,159                                    </td>
 
 
              </tr>
@@ -12321,6 +12769,27 @@ table.dataTable-yearly{
                     6/29/2027                </td>
 
                 <td class=" text-left   ">
+                    <a href="https://www.spotrac.com/nba/player/_/id/94457/zyon-pullin" class="link">Zyon Pullin</a>   
+
+                </td>
+
+                <td class=" text-left   ">
+                    <div class="d-inline-block me-2 option option-qualifying-offer" style="width: 120px">RFA / QO</div>
+
+                    2027-28 Qualifying Offer &mdash; <span style="font-size:8px; font-style:italic">Two-Way</span>                </td>
+
+                <td class=" text-right   ">
+                                    </td>
+
+
+             </tr>
+             
+              <tr class="">
+
+                <td class="text-left" >
+                    6/29/2027                </td>
+
+                <td class=" text-left   ">
                     <a href="https://www.spotrac.com/nba/player/_/id/99259/rocco-zikarsky" class="link">Rocco Zikarsky</a>   
 
                 </td>
@@ -12342,17 +12811,17 @@ table.dataTable-yearly{
                     6/29/2027                </td>
 
                 <td class=" text-left   ">
-                    <a href="https://www.spotrac.com/nba/player/_/id/94457/zyon-pullin" class="link">Zyon Pullin</a>   
+                    <a href="https://www.spotrac.com/nba/player/_/id/13340/rudy-gobert" class="link">Rudy Gobert</a>   
 
                 </td>
 
                 <td class=" text-left   ">
-                    <div class="d-inline-block me-2 option option-qualifying-offer" style="width: 120px">RFA / QO</div>
+                    <div class="d-inline-block me-2 option option-player" style="width: 120px">PLAYER</div>
 
-                    2027-28 Qualifying Offer &mdash; <span style="font-size:8px; font-style:italic">Two-Way</span>                </td>
+                    2027-28 Player Option                 </td>
 
                 <td class=" text-right   ">
-                                    </td>
+                                        $38,000,000                                    </td>
 
 
              </tr>
@@ -13873,6 +14342,18 @@ table.dataTable-yearly{
                 <div class="w-100">
 
                     <h6 class="blog-entry-title mb-0">
+                        <div class="float-end fs-xs text-uppercase fw-semibold text-dark"><small>Jul 02, 2026</small></div>
+
+                        <a href="https://www.spotrac.com/redirect/player/93958" class="fs-sm text-lightblue fw-500">Enrique Freeman, PF                        </a> 
+                    </h6>
+
+                    <p class="text-muted lh-base mb-0 fs-xs">Agreed to a Two-Way contract with Minnesota (MIN)</p>                
+                </div>
+              </div>
+                            <div class="d-flex align-items-center border-bottom mb-3 pb-3">
+                <div class="w-100">
+
+                    <h6 class="blog-entry-title mb-0">
                         <div class="float-end fs-xs text-uppercase fw-semibold text-dark"><small>Jun 30, 2026</small></div>
 
                         <a href="https://www.spotrac.com/redirect/player/74133" class="fs-sm text-lightblue fw-500">Nah'Shon Hyland, PG                        </a> 
@@ -13915,18 +14396,6 @@ table.dataTable-yearly{
                     </h6>
 
                     <p class="text-muted lh-base mb-0 fs-xs">Traded to Minnesota (MIN) from Charlotte (CHA)  with  <a href="https://www.spotrac.com/redirect/player/70645" class="tag player-tag">LaMelo Ball</a>, a 2028 pick [CHA right to swap with MIN] , a 2033 pick [unprotected] , a 2029 1st round pick [CHA right to swap with MIN] , a 2030 1st round pick [CHA right to swap with MIN] , a 2029 2nd round pick, a 2032 2nd round pick and a 2033 2nd round pick for  <a href="https://www.spotrac.com/redirect/player/32045" class="tag player-tag">Naz Reid</a></p>                
-                </div>
-              </div>
-                            <div class="d-flex align-items-center border-bottom mb-3 pb-3">
-                <div class="w-100">
-
-                    <h6 class="blog-entry-title mb-0">
-                        <div class="float-end fs-xs text-uppercase fw-semibold text-dark"><small>Jun 25, 2026</small></div>
-
-                        <a href="https://www.spotrac.com/redirect/player/70645" class="fs-sm text-lightblue fw-500">LaMelo Ball, PG                        </a> 
-                    </h6>
-
-                    <p class="text-muted lh-base mb-0 fs-xs">Traded to Minnesota (MIN) from Charlotte (CHA)  with  <a href="https://www.spotrac.com/redirect/player/70660" class="tag player-tag">Josh Green</a>, a 2028 pick [CHA right to swap with MIN] , a 2033 pick [unprotected] , a 2029 1st round pick [CHA right to swap with MIN] , a 2030 1st round pick [CHA right to swap with MIN] , a 2029 2nd round pick, a 2032 2nd round pick and a 2033 2nd round pick for  <a href="https://www.spotrac.com/redirect/player/32045" class="tag player-tag">Naz Reid</a></p>                
                 </div>
               </div>
               
@@ -14842,6 +15311,18 @@ function bindDragScroll($container, $scroller) {
                 <div class="w-100">
 
                     <h6 class="blog-entry-title mb-0">
+                        <div class="float-end fs-xs text-uppercase fw-semibold text-dark"><small>Jul 02, 2026</small></div>
+
+                        <a href="https://www.spotrac.com/redirect/player/93958" class="fs-sm text-lightblue fw-500">Enrique Freeman, PF                        </a> 
+                    </h6>
+
+                    <p class="text-muted lh-base mb-0 fs-xs">Agreed to a Two-Way contract with Minnesota (MIN)</p>                
+                </div>
+              </div>
+                            <div class="d-flex align-items-center border-bottom mb-3 pb-3">
+                <div class="w-100">
+
+                    <h6 class="blog-entry-title mb-0">
                         <div class="float-end fs-xs text-uppercase fw-semibold text-dark"><small>Jun 30, 2026</small></div>
 
                         <a href="https://www.spotrac.com/redirect/player/74133" class="fs-sm text-lightblue fw-500">Nah'Shon Hyland, PG                        </a> 
@@ -14886,18 +15367,6 @@ function bindDragScroll($container, $scroller) {
                     <p class="text-muted lh-base mb-0 fs-xs">Traded to Minnesota (MIN) from Charlotte (CHA)  with  <a href="https://www.spotrac.com/redirect/player/70645" class="tag player-tag">LaMelo Ball</a>, a 2028 pick [CHA right to swap with MIN] , a 2033 pick [unprotected] , a 2029 1st round pick [CHA right to swap with MIN] , a 2030 1st round pick [CHA right to swap with MIN] , a 2029 2nd round pick, a 2032 2nd round pick and a 2033 2nd round pick for  <a href="https://www.spotrac.com/redirect/player/32045" class="tag player-tag">Naz Reid</a></p>                
                 </div>
               </div>
-                            <div class="d-flex align-items-center border-bottom mb-3 pb-3">
-                <div class="w-100">
-
-                    <h6 class="blog-entry-title mb-0">
-                        <div class="float-end fs-xs text-uppercase fw-semibold text-dark"><small>Jun 25, 2026</small></div>
-
-                        <a href="https://www.spotrac.com/redirect/player/70645" class="fs-sm text-lightblue fw-500">LaMelo Ball, PG                        </a> 
-                    </h6>
-
-                    <p class="text-muted lh-base mb-0 fs-xs">Traded to Minnesota (MIN) from Charlotte (CHA)  with  <a href="https://www.spotrac.com/redirect/player/70660" class="tag player-tag">Josh Green</a>, a 2028 pick [CHA right to swap with MIN] , a 2033 pick [unprotected] , a 2029 1st round pick [CHA right to swap with MIN] , a 2030 1st round pick [CHA right to swap with MIN] , a 2029 2nd round pick, a 2032 2nd round pick and a 2033 2nd round pick for  <a href="https://www.spotrac.com/redirect/player/32045" class="tag player-tag">Naz Reid</a></p>                
-                </div>
-              </div>
               
                   
                 <div class="d-flex align-items-center border-bottom mb-2 pb-2">
@@ -14929,24 +15398,24 @@ function bindDragScroll($container, $scroller) {
                 </div>
         
         <ul class="list-group">                              
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/6892/paul-george'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/26990/anfernee-simons'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">1</span>
+              <span class="text-body fs-sm">Anfernee Simons <small>(SG, PHI)</small> </span>
+            </span>
+            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
+          </li>
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/6892/paul-george'" style="cursor: pointer;">
+            <span>
+              <span class="me-2 text-danger fw-bold">2</span>
               <span class="text-body fs-sm">Paul George <small>(SG, PHI)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/20208/jaylen-brown'" style="cursor: pointer;">
-            <span>
-              <span class="me-2 text-danger fw-bold">2</span>
-              <span class="text-body fs-sm">Jaylen Brown <small>(SF, BOS)</small> </span>
-            </span>
-            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
-          </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/26990/anfernee-simons'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/20208/jaylen-brown'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">3</span>
-              <span class="text-body fs-sm">Anfernee Simons <small>(SG, PHI)</small> </span>
+              <span class="text-body fs-sm">Jaylen Brown <small>(SF, BOS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
@@ -14971,10 +15440,10 @@ function bindDragScroll($container, $scroller) {
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/13328/giannis-antetokounmpo'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/74124/trey-murphy-iii'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">7</span>
-              <span class="text-body fs-sm">Giannis Antetokounmpo <small>(PF, MIL)</small> </span>
+              <span class="text-body fs-sm">Trey Murphy III <small>(SF, NOP)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
@@ -14985,52 +15454,52 @@ function bindDragScroll($container, $scroller) {
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/74124/trey-murphy-iii'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/13328/giannis-antetokounmpo'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">9</span>
-              <span class="text-body fs-sm">Trey Murphy III <small>(SF, NOP)</small> </span>
+              <span class="text-body fs-sm">Giannis Antetokounmpo <small>(PF, MIL)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/27002/mitchell-robinson'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/92960/bronny-james'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">10</span>
-              <span class="text-body fs-sm">Mitchell Robinson <small>(C, BOS)</small> </span>
-            </span>
-            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
-          </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/92960/bronny-james'" style="cursor: pointer;">
-            <span>
-              <span class="me-2 text-danger fw-bold">11</span>
               <span class="text-body fs-sm">Bronny James <small>(PG, LAL)</small> </span>
-            </span>
-            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
-          </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/107917/aj-dybantsa'" style="cursor: pointer;">
-            <span>
-              <span class="me-2 text-danger fw-bold">12</span>
-              <span class="text-body fs-sm">AJ Dybantsa <small>(SF, WAS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
                     <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/78133/walker-kessler'" style="cursor: pointer;">
             <span>
-              <span class="me-2 text-danger fw-bold">13</span>
+              <span class="me-2 text-danger fw-bold">11</span>
               <span class="text-body fs-sm">Walker Kessler <small>(C, LAL)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/13337/tim-hardaway-jr'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/27002/mitchell-robinson'" style="cursor: pointer;">
             <span>
-              <span class="me-2 text-danger fw-bold">14</span>
-              <span class="text-body fs-sm">Tim Hardaway Jr. <small>(SG, MIA)</small> </span>
+              <span class="me-2 text-danger fw-bold">12</span>
+              <span class="text-body fs-sm">Mitchell Robinson <small>(C, BOS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
-                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/26969/luka-doncic'" style="cursor: pointer;">
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/2536/kyle-lowry'" style="cursor: pointer;">
+            <span>
+              <span class="me-2 text-danger fw-bold">13</span>
+              <span class="text-body fs-sm">Kyle Lowry <small>(PG, PHI)</small> </span>
+            </span>
+            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
+          </li>
+                    <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/27758/kenrich-williams'" style="cursor: pointer;">
+            <span>
+              <span class="me-2 text-danger fw-bold">14</span>
+              <span class="text-body fs-sm">Kenrich Williams <small>(PF, OKC)</small> </span>
+            </span>
+            <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
+          </li>
+                    <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/nba/player/_/id/23598/jayson-tatum'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">15</span>
-              <span class="text-body fs-sm">Luka Doncic <small>(PG, LAL)</small> </span>
+              <span class="text-body fs-sm">Jayson Tatum <small>(PF, BOS)</small> </span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
@@ -15076,14 +15545,14 @@ function bindDragScroll($container, $scroller) {
                     <li class="list-group-item d-flex  justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/https:/www.spotrac.com/nba/free-agents/signed'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">4</span>
-              <span class="text-body fs-sm">2026 Center Free Agents</span>
+              <span class="text-body fs-sm">2026 NBA Free Agents</span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>
                     <li class="list-group-item d-flex list-group-item-secondary justify-content-between align-items-center cursor p-2" onClick="javascript: document.location='https://www.spotrac.com/https:/www.spotrac.com/nba/contracts'" style="cursor: pointer;">
             <span>
               <span class="me-2 text-danger fw-bold">5</span>
-              <span class="text-body fs-sm">Center Contracts</span>
+              <span class="text-body fs-sm">Golden State Warriors Contracts</span>
             </span>
             <span class="small"><span class="text-lightblue"><i class="ci-arrow-right"></i></span></span>
           </li>

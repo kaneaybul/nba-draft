@@ -114,6 +114,7 @@ type TeamSortKey =
   | "raw_defense"
   | "minutes"
   | SkillKey;
+type TeamContributorSortKey = "player_name" | "share" | "offense_contribution" | "defense_contribution" | "total_contribution" | "Minutes";
 type ConferenceFilter = "All" | "East" | "West";
 type TeamProjectionScenario = "base" | "guaranteed" | "open_market";
 type DraftYearSelection = number | "All";
@@ -177,7 +178,13 @@ type LineupSummary = {
   gaps: number;
   spikes: number;
   skillAverages: Record<string, number>;
+  skillTotals: Record<string, number>;
 };
+type LineupBenchmark = {
+  values: number[];
+  average: number;
+};
+type LineupBenchmarks = Map<number, Record<string, LineupBenchmark>>;
 type LineupSuggestion = {
   player: PlayerImpact;
   summary: LineupSummary;
@@ -283,7 +290,7 @@ const lineupSkills: LineupSkill[] = [
   { key: "RIMPRO", label: "RIMPRO", source: "RIMPRO" }
 ];
 const LINEUP_SUGGESTIONS_PER_PAGE = 8;
-const LINEUP_SUGGESTION_PAGE_COUNT = 3;
+const LINEUP_SUGGESTION_PAGE_COUNT = 6;
 const LINEUP_MAX_SUGGESTIONS = LINEUP_SUGGESTIONS_PER_PAGE * LINEUP_SUGGESTION_PAGE_COUNT;
 const MAX_VISIBLE_TABLE_ROWS = 500;
 const DRAFT_ELO_INITIAL_RATING = 1500;
@@ -317,16 +324,10 @@ const draftSkillAggregateSorts: Array<{ key: DraftSortKey; label: string; title:
 const NBA_HEADSHOT_URL = "https://cdn.nba.com/headshots/nba/latest/260x190";
 const BRENDAN_MODEL_BOARD = "Brendan Model";
 const BRENDAN_BASE_BOARD = "Brendan Base";
-const teamProjectionScenarios: Array<{ id: TeamProjectionScenario; label: string; shortLabel: string }> = [
-  { id: "base", label: "Base Case", shortLabel: "Base" },
-  { id: "guaranteed", label: "Guaranteed Only", shortLabel: "Guaranteed" },
-  { id: "open_market", label: "Open Market", shortLabel: "Market" }
-];
 const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType }> = [
   { key: "player_name", label: "Player", type: "text" },
   { key: "team", label: "Team", type: "text" },
   { key: "position", label: "Position", type: "text" },
-  { key: "tier", label: "Tier", type: "text" },
   { key: "age", label: "Age", type: "number" },
   { key: "yoe", label: "YOE", type: "number" },
   { key: "Minutes", label: "Minutes", type: "number" },
@@ -348,6 +349,10 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "skill_def", label: "Skill Def", type: "number" },
   ...skillKeys.map((key) => ({ key, label: key, type: "number" as const }))
 ];
+const impactFilterKeys = new Set<FilterKey>(filterFields.map((field) => field.key));
+function isImpactFilterKey(key: FilterRule["key"]): key is FilterKey {
+  return impactFilterKeys.has(key as FilterKey);
+}
 const numericOperators: Array<{ value: FilterOperator; label: string }> = [
   { value: "gte", label: "at least" },
   { value: "lte", label: "at most" },
@@ -766,7 +771,6 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [team, setTeam] = useSessionState("impact:team", "All");
   const [faStatus, setFaStatus] = useSessionState<FaStatusFilter>("impact:faStatus", "All");
   const [positionSelections, setPositionSelections] = useSessionState<string[]>("impact:positions", []);
-  const [tier, setTier] = useSessionState("impact:tier", "All");
   const [sortKey, setSortKey] = useSessionState<SortKey>("impact:sortKey", "score");
   const [sortDirection, setSortDirection] = useSessionState<SortDirection>("impact:sortDirection", "desc");
   const [filterRules, setFilterRules] = useSessionState<FilterRule[]>("impact:rules", []);
@@ -775,6 +779,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const [filterValue, setFilterValue] = useSessionState("impact:filterValue", "");
   const [filterValueTo, setFilterValueTo] = useSessionState("impact:filterValueTo", "");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [editingFilterId, setEditingFilterId] = useState<string | null>(null);
   const [detailPlayer, setDetailPlayer] = useState<PlayerImpact | null>(null);
   const [detailPosition, setDetailPosition] = useState({ left: 28, top: 138 });
   const [careerHistory, setCareerHistory] = useState<PlayerCareerHistoryRow[]>([]);
@@ -786,16 +791,18 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     const available = new Set(seasonPlayers.map((player) => faStatusLabel(player)));
     return order.filter((status) => status === "All" || available.has(status));
   }, [seasonPlayers]);
-  const positions = useMemo(() => Array.from(new Set(seasonPlayers.map((player) => displayPosition(player.position)))).sort(), [seasonPlayers]);
+  const positions = useMemo(
+    () => Array.from(new Set(seasonPlayers.map((player) => displayPosition(player.position)).filter((position) => position !== "UNK"))).sort(),
+    [seasonPlayers]
+  );
   const activePositionSelections = useMemo(
     () => (Array.isArray(positionSelections) ? positionSelections.filter((item) => positions.includes(item)) : []),
     [positionSelections, positions]
   );
   const selectedPositionSet = useMemo(() => new Set(activePositionSelections), [activePositionSelections]);
-  const tiers = useMemo(() => ["All", ...Array.from(new Set(seasonPlayers.map((player) => player.tier))).sort()], [seasonPlayers]);
   const selectedFilterField = filterFields.find((field) => field.key === filterKey) ?? filterFields[0];
   const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
-  const quickFilterCount = [query.trim(), team !== "All", faStatus !== "All", activePositionSelections.length > 0, tier !== "All"].filter(Boolean).length;
+  const quickFilterCount = [query.trim(), team !== "All", faStatus !== "All", activePositionSelections.length > 0].filter(Boolean).length;
   const activeFilterCount = quickFilterCount + filterRules.length;
 
   const filtered = useMemo(() => {
@@ -805,10 +812,9 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
       .filter((player) => team === "All" || playerTeamFilterValue(player) === team)
       .filter((player) => faStatus === "All" || faStatusLabel(player) === faStatus)
       .filter((player) => activePositionSelections.length === 0 || selectedPositionSet.has(displayPosition(player.position)))
-      .filter((player) => tier === "All" || player.tier === tier)
       .filter((player) => passesFilterRules(player, filterRules))
       .sort((a, b) => comparePlayers(a, b, sortKey, sortDirection));
-  }, [activePositionSelections.length, faStatus, filterRules, query, seasonPlayers, selectedPositionSet, sortDirection, sortKey, team, tier]);
+  }, [activePositionSelections.length, faStatus, filterRules, query, seasonPlayers, selectedPositionSet, sortDirection, sortKey, team]);
 
   useEffect(() => {
     setPositionSelections((current) => {
@@ -837,26 +843,70 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     const value = filterValue.trim();
     const valueTo = filterValueTo.trim();
     if (!value || (filterOperator === "between" && !valueTo)) return;
-    setFilterRules((current) => [
-      ...current,
-      {
-        id: `${filterKey}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        key: filterKey,
-        operator: filterOperator,
-        value,
-        valueTo: filterOperator === "between" ? valueTo : undefined
-      }
-    ]);
+    const nextRule: FilterRule = {
+      id: editingFilterId ?? `${filterKey}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      key: filterKey,
+      operator: filterOperator,
+      value,
+      valueTo: filterOperator === "between" ? valueTo : undefined
+    };
+    setFilterRules((current) => {
+      if (!editingFilterId) return [...current, nextRule];
+      return current.map((rule) => rule.id === editingFilterId ? nextRule : rule);
+    });
+    setEditingFilterId(null);
     setFilterValue("");
     setFilterValueTo("");
   };
+  const editFilterRule = (rule: FilterRule) => {
+    if (!isImpactFilterKey(rule.key)) return;
+    const field = filterFields.find((item) => item.key === rule.key) ?? filterFields[0];
+    setEditingFilterId(rule.id);
+    setFilterKey(rule.key);
+    setFilterOperator(rule.operator);
+    setFilterValue(rule.value);
+    setFilterValueTo(rule.valueTo ?? "");
+    if (field.type === "number" && !numericOperators.some((operator) => operator.value === rule.operator)) {
+      setFilterOperator("gte");
+    }
+    if (field.type === "text" && !textOperators.some((operator) => operator.value === rule.operator)) {
+      setFilterOperator("contains");
+    }
+    setFilterDrawerOpen(true);
+  };
+  const removeFilterRule = (ruleId: string) => {
+    setFilterRules((current) => current.filter((item) => item.id !== ruleId));
+    if (editingFilterId === ruleId) {
+      setEditingFilterId(null);
+      setFilterValue("");
+      setFilterValueTo("");
+    }
+  };
+  const cancelFilterEdit = () => {
+    setEditingFilterId(null);
+    setFilterValue("");
+    setFilterValueTo("");
+  };
+  useEffect(() => {
+    setFilterRules((current) => {
+      const next = current.filter((rule) => isImpactFilterKey(rule.key));
+      return next.length === current.length ? current : next;
+    });
+  }, [setFilterRules]);
+  useEffect(() => {
+    if (isImpactFilterKey(filterKey)) return;
+    setFilterKey("score");
+    setFilterOperator("gte");
+    setFilterValue("");
+    setFilterValueTo("");
+  }, [filterKey, setFilterKey, setFilterOperator, setFilterValue, setFilterValueTo]);
   const clearAllFilters = () => {
     setQuery("");
     setTeam("All");
     setFaStatus("All");
     setPositionSelections([]);
-    setTier("All");
     setFilterRules([]);
+    cancelFilterEdit();
     setFilterDrawerOpen(false);
   };
   const showDetail = (player: PlayerImpact, event: MouseEvent<HTMLButtonElement>) => {
@@ -910,14 +960,6 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               </select>
             </label>
             <PositionFilter positions={positions} selectedPositions={activePositionSelections} onChange={setPositionSelections} />
-            <label className="mobile-drawer-filter">
-              Tier
-              <select value={tier} onChange={(event) => setTier(event.target.value)}>
-                {tiers.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            </label>
             <div className="board-count" aria-live="polite">
               <span>Players</span>
               <strong>{filtered.length.toLocaleString()}</strong>
@@ -936,7 +978,12 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               {activeFilterCount > 0 && <strong>{activeFilterCount}</strong>}
             </button>
           </div>
-          <details id="impact-mobile-filter-body" className="advanced-filter-drawer board-control-row mobile-drawer-filter" open>
+          <details
+            id="impact-mobile-filter-body"
+            className="advanced-filter-drawer board-control-row mobile-drawer-filter"
+            open={filterDrawerOpen || editingFilterId !== null}
+            onToggle={(event) => setFilterDrawerOpen(event.currentTarget.open)}
+          >
             <summary>Advanced filter</summary>
             <div className="rule-builder" aria-label="Add filter rule">
               <label>
@@ -984,17 +1031,27 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
                 </label>
               )}
               <button className="add-filter" onClick={addFilterRule} disabled={!filterValue.trim() || (filterOperator === "between" && !filterValueTo.trim())}>
-                Add
+                {editingFilterId ? "Update" : "Add"}
               </button>
+              {editingFilterId && (
+                <button className="clear-filters cancel-filter-edit" onClick={cancelFilterEdit}>
+                  Cancel
+                </button>
+              )}
             </div>
           </details>
           {filterRules.length > 0 && (
             <div className="filter-chips" aria-label="Active filter rules">
               {filterRules.map((rule) => (
-                <button key={rule.id} onClick={() => setFilterRules((current) => current.filter((item) => item.id !== rule.id))}>
-                  {describeFilterRule(rule)}
-                  <span>Remove</span>
-                </button>
+                <div key={rule.id} className={cls("filter-chip", editingFilterId === rule.id && "editing")}>
+                  <button type="button" className="filter-chip-edit" onClick={() => editFilterRule(rule)}>
+                    {describeFilterRule(rule)}
+                    <span>Edit</span>
+                  </button>
+                  <button type="button" className="filter-chip-remove" aria-label={`Remove ${describeFilterRule(rule)}`} onClick={() => removeFilterRule(rule.id)}>
+                    x
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -1150,17 +1207,6 @@ function PlayerTable({
                   Skills{activeSkill && <small>{skillSortLabel(activeSkill)} {sortDirection === "desc" ? "v" : "^"}</small>}
                 </button>
                 <div className="skills-sort-strip" aria-label="Sort by skill">
-                  {skillAggregateSorts.map((item) => (
-                    <button
-                      key={item.key}
-                      className={cls("skills-sort-btn aggregate", activeSkill === item.key && "active")}
-                      onClick={() => onSort(item.key)}
-                      title={`Sort by ${item.title}`}
-                    >
-                      {item.label}
-                      {activeSkill === item.key && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
-                    </button>
-                  ))}
                   {skillKeys.map((key) => (
                     <button
                       key={key}
@@ -1170,6 +1216,17 @@ function PlayerTable({
                     >
                       {key}
                       {activeSkill === key && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
+                    </button>
+                  ))}
+                  {skillAggregateSorts.map((item) => (
+                    <button
+                      key={item.key}
+                      className={cls("skills-sort-btn aggregate", activeSkill === item.key && "active")}
+                      onClick={() => onSort(item.key)}
+                      title={`Sort by ${item.title}`}
+                    >
+                      {item.label}
+                      {activeSkill === item.key && <i>{sortDirection === "desc" ? "v" : "^"}</i>}
                     </button>
                   ))}
                 </div>
@@ -1369,6 +1426,14 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }:
           <h3 className="dp-section-head">Market Read</h3>
           <div className="market-grid">
             <div className="mc">
+              <span>Replacement</span>
+              <strong>{formatSigned(Number(player.replacement_total ?? 0), 2)}</strong>
+            </div>
+            <div className="mc">
+              <span>TIMIN</span>
+              <strong>{formatNumber(player.timin, 0)}</strong>
+            </div>
+            <div className="mc">
               <span>Raw Value</span>
               <strong>{formatMoney(player.value)}</strong>
             </div>
@@ -1397,6 +1462,12 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }:
             {formatNumber(player.Minutes, 0)} min / {formatNumber(player.yoe, 0)} yrs experience
           </p>
           <p className="note note-text">
+            Replacement math: ({formatSigned(player.total, 2)} total - {formatSigned(Number(player.replacement_total ?? 0), 2)} replacement) x {formatNumber(player.Minutes, 0)} minutes = {formatNumber(player.timin, 0)} TIMIN.
+          </p>
+          <p className="note note-text">
+            Replacement level uses a trailing 3-year, fractional position-share cutoff at the 65th rotation-useful player per position-season; this row is weighted as {replacementPositionShareText(player)}.
+          </p>
+          <p className="note note-text">
             FA uses projected TIMIN, max salary tier {player.fa_max_tier ?? "-"}, and {formatNumber(player.fa_missing_roster_slots, 0)} reserved roster slots.
           </p>
         </section>
@@ -1407,15 +1478,15 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }:
 
 function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   const [conference, setConference] = useSessionState<ConferenceFilter>("teams:conference", "All");
-  const [scenario, setScenario] = useSessionState<TeamProjectionScenario>("teams:scenario", "base");
+  const scenario: TeamProjectionScenario = "base";
   const [sortKey, setSortKey] = useSessionState<TeamSortKey>("teams:sortKey", "projected_wins");
   const [sortDirection, setSortDirection] = useSessionState<SortDirection>("teams:sortDirection", "desc");
+  const [contributorSortKey, setContributorSortKey] = useSessionState<TeamContributorSortKey>("teams:contributorSortKey", "Minutes");
+  const [contributorSortDirection, setContributorSortDirection] = useSessionState<SortDirection>("teams:contributorSortDirection", "desc");
   const [selectedTeam, setSelectedTeam] = useSessionState<string>("teams:selected", "");
   const allTeams = useMemo(() => {
-    const selected = data.teams.filter((team) => team.year === season && ((team.scenario_id ?? "base") === scenario));
-    if (selected.length > 0) return selected;
     return data.teams.filter((team) => team.year === season && ((team.scenario_id ?? "base") === "base"));
-  }, [data.teams, scenario, season]);
+  }, [data.teams, season]);
   const teams = useMemo(() => {
     const filtered = allTeams.filter((team) => conference === "All" || team.conference === conference);
     return filtered.sort((a, b) => {
@@ -1445,9 +1516,14 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
       if (rows) rows.push(player);
       else map.set(team, [player]);
     });
-    map.forEach((rows) => rows.sort((a, b) => b.Minutes - a.Minutes));
     return map;
   }, [data.players, scenario, season]);
+  const selectedContributors = useMemo(() => {
+    if (!currentTeam) return [];
+    const rows = contributorsByTeam.get(currentTeam.team) ?? [];
+    return [...rows].sort((a, b) => compareTeamContributors(a, b, contributorSortKey, contributorSortDirection, currentTeam.minutes));
+  }, [contributorSortDirection, contributorSortKey, contributorsByTeam, currentTeam]);
+  const teamSkillRows = useMemo(() => currentTeam ? buildTeamSkillRows(currentTeam) : [], [currentTeam]);
   const schedulesByTeam = useMemo(() => {
     const map = new Map<string, TeamScheduleGame[]>();
     data.schedules.forEach((game) => {
@@ -1472,7 +1548,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     );
   }
 
-  const contributors = (contributorsByTeam.get(currentTeam.team) ?? []).slice(0, 10);
+  const contributors = selectedContributors.slice(0, 12);
   const schedule = schedulesByTeam.get(currentTeam.team) ?? [];
   const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
   const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
@@ -1485,6 +1561,14 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
       setSortDirection("desc");
     }
   };
+  const handleContributorSort = (key: TeamContributorSortKey) => {
+    if (contributorSortKey === key) {
+      setContributorSortDirection(contributorSortDirection === "desc" ? "asc" : "desc");
+    } else {
+      setContributorSortKey(key);
+      setContributorSortDirection(key === "player_name" ? "asc" : "desc");
+    }
+  };
   const seasonGames = Math.max(82, Number(currentTeam.projected_wins ?? 0) + Number(currentTeam.projected_losses ?? 0));
 
   return (
@@ -1493,16 +1577,9 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
         <div className="panel-heading">
           <div>
             <h2>Team Projections</h2>
-            <p>Minute-share ratings under {teamProjectionScenarios.find((item) => item.id === scenario)?.label ?? "Base Case"} roster assumptions</p>
+            <p>Minute-share ratings under base roster assumptions</p>
           </div>
           <div className="team-controls">
-            <div className="segmented-control scenario-control" aria-label="Roster scenario">
-              {teamProjectionScenarios.map((item) => (
-                <button key={item.id} className={cls(scenario === item.id && "active")} onClick={() => setScenario(item.id)}>
-                  {item.shortLabel}
-                </button>
-              ))}
-            </div>
             <div className="segmented-control" aria-label="Conference filter">
               {(["All", "East", "West"] as ConferenceFilter[]).map((item) => (
                 <button key={item} className={cls(conference === item && "active")} onClick={() => setConference(item)}>
@@ -1554,7 +1631,9 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
                   <td>
                     <div className="minutes-coverage">
                       <strong>{formatNumber(team.minutes, 0)}</strong>
-                      <span style={{ width: `${clamp(Number(team.minutes_coverage ?? team.minutes / 19680), 0, 1) * 100}%` }} />
+                      <span className="minutes-coverage-track">
+                        <i style={{ width: `${clamp(Number(team.minutes_coverage ?? team.minutes / 19680), 0, 1) * 100}%` }} />
+                      </span>
                     </div>
                   </td>
                   <td><TeamSkillStrip team={team} activeSkill={skillKeys.includes(sortKey as SkillKey) ? sortKey as SkillKey : null} onSort={handleSort} /></td>
@@ -1578,38 +1657,43 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
             <span>{formatPercent(currentTeam.win_pct, 1)} over {formatNumber(seasonGames, 0)} games</span>
           </div>
         </div>
-        <div className="metric-grid team-metric-grid">
-          <MetricPill label="Adj Off" value={formatSigned(currentTeam.offense, 1)} tone="green" />
-          <MetricPill label="Adj Def" value={formatSigned(currentTeam.defense, 1)} tone="teal" />
-          <MetricPill label="Adj Total" value={formatSigned(currentTeam.adjusted_total, 1)} tone="gold" />
-          <MetricPill label="Raw Total" value={formatSigned(currentTeam.raw_total, 1)} tone="gold" />
-          <MetricPill label="Minutes" value={formatNumber(currentTeam.minutes, 0)} />
-          <MetricPill label="Coverage" value={formatPercent(Number(currentTeam.minutes_coverage ?? currentTeam.minutes / 19680), 0)} />
-          {Number.isFinite(Number(currentTeam.playoff_projected_wins)) && <MetricPill label="Playoffs" value={`${formatNumber(currentTeam.playoff_projected_wins, 1)}-${formatNumber(currentTeam.playoff_projected_losses, 1)}`} />}
+        <div className="team-detail-statline">
+          <span><b>Adj Total</b>{formatSigned(currentTeam.adjusted_total, 1)}</span>
+          <span><b>Off</b>{formatSigned(currentTeam.offense, 1)}</span>
+          <span><b>Def</b>{formatSigned(currentTeam.defense, 1)}</span>
+          <span><b>Coverage</b>{formatPercent(Number(currentTeam.minutes_coverage ?? currentTeam.minutes / 19680), 0)}</span>
         </div>
         <section>
           <div className="section-heading-row">
             <h3>Roster Contributions</h3>
-            <span>{contributors.length} drivers</span>
+            <span>{contributors.length} of {selectedContributors.length} drivers</span>
           </div>
           {contributors.length > 0 ? <div className="table-wrap compact team-contrib-wrap">
             <table className="data-table team-contrib-table">
               <thead>
                 <tr>
-                  <th>Player</th>
-                  <th>Share</th>
-                  <th>Off</th>
-                  <th>Def</th>
-                  <th>Total</th>
-                  <th>Min</th>
+                  <th><TeamContributorSortButton label="Player" sortKey="player_name" active={contributorSortKey} direction={contributorSortDirection} onSort={handleContributorSort} /></th>
+                  <th><TeamContributorSortButton label="Share" sortKey="share" active={contributorSortKey} direction={contributorSortDirection} onSort={handleContributorSort} /></th>
+                  <th><TeamContributorSortButton label="Off" sortKey="offense_contribution" active={contributorSortKey} direction={contributorSortDirection} onSort={handleContributorSort} /></th>
+                  <th><TeamContributorSortButton label="Def" sortKey="defense_contribution" active={contributorSortKey} direction={contributorSortDirection} onSort={handleContributorSort} /></th>
+                  <th><TeamContributorSortButton label="Total" sortKey="total_contribution" active={contributorSortKey} direction={contributorSortDirection} onSort={handleContributorSort} /></th>
+                  <th><TeamContributorSortButton label="Min" sortKey="Minutes" active={contributorSortKey} direction={contributorSortDirection} onSort={handleContributorSort} /></th>
                 </tr>
               </thead>
               <tbody>
                 {contributors.map((player) => {
                   const share = currentTeam.minutes > 0 ? player.Minutes / currentTeam.minutes : 0;
                   return (
-                    <tr key={`${player.nba_id}-${player.player_name}`}>
-                      <td>{player.player_name}</td>
+                    <tr key={`${player.nba_id}-${player.player_name}`} style={rowAccentStyle(player)}>
+                      <td>
+                        <div className="player-cell with-headshot team-contrib-player">
+                          <PlayerHeadshot player={player} />
+                          <div className="player-copy">
+                            <strong>{player.player_name}</strong>
+                            <span>{playerMarketTeamLabel(player)} / {displayPosition(player.position)}</span>
+                          </div>
+                        </div>
+                      </td>
                       <td>{formatPercent(share, 1)}</td>
                       <td>{formatSigned(player.offense * share * 5, 2)}</td>
                       <td>{formatSigned(player.defense * share * 5, 2)}</td>
@@ -1625,11 +1709,9 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
         <section className="team-skill-panel">
           <div className="section-heading-row">
             <h3>Skill Profile</h3>
-            <span>Minute-share aggregate</span>
+            <span>Strengths and gaps</span>
           </div>
-          <div className="team-skill-grid">
-            {skillKeys.map((key) => <SkillRow key={key} label={key} value={Number(currentTeam[key] ?? 0)} />)}
-          </div>
+          <TeamSkillProfile rows={teamSkillRows} />
         </section>
         <TeamScheduleTable team={currentTeam.team} games={regularSchedule} title="Regular Season Schedule" teamMeta={teamMeta} />
         {playInSchedule.length > 0 && <TeamScheduleTable team={currentTeam.team} games={playInSchedule} title="Play-In Schedule" teamMeta={teamMeta} />}
@@ -1641,7 +1723,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
 
 function StartingLineupsWorkspace({ data, season }: { data: AppData; season: number }) {
   const [selectedTeam, setSelectedTeam] = useSessionState<string>("startingLineups:selected", "");
-  const [scenario, setScenario] = useSessionState<TeamProjectionScenario>("startingLineups:scenario", "base");
+  const scenario: TeamProjectionScenario = "base";
   const seasonLineups = useMemo(
     () =>
       data.lineups
@@ -1691,9 +1773,13 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
   const starters = currentRows.filter((row) => row.role_type === "Starter");
   const bench = currentRows.filter((row) => row.role_type !== "Starter");
   const starterTotal = starters.reduce((sum, row) => sum + Number(row.total ?? 0), 0);
-  const starterMinutes = starters.reduce((sum, row) => sum + Number(row.adjusted_minutes ?? 0), 0);
-  const benchMinutes = bench.reduce((sum, row) => sum + Number(row.adjusted_minutes ?? 0), 0);
-  const minutesDelta = currentRows.reduce((sum, row) => sum + Number(row.minutes_delta ?? 0), 0);
+  const starterAverage = starters.length ? starterTotal / starters.length : 0;
+  const sortedStarters = [...starters].sort((a, b) => Number(b.total ?? 0) - Number(a.total ?? 0));
+  const strongestStarter = sortedStarters[0] ?? null;
+  const weakestStarter = sortedStarters[sortedStarters.length - 1] ?? null;
+  const starterSpread = strongestStarter && weakestStarter
+    ? Number(strongestStarter.total ?? 0) - Number(weakestStarter.total ?? 0)
+    : 0;
 
   return (
     <main className="workspace starting-lineups-workspace">
@@ -1704,13 +1790,6 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
             <p>Estimated five-man shape plus first five bench roles</p>
           </div>
           <div className="lineup-heading-controls">
-            <div className="segmented-control scenario-control" aria-label="Lineup roster scenario">
-              {teamProjectionScenarios.map((item) => (
-                <button key={item.id} className={cls(scenario === item.id && "active")} onClick={() => setScenario(item.id)}>
-                  {item.shortLabel}
-                </button>
-              ))}
-            </div>
             <label className="starting-team-select">
               <span>Team</span>
               <select value={currentTeam.team} onChange={(event) => setSelectedTeam(event.target.value)}>
@@ -1738,10 +1817,10 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
         </div>
 
         <div className="metric-grid starting-metric-grid">
-          <MetricPill label="Starter Min" value={formatNumber(starterMinutes, 0)} />
-          <MetricPill label="Bench Min" value={formatNumber(benchMinutes, 0)} />
-          <MetricPill label="Min Delta" value={formatSigned(minutesDelta, 0)} tone={minutesDelta >= 0 ? "green" : undefined} />
-          <MetricPill label="Team Adj" value={formatSigned(currentTeam.adjusted_total, 1)} tone="gold" />
+          <MetricPill label="Projected Record" value={`${formatNumber(currentTeam.projected_wins, 0)}-${formatNumber(currentTeam.projected_losses, 0)}`} />
+          <MetricPill label="Team Rating" value={formatSigned(currentTeam.adjusted_total, 1)} tone="gold" />
+          <MetricPill label="Starter Avg" value={formatSigned(starterAverage, 1)} tone={starterAverage >= 0 ? "green" : "red"} />
+          <MetricPill label="Starter Spread" value={formatSigned(starterSpread, 1)} tone={starterSpread <= 2 ? "green" : undefined} />
         </div>
 
         <section>
@@ -1788,14 +1867,14 @@ function StartingLineupCard({ row, player }: { row: TeamLineupRow; player?: Play
           <strong>{formatNumber(row.score, 1)}</strong>
         </div>
         <div>
-          <span>Min</span>
+          <span>Projected Min</span>
           <strong>{formatNumber(row.adjusted_minutes, 0)}</strong>
         </div>
       </div>
       <div className="starter-minute-row">
-        <span>{formatNumber(row.original_minutes, 0)} model</span>
+        <span>{formatNumber(row.original_minutes, 0)} raw model</span>
         <strong className={cls(row.minutes_delta > 0 && "good-text", row.minutes_delta < 0 && "bad-text")}>{formatSigned(row.minutes_delta, 0)}</strong>
-        <span>{formatNumber(row.role_band_minutes, 0)} role</span>
+        <span>{formatNumber(row.role_band_minutes, 0)} role target</span>
       </div>
       <div className="starter-tier">{row.tier}</div>
     </div>
@@ -1814,8 +1893,8 @@ function StartingBenchTable({ rows }: { rows: TeamLineupRow[] }) {
             <th>Pos</th>
             <th>Total</th>
             <th>Score</th>
-            <th>Model Min</th>
-            <th>Adj Min</th>
+            <th>Raw Model Minutes</th>
+            <th>Projected Minutes</th>
           </tr>
         </thead>
         <tbody>
@@ -1850,6 +1929,27 @@ function TeamSortButton({ label, sortKey, active, direction, onSort }: { label: 
   );
 }
 
+function TeamContributorSortButton({
+  label,
+  sortKey,
+  active,
+  direction,
+  onSort
+}: {
+  label: string;
+  sortKey: TeamContributorSortKey;
+  active: TeamContributorSortKey;
+  direction: SortDirection;
+  onSort: (key: TeamContributorSortKey) => void;
+}) {
+  return (
+    <button className={cls("sort-header sort-btn", active === sortKey && "active on")} onClick={() => onSort(sortKey)}>
+      {label}
+      {active === sortKey && <span className="sort-arr">{direction === "desc" ? "v" : "^"}</span>}
+    </button>
+  );
+}
+
 function TeamLogo({ team, size = "normal" }: { team: TeamProjection; size?: "normal" | "large" }) {
   const [failed, setFailed] = useState(false);
   const label = team.team_abbr ?? team.team;
@@ -1865,7 +1965,7 @@ function TeamSkillStrip({ team, activeSkill, onSort }: { team: TeamProjection; a
     <div className="team-skill-strip">
       {skillKeys.map((key) => {
         const value = Number(team[key] ?? 0);
-        const height = Math.max(4, clamp((value + 3) / 6, 0, 1) * 22);
+        const height = Math.max(5, clamp(Math.abs(value) / 2.4, 0, 1) * 18);
         return (
           <button
             key={key}
@@ -1877,10 +1977,57 @@ function TeamSkillStrip({ team, activeSkill, onSort }: { team: TeamProjection; a
             title={`${skillLabels[key]}: ${formatSigned(value, 1)}`}
             style={{ ...skillStyle(value), "--skill-h": `${height}px` } as CSSProperties}
           >
-            <span />
+            <small>{key}</small>
+            <span className={cls(value < 0 && "negative")} />
           </button>
         );
       })}
+    </div>
+  );
+}
+
+type TeamSkillProfileRow = {
+  key: SkillKey;
+  label: string;
+  value: number;
+  marker: number;
+  band: "strength" | "neutral" | "weakness";
+};
+
+function TeamSkillProfile({ rows }: { rows: TeamSkillProfileRow[] }) {
+  const strengths = rows.filter((row) => row.value > 0).slice(0, 3);
+  const weaknesses = [...rows].reverse().filter((row) => row.value < 0).slice(0, 3);
+  const renderCallout = (row: TeamSkillProfileRow) => (
+    <div key={row.key} className={cls("team-skill-callout", row.band)} style={skillStyle(row.value)}>
+      <span>{row.label}</span>
+      <strong>{formatSigned(row.value, 1)}</strong>
+    </div>
+  );
+
+  return (
+    <div className="team-skill-profile">
+      <div className="team-skill-callouts">
+        <div>
+          <span className="team-skill-kicker">Strengths</span>
+          {(strengths.length > 0 ? strengths : rows.slice(0, 3)).map(renderCallout)}
+        </div>
+        <div>
+          <span className="team-skill-kicker">Weaknesses</span>
+          {(weaknesses.length > 0 ? weaknesses : [...rows].reverse().slice(0, 3)).map(renderCallout)}
+        </div>
+      </div>
+      <div className="team-skill-bars">
+        {rows.map((row) => (
+          <div key={row.key} className={cls("team-skill-bar-row", row.band)} style={skillStyle(row.value)}>
+            <span>{row.label}</span>
+            <div className="team-skill-bar-track">
+              <i style={row.value >= 0 ? { left: "50%", width: `${row.marker}%` } : { right: "50%", width: `${row.marker}%` }} />
+              <b />
+            </div>
+            <strong>{formatSigned(row.value, 1)}</strong>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1982,6 +2129,7 @@ function formatDateLabel(value: string | null | undefined): string {
 const TRADE_ACCEPTED_DIFF = 10_000_000;
 const TRADE_MAYBE_DIFF = 20_000_000;
 const TRADE_IMPACT_DENOMINATOR = 48 * 82 * 0.9;
+const TRADE_PICK_VALUE_YEARS = 4;
 const TRADE_PICK_PROTECTIONS = [
   { label: "Unprotected", cutoff: 0 },
   { label: "Top-3 protected", cutoff: 3 },
@@ -2551,12 +2699,18 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
           onClear={() => clearSide("third")}
         />}
       </> : <section className="table-panel trade-side"><EmptyState title="No trade assets" detail={`No players or picks are available for ${season}.`} /></section>}
-      <section className="detail-panel trade-verdict">
-        <div className="trade-verdict-head">
+      <details className="detail-panel trade-verdict">
+        <summary className="trade-verdict-summary">
+          <span>Summary</span>
+          <strong>{verdict}</strong>
+          <em>{formatMoney(diff)}</em>
+        </summary>
+        <div className="trade-verdict-content">
+          <div className="trade-verdict-head">
           <div className="trade-summary-title">
             <div>
               <h2>Trade Sandbox</h2>
-              <p>4-year value: current season plus three projected seasons</p>
+              <p>4-year value: player current season plus three projected seasons; picks scaled to the same horizon</p>
             </div>
             <div className="trade-summary-actions">
               <button className="clear-filters" disabled={!thirdSide && teamOptions.length < 3} onClick={thirdSide ? removeThirdTeam : addThirdTeam}>
@@ -2668,7 +2822,8 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
             </div>
           ))}
         </div>
-      </section>
+        </div>
+      </details>
     </main>
   );
 }
@@ -2908,12 +3063,16 @@ function TradeSide({
       .map((asset) => asset.player!.nba_id)
   );
   const filteredRoster = filterTradeRoster(roster, rosterQuery);
+  const sideTeamMeta = tradeTeamMeta(side.team, teamMeta);
   return (
     <section className="trade-side">
       <div className="panel-heading">
-        <div>
-          <h2>{title}</h2>
-          <p>{formatMoney(total)}</p>
+        <div className="trade-panel-title">
+          {sideTeamMeta && <TeamLogo team={sideTeamMeta} />}
+          <div>
+            <h2>{title}</h2>
+            <p>{teamFullName(side.team, teamMeta)} / {formatMoney(total)}</p>
+          </div>
         </div>
         <button onClick={onClear} disabled={side.assets.length === 0}>Clear</button>
       </div>
@@ -2948,11 +3107,15 @@ function TradeSide({
               disabled={selectedElsewhere}
               onClick={() => onTogglePlayer(player)}
             >
-              <span>
+              <PlayerHeadshot player={player} />
+              <span className="trade-roster-main">
                 <strong>{player.player_name}</strong>
-                <small>{displayPosition(player.position)} / {player.tier} / {formatSalarySlot(player)}</small>
+                <small>{displayPosition(player.position)} / {tradeContractSummaryLabel(player)}</small>
               </span>
-              <em>{formatMoney(playerTradeValue(player))}</em>
+              <span className="trade-roster-money">
+                <strong>{formatContractValue(player)}</strong>
+                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / value {formatMoney(playerTradeValue(player))}</small>
+              </span>
             </button>
           );
         })}
@@ -2998,7 +3161,7 @@ function TradeSide({
         </div>
         <div className="trade-pick-preview">
           <span>{pickPreview ? assetLabel({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "No pick value"}</span>
-          <strong>{pickPreview ? formatMoney(pickPreview.value) : "-"}</strong>
+          <strong>{pickPreview ? formatMoney(pickAssetTradeValue(pickPreview)) : "-"}</strong>
           <small>{pickPreview ? assetMeta({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "Pick curve unavailable"}</small>
         </div>
         <button disabled={!pickPreview} onClick={onAddPick}>Add pick</button>
@@ -3029,11 +3192,18 @@ function TradeSide({
         {side.assets.map((asset, index) => (
           <div key={`${asset.id}-${index}`} className="asset-row">
             <button className="asset-remove" onClick={() => onRemove(index)} title="Remove asset">
-              <span>
-                <strong>{assetLabel(asset)}</strong>
-                <small>{assetMeta(asset)}</small>
+              <span className="asset-identity">
+                {asset.kind === "player" && asset.player && <PlayerHeadshot player={asset.player} />}
+                {asset.kind !== "player" && <i className={cls("asset-icon", asset.kind)}>{asset.kind === "pick" ? "P" : "$"}</i>}
+                <span>
+                  <strong>{assetLabel(asset)}</strong>
+                  <small>{assetMeta(asset)}</small>
+                </span>
               </span>
-              <em>{formatMoney(assetValue(asset))}</em>
+              <span className="asset-money">
+                <strong>{asset.kind === "player" && asset.player ? formatContractValue(asset.player) : formatMoney(assetValue(asset))}</strong>
+                <small>{asset.kind === "player" && asset.player ? `${tradeContractSummary(asset.player)?.years ?? "-"} yrs / value ${formatMoney(assetValue(asset))}` : "value"}</small>
+              </span>
             </button>
             {showDestinations && <label className="asset-destination">
               To
@@ -3053,7 +3223,12 @@ function TradeSide({
 
 function DraftWorkspace({ data }: { data: AppData }) {
   const years = Array.from(new Set(data.prospects.map((prospect) => prospect.draft_year))).sort((a, b) => b - a);
-  const [year, setYear] = useSessionState<DraftYearSelection>("draft:year", years[0] ?? "All");
+  const latestYear = years[0] ?? "All";
+  const [year, setYear] = useSessionState<DraftYearSelection>(
+    "draft:year:v2",
+    latestYear,
+    (value) => value === "All" || (typeof value === "number" && years.includes(value)) ? value : latestYear
+  );
   const [query, setQuery] = useSessionState("draft:query", "");
   const [position, setPosition] = useSessionState("draft:position", "All");
   const [tier, setTier] = useSessionState("draft:tier", "All");
@@ -3141,6 +3316,11 @@ function DraftWorkspace({ data }: { data: AppData }) {
     setFilterRules([]);
     setFilterDrawerOpen(false);
   };
+
+  useEffect(() => {
+    if (year === "All" || years.includes(year)) return;
+    setYear(latestYear);
+  }, [latestYear, setYear, year, years]);
 
   return (
     <main className="workspace draft-model-grid">
@@ -4051,13 +4231,14 @@ function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
   );
   const playerMap = useMemo(() => new Map(players.map((player) => [lineupPlayerId(player), player])), [players]);
   const percentileMap = useMemo(() => buildLineupPercentiles(players), [players]);
+  const lineupBenchmarks = useMemo(() => buildLineupBenchmarks(players), [players]);
   const [lineupA, setLineupA] = useSessionState<string[]>("lineup:a", emptyLineup());
   const [lineupB, setLineupB] = useSessionState<string[]>("lineup:b", emptyLineup());
   const [suggestionSlot, setSuggestionSlot] = useSessionState<number | null>("lineup:suggestionSlot", null);
   const [suggestionPage, setSuggestionPage] = useSessionState("lineup:suggestionPage", 0);
 
-  const summaryA = useMemo(() => summarizeLineup(lineupA, playerMap, percentileMap), [lineupA, playerMap, percentileMap]);
-  const summaryB = useMemo(() => summarizeLineup(lineupB, playerMap, percentileMap), [lineupB, playerMap, percentileMap]);
+  const summaryA = useMemo(() => summarizeLineup(lineupA, playerMap, lineupBenchmarks), [lineupA, playerMap, lineupBenchmarks]);
+  const summaryB = useMemo(() => summarizeLineup(lineupB, playerMap, lineupBenchmarks), [lineupB, playerMap, lineupBenchmarks]);
   const availablePlayers = useMemo(
     () => [...players].sort((a, b) => a.player_name.localeCompare(b.player_name)),
     [players]
@@ -4091,9 +4272,10 @@ function LineupWorkspace({ data, season }: { data: AppData; season: number }) {
             players,
             playerMap,
             percentileMap,
+            lineupBenchmarks,
             baseline: summaryA
           }),
-    [lineupA, playerMap, percentileMap, players, suggestionSlot, summaryA]
+    [lineupA, lineupBenchmarks, playerMap, percentileMap, players, suggestionSlot, summaryA]
   );
   const suggestedSlotPlayer = suggestionSlot === null ? null : summaryA.slots[suggestionSlot];
 
@@ -4204,6 +4386,7 @@ function LineupSheet({
         </div>
         <button onClick={() => onClear(side)}>Clear</button>
       </div>
+      <LineupPlayerSearch selectedIds={selectedIds} players={players} side={side} onChange={onChange} />
       <div className="lineup-sheet-scroll">
         <table className="lineup-sheet-table">
           <thead>
@@ -4278,7 +4461,7 @@ function LineupSheet({
               );
             })}
             <tr className="lineup-sheet-total">
-              <td>Total / Avg</td>
+              <td>Total / Team Pct</td>
               <td>{summary.players.length}/5</td>
               <td><SheetRate value={summary.offense} /></td>
               <td><SheetRate value={summary.defense} /></td>
@@ -4305,6 +4488,93 @@ function LineupSheet({
           onPick={(player) => onChange(side, suggestionSlot, lineupPlayerId(player))}
         />
       )}
+    </div>
+  );
+}
+
+function LineupPlayerSearch({
+  selectedIds,
+  players,
+  side,
+  onChange
+}: {
+  selectedIds: string[];
+  players: PlayerImpact[];
+  side: LineupSide;
+  onChange: (side: LineupSide, index: number, value: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [targetSlot, setTargetSlot] = useState(() => Math.max(0, selectedIds.findIndex((id) => !id)));
+  const selectedSet = useMemo(() => new Set(selectedIds.filter(Boolean)), [selectedIds]);
+  const openSlot = selectedIds.findIndex((id) => !id);
+  const activeSlot = clamp(targetSlot, 0, Math.max(0, selectedIds.length - 1));
+  const normalizedQuery = query.trim().toLowerCase();
+  const matches = useMemo(() => {
+    if (!normalizedQuery) return [];
+    return players
+      .filter((player) => {
+        const id = lineupPlayerId(player);
+        if (selectedSet.has(id)) return false;
+        const haystack = [
+          player.player_name,
+          player.team,
+          displayPosition(player.position),
+          player.tier,
+          String(player.score ?? "")
+        ].join(" ").toLowerCase();
+        return haystack.includes(normalizedQuery);
+      })
+      .sort((a, b) => {
+        const aName = a.player_name.toLowerCase();
+        const bName = b.player_name.toLowerCase();
+        const aStarts = aName.startsWith(normalizedQuery) ? 1 : 0;
+        const bStarts = bName.startsWith(normalizedQuery) ? 1 : 0;
+        return bStarts - aStarts || b.total - a.total || b.score - a.score || a.player_name.localeCompare(b.player_name);
+      })
+      .slice(0, 8);
+  }, [normalizedQuery, players, selectedSet]);
+
+  useEffect(() => {
+    if (openSlot >= 0 && !selectedIds[activeSlot]) return;
+    if (openSlot >= 0) setTargetSlot(openSlot);
+  }, [activeSlot, openSlot, selectedIds]);
+
+  const pickPlayer = (player: PlayerImpact) => {
+    const slot = selectedIds[activeSlot] || openSlot < 0 ? activeSlot : openSlot;
+    onChange(side, slot, lineupPlayerId(player));
+    setQuery("");
+    const nextOpenSlot = selectedIds.findIndex((id, index) => index !== slot && !id);
+    if (nextOpenSlot >= 0) setTargetSlot(nextOpenSlot);
+  };
+
+  return (
+    <div className="lineup-player-search">
+      <label>
+        <span>Find player</span>
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Type name, team, position, tier"
+          aria-label="Find lineup player"
+        />
+      </label>
+      <label>
+        <span>Slot</span>
+        <select value={activeSlot} onChange={(event) => setTargetSlot(Number(event.target.value))}>
+          {selectedIds.map((id, index) => (
+            <option key={index} value={index}>{`P${index + 1}${id ? "" : " open"}`}</option>
+          ))}
+        </select>
+      </label>
+      <div className={cls("lineup-player-search-results", normalizedQuery && "active")}>
+        {normalizedQuery && matches.length === 0 && <span>No matches</span>}
+        {matches.map((player) => (
+          <button key={lineupPlayerId(player)} type="button" onClick={() => pickPlayer(player)} style={rowAccentStyle(player)}>
+            <strong>{player.player_name}</strong>
+            <span>{player.team} / {displayPosition(player.position)} / {formatSigned(player.total, 1)}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -4437,6 +4707,7 @@ function LineupCard({
         </div>
         <button onClick={() => onClear(side)}>Clear</button>
       </div>
+      <LineupPlayerSearch selectedIds={selectedIds} players={players} side={side} onChange={onChange} />
       <div className="lineup-slots">
         {selectedIds.map((selectedId, index) => {
           const player = slots[index];
@@ -4530,6 +4801,7 @@ function buildLineupSuggestions({
   players,
   playerMap,
   percentileMap,
+  lineupBenchmarks,
   baseline
 }: {
   slotIndex: number;
@@ -4537,6 +4809,7 @@ function buildLineupSuggestions({
   players: PlayerImpact[];
   playerMap: Map<string, PlayerImpact>;
   percentileMap: Map<string, Record<string, number>>;
+  lineupBenchmarks: LineupBenchmarks;
   baseline: LineupSummary;
 }): LineupSuggestion[] {
   const currentPlayer = baseline.slots[slotIndex];
@@ -4550,7 +4823,7 @@ function buildLineupSuggestions({
     .map((player) => {
       const playerId = lineupPlayerId(player);
       const nextIds = selectedIds.map((id, index) => (index === slotIndex ? playerId : id));
-      const summary = summarizeLineup(nextIds, playerMap, percentileMap);
+      const summary = summarizeLineup(nextIds, playerMap, lineupBenchmarks);
       const playerRanks = percentileMap.get(playerId) ?? {};
       const currentRanks = currentPlayer ? percentileMap.get(lineupPlayerId(currentPlayer)) ?? {} : {};
       const netDelta = summary.net - baseline.net;
@@ -4746,14 +5019,58 @@ function buildLineupPercentiles(players: PlayerImpact[]): Map<string, Record<str
   return percentileMap;
 }
 
-function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImpact>, percentileMap: Map<string, Record<string, number>>): LineupSummary {
+function buildLineupBenchmarks(players: PlayerImpact[]): LineupBenchmarks {
+  const byTeam = new Map<string, PlayerImpact[]>();
+  players.forEach((player) => {
+    const team = cleanTeamValue(player.team);
+    if (!team) return;
+    byTeam.set(team, [...(byTeam.get(team) ?? []), player]);
+  });
+
+  const teamCores = Array.from(byTeam.values())
+    .map((teamPlayers) => [...teamPlayers].sort(compareLineupBenchmarkPlayers).slice(0, 5))
+    .filter((teamPlayers) => teamPlayers.length > 0);
+  const benchmarks: LineupBenchmarks = new Map();
+
+  for (let size = 1; size <= 5; size += 1) {
+    const bySkill: Record<string, LineupBenchmark> = {};
+    lineupSkills.forEach((skill) => {
+      const values = teamCores
+        .filter((teamPlayers) => teamPlayers.length >= size)
+        .map((teamPlayers) => teamPlayers.slice(0, size).reduce((sum, player) => sum + lineupSkillValue(player, skill), 0))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b);
+      bySkill[skill.key] = {
+        values,
+        average: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0
+      };
+    });
+    benchmarks.set(size, bySkill);
+  }
+
+  return benchmarks;
+}
+
+function compareLineupBenchmarkPlayers(a: PlayerImpact, b: PlayerImpact): number {
+  const aRole = Number(a.lineup_role_order ?? 99);
+  const bRole = Number(b.lineup_role_order ?? 99);
+  if (aRole !== bRole) return aRole - bRole;
+  const aMinutes = Number(a.lineup_adjusted_minutes ?? a.Minutes ?? 0);
+  const bMinutes = Number(b.lineup_adjusted_minutes ?? b.Minutes ?? 0);
+  return bMinutes - aMinutes || b.total - a.total || b.score - a.score || a.player_name.localeCompare(b.player_name);
+}
+
+function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImpact>, lineupBenchmarks: LineupBenchmarks): LineupSummary {
   const slots = selectedIds.map((id) => playerMap.get(id) ?? null);
   const players = slots.filter((player): player is PlayerImpact => Boolean(player));
   const divisor = Math.max(1, players.length);
   const skillAverages: Record<string, number> = {};
+  const skillTotals: Record<string, number> = {};
 
   lineupSkills.forEach((skill) => {
-    skillAverages[skill.key] = players.reduce((sum, player) => sum + (percentileMap.get(lineupPlayerId(player))?.[skill.key] ?? 0.5), 0) / divisor;
+    const total = players.reduce((sum, player) => sum + lineupSkillValue(player, skill), 0);
+    skillTotals[skill.key] = total;
+    skillAverages[skill.key] = players.length > 0 ? lineupAggregatePercentile(total, lineupBenchmarks.get(players.length)?.[skill.key]) : 0;
   });
 
   return {
@@ -4765,8 +5082,17 @@ function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImp
     score: players.reduce((sum, player) => sum + player.score, 0) / divisor,
     gaps: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) < 0.4).length,
     spikes: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) > 0.6).length,
-    skillAverages
+    skillAverages,
+    skillTotals
   };
+}
+
+function lineupAggregatePercentile(value: number, benchmark: LineupBenchmark | undefined): number {
+  const values = benchmark?.values ?? [];
+  if (!values.length) return 0.5;
+  const below = values.filter((item) => item < value).length;
+  const equal = values.filter((item) => item === value).length;
+  return clamp((below + equal * 0.5) / values.length, 0, 1);
 }
 
 function lineupSkillValue(player: PlayerImpact, skill: LineupSkill): number {
@@ -5234,12 +5560,12 @@ function SkillLedger<TKey extends SkillLedgerSortKey>({
     <div className="skill-ledger">
       <div className="skill-ledger-groups" aria-label="Skill dimensions">
         <div className="skill-ledger-section offense">
-          {offAggregate && renderAggregate(offAggregate)}
           <div className="skill-chip-group offense">{offSkills.map(renderSkill)}</div>
+          {offAggregate && renderAggregate(offAggregate)}
         </div>
         <div className="skill-ledger-section defense">
-          {defAggregate && renderAggregate(defAggregate)}
           <div className="skill-chip-group defense">{defSkills.map(renderSkill)}</div>
+          {defAggregate && renderAggregate(defAggregate)}
         </div>
         {totalAggregate && (
           <div className="skill-total-rail">
@@ -5803,7 +6129,13 @@ function tradeMachineAsset(asset: TradeAsset, team: string, season: number, cont
       ...tradeContractRulesFromNotes(asset.player, contractRow, season)
     };
   }
-  if (asset.kind === "pick" && asset.pick) return { ...pickTradeMachineAsset(asset.pick, team), toTeam: asset.toTeam ?? null };
+  if (asset.kind === "pick" && asset.pick) {
+    return {
+      ...pickTradeMachineAsset(asset.pick, team),
+      toTeam: asset.toTeam ?? null,
+      tradeValue: pickAssetTradeValue(asset.pick)
+    };
+  }
   if (asset.kind === "cash") {
     const amount = Math.max(0, Number(asset.cashAmount ?? 0));
     if (amount <= 0) return null;
@@ -6516,6 +6848,11 @@ function pickSlotValue(slotValues: Map<number, number>, pick: number): number {
   return pick <= 30 ? 34_000_000 * Math.exp(-(pick - 1) / 19) : 4_200_000 * Math.exp(-(pick - 31) / 18);
 }
 
+function pickAssetTradeValue(pick: PickAsset): number {
+  const value = Number(pick.value);
+  return Number.isFinite(value) ? Math.max(0, value) * TRADE_PICK_VALUE_YEARS : 0;
+}
+
 function normalizedPickValue(value: number, slotValues: Map<number, number>): number {
   const maxValue = Math.max(...Array.from(slotValues.values()).filter(Number.isFinite), 1);
   return roundTo(clamp(value / maxValue, 0, 1), 3);
@@ -6581,7 +6918,7 @@ function playerTradeValue(player: PlayerImpact): number {
 function assetValue(asset: TradeAsset): number {
   if (asset.kind === "player") return asset.player ? playerTradeValue(asset.player) : 0;
   if (asset.kind === "cash") return Math.max(0, Number(asset.cashAmount ?? 0));
-  return Number(asset.pick?.value ?? 0);
+  return asset.pick ? pickAssetTradeValue(asset.pick) : 0;
 }
 
 function scaleAdjustedAssetValue(asset: TradeAsset): number {
@@ -6603,7 +6940,7 @@ function assetLabel(asset: TradeAsset): string {
 
 function assetMeta(asset: TradeAsset): string {
   if (asset.kind === "player" && asset.player) {
-    return `${asset.player.team} / ${displayPosition(asset.player.position)} / ${formatSalarySlot(asset.player)}`;
+    return `${asset.player.team} / ${displayPosition(asset.player.position)} / ${tradeContractSummaryLabel(asset.player)}`;
   }
   if (asset.kind === "cash") return formatMoney(Math.max(0, Number(asset.cashAmount ?? 0)));
   if (asset.pick?.asset_type === "generic_pick") {
@@ -6952,8 +7289,34 @@ function describeFilterRule(rule: FilterRule): string {
   return `${fieldLabel} ${operatorLabel} ${rule.value}`;
 }
 
+function tradeContractSummary(player: PlayerImpact): { years: number; total: number } | null {
+  const salaries = [
+    tradeSalaryForPlayer(player),
+    impactNumber(player, "projection_contract_y1"),
+    impactNumber(player, "projection_contract_y2"),
+    impactNumber(player, "projection_contract_y3")
+  ].filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0);
+  if (salaries.length === 0) return null;
+  return {
+    years: salaries.length,
+    total: salaries.reduce((sum, value) => sum + value, 0)
+  };
+}
+
+function tradeContractSummaryLabel(player: PlayerImpact): string {
+  const summary = tradeContractSummary(player);
+  if (!summary) return formatSalarySlot(player);
+  const years = `${summary.years} yr${summary.years === 1 ? "" : "s"}`;
+  return `${formatSalarySlot(player)} / ${years}, ${formatMoney(summary.total)} rem`;
+}
+
+function tradeTeamMeta(team: string, teamMeta: Map<string, TeamProjection>): TeamProjection | null {
+  return teamMeta.get(team) ?? null;
+}
+
 function passesFilterRules(player: PlayerImpact, rules: FilterRule[]): boolean {
   return rules.every((rule) => {
+    if (!isImpactFilterKey(rule.key)) return true;
     const value = getPlayerSortValue(player, rule.key as FilterKey);
     const field = filterFields.find((item) => item.key === rule.key);
     if (field?.type === "number") return passesNumericRule(Number(value), rule);
@@ -7014,10 +7377,70 @@ function cleanTeamValue(value?: string | null): string {
   return team ? team : "FA";
 }
 
+function buildTeamSkillRows(team: TeamProjection): TeamSkillProfileRow[] {
+  return skillKeys
+    .map((key) => {
+      const value = Number(team[key] ?? 0);
+      const safeValue = Number.isFinite(value) ? value : 0;
+      return {
+        key,
+        label: skillLabels[key],
+        value: safeValue,
+        marker: clamp(Math.abs(safeValue) / 2.4, 0, 1) * 50,
+        band: safeValue >= 0.8 ? "strength" : safeValue <= -0.8 ? "weakness" : "neutral"
+      } satisfies TeamSkillProfileRow;
+    })
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+}
+
+function compareTeamContributors(a: PlayerImpact, b: PlayerImpact, key: TeamContributorSortKey, direction: SortDirection, teamMinutes: number): number {
+  const aValue = getTeamContributorSortValue(a, key, teamMinutes);
+  const bValue = getTeamContributorSortValue(b, key, teamMinutes);
+  let result = 0;
+
+  if (typeof aValue === "string" || typeof bValue === "string") {
+    result = String(aValue ?? "").localeCompare(String(bValue ?? ""));
+  } else {
+    result = Number(aValue ?? Number.NEGATIVE_INFINITY) - Number(bValue ?? Number.NEGATIVE_INFINITY);
+  }
+
+  if (result === 0) {
+    result = b.Minutes - a.Minutes || a.player_name.localeCompare(b.player_name);
+  }
+
+  return direction === "asc" ? result : -result;
+}
+
+function getTeamContributorSortValue(player: PlayerImpact, key: TeamContributorSortKey, teamMinutes: number): string | number {
+  const share = teamMinutes > 0 ? player.Minutes / teamMinutes : 0;
+  if (key === "player_name") return player.player_name;
+  if (key === "share") return share;
+  if (key === "offense_contribution") return player.offense * share * 5;
+  if (key === "defense_contribution") return player.defense * share * 5;
+  if (key === "total_contribution") return player.total * share * 5;
+  return player.Minutes;
+}
+
 function displayPosition(position?: string | null): string {
   const raw = String(position ?? "").trim();
   if (!raw) return "UNK";
   return raw.split(/[/-]/)[0]?.trim() || "UNK";
+}
+
+function replacementPositionShareText(player: PlayerImpact): string {
+  const shares: Array<[string, number | null | undefined]> = [
+    ["PG", player.pg_share],
+    ["SG", player.sg_share],
+    ["SF", player.sf_share],
+    ["PF", player.pf_share],
+    ["C", player.c_share]
+  ];
+  const finiteShares = shares
+    .map(([label, value]) => [label, Number(value)] as const)
+    .filter(([, value]) => Number.isFinite(value) && value > 0.005)
+    .sort((a, b) => b[1] - a[1]);
+  if (finiteShares.length === 0) return displayPosition(player.position);
+  return finiteShares.map(([label, value]) => `${label} ${Math.round(value * 100)}%`).join(" / ");
 }
 
 function teamForProjectionScenario(player: PlayerImpact, scenario: TeamProjectionScenario): string {

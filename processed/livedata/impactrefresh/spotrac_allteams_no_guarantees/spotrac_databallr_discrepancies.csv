@@ -73,7 +73,6 @@ NYK,OG Anunoby,2027,45431034,42500000,2931034,Signed,https://www.spotrac.com/nba
 NYK,OG Anunoby,2028,48362068,45431034,2931034,Signed,https://www.spotrac.com/nba/new-york-knicks/yearly/_/sort/cap_total/view/roster
 DAL,Kyrie Irving,2027,42416562,39491282,2925280,Signed,https://www.spotrac.com/nba/dallas-mavericks/yearly/_/sort/cap_total/view/roster
 CHA,Kon Knueppel,2028,13937214,11017560,2919654,Signed,https://www.spotrac.com/nba/charlotte-hornets/yearly/_/sort/cap_total/view/roster
-SAS,Devin Vassell,2028,27500000,24652174,2847826,Signed,https://www.spotrac.com/nba/san-antonio-spurs/yearly/_/sort/cap_total/view/roster
 CHA,LaMelo Ball,2027,43582280,40770520,2811760,Signed,https://www.spotrac.com/nba/charlotte-hornets/yearly/_/sort/cap_total/view/roster
 CHA,LaMelo Ball,2028,46394040,43582280,2811760,Signed,https://www.spotrac.com/nba/charlotte-hornets/yearly/_/sort/cap_total/view/roster
 PHI,Tyrese Maxey,2027,43582280,40770520,2811760,Signed,https://www.spotrac.com/nba/philadelphia-76ers/yearly/_/sort/cap_total/view/roster
@@ -111,6 +110,8 @@ LAC,Yanic Konan Niederhauser,2028,5448356,3018480,2429876,Signed,https://www.spo
 WAS,Tre Johnson,2028,11490211,9061680,2428531,Signed,https://www.spotrac.com/nba/washington-wizards/yearly/_/sort/cap_total/view/roster
 POR,Jrue Holiday,2027,37200000,34800000,2400000,Signed,https://www.spotrac.com/nba/portland-trail-blazers/yearly/_/sort/cap_total/view/roster
 BKN,Drake Powell,2028,6101832,3709320,2392512,Signed,https://www.spotrac.com/nba/brooklyn-nets/yearly/_/sort/cap_total/view/roster
+SAS,Devin Vassell,2027,25108696,27500000,-2391304,Signed,https://www.spotrac.com/nba/san-antonio-spurs/yearly/_/sort/cap_total/view/roster
+SAS,Devin Vassell,2028,27500000,25108696,2391304,Signed,https://www.spotrac.com/nba/san-antonio-spurs/yearly/_/sort/cap_total/view/roster
 NYK,Pacome Dadiet,2027,5373608,2983680,2389928,Signed,https://www.spotrac.com/nba/new-york-knicks/yearly/_/sort/cap_total/view/roster
 MEM,Walter Clayton Jr.,2028,6752312,4390320,2361992,Signed,https://www.spotrac.com/nba/memphis-grizzlies/yearly/_/sort/cap_total/view/roster
 OKC,Jared McCain,2027,6784268,4422600,2361668,Signed,https://www.spotrac.com/nba/oklahoma-city-thunder/yearly/_/sort/cap_total/view/roster
@@ -158,7 +159,6 @@ HOU,Jabari Smith Jr.,2029,25534883,23643411,1891472,Signed,https://www.spotrac.c
 HOU,Jabari Smith Jr.,2030,27426355,25534883,1891472,Signed,https://www.spotrac.com/nba/houston-rockets/yearly/_/sort/cap_total/view/roster
 HOU,Jabari Smith Jr.,2027,21751940,23643411,-1891471,Signed,https://www.spotrac.com/nba/houston-rockets/yearly/_/sort/cap_total/view/roster
 HOU,Jabari Smith Jr.,2028,23643411,21751940,1891471,Signed,https://www.spotrac.com/nba/houston-rockets/yearly/_/sort/cap_total/view/roster
-SAS,Devin Vassell,2027,25108696,27000000,-1891304,Signed,https://www.spotrac.com/nba/san-antonio-spurs/yearly/_/sort/cap_total/view/roster
 CHI,Rob Dillingham,2027,8763216,6889320,1873896,Signed,https://www.spotrac.com/nba/chicago-bulls/yearly/_/sort/cap_total/view/roster
 CHI,Matas Buzelis,2027,7584283,5715360,1868923,Signed,https://www.spotrac.com/nba/chicago-bulls/yearly/_/sort/cap_total/view/roster
 PHX,Khaman Maluach,2028,8436880,6617160,1819720,Signed,https://www.spotrac.com/nba/phoenix-suns/yearly/_/sort/cap_total/view/roster
@@ -206,12 +206,12 @@ GSW,Al Horford,2027,7163100,5969250,1193850,Signed,https://www.spotrac.com/nba/g
 HOU,Steven Adams,2027,11869565,13000000,-1130435,Signed,https://www.spotrac.com/nba/houston-rockets/yearly/_/sort/cap_total/view/roster
 MIA,Nikola Jovic,2029,16200000,15096000,1104000,Signed,https://www.spotrac.com/nba/miami-heat/yearly/_/sort/cap_total/view/roster
 MIL,Bobby Portis,2027,15597074,14521414,1075660,Signed,https://www.spotrac.com/nba/milwaukee-bucks/yearly/_/sort/cap_total/view/roster
-OKC,Aaron Wiggins,2027,8168226,9224300,-1056074,Signed,https://www.spotrac.com/nba/oklahoma-city-thunder/yearly/_/sort/cap_total/view/roster
 IND,Obi Toppin,2027,16025000,15000000,1025000,Signed,https://www.spotrac.com/nba/indiana-pacers/yearly/_/sort/cap_total/view/roster
 ATL,Corey Kispert,2027,13025000,13975000,-950000,Signed,https://www.spotrac.com/nba/atlanta-hawks/yearly/_/sort/cap_total/view/roster
 GSW,Moses Moody,2027,13425925,12500000,925925,Signed,https://www.spotrac.com/nba/golden-state-warriors/yearly/_/sort/cap_total/view/roster
 DAL,Daniel Gafford,2027,18126763,17263584,863179,Signed,https://www.spotrac.com/nba/dallas-mavericks/yearly/_/sort/cap_total/view/roster
 DAL,Daniel Gafford,2028,18989942,18126763,863179,Signed,https://www.spotrac.com/nba/dallas-mavericks/yearly/_/sort/cap_total/view/roster
+OKC,Aaron Wiggins,2027,8168226,9028038,-859812,Signed,https://www.spotrac.com/nba/oklahoma-city-thunder/yearly/_/sort/cap_total/view/roster
 LAL,Jarred Vanderbilt,2027,13285714,12428571,857143,Signed,https://www.spotrac.com/nba/los-angeles-lakers/yearly/_/sort/cap_total/view/roster
 DET,Duncan Robinson,2027,15151222,15992957,-841735,Signed,https://www.spotrac.com/nba/detroit-pistons/yearly/_/sort/cap_total/view/roster
 BOS,Sam Hauser,2028,12455356,11651785,803571,Signed,https://www.spotrac.com/nba/boston-celtics/yearly/_/sort/cap_total/view/roster
@@ -299,7 +299,6 @@ PHX,Oso Ighodaro,2027,2486995,2296271,190724,Signed,https://www.spotrac.com/nba/
 LAL,Bronny James,2027,2486995,2296271,190724,Signed,https://www.spotrac.com/nba/los-angeles-lakers/yearly/_/sort/cap_total/view/roster
 MEM,Jaylen Wells,2027,2486995,2296271,190724,Signed,https://www.spotrac.com/nba/memphis-grizzlies/yearly/_/sort/cap_total/view/roster
 MIA,Kasparas Jakucionis,2027,4024440,3841680,182760,Signed,https://www.spotrac.com/nba/miami-heat/yearly/_/sort/cap_total/view/roster
-OKC,Aaron Wiggins,2028,8168226,8345797,-177571,Signed,https://www.spotrac.com/nba/oklahoma-city-thunder/yearly/_/sort/cap_total/view/roster
 WAS,Will Riley,2027,3864000,3688320,175680,Signed,https://www.spotrac.com/nba/washington-wizards/yearly/_/sort/cap_total/view/roster
 BKN,Drake Powell,2027,3709320,3540600,168720,Signed,https://www.spotrac.com/nba/brooklyn-nets/yearly/_/sort/cap_total/view/roster
 ATL,Asa Newell,2027,3560880,3399480,161400,Signed,https://www.spotrac.com/nba/atlanta-hawks/yearly/_/sort/cap_total/view/roster
