@@ -55,7 +55,7 @@ import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./util
 const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
 const OffseasonSimulatorWorkspace = lazy(() => import("./OffseasonSimulator").then((module) => ({ default: module.OffseasonSimulatorWorkspace })));
 
-type View = "impact" | "teams" | "startingLineups" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker";
+type View = "impact" | "teams" | "startingLineups" | "tradeRecs" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type SkillAggregateSortKey = "skill_total" | "skill_off" | "skill_def";
 type ImpactSkillSortKey = SkillKey | SkillAggregateSortKey;
@@ -133,6 +133,7 @@ const viewLabels: Record<View, string> = {
   impact: "Player Impact",
   teams: "Team Projections",
   startingLineups: "Starting Lineups",
+  tradeRecs: "Trade Recs",
   trade: "Trade Sandbox",
   offseason: "Offseason Sim",
   capTracker: "Cap Tracker",
@@ -270,6 +271,25 @@ type TradeSuggestion = {
   fitLift: number;
   timelineFit: number;
   reasons: string[];
+};
+type TradeRecommendation = TradeSuggestion & {
+  focusTeam: string;
+  opponentTeam: string;
+  focusSends: TradeAsset[];
+  focusReceives: TradeAsset[];
+  opponentSends: TradeAsset[];
+  opponentReceives: TradeAsset[];
+  focusInterest: number;
+  opponentInterest: number;
+  mutualScore: number;
+  netImpact: number;
+  packageType: string;
+};
+type TradeSuggestionBuildOptions = {
+  limit?: number;
+  rosterLimit?: number;
+  includePackages?: boolean;
+  minScore?: number;
 };
 type DraftEloTab = "compare" | "results";
 type DraftEloResponse = {
@@ -767,6 +787,7 @@ function App() {
             {view === "impact" && <ImpactWorkspace data={data} season={season} />}
             {view === "teams" && <TeamWorkspace data={data} season={season} />}
             {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
+            {view === "tradeRecs" && <TradeRecommendationsWorkspace data={data} season={season} onOpenSandbox={() => setView("trade")} />}
             {view === "trade" && <TradeWorkspace data={data} season={season} />}
             {view === "offseason" && <OffseasonSimulatorWorkspace data={data} season={season} />}
             {view === "capTracker" && <CapTrackerWorkspace data={data} />}
@@ -2155,6 +2176,182 @@ const TRADE_PICK_PROTECTIONS = [
   { label: "Top-14 protected", cutoff: 14 }
 ];
 const TRADE_SWAP_VALUE_FACTOR = 0.35;
+
+function TradeRecommendationsWorkspace({ data, season, onOpenSandbox }: { data: AppData; season: number; onOpenSandbox: () => void }) {
+  const players = useMemo(() => data.players.filter((player) => player.year === season), [data.players, season]);
+  const teamOptions = useMemo(() => {
+    const baseTeams = data.teams
+      .filter((team) => team.year === season && ((team.scenario_id ?? "base") === "base"))
+      .sort((a, b) => a.team.localeCompare(b.team));
+    const seen = new Set(baseTeams.map((team) => team.team));
+    const fallbackTeams = Array.from(new Set(players.map((player) => player.team)))
+      .filter((team) => team && !seen.has(team))
+      .sort()
+      .map((team) => ({
+        year: season,
+        team,
+        team_abbr: team,
+        projected_wins: 41,
+        expected_wins: 41,
+        conference_rank: 0,
+        playoff_status: ""
+      } as TeamProjection));
+    return [...baseTeams, ...fallbackTeams];
+  }, [data.teams, players, season]);
+  const teamMeta = useMemo(() => new Map(teamOptions.map((team) => [team.team, team])), [teamOptions]);
+  const defaultTeam = teamOptions[0]?.team ?? players[0]?.team ?? "";
+  const [selectedTeam, setSelectedTeam] = useSessionState("tradeRecs:team", defaultTeam);
+  const calendar = useMemo(() => defaultTradeCalendar(data.schedules, season), [data.schedules, season]);
+  const contractMap = useMemo(() => buildTradeContractMap(data.capTracker?.contracts ?? []), [data.capTracker]);
+  const pickContext = useMemo(() => buildTradePickContext(data.picks, data.capTracker, season), [data.capTracker, data.picks, season]);
+
+  useEffect(() => {
+    if (!teamOptions.length) return;
+    setSelectedTeam((current) => teamOptions.some((team) => cleanTeamValue(team.team) === cleanTeamValue(current)) ? current : defaultTeam);
+  }, [defaultTeam, setSelectedTeam, teamOptions]);
+
+  const selectedMeta = tradeSuggestionTeamMeta(teamOptions, selectedTeam);
+  const recommendations = useMemo(
+    () => buildTeamTradeRecommendations({
+      data,
+      season,
+      players,
+      focusTeam: selectedTeam,
+      teamOptions,
+      pickContext,
+      contractMap,
+      calendar
+    }),
+    [calendar, contractMap, data, pickContext, players, season, selectedTeam, teamOptions]
+  );
+  const acceptedCount = recommendations.filter((item) => item.verdict === "Accepted").length;
+  const maybeCount = recommendations.filter((item) => item.verdict === "Maybe").length;
+  const needLabels = selectedMeta ? tradeRecommendationNeedLabels(selectedMeta) : [];
+
+  const openRecommendation = (recommendation: TradeRecommendation) => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem("trade:left", JSON.stringify(recommendation.left));
+      window.sessionStorage.setItem("trade:right", JSON.stringify(recommendation.right));
+      window.sessionStorage.setItem("trade:third", JSON.stringify(null));
+      window.sessionStorage.setItem("trade:panelTab", JSON.stringify("review"));
+    }
+    onOpenSandbox();
+  };
+
+  return (
+    <main className="workspace trade-recs-workspace">
+      <section className="trade-recs-toolbar">
+        <div className="section-heading">
+          <span>Trade recommendations</span>
+          <h2>{selectedMeta ? teamLabel(selectedMeta.team, teamMeta) : "Select team"}</h2>
+        </div>
+        <label className="trade-recs-selector">
+          <span>Team</span>
+          <select value={selectedTeam} onChange={(event) => setSelectedTeam(event.target.value)}>
+            {teamOptions.map((team) => (
+              <option key={team.team} value={team.team}>{teamLabel(team.team, teamMeta)}</option>
+            ))}
+          </select>
+        </label>
+        <div className="trade-recs-kpis">
+          <MetricPill label="Recommendations" value={formatNumber(recommendations.length, 0)} tone="gold" />
+          <MetricPill label="Accepted" value={formatNumber(acceptedCount, 0)} tone="green" />
+          <MetricPill label="Maybe" value={formatNumber(maybeCount, 0)} tone="teal" />
+        </div>
+      </section>
+
+      <section className="trade-recs-context">
+        <div>
+          <span>Needs</span>
+          <strong>{needLabels.length ? needLabels.join(" / ") : "Balanced"}</strong>
+        </div>
+        <div>
+          <span>Sort</span>
+          <strong>Mutual viability + interest</strong>
+        </div>
+        <div>
+          <span>Model</span>
+          <strong>Fit, timeline, value, scale, CBA</strong>
+        </div>
+      </section>
+
+      <section className="trade-recs-list">
+        {recommendations.length === 0 ? (
+          <div className="empty trade-recs-empty">No legal or reviewable recommendations cleared the model screens for this team.</div>
+        ) : recommendations.map((recommendation, index) => (
+          <TradeRecommendationCard
+            key={recommendation.id}
+            rank={index + 1}
+            recommendation={recommendation}
+            teamMeta={teamMeta}
+            onOpen={() => openRecommendation(recommendation)}
+          />
+        ))}
+      </section>
+    </main>
+  );
+}
+
+function TradeRecommendationCard({
+  rank,
+  recommendation,
+  teamMeta,
+  onOpen
+}: {
+  rank: number;
+  recommendation: TradeRecommendation;
+  teamMeta: Map<string, TeamProjection>;
+  onOpen: () => void;
+}) {
+  return (
+    <article className="trade-rec-card">
+      <div className="trade-rec-rank">{rank}</div>
+      <div className="trade-rec-main">
+        <div className="trade-rec-head">
+          <div>
+            <span className={cls("trade-route-verdict", verdictClass(recommendation.verdict))}>{recommendation.verdict}</span>
+            <h3>{recommendation.title}</h3>
+            <small>{teamLabel(recommendation.focusTeam, teamMeta)} with {teamLabel(recommendation.opponentTeam, teamMeta)} / {recommendation.packageType}</small>
+          </div>
+          <div className="trade-rec-score">
+            <span>Mutual</span>
+            <strong>{formatNumber(recommendation.mutualScore, 1)}</strong>
+          </div>
+        </div>
+        <div className="trade-rec-lanes">
+          <TradeRecommendationLane label={`${teamLabel(recommendation.focusTeam, teamMeta)} sends`} assets={recommendation.focusSends} />
+          <TradeRecommendationLane label={`${teamLabel(recommendation.focusTeam, teamMeta)} receives`} assets={recommendation.focusReceives} />
+        </div>
+        <div className="trade-suggestion-reasons trade-rec-reasons">
+          {recommendation.reasons.slice(0, 5).map((reason) => <span key={reason}>{reason}</span>)}
+        </div>
+      </div>
+      <div className="trade-rec-metrics">
+        <MetricPill label="Team interest" value={formatNumber(recommendation.focusInterest, 1)} tone={recommendation.focusInterest >= 60 ? "green" : "teal"} />
+        <MetricPill label="Other interest" value={formatNumber(recommendation.opponentInterest, 1)} tone={recommendation.opponentInterest >= 60 ? "green" : "teal"} />
+        <MetricPill label="Value diff" value={formatMoney(recommendation.valueDiff)} tone={recommendation.valueDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
+        <MetricPill label="Scale diff" value={formatMoney(recommendation.scaleDiff)} tone={recommendation.scaleDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
+        <MetricPill label="Net impact" value={formatSigned(recommendation.netImpact, 2)} tone={recommendation.netImpact >= 0 ? "green" : "teal"} />
+        <MetricPill label="CBA" value={tradeMachineStatusLabel(recommendation.cbaStatus === "missing" ? undefined : recommendation.cbaStatus)} tone={tradeMachineTone(recommendation.cbaStatus === "missing" ? undefined : recommendation.cbaStatus)} />
+      </div>
+      <button className="trade-rec-open" onClick={onOpen}>Open</button>
+    </article>
+  );
+}
+
+function TradeRecommendationLane({ label, assets }: { label: string; assets: TradeAsset[] }) {
+  return (
+    <div className="trade-rec-lane">
+      <span>{label}</span>
+      {assets.length === 0 ? <strong>No outgoing assets</strong> : assets.map((asset) => (
+        <div key={asset.id} className="trade-rec-asset">
+          <strong>{assetLabel(asset)}</strong>
+          <small>{assetMeta(asset)}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
   const players = useMemo(
@@ -6236,6 +6433,9 @@ function evaluateSavedTradeScenarioSnapshot(
 
 const TRADE_SUGGESTION_LIMIT = 12;
 const TRADE_SUGGESTION_ROSTER_LIMIT = 18;
+const TRADE_RECOMMENDATION_LIMIT = 36;
+const TRADE_RECOMMENDATION_PER_OPPONENT = 5;
+const TRADE_RECOMMENDATION_ROSTER_LIMIT = 12;
 
 function buildTradeSuggestions({
   data,
@@ -6246,7 +6446,8 @@ function buildTradeSuggestions({
   teamOptions,
   pickContext,
   contractMap,
-  calendar
+  calendar,
+  options
 }: {
   data: AppData;
   season: number;
@@ -6257,14 +6458,19 @@ function buildTradeSuggestions({
   pickContext: TradePickContext;
   contractMap: Map<string, CapTrackerContractRow>;
   calendar: TradeCalendarState;
+  options?: TradeSuggestionBuildOptions;
 }): TradeSuggestion[] {
   if (!leftTeam || !rightTeam || cleanTeamValue(leftTeam) === cleanTeamValue(rightTeam)) return [];
+  const limit = options?.limit ?? TRADE_SUGGESTION_LIMIT;
+  const rosterLimit = options?.rosterLimit ?? TRADE_SUGGESTION_ROSTER_LIMIT;
+  const includePackages = options?.includePackages ?? true;
+  const minScore = options?.minScore ?? 20;
   const leftMeta = tradeSuggestionTeamMeta(teamOptions, leftTeam);
   const rightMeta = tradeSuggestionTeamMeta(teamOptions, rightTeam);
   if (!leftMeta || !rightMeta) return [];
 
-  const leftRoster = tradeSuggestionRoster(players, leftTeam);
-  const rightRoster = tradeSuggestionRoster(players, rightTeam);
+  const leftRoster = tradeSuggestionRoster(players, leftTeam, rosterLimit);
+  const rightRoster = tradeSuggestionRoster(players, rightTeam, rosterLimit);
   const candidates: TradeSuggestion[] = [];
 
   leftRoster.forEach((leftPlayer) => {
@@ -6277,20 +6483,36 @@ function buildTradeSuggestions({
       const leftValue = scaleAdjustedAssetTotal(baseLeftAssets);
       const rightValue = scaleAdjustedAssetTotal(baseRightAssets);
       const gap = Math.abs(leftValue - rightValue);
-      if (gap < 8_000_000) return;
+      if (!includePackages || gap < 8_000_000) return;
       const payerTeam = leftValue < rightValue ? leftTeam : rightTeam;
       const receiverTeam = leftValue < rightValue ? rightTeam : leftTeam;
       const makeweight = tradeSuggestionPickForGap(data.picks, payerTeam, receiverTeam, gap, pickContext, season, teamOptions);
-      if (!makeweight) return;
-      const leftAssets = payerTeam === leftTeam ? [...baseLeftAssets, makeweight] : baseLeftAssets;
-      const rightAssets = payerTeam === rightTeam ? [...baseRightAssets, makeweight] : baseRightAssets;
-      const withPick = evaluateTradeSuggestion(data, season, players, leftMeta, rightMeta, leftAssets, rightAssets, contractMap, calendar);
-      if (withPick) candidates.push(withPick);
+      if (makeweight) {
+        const leftAssets = payerTeam === leftTeam ? [...baseLeftAssets, makeweight] : baseLeftAssets;
+        const rightAssets = payerTeam === rightTeam ? [...baseRightAssets, makeweight] : baseRightAssets;
+        const withPick = evaluateTradeSuggestion(data, season, players, leftMeta, rightMeta, leftAssets, rightAssets, contractMap, calendar);
+        if (withPick) candidates.push(withPick);
+      }
+
+      const payerRoster = payerTeam === leftTeam ? leftRoster : rightRoster;
+      const playerMakeweight = tradeSuggestionPlayerForGap(
+        payerRoster,
+        receiverTeam,
+        gap,
+        new Set([leftPlayer.nba_id, rightPlayer.nba_id])
+      );
+      if (playerMakeweight) {
+        const leftAssets = payerTeam === leftTeam ? [...baseLeftAssets, playerMakeweight] : baseLeftAssets;
+        const rightAssets = payerTeam === rightTeam ? [...baseRightAssets, playerMakeweight] : baseRightAssets;
+        const withPlayer = evaluateTradeSuggestion(data, season, players, leftMeta, rightMeta, leftAssets, rightAssets, contractMap, calendar);
+        if (withPlayer) candidates.push(withPlayer);
+      }
     });
   });
 
   const deduped = new Map<string, TradeSuggestion>();
   candidates
+    .filter((suggestion) => suggestion.score >= minScore)
     .filter((suggestion) => suggestion.verdict !== "Declined" || Math.max(suggestion.valueDiff, suggestion.scaleDiff) <= TRADE_MAYBE_DIFF)
     .forEach((suggestion) => {
       const existing = deduped.get(suggestion.id);
@@ -6298,7 +6520,7 @@ function buildTradeSuggestions({
     });
   return Array.from(deduped.values())
     .sort((a, b) => b.score - a.score)
-    .slice(0, TRADE_SUGGESTION_LIMIT);
+    .slice(0, limit);
 }
 
 function evaluateTradeSuggestion(
@@ -6360,12 +6582,120 @@ function evaluateTradeSuggestion(
   };
 }
 
-function tradeSuggestionRoster(players: PlayerImpact[], team: string): PlayerImpact[] {
+function buildTeamTradeRecommendations({
+  data,
+  season,
+  players,
+  focusTeam,
+  teamOptions,
+  pickContext,
+  contractMap,
+  calendar
+}: {
+  data: AppData;
+  season: number;
+  players: PlayerImpact[];
+  focusTeam: string;
+  teamOptions: TeamProjection[];
+  pickContext: TradePickContext;
+  contractMap: Map<string, CapTrackerContractRow>;
+  calendar: TradeCalendarState;
+}): TradeRecommendation[] {
+  const focusMeta = tradeSuggestionTeamMeta(teamOptions, focusTeam);
+  if (!focusMeta) return [];
+  const recommendations = teamOptions
+    .filter((team) => cleanTeamValue(team.team) !== cleanTeamValue(focusTeam))
+    .flatMap((opponent) => buildTradeSuggestions({
+      data,
+      season,
+      players,
+      leftTeam: focusTeam,
+      rightTeam: opponent.team,
+      teamOptions,
+      pickContext,
+      contractMap,
+      calendar,
+      options: {
+        limit: TRADE_RECOMMENDATION_PER_OPPONENT,
+        rosterLimit: TRADE_RECOMMENDATION_ROSTER_LIMIT,
+        includePackages: true,
+        minScore: 24
+      }
+    }).map((suggestion) => tradeSuggestionToRecommendation(suggestion, focusMeta, opponent)).filter((item): item is TradeRecommendation => Boolean(item)));
+
+  const deduped = new Map<string, TradeRecommendation>();
+  recommendations.forEach((recommendation) => {
+    const existing = deduped.get(recommendation.id);
+    if (!existing || recommendation.mutualScore > existing.mutualScore) deduped.set(recommendation.id, recommendation);
+  });
+  return Array.from(deduped.values())
+    .sort((a, b) => b.mutualScore - a.mutualScore || b.focusInterest + b.opponentInterest - (a.focusInterest + a.opponentInterest))
+    .slice(0, TRADE_RECOMMENDATION_LIMIT);
+}
+
+function tradeSuggestionToRecommendation(suggestion: TradeSuggestion, focusMeta: TeamProjection, opponentMeta: TeamProjection): TradeRecommendation | null {
+  const focusIsLeft = cleanTeamValue(suggestion.left.team) === cleanTeamValue(focusMeta.team);
+  const focusSends = focusIsLeft ? suggestion.left.assets : suggestion.right.assets;
+  const focusReceives = focusIsLeft ? suggestion.right.assets : suggestion.left.assets;
+  const opponentSends = focusIsLeft ? suggestion.right.assets : suggestion.left.assets;
+  const opponentReceives = focusIsLeft ? suggestion.left.assets : suggestion.right.assets;
+  const focusInterest = tradeRecommendationInterest(focusMeta, focusReceives, focusSends, suggestion);
+  const opponentInterest = tradeRecommendationInterest(opponentMeta, opponentReceives, opponentSends, suggestion);
+  const netImpact = subtractTradeImpact(tradeImpactSummary(focusReceives), tradeImpactSummary(focusSends)).total;
+  const mutualScore = roundTo(
+    suggestion.score * 0.48
+      + Math.min(focusInterest, opponentInterest) * 0.34
+      + ((focusInterest + opponentInterest) / 2) * 0.18,
+    1
+  );
+  return {
+    ...suggestion,
+    focusTeam: focusMeta.team,
+    opponentTeam: opponentMeta.team,
+    focusSends,
+    focusReceives,
+    opponentSends,
+    opponentReceives,
+    focusInterest,
+    opponentInterest,
+    mutualScore,
+    netImpact: roundTo(netImpact, 2),
+    packageType: tradeRecommendationPackageType(suggestion.left.assets, suggestion.right.assets)
+  };
+}
+
+function tradeRecommendationInterest(team: TeamProjection, incoming: TradeAsset[], outgoing: TradeAsset[], suggestion: TradeSuggestion): number {
+  const fit = tradeSuggestionFitLift(incoming, outgoing, team);
+  const timeline = tradeSuggestionTimelineLift(incoming, outgoing, team);
+  const netImpact = subtractTradeImpact(tradeImpactSummary(incoming), tradeImpactSummary(outgoing)).total;
+  const valuePenalty = Math.max(suggestion.valueDiff, suggestion.scaleDiff) / 1_000_000 * 0.42;
+  const verdictBase = suggestion.verdict === "Accepted" ? 64 : suggestion.verdict === "Maybe" ? 55 : 43;
+  const outgoingStarPenalty = tradeSuggestionStarPenalty(outgoing, incoming) * 0.28;
+  return roundTo(clamp(verdictBase + fit * 7.2 + timeline * 5.5 + netImpact * 2.6 - valuePenalty - outgoingStarPenalty, 0, 100), 1);
+}
+
+function tradeRecommendationPackageType(leftAssets: TradeAsset[], rightAssets: TradeAsset[]): string {
+  const maxCount = Math.max(leftAssets.length, rightAssets.length);
+  const hasPick = [...leftAssets, ...rightAssets].some((asset) => asset.kind === "pick");
+  if (maxCount >= 3) return hasPick ? "multi-asset + picks" : "multi-player";
+  if (maxCount === 2) return hasPick ? "player + pick" : "two-player package";
+  return "one-for-one";
+}
+
+function tradeRecommendationNeedLabels(team: TeamProjection): string[] {
+  return skillKeys
+    .map((key) => ({ key, value: Number(team[key] ?? 0) }))
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 3)
+    .map((item) => item.key);
+}
+
+function tradeSuggestionRoster(players: PlayerImpact[], team: string, limit = TRADE_SUGGESTION_ROSTER_LIMIT): PlayerImpact[] {
   return tradeRoster(players, team)
     .filter((player) => !isOpenMarketContractStatus(player))
     .filter((player) => tradeSalaryForPlayer(player) > 0 && playerTradeValue(player) > 0)
     .filter((player) => player.availability_status !== "DNQ")
-    .slice(0, TRADE_SUGGESTION_ROSTER_LIMIT);
+    .slice(0, limit);
 }
 
 function tradeSuggestionTeamMeta(teams: TeamProjection[], team: string): TeamProjection | null {
@@ -6379,6 +6709,16 @@ function suggestionPlayerAsset(player: PlayerImpact, toTeam: string): TradeAsset
 
 function suggestionPickAsset(pick: PickAsset, toTeam: string): TradeAsset {
   return { ...pickTradeAsset(pick), toTeam };
+}
+
+function tradeSuggestionPlayerForGap(roster: PlayerImpact[], toTeam: string, gap: number, excludedIds: Set<number>): TradeAsset | null {
+  const target = Math.max(0, gap);
+  const player = roster
+    .filter((candidate) => !excludedIds.has(candidate.nba_id))
+    .map((candidate) => ({ candidate, value: scaleAdjustedAssetValue(suggestionPlayerAsset(candidate, toTeam)) }))
+    .filter((item) => item.value >= 2_000_000 && item.value <= target * 1.7)
+    .sort((a, b) => Math.abs(a.value - target) - Math.abs(b.value - target) || playerTradeValue(a.candidate) - playerTradeValue(b.candidate))[0]?.candidate;
+  return player ? suggestionPlayerAsset(player, toTeam) : null;
 }
 
 function tradeSuggestionPickForGap(
