@@ -3447,7 +3447,7 @@ function TradeSide({
               </span>
               <span className="trade-roster-money">
                 <strong>{formatContractValue(player)}</strong>
-                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / value {formatMoney(playerTradeValue(player))}</small>
+                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / 4Y scaled {formatMoney(playerTradeValue(player))}</small>
               </span>
             </button>
           );
@@ -6873,13 +6873,13 @@ function tradeMachineAssets(assets: TradeAsset[], team: string, season: number, 
 
 function tradeMachineAsset(asset: TradeAsset, team: string, season: number, contractMap: Map<string, CapTrackerContractRow>): TradeMachineAsset | null {
   if (asset.kind === "player" && asset.player) {
-    const playerAsset = playerTradeMachineAsset(asset.player, team, playerTradeScale(asset.player));
+    const playerAsset = playerTradeMachineAsset(asset.player, team, 1);
     const contractRow = tradeContractRowForPlayer(asset.player, team, contractMap);
     return {
       ...playerAsset,
       toTeam: asset.toTeam ?? null,
       tradeValue: playerTradeValue(asset.player),
-      scaleValue: playerTradeScale(asset.player),
+      scaleValue: 1,
       ...tradeContractRulesFromNotes(asset.player, contractRow, season)
     };
   }
@@ -7692,7 +7692,7 @@ function selectedTradePlayerIds(...assetGroups: TradeAsset[][]): Set<number> {
 
 function playerTradeValue(player: PlayerImpact): number {
   const fourYearValue = futureValue4y(player);
-  if (fourYearValue !== null) return fourYearValue;
+  if (fourYearValue !== null) return fourYearValue * Math.max(0, playerTradeScale(player));
   const values = [
     player.value,
     player.projection_value_y1,
@@ -7701,8 +7701,8 @@ function playerTradeValue(player: PlayerImpact): number {
   ]
     .map((value) => Number(value))
     .filter(Number.isFinite);
-  if (values.length > 0) return values.reduce((sum, value) => sum + value, 0);
-  return Number(player.trade_value ?? 0);
+  const fallback = values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : Number(player.trade_value ?? 0);
+  return fallback * Math.max(0, playerTradeScale(player));
 }
 
 function assetValue(asset: TradeAsset): number {
@@ -7713,7 +7713,7 @@ function assetValue(asset: TradeAsset): number {
 
 function scaleAdjustedAssetValue(asset: TradeAsset): number {
   const value = assetValue(asset);
-  if (asset.kind === "player" && asset.player) return value * Math.max(0, playerTradeScale(asset.player));
+  if (asset.kind === "player" && asset.player) return value;
   if (asset.kind === "pick" && asset.pick) {
     const scale = Number(asset.pick.scale_value ?? pickScaleFromNormalized(asset.pick.normalized));
     return value * Math.max(0, Number.isFinite(scale) ? scale : 1);
