@@ -1,0 +1,48 @@
+"asset_type","scenario","protection","expected_pick","convey_probability","four_year_value"
+"first","Unprotected 1st - random NBA team","unprotected",15.5,1,55038819
+"first","Unprotected 1st - random NBA team","top-3 protected",15.5,0.9,46481697
+"first","Unprotected 1st - random NBA team","top-5 protected",15.5,0.833,41297740
+"first","Unprotected 1st - random NBA team","top-8 protected",15.5,0.733,34218924
+"first","Unprotected 1st - random NBA team","top-10 protected",15.5,0.667,29917751
+"first","Unprotected 1st - random NBA team","lottery protected",15.5,0.533,22188132
+"first","Unprotected 1st - average lottery team","unprotected",7.5,1,70394329
+"first","Unprotected 1st - average lottery team","top-3 protected",7.5,0.786,52057639
+"first","Unprotected 1st - average lottery team","top-5 protected",7.5,0.643,40949161
+"first","Unprotected 1st - average lottery team","top-8 protected",7.5,0.429,25780269
+"first","Unprotected 1st - average lottery team","top-10 protected",7.5,0.286,16563469
+"first","Unprotected 1st - average lottery team","lottery protected",7.5,0,0
+"first","Unprotected 1st - bottom-3 team","unprotected",3.86,1,79844381
+"first","Unprotected 1st - bottom-3 team","top-3 protected",3.86,0.598,45432906
+"first","Unprotected 1st - bottom-3 team","top-5 protected",3.86,0.177,12924713
+"first","Unprotected 1st - bottom-3 team","top-8 protected",3.86,0,0
+"first","Unprotected 1st - bottom-3 team","top-10 protected",3.86,0,0
+"first","Unprotected 1st - bottom-3 team","lottery protected",3.86,0,0
+"first","Unprotected 1st - bottom-5 team","unprotected",4.2,1,78892735
+"first","Unprotected 1st - bottom-5 team","top-3 protected",4.2,0.623,46567628
+"first","Unprotected 1st - bottom-5 team","top-5 protected",4.2,0.307,22134598
+"first","Unprotected 1st - bottom-5 team","top-8 protected",4.2,0.001,81424
+"first","Unprotected 1st - bottom-5 team","top-10 protected",4.2,0,0
+"first","Unprotected 1st - bottom-5 team","lottery protected",4.2,0,0
+"first","Unprotected 1st - play-in/late-lottery team","unprotected",9.81,1,64488547
+"first","Unprotected 1st - play-in/late-lottery team","top-3 protected",9.81,0.895,55554037
+"first","Unprotected 1st - play-in/late-lottery team","top-5 protected",9.81,0.855,52337469
+"first","Unprotected 1st - play-in/late-lottery team","top-8 protected",9.81,0.744,44750279
+"first","Unprotected 1st - play-in/late-lottery team","top-10 protected",9.81,0.5,28986071
+"first","Unprotected 1st - play-in/late-lottery team","lottery protected",9.81,0,0
+"first","Unprotected 1st - average playoff team","unprotected",22.5,1,41602747
+"first","Unprotected 1st - average playoff team","top-3 protected",22.5,1,41602747
+"first","Unprotected 1st - average playoff team","top-5 protected",22.5,1,41602747
+"first","Unprotected 1st - average playoff team","top-8 protected",22.5,1,41602747
+"first","Unprotected 1st - average playoff team","top-10 protected",22.5,1,41602747
+"first","Unprotected 1st - average playoff team","lottery protected",22.5,1,41602747
+"first","Unprotected 1st - contender","unprotected",27.5,1,34564684
+"first","Unprotected 1st - contender","top-3 protected",27.5,1,34564684
+"first","Unprotected 1st - contender","top-5 protected",27.5,1,34564684
+"first","Unprotected 1st - contender","top-8 protected",27.5,1,34564684
+"first","Unprotected 1st - contender","top-10 protected",27.5,1,34564684
+"first","Unprotected 1st - contender","lottery protected",27.5,1,34564684
+"second","Generic 2nd","none",45.5,1,14392242
+"swap","Swap - own contender, counterparty random NBA team","unprotected",15.5,0.883,20727274
+"swap","Swap - own contender, counterparty average lottery team","unprotected",7.5,1,35829645
+"swap","Swap - own playoff team, counterparty play-in/late-lottery team","unprotected",9.81,1,22885800
+"swap","Swap - both random NBA teams","unprotected",15.5,0.483,9564721
