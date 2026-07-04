@@ -15,6 +15,7 @@
     "test:offseason-console": "node ../script/frontend/run_offseason_console_smoke.mjs",
     "test:cap-sandbox": "node ../script/frontend/run_cap_sandbox_regression.mjs",
     "test:trade-scenarios": "node ../script/frontend/run_trade_scenarios_regression.mjs",
+    "test:trade-suggestions": "node ../script/frontend/run_trade_suggestions_regression.mjs",
     "test:trade-machine": "node ../script/frontend/run_trade_machine_regression.mjs"
   },
   "dependencies": {

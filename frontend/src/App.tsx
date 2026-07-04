@@ -6436,8 +6436,11 @@ const TRADE_SUGGESTION_ROSTER_LIMIT = 18;
 const TRADE_RECOMMENDATION_LIMIT = 36;
 const TRADE_RECOMMENDATION_PER_OPPONENT = 5;
 const TRADE_RECOMMENDATION_ROSTER_LIMIT = 12;
+const TRADE_TARGET_PACKAGE_ANCHOR_LIMIT = 8;
+const TRADE_TARGET_PACKAGE_PER_TARGET = 4;
+const TRADE_TARGET_PACKAGE_MIN_VALUE_GAP = 4_000_000;
 
-function buildTradeSuggestions({
+export function buildTradeSuggestions({
   data,
   season,
   players,
@@ -6472,6 +6475,35 @@ function buildTradeSuggestions({
   const leftRoster = tradeSuggestionRoster(players, leftTeam, rosterLimit);
   const rightRoster = tradeSuggestionRoster(players, rightTeam, rosterLimit);
   const candidates: TradeSuggestion[] = [];
+
+  candidates.push(...buildTradeTargetPackageSuggestions({
+    data,
+    season,
+    players,
+    leftMeta,
+    rightMeta,
+    buyerMeta: leftMeta,
+    sellerMeta: rightMeta,
+    buyerRoster: leftRoster,
+    sellerRoster: rightRoster,
+    pickContext,
+    contractMap,
+    calendar
+  }));
+  candidates.push(...buildTradeTargetPackageSuggestions({
+    data,
+    season,
+    players,
+    leftMeta,
+    rightMeta,
+    buyerMeta: rightMeta,
+    sellerMeta: leftMeta,
+    buyerRoster: rightRoster,
+    sellerRoster: leftRoster,
+    pickContext,
+    contractMap,
+    calendar
+  }));
 
   leftRoster.forEach((leftPlayer) => {
     rightRoster.forEach((rightPlayer) => {
@@ -6560,6 +6592,7 @@ function evaluateTradeSuggestion(
       + verdictBonus
       + fitLift * 5.5
       + timelineFit * 4.5
+      + tradeSuggestionPackageIntentBonus(leftAssets, rightAssets)
       - Math.max(valueDiff, scaleDiff) / 1_000_000 * 1.15
       - tradeSuggestionStarPenalty(leftAssets, rightAssets),
     1
@@ -6578,8 +6611,59 @@ function evaluateTradeSuggestion(
     scaleDiff,
     fitLift: roundTo(fitLift, 1),
     timelineFit: roundTo(timelineFit, 1),
-    reasons: tradeSuggestionReasons(result.status, verdict, leftMeta, rightMeta, leftFit, rightFit, timelineFit, leftBalance, rightBalance)
+    reasons: tradeSuggestionReasons(result.status, verdict, leftMeta, rightMeta, leftAssets, rightAssets, leftFit, rightFit, timelineFit, leftBalance, rightBalance)
   };
+}
+
+function buildTradeTargetPackageSuggestions({
+  data,
+  season,
+  players,
+  leftMeta,
+  rightMeta,
+  buyerMeta,
+  sellerMeta,
+  buyerRoster,
+  sellerRoster,
+  pickContext,
+  contractMap,
+  calendar
+}: {
+  data: AppData;
+  season: number;
+  players: PlayerImpact[];
+  leftMeta: TeamProjection;
+  rightMeta: TeamProjection;
+  buyerMeta: TeamProjection;
+  sellerMeta: TeamProjection;
+  buyerRoster: PlayerImpact[];
+  sellerRoster: PlayerImpact[];
+  pickContext: TradePickContext;
+  contractMap: Map<string, CapTrackerContractRow>;
+  calendar: TradeCalendarState;
+}): TradeSuggestion[] {
+  const buyerIsLeft = cleanTeamValue(buyerMeta.team) === cleanTeamValue(leftMeta.team);
+  const candidates: TradeSuggestion[] = [];
+  sellerRoster.forEach((targetPlayer) => {
+    const targetAsset = suggestionPlayerAsset(targetPlayer, buyerMeta.team);
+    const offerPackages = tradeSuggestionTargetOfferPackages({
+      targetPlayer,
+      buyerRoster,
+      buyerTeam: buyerMeta.team,
+      sellerTeam: sellerMeta.team,
+      picks: data.picks,
+      pickContext,
+      season,
+      teamOptions: [leftMeta, rightMeta]
+    });
+    offerPackages.forEach((offerAssets) => {
+      const leftAssets = buyerIsLeft ? offerAssets : [targetAsset];
+      const rightAssets = buyerIsLeft ? [targetAsset] : offerAssets;
+      const suggestion = evaluateTradeSuggestion(data, season, players, leftMeta, rightMeta, leftAssets, rightAssets, contractMap, calendar);
+      if (suggestion) candidates.push(suggestion);
+    });
+  });
+  return candidates;
 }
 
 function buildTeamTradeRecommendations({
@@ -6741,6 +6825,159 @@ function tradeSuggestionPickForGap(
   return generic ? suggestionPickAsset(generic, toTeam) : null;
 }
 
+function tradeSuggestionTargetOfferPackages({
+  targetPlayer,
+  buyerRoster,
+  buyerTeam,
+  sellerTeam,
+  picks,
+  pickContext,
+  season,
+  teamOptions
+}: {
+  targetPlayer: PlayerImpact;
+  buyerRoster: PlayerImpact[];
+  buyerTeam: string;
+  sellerTeam: string;
+  picks: PickAsset[];
+  pickContext: TradePickContext;
+  season: number;
+  teamOptions: TeamProjection[];
+}): TradeAsset[][] {
+  const targetAsset = suggestionPlayerAsset(targetPlayer, buyerTeam);
+  const targetValue = scaleAdjustedAssetValue(targetAsset);
+  const targetSalary = tradeSalaryForPlayer(targetPlayer);
+  if (targetValue <= 0 || targetSalary <= 0) return [];
+
+  const anchors = tradeSuggestionPackageAnchors(buyerRoster, targetPlayer, targetValue, targetSalary);
+  const packages = new Map<string, TradeAsset[]>();
+  anchors.forEach((anchor) => {
+    let assets = [suggestionPlayerAsset(anchor, sellerTeam)];
+    const excluded = new Set([anchor.nba_id]);
+    assets = tradeSuggestionAddSalaryFillers(assets, buyerRoster, sellerTeam, targetSalary, targetValue, excluded);
+    assets = tradeSuggestionAddValueMakeweights(assets, buyerRoster, buyerTeam, sellerTeam, targetValue, picks, pickContext, season, teamOptions, excluded);
+    if (assets.length < 2) return;
+    const packageValue = scaleAdjustedAssetTotal(assets);
+    if (packageValue < targetValue - TRADE_MAYBE_DIFF) return;
+    if (packageValue > targetValue + Math.max(TRADE_MAYBE_DIFF, targetValue * 0.55)) return;
+    packages.set(tradeSuggestionPackageKey(assets), assets);
+  });
+  return Array.from(packages.values())
+    .sort((a, b) =>
+      Math.abs(scaleAdjustedAssetTotal(a) - targetValue) - Math.abs(scaleAdjustedAssetTotal(b) - targetValue)
+      || tradeSuggestionPackagePickCount(b) - tradeSuggestionPackagePickCount(a)
+      || a.length - b.length
+    )
+    .slice(0, TRADE_TARGET_PACKAGE_PER_TARGET);
+}
+
+function tradeSuggestionPackageAnchors(roster: PlayerImpact[], targetPlayer: PlayerImpact, targetValue: number, targetSalary: number): PlayerImpact[] {
+  const salaryMatchTarget = tradeSuggestionSalaryMatchTarget(targetSalary);
+  return roster
+    .filter((candidate) => candidate.nba_id !== targetPlayer.nba_id)
+    .map((candidate) => ({
+      candidate,
+      value: scaleAdjustedAssetValue(suggestionPlayerAsset(candidate, targetPlayer.team)),
+      salary: tradeSalaryForPlayer(candidate)
+    }))
+    .filter((item) => item.value >= 2_000_000 && item.salary > 0 && item.value <= targetValue * 1.2)
+    .sort((a, b) =>
+      tradeSuggestionAnchorScore(a.value, a.salary, targetValue, salaryMatchTarget)
+      - tradeSuggestionAnchorScore(b.value, b.salary, targetValue, salaryMatchTarget)
+    )
+    .slice(0, TRADE_TARGET_PACKAGE_ANCHOR_LIMIT)
+    .map((item) => item.candidate);
+}
+
+function tradeSuggestionAnchorScore(value: number, salary: number, targetValue: number, salaryMatchTarget: number): number {
+  const desiredValue = targetValue * 0.58;
+  return Math.abs(value - desiredValue) / 1_000_000 + Math.max(0, salaryMatchTarget - salary) / 2_000_000 + (value > targetValue ? 12 : 0);
+}
+
+function tradeSuggestionSalaryMatchTarget(targetSalary: number): number {
+  if (targetSalary < 12_000_000) return targetSalary * 0.55;
+  return targetSalary * 0.72;
+}
+
+function tradeSuggestionAddSalaryFillers(
+  assets: TradeAsset[],
+  roster: PlayerImpact[],
+  toTeam: string,
+  targetSalary: number,
+  targetValue: number,
+  excludedIds: Set<number>
+): TradeAsset[] {
+  const salaryTarget = tradeSuggestionSalaryMatchTarget(targetSalary);
+  let out = assets;
+  while (tradeSuggestionPackageSalary(out) < salaryTarget && out.length < 3) {
+    const filler = roster
+      .filter((candidate) => !excludedIds.has(candidate.nba_id))
+      .map((candidate) => ({
+        candidate,
+        salary: tradeSalaryForPlayer(candidate),
+        value: scaleAdjustedAssetValue(suggestionPlayerAsset(candidate, toTeam))
+      }))
+      .filter((item) => item.salary > 0 && item.value <= Math.max(18_000_000, targetValue * 0.42))
+      .sort((a, b) =>
+        Math.abs((tradeSuggestionPackageSalary(out) + a.salary) - salaryTarget)
+        - Math.abs((tradeSuggestionPackageSalary(out) + b.salary) - salaryTarget)
+        || a.value - b.value
+      )[0]?.candidate;
+    if (!filler) break;
+    excludedIds.add(filler.nba_id);
+    out = [...out, suggestionPlayerAsset(filler, toTeam)];
+  }
+  return out;
+}
+
+function tradeSuggestionAddValueMakeweights(
+  assets: TradeAsset[],
+  roster: PlayerImpact[],
+  fromTeam: string,
+  toTeam: string,
+  targetValue: number,
+  picks: PickAsset[],
+  pickContext: TradePickContext,
+  season: number,
+  teamOptions: TeamProjection[],
+  excludedIds: Set<number>
+): TradeAsset[] {
+  let out = assets;
+  let gap = targetValue - scaleAdjustedAssetTotal(out);
+  if (gap > TRADE_TARGET_PACKAGE_MIN_VALUE_GAP) {
+    const pick = tradeSuggestionPickForGap(picks, fromTeam, toTeam, gap, pickContext, season, teamOptions);
+    if (pick) out = [...out, pick];
+  }
+  gap = targetValue - scaleAdjustedAssetTotal(out);
+  if (gap > TRADE_TARGET_PACKAGE_MIN_VALUE_GAP && out.length < 4) {
+    const playerMakeweight = tradeSuggestionPlayerForGap(roster, toTeam, gap, excludedIds);
+    if (playerMakeweight?.player) {
+      excludedIds.add(playerMakeweight.player.nba_id);
+      out = [...out, playerMakeweight];
+    }
+  }
+  if (out.length === 1) {
+    const sweetener = tradeSuggestionPickForGap(picks, fromTeam, toTeam, TRADE_TARGET_PACKAGE_MIN_VALUE_GAP, pickContext, season, teamOptions);
+    if (sweetener) out = [...out, sweetener];
+  }
+  return out;
+}
+
+function tradeSuggestionPackageSalary(assets: TradeAsset[]): number {
+  return assets.reduce((sum, asset) => sum + (asset.kind === "player" && asset.player ? tradeSalaryForPlayer(asset.player) : 0), 0);
+}
+
+function tradeSuggestionPackagePickCount(assets: TradeAsset[]): number {
+  return assets.filter((asset) => asset.kind === "pick").length;
+}
+
+function tradeSuggestionPackageKey(assets: TradeAsset[]): string {
+  return assets
+    .map((asset) => asset.kind === "player" ? `p${asset.player?.nba_id}` : asset.kind === "pick" ? `k${asset.pick?.asset_id}` : `c${asset.cashAmount}`)
+    .sort()
+    .join("|");
+}
+
 function tradeSuggestionFitLift(incoming: TradeAsset[], outgoing: TradeAsset[], team: TeamProjection): number {
   return tradeSuggestionAssetFitTotal(incoming, team) - tradeSuggestionAssetFitTotal(outgoing, team);
 }
@@ -6796,11 +7033,33 @@ function tradeSuggestionStarPenalty(leftAssets: TradeAsset[], rightAssets: Trade
   }, 0);
 }
 
+function tradeSuggestionPackageIntentBonus(leftAssets: TradeAsset[], rightAssets: TradeAsset[]): number {
+  const packageSide = tradeSuggestionTargetPackageSide(leftAssets, rightAssets);
+  if (!packageSide) return 0;
+  return packageSide.some((asset) => asset.kind === "pick") ? 7 : 4;
+}
+
+function tradeSuggestionTargetPackageSide(leftAssets: TradeAsset[], rightAssets: TradeAsset[]): TradeAsset[] | null {
+  const leftSingleTarget = leftAssets.length === 1 && leftAssets[0]?.kind === "player" && rightAssets.length >= 2;
+  const rightSingleTarget = rightAssets.length === 1 && rightAssets[0]?.kind === "player" && leftAssets.length >= 2;
+  if (leftSingleTarget) return rightAssets;
+  if (rightSingleTarget) return leftAssets;
+  return null;
+}
+
+function tradeSuggestionPackageReason(leftAssets: TradeAsset[], rightAssets: TradeAsset[]): string | null {
+  const packageSide = tradeSuggestionTargetPackageSide(leftAssets, rightAssets);
+  if (!packageSide) return null;
+  return packageSide.some((asset) => asset.kind === "pick") ? "Target package with pick" : "Target package";
+}
+
 function tradeSuggestionReasons(
   status: TradeMachineStatus,
   verdict: TradeVerdict,
   leftTeam: TeamProjection,
   rightTeam: TeamProjection,
+  leftAssets: TradeAsset[],
+  rightAssets: TradeAsset[],
   leftFit: number,
   rightFit: number,
   timelineFit: number,
@@ -6808,6 +7067,8 @@ function tradeSuggestionReasons(
   rightBalance: TradeMachineTeamValueBalance | null
 ): string[] {
   const reasons = [`${tradeMachineShortStatusLabel(status)} / ${verdict}`];
+  const packageReason = tradeSuggestionPackageReason(leftAssets, rightAssets);
+  if (packageReason) reasons.push(packageReason);
   const leftLabel = leftTeam.team_abbr ?? leftTeam.team;
   const rightLabel = rightTeam.team_abbr ?? rightTeam.team;
   if (leftFit > 0.2) reasons.push(`${leftLabel} fit ${formatSigned(leftFit, 1)}`);
