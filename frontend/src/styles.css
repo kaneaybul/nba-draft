@@ -3926,6 +3926,103 @@ input:focus {
   text-align: left;
 }
 
+.trade-summary-tabs {
+  width: 100%;
+}
+
+.trade-summary-tabs button {
+  flex: 1 1 0;
+}
+
+.trade-suggestions-panel {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  text-align: left;
+}
+
+.trade-suggestion-list {
+  display: grid;
+  gap: 8px;
+}
+
+.trade-suggestion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 0.7fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 9px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+
+.trade-suggestion-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.trade-suggestion-main strong,
+.trade-suggestion-main small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-suggestion-main strong {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.trade-suggestion-main small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.trade-suggestion-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.trade-suggestion-reasons span {
+  max-width: 100%;
+  padding: 2px 6px;
+  overflow: hidden;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-suggestion-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  min-width: 0;
+}
+
+.trade-suggestion-row > button {
+  min-height: 34px;
+  padding: 0 12px;
+  color: #060806;
+  background: var(--green);
+  border: 1px solid var(--green);
+  border-radius: var(--r);
+  font-weight: 900;
+}
+
 .trade-review-list {
   display: grid;
   gap: 7px;
@@ -9791,6 +9888,7 @@ input:focus {
   .trade-player-row,
   .trade-side-metrics,
   .trade-scoreboard,
+  .trade-suggestion-row,
   .cap-kpi-grid,
   .cap-controls,
   .scenario-tools,
@@ -10626,12 +10724,15 @@ body,
 
   .trade-route-panel,
   .trade-review-panel,
+  .trade-suggestions-panel,
   .trade-cba-panel,
   .trade-pick-adder {
     padding: 8px;
   }
 
   .trade-route-assets,
+  .trade-suggestion-row,
+  .trade-suggestion-metrics,
   .trade-cba-team-grid,
   .scenario-tools,
   .scenario-save-tools,

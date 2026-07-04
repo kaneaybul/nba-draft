@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-03T06:03:30Z",
+  "generated_at": "2026-07-03T23:06:58Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -29,7 +29,7 @@
     },
     {
       "dataset": "pick_assets",
-      "rows": 60,
+      "rows": 475,
       "file": "pick_assets.json"
     },
     {
@@ -80,7 +80,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-07-03T06:03:30.464Z",
+    "generated_at": "2026-07-03T23:06:58.735Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -209,7 +209,7 @@
             "rows": 540,
             "file": "v2/impact_players/2027.json",
             "bytes": 2376308,
-            "sha256": "3a6b3386ccd03792a0917eabd40c74d0387c47975f962385948bb4dc85d54185"
+            "sha256": "8bd48782bd005bbc1d6ce3fa1ae28d8010ce1bf346eb8ab9f3477251b6e894ff"
           }
         ]
       },
@@ -520,10 +520,10 @@
       },
       "pick_assets": {
         "strategy": "singleton",
-        "rows": 60,
+        "rows": 475,
         "file": "pick_assets.json",
-        "bytes": 17253,
-        "sha256": "2d0a85fd5545a7e1911b9ce60090ff3b3cb374cdabb2b5923c5517bc418bb880"
+        "bytes": 236775,
+        "sha256": "2330a2a6f75c997103ce86a9ead7551f078a59467aa2a2828027a7d08f78999e"
       },
       "draft_prospects": {
         "strategy": "singleton",
@@ -572,14 +572,14 @@
         "rows": 534,
         "file": "offseason_truth.json",
         "bytes": 348353,
-        "sha256": "ad314525f1d2c8b21f7a88e8743880b78c0b59d335739ffd5e238a7e1eb5fc6e"
+        "sha256": "23c0196bf3709e5a8fbb38b9413e495c4be27eef62ddbb321688590667ed60e5"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
         "bytes": 1632027,
-        "sha256": "cfbab64b99ba7c401afa13a71b78b2f92a4605a1c51930b6a00b94959c81b440"
+        "sha256": "b023a2c30157d6911e9a1eb7ce98ca4c879b1eb567b4db27cac9487228d81d26"
       },
       "cap_transaction_review": {
         "strategy": "singleton",

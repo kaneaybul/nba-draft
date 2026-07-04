@@ -387,7 +387,7 @@ export function pickTradeMachineAsset(pick: PickAsset, team: string): TradeMachi
     label: pick.label,
     team,
     tradeValue: finiteNumber(pick.value) ?? 0,
-    scaleValue: finiteNumber(pick.normalized) ?? null,
+    scaleValue: finiteNumber(pick.scale_value) ?? finiteNumber(pick.normalized) ?? null,
     assetType: pick.asset_type,
     draftYear: finiteNumber(pick.draft_year),
     round: finiteNumber(pick.round),
@@ -458,11 +458,9 @@ function assetValue(asset: TradeMachineAsset): number {
 
 function assetScaleAdjustedValue(asset: TradeMachineAsset): number {
   const value = assetValue(asset);
-  if (asset.kind !== "player") return value;
   const scale = finiteNumber(asset.scaleValue);
   if (scale === null) return value;
-  const premium = clamp((scale - 1) / 5, -0.2, 0.35);
-  return value * (1 + premium);
+  return value * Math.max(0, scale);
 }
 
 function valueVerdict(diff: number): TradeMachineValueVerdict {
@@ -2691,10 +2689,6 @@ function finiteNumber(value: unknown): number | null {
 
 function money(value: unknown): number {
   return Math.max(0, finiteNumber(value) ?? 0);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function cashAmount(assets: TradeMachineAsset[]): number {

@@ -316,9 +316,11 @@ export type TeamLineupRow = {
 export type PickAsset = {
   asset_id: string;
   label: string;
+  team?: string | null;
   pick: number;
   round: number;
   normalized: number;
+  scale_value?: number | null;
   value: number;
   asset_type?: "slot_value" | "team_pick" | "pick_swap" | string | null;
   origin_team?: string | null;
@@ -329,6 +331,9 @@ export type PickAsset = {
   convey_probability?: number | null;
   expected_pick?: number | null;
   training_n?: number | null;
+  source?: string | null;
+  source_url?: string | null;
+  description?: string | null;
 };
 
 export type DraftProspect = {

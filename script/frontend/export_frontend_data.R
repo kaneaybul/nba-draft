@@ -1275,7 +1275,8 @@ calc_fa_market_values <- function(df, caps, horizon = 1, target_roster_spots = 4
 
   timin_col <- paste0("projection_timin_y", horizon)
   minutes_col <- paste0("projection_minutes_y", horizon)
-  prior_col <- if (horizon == 1) "contract" else paste0("projection_contract_y", horizon - 1)
+  prior_col <- if (horizon == 1) "contract" else paste0("projection_effective_contract_y", horizon - 1)
+  prior_fallback_col <- if (horizon == 1) "contract" else paste0("projection_contract_y", horizon - 1)
 
   market_timin <- if (timin_col %in% names(df)) suppressWarnings(as.numeric(df[[timin_col]])) else rep(NA_real_, n)
   market_minutes <- if (minutes_col %in% names(df)) suppressWarnings(as.numeric(df[[minutes_col]])) else rep(NA_real_, n)
@@ -1287,6 +1288,9 @@ calc_fa_market_values <- function(df, caps, horizon = 1, target_roster_spots = 4
   market_year <- df$year + horizon
   market_yos <- suppressWarnings(as.numeric(df$yoe)) + horizon - 1
   prior_salary <- if (prior_col %in% names(df)) suppressWarnings(as.numeric(df[[prior_col]])) else rep(NA_real_, n)
+  if (prior_fallback_col %in% names(df)) {
+    prior_salary <- coalesce_numeric(prior_salary, suppressWarnings(as.numeric(df[[prior_fallback_col]])))
+  }
   current_contract_year <- max(df$year, na.rm = TRUE)
   prior_salary <- ifelse(df$year == current_contract_year, prior_salary, NA_real_)
 
@@ -4076,10 +4080,20 @@ apply_schedule_projections <- function(teams, schedules) {
 }
 
 build_pick_assets <- function(base_dir, players) {
+  cap_assumptions <- load_cap_assumptions(base_dir)
   picks <- 1:60
   fallback_value <- ifelse(picks <= 30, 90000000 * exp(-(picks - 1) / 28), 30000000 * exp(-(picks - 31) / 25))
   value <- fallback_value
   training_n <- rep(0L, length(picks))
+  base_pick_year <- max(suppressWarnings(as.integer(players$year)), na.rm = TRUE) + 1L
+  if (!is.finite(base_pick_year)) base_pick_year <- max(suppressWarnings(as.integer(cap_assumptions$year)), na.rm = TRUE)
+  pick_year_scale <- function(draft_year) {
+    draft_year <- suppressWarnings(as.numeric(draft_year))
+    base_cap <- cap_for_year(cap_assumptions, base_pick_year, "scale_cap")
+    draft_cap <- cap_for_year(cap_assumptions, draft_year, "scale_cap")
+    scale <- ifelse(is.finite(base_cap) & base_cap > 0 & is.finite(draft_cap), draft_cap / base_cap, 1)
+    ifelse(is.finite(scale) & scale > 0, scale, 1)
+  }
 
   draft_path <- file.path(base_dir, "processed", "draft", "draft_picks_all_classes.csv")
   if (file.exists(draft_path) && is.data.frame(players) && nrow(players)) {
@@ -4165,12 +4179,18 @@ build_pick_assets <- function(base_dir, players) {
     }
   }
 
-  data.frame(
+  pick_scale_value <- function(normalized) {
+    round(1 + pmax(0, pmin(1, suppressWarnings(as.numeric(normalized)))), 3)
+  }
+
+  slot_assets <- data.frame(
     asset_id = paste0("pick-", picks),
     label = paste0("Pick ", picks),
+    team = NA_character_,
     pick = picks,
     round = ifelse(picks <= 30, 1, 2),
     normalized = round(value / max(value, na.rm = TRUE), 3),
+    scale_value = pick_scale_value(value / max(value, na.rm = TRUE)),
     value = round(value, 0),
     asset_type = "slot_value",
     origin_team = NA_character_,
@@ -4181,8 +4201,104 @@ build_pick_assets <- function(base_dir, players) {
     convey_probability = NA_real_,
     expected_pick = picks,
     training_n = training_n,
+    source = "draft_pick_value_curve",
+    source_url = NA_character_,
+    description = NA_character_,
     stringsAsFactors = FALSE
   )
+
+  inventory_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "future_draft_picks_realgm.csv")
+  if (!file.exists(inventory_path)) return(slot_assets)
+
+  inventory <- tryCatch(read.csv(inventory_path, stringsAsFactors = FALSE, check.names = FALSE), error = function(e) NULL)
+  required <- c("team", "draft_year", "round", "asset_type", "description")
+  if (is.null(inventory) || !all(required %in% names(inventory)) || !nrow(inventory)) return(slot_assets)
+
+  for (nm in c("protection", "protection_cutoff", "origin_team", "counterparty_team", "source", "source_url")) {
+    if (!(nm %in% names(inventory))) inventory[[nm]] <- NA
+  }
+
+  safe_numeric <- function(x) suppressWarnings(as.numeric(x))
+  pick_value_at <- function(expected_pick) {
+    expected_pick <- pmax(1, pmin(60, safe_numeric(expected_pick)))
+    approx(x = picks, y = value, xout = expected_pick, rule = 2, ties = mean)$y
+  }
+  inferred_expected_pick <- function(round, protection_cutoff, description) {
+    round <- safe_numeric(round)
+    cutoff <- safe_numeric(protection_cutoff)
+    retained_own <- grepl("\\b1-[0-9]+\\s+own\\b", description, ignore.case = TRUE)
+    ifelse(
+      round == 2,
+      45.5,
+      ifelse(retained_own & is.finite(cutoff) & cutoff > 0, pmax(1, cutoff / 2), 15.5)
+    )
+  }
+  inferred_convey_probability <- function(round, protection_cutoff, description, asset_type) {
+    round <- safe_numeric(round)
+    cutoff <- safe_numeric(protection_cutoff)
+    retained_own <- grepl("\\b1-[0-9]+\\s+own\\b", description, ignore.case = TRUE)
+    base <- ifelse(
+      round == 2 | !is.finite(cutoff) | cutoff <= 0,
+      1,
+      ifelse(retained_own, pmin(1, cutoff / 30), pmax(0, (30 - cutoff) / 30))
+    )
+    ifelse(asset_type == "pick_swap", pmin(base, 0.5), base)
+  }
+  short_pick_description <- function(x) {
+    x <- gsub("[[:space:]]+", " ", as.character(x))
+    x <- trimws(x)
+    ifelse(nchar(x) > 86, paste0(substr(x, 1, 83), "..."), x)
+  }
+
+  inventory$round <- safe_numeric(inventory$round)
+  inventory$draft_year <- safe_numeric(inventory$draft_year)
+  inventory$protection_cutoff <- safe_numeric(inventory$protection_cutoff)
+  inventory <- inventory[
+    inventory$team != "" &
+      is.finite(inventory$draft_year) &
+      inventory$round %in% c(1, 2) &
+      !is.na(inventory$description) &
+      trimws(inventory$description) != "",
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(inventory)) return(slot_assets)
+
+  inventory$expected_pick <- inferred_expected_pick(inventory$round, inventory$protection_cutoff, inventory$description)
+  inventory$convey_probability <- inferred_convey_probability(
+    inventory$round,
+    inventory$protection_cutoff,
+    inventory$description,
+    inventory$asset_type
+  )
+  inventory$value <- round(pick_value_at(inventory$expected_pick) * inventory$convey_probability * pick_year_scale(inventory$draft_year), 0)
+  max_slot_value <- max(slot_assets$value, na.rm = TRUE)
+  inventory$normalized <- round(pmax(0, pmin(1, inventory$value / max_slot_value)), 3)
+  inventory$scale_value <- pick_scale_value(inventory$normalized)
+  inventory$asset_id <- paste0(
+    "team-pick-",
+    inventory$team,
+    "-",
+    inventory$draft_year,
+    "-r",
+    inventory$round,
+    "-",
+    seq_len(nrow(inventory))
+  )
+  inventory$label <- paste0(
+    inventory$draft_year,
+    " ",
+    inventory$team,
+    " ",
+    ifelse(inventory$round == 1, "1st", "2nd"),
+    ": ",
+    short_pick_description(inventory$description)
+  )
+  inventory$pick <- round(inventory$expected_pick)
+  if (!("training_n" %in% names(inventory))) inventory$training_n <- NA_integer_
+
+  team_assets <- inventory[, names(slot_assets), drop = FALSE]
+  rbind(slot_assets, team_assets)
 }
 
 load_draft_college_reference <- function(base_dir) {
