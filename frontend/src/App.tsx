@@ -1833,6 +1833,11 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
 
   const currentRows = seasonLineups.filter((row) => row.team === currentTeam.team).sort((a, b) => a.role_order - b.role_order);
   const starters = currentRows.filter((row) => row.role_type === "Starter");
+  const orderedStarters = [...starters].sort((a, b) => {
+    const aPlayer = playerMap.get(`${a.nba_id}-${a.team}`) ?? playerMap.get(`${a.nba_id}`);
+    const bPlayer = playerMap.get(`${b.nba_id}-${b.team}`) ?? playerMap.get(`${b.nba_id}`);
+    return startingLineupPositionCenter(a, aPlayer) - startingLineupPositionCenter(b, bPlayer) || a.role_order - b.role_order;
+  });
   const bench = currentRows.filter((row) => row.role_type !== "Starter");
   const starterTotal = starters.reduce((sum, row) => sum + Number(row.total ?? 0), 0);
   const starterAverage = starters.length ? starterTotal / starters.length : 0;
@@ -1888,10 +1893,10 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
         <section>
           <div className="section-heading-row">
             <h3>Starting Five</h3>
-            <span>Fewest lineup gaps; minutes by total impact</span>
+            <span>Fewest lineup gaps; ordered PG → C</span>
           </div>
           <div className="starter-card-grid">
-            {starters.map((row) => (
+            {orderedStarters.map((row) => (
               <StartingLineupCard key={`${row.scenario_id ?? "base"}-${row.team}-${row.role_order}-${row.nba_id}`} row={row} player={playerMap.get(`${row.nba_id}-${row.team}`) ?? playerMap.get(`${row.nba_id}`)} />
             ))}
           </div>
@@ -1907,6 +1912,15 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
       </section>
     </main>
   );
+}
+
+function startingLineupPositionCenter(row: TeamLineupRow, player?: PlayerImpact): number {
+  if (player) {
+    const shares = lineupPositionShares(player);
+    return shares.pg + shares.sg * 2 + shares.sf * 3 + shares.pf * 4 + shares.c * 5;
+  }
+  const position = displayPosition(row.position).toUpperCase();
+  return position === "PG" ? 1 : position === "SG" ? 2 : position === "SF" ? 3 : position === "PF" ? 4 : position === "C" ? 5 : 3;
 }
 
 function StartingLineupCard({ row, player }: { row: TeamLineupRow; player?: PlayerImpact }) {
