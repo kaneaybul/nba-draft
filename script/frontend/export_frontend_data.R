@@ -1895,7 +1895,7 @@ score_lineup_candidates <- function(candidate_set, benchmarks) {
     pct[, skill] <- lineup_percentile_against_sorted(candidate_set$skill_totals[, skill], year_benchmarks[[skill]])
   }
 
-  gap_threshold <- 0.4
+  gap_threshold <- 0.5
   spike_threshold <- 0.8
   gaps <- rowSums(pct < gap_threshold, na.rm = TRUE)
   spikes <- rowSums(pct >= spike_threshold, na.rm = TRUE)

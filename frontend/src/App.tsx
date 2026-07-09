@@ -340,6 +340,7 @@ const lineupSkills: LineupSkill[] = [
 const LINEUP_SIMULATION_COUNT = 9000;
 const LINEUP_SIMULATION_SEED = 20260709;
 const LINEUP_SIMULATED_BLEND_WEIGHT = 0.75;
+const LINEUP_GAP_THRESHOLD = 0.5;
 const LINEUP_SIMULATION_TEMPLATES: LineupSimulationTemplate[] = [
   { roles: ["guard", "guard", "wing", "forward", "big"], weight: 9 },
   { roles: ["guard", "guard", "wing", "wing", "big"], weight: 6 },
@@ -2994,7 +2995,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
           <div className="trade-summary-title">
             <div>
               <h2>Trade Sandbox</h2>
-              <p>4-year value: current season plus next 3 Player Impact value; picks scaled to the same horizon</p>
+              <p>4-year trade value: current season plus next 3 Player Impact seasons, adjusted for scale-based contract opportunity cost</p>
             </div>
             <div className="trade-summary-actions">
               <button className="clear-filters" disabled={!thirdSide && teamOptions.length < 3} onClick={thirdSide ? removeThirdTeam : addThirdTeam}>
@@ -3471,7 +3472,7 @@ function TradeSide({
               </span>
               <span className="trade-roster-money">
                 <strong>{formatContractValue(player)}</strong>
-                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / 4Y scaled {formatMoney(playerTradeValue(player))}</small>
+                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / 4Y trade {formatMoney(playerTradeValue(player))}</small>
               </span>
             </button>
           );
@@ -5038,7 +5039,7 @@ function SheetRate({ value, strong }: { value: number | null | undefined; strong
 
 function SheetPercent({ value, featured }: { value: number | null; featured?: boolean }) {
   if (value === null) return <span className="sheet-percent empty">-</span>;
-  const tone = featured ? lineupAverageTone(value) : value >= 0.6 ? "good" : value < 0.4 ? "bad" : "mid";
+  const tone = featured ? lineupAverageTone(value) : value >= 0.6 ? "good" : value < LINEUP_GAP_THRESHOLD ? "bad" : "mid";
   return (
     <span className={cls("sheet-percent", tone, featured && "featured")} style={percentileCellStyle(value, featured)}>
       {Math.round(value * 100)}
@@ -5207,13 +5208,13 @@ function buildLineupSuggestions({
       const newGaps = lineupSkills.filter((skill) => {
         const before = baseline.skillAverages[skill.key] ?? 0;
         const after = summary.skillAverages[skill.key] ?? 0;
-        return before >= 0.4 && after < 0.4;
+        return before >= LINEUP_GAP_THRESHOLD && after < LINEUP_GAP_THRESHOLD;
       });
       const improvedGaps = baselineGaps
         .filter((skill) => {
           const before = baseline.skillAverages[skill.key] ?? 0;
           const after = summary.skillAverages[skill.key] ?? 0;
-          return after >= 0.4 || after - before >= 0.06;
+          return after >= LINEUP_GAP_THRESHOLD || after - before >= 0.06;
         })
         .sort((a, b) => (summary.skillAverages[b.key] ?? 0) - (baseline.skillAverages[b.key] ?? 0) - ((summary.skillAverages[a.key] ?? 0) - (baseline.skillAverages[a.key] ?? 0)));
       const needLift = needProfile.reduce((sum, need) => {
@@ -5221,19 +5222,19 @@ function buildLineupSuggestions({
         const after = summary.skillAverages[need.skill.key] ?? 0;
         const currentRank = currentPlayer ? currentRanks[need.skill.key] ?? 0.5 : Math.min(0.5, before);
         const playerRank = playerRanks[need.skill.key] ?? 0.5;
-        const lineupLift = Math.max(0, after - before) * (before < 0.4 ? 56 : 34);
-        const directFit = Math.max(0, playerRank - currentRank) * need.weight * (before < 0.4 ? 2.6 : 1.5);
+        const lineupLift = Math.max(0, after - before) * (before < LINEUP_GAP_THRESHOLD ? 56 : 34);
+        const directFit = Math.max(0, playerRank - currentRank) * need.weight * (before < LINEUP_GAP_THRESHOLD ? 2.6 : 1.5);
         return sum + need.weight * lineupLift + directFit;
       }, 0);
       const solvedHardGaps = lineupSkills.filter((skill) => {
         const before = baseline.skillAverages[skill.key] ?? 0;
         const after = summary.skillAverages[skill.key] ?? 0;
-        return before < 0.4 && after >= 0.4;
+        return before < LINEUP_GAP_THRESHOLD && after >= LINEUP_GAP_THRESHOLD;
       }).length;
       const stabilizesSoftNeeds = lineupSkills.filter((skill) => {
         const before = baseline.skillAverages[skill.key] ?? 0;
         const after = summary.skillAverages[skill.key] ?? 0;
-        return before >= 0.4 && before < 0.52 && after >= 0.52;
+        return before >= LINEUP_GAP_THRESHOLD && before < 0.52 && after >= 0.52;
       }).length;
       const regressionPenalty = lineupSkills.reduce((sum, skill) => {
         const before = baseline.skillAverages[skill.key] ?? 0;
@@ -5682,7 +5683,7 @@ function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImp
     defense: players.reduce((sum, player) => sum + player.defense, 0),
     net: players.reduce((sum, player) => sum + player.total, 0),
     score: players.reduce((sum, player) => sum + player.score, 0) / divisor,
-    gaps: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) < 0.4).length,
+    gaps: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) < LINEUP_GAP_THRESHOLD).length,
     spikes: lineupSkills.filter((skill) => (skillAverages[skill.key] ?? 0) > 0.6).length,
     skillAverages,
     skillTotals
@@ -5742,7 +5743,7 @@ function lineupSkillValue(player: PlayerImpact, skill: LineupSkill): number {
 
 function lineupAverageTone(value: number): "good" | "mid" | "bad" {
   if (value >= 0.56) return "good";
-  if (value < 0.46) return "bad";
+  if (value < LINEUP_GAP_THRESHOLD) return "bad";
   return "mid";
 }
 
@@ -8242,19 +8243,30 @@ function selectedTradePlayerIds(...assetGroups: TradeAsset[][]): Set<number> {
   return ids;
 }
 
-function playerTradeValue(player: PlayerImpact): number {
-  const fourYearValue = futureValue4y(player);
-  if (fourYearValue !== null) return fourYearValue * Math.max(0, playerTradeScale(player));
-  const values = [
-    player.value,
-    player.projection_value_y1,
-    player.projection_value_y2,
-    player.projection_value_y3
-  ]
-    .map((value) => Number(value))
-    .filter(Number.isFinite);
-  const fallback = values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : Number(player.trade_value ?? 0);
-  return fallback * Math.max(0, playerTradeScale(player));
+export function playerTradeValue(player: PlayerImpact): number {
+  const seasons = [
+    {
+      value: impactNumber(player, "value"),
+      scale: currentScale(player),
+      contract: impactNumber(player, "contract") ?? impactNumber(player, "fa_value")
+    },
+    ...[1, 2, 3].map((seasonIndex) => ({
+      value: impactNumber(player, `projection_value_y${seasonIndex}` as keyof PlayerImpact),
+      scale: impactNumber(player, `projection_scalability_y${seasonIndex}` as keyof PlayerImpact),
+      contract: impactNumber(player, `projection_effective_contract_y${seasonIndex}` as keyof PlayerImpact)
+        ?? impactNumber(player, `projection_contract_y${seasonIndex}` as keyof PlayerImpact)
+    }))
+  ];
+  const seasonValues = seasons
+    .filter((season) => season.value !== null)
+    .map((season) => {
+      const value = season.value ?? 0;
+      const contract = season.contract ?? 0;
+      const scale = Math.max(0, season.scale ?? 1);
+      return value - contract * (1 - scale);
+    });
+  if (seasonValues.length > 0) return seasonValues.reduce((sum, value) => sum + value, 0);
+  return Number(player.trade_value ?? 0);
 }
 
 function assetValue(asset: TradeAsset): number {

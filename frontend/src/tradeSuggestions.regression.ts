@@ -1,10 +1,34 @@
-import { buildTradeSuggestions } from "./App";
+import { buildTradeSuggestions, playerTradeValue } from "./App";
 import type { AppData, PickAsset, PlayerImpact, TeamProjection } from "./types";
 
 export function runTradeSuggestionRegressionTests(): string[] {
   return [
+    fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(),
     targetPlayerAcquisitionBuildsPickPackage()
   ];
+}
+
+function fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(): string {
+  const row = player(99, "Four Year Value", "VAL", 50_000_000, [40_000_000, 30_000_000, 20_000_000, 10_000_000], 1);
+  Object.assign(row, {
+    scalability: 0.8,
+    projection_value_y1: 30_000_000,
+    projection_value_y2: 20_000_000,
+    projection_value_y3: 10_000_000,
+    projection_scalability_y1: 1.2,
+    projection_scalability_y2: 0.5,
+    projection_scalability_y3: 1,
+    projection_contract_y1: null,
+    projection_contract_y2: null,
+    projection_contract_y3: 5_000_000,
+    projection_effective_contract_y1: 20_000_000,
+    projection_effective_contract_y2: 10_000_000,
+    projection_effective_contract_y3: 5_000_000
+  });
+
+  const expected = 30_000_000 + 34_000_000 + 15_000_000 + 10_000_000;
+  expect(playerTradeValue(row) === expected, "four-year trade value should apply Option 2 to each season and use imputed effective contracts");
+  return "four-year trade value uses scale-adjusted contract opportunity cost";
 }
 
 function targetPlayerAcquisitionBuildsPickPackage(): string {
