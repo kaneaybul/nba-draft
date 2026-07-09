@@ -5539,7 +5539,9 @@ function lineupPassesSimulationSanity(lineup: PlayerImpact[]): boolean {
   const primaryRoles = lineup.map(lineupPrimarySimulationRole);
   const primaryBigs = primaryRoles.filter((role) => role === "big").length;
   const primaryGuards = primaryRoles.filter((role) => role === "guard").length;
-  return primaryBigs <= 2 && primaryGuards <= 3;
+  const stars = lineup.filter(lineupIsSimulationStar).length;
+  const highEndPlayers = lineup.filter(lineupIsHighEndSimulationPlayer).length;
+  return primaryBigs <= 2 && primaryGuards <= 3 && stars <= 2 && highEndPlayers <= 3;
 }
 
 function lineupPrimarySimulationRole(player: PlayerImpact): LineupSlotRole {
@@ -5551,6 +5553,16 @@ function lineupPrimarySimulationRole(player: PlayerImpact): LineupSlotRole {
     { role: "big", value: shares.c }
   ];
   return roleValues.sort((a, b) => b.value - a.value)[0]?.role ?? "wing";
+}
+
+function lineupIsSimulationStar(player: PlayerImpact): boolean {
+  const tier = String(player.tier ?? "").trim();
+  return tier === "MVP" || tier === "Superstar" || tier === "Star" || Number(player.score ?? 0) >= 94 || Number(player.total ?? 0) >= 4.2;
+}
+
+function lineupIsHighEndSimulationPlayer(player: PlayerImpact): boolean {
+  const tier = String(player.tier ?? "").trim();
+  return lineupIsSimulationStar(player) || tier === "Elite Starter" || Number(player.score ?? 0) >= 90 || Number(player.total ?? 0) >= 3.2;
 }
 
 function lineupPositionShares(player: PlayerImpact): LineupPositionShares {
@@ -5592,25 +5604,25 @@ function lineupSamplingWeight(player: PlayerImpact): number {
   const minutes = Math.max(80, Number(player.lineup_adjusted_minutes ?? player.Minutes ?? 0));
   const score = Number(player.score ?? 50);
   const total = Number(player.total ?? 0);
-  const minutesWeight = Math.sqrt(minutes);
-  const scoreWeight = clamp((score - 25) / 70, 0.25, 1.2);
-  const totalWeight = 0.75 + clamp((total + 2.5) / 7, 0, 1) * 0.65;
+  const minutesWeight = Math.pow(minutes, 0.45);
+  const scoreWeight = 0.82 + clamp((score - 45) / 55, 0, 1) * 0.28;
+  const totalWeight = 0.9 + clamp((total + 1.5) / 5.5, 0, 1) * 0.22;
   return minutesWeight * scoreWeight * totalWeight * lineupTierMultiplier(player.tier);
 }
 
 function lineupTierMultiplier(tier: string | null | undefined): number {
   const value = String(tier ?? "").trim();
-  if (value === "MVP") return 1.75;
-  if (value === "Superstar") return 1.6;
-  if (value === "Star") return 1.42;
-  if (value === "Elite Starter") return 1.28;
-  if (value === "Starter") return 1.15;
+  if (value === "MVP") return 1.18;
+  if (value === "Superstar") return 1.15;
+  if (value === "Star") return 1.12;
+  if (value === "Elite Starter") return 1.08;
+  if (value === "Starter") return 1.04;
   if (value === "Fringe Starter") return 1;
-  if (value === "Strong Bench") return 0.9;
-  if (value === "Bench") return 0.65;
-  if (value === "Deep Bench") return 0.4;
-  if (value === "Project") return 0.25;
-  return 0.15;
+  if (value === "Strong Bench") return 0.96;
+  if (value === "Bench") return 0.88;
+  if (value === "Deep Bench") return 0.78;
+  if (value === "Project") return 0.68;
+  return 0.6;
 }
 
 function lineupBenchmarkAverage(values: number[]): number {
