@@ -1765,10 +1765,10 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
 lineup_role_plan <- function() {
   data.frame(
     role_order = seq_len(10),
-    role_label = c("Guard 1", "Guard 2", "Forward 1", "Forward 2", "Center", paste0("Bench ", 1:5)),
+    role_label = c(paste0("Starter ", 1:5), paste0("Bench ", 1:5)),
     role_type = c(rep("Starter", 5), rep("Bench", 5)),
-    position_group = c("Guard", "Guard", "Forward", "Forward", "Center", rep("Bench", 5)),
-    role_band_minutes = c(2700, 2400, 2700, 2400, 2700, 1900, 1600, 1300, 900, 500),
+    position_group = c(rep("Starter", 5), rep("Bench", 5)),
+    role_band_minutes = c(2700, 2700, 2700, 2400, 2400, 1900, 1600, 1300, 900, 500),
     stringsAsFactors = FALSE
   )
 }
@@ -1777,6 +1777,158 @@ lineup_role_score <- function(df) {
   total <- suppressWarnings(as.numeric(df$total))
   total[!is.finite(total)] <- -Inf
   total
+}
+
+lineup_skill_names <- function() {
+  c("FTD", "SHOOT", "PASS", "RIM", "OREB", "SWITCH", "DPM", "DREB", "RIMPRO")
+}
+
+lineup_numeric_col <- function(df, col, fallback = 0) {
+  if (!(col %in% names(df))) return(rep(fallback, nrow(df)))
+  x <- suppressWarnings(as.numeric(df[[col]]))
+  x[!is.finite(x)] <- fallback
+  x
+}
+
+lineup_group_year <- function(df) {
+  year <- suppressWarnings(as.integer(df$year))
+  year <- year[is.finite(year)]
+  if (length(year)) year[[1]] else NA_integer_
+}
+
+build_lineup_candidate_set <- function(df) {
+  n <- nrow(df)
+  if (!n) {
+    return(list(
+      year = NA_integer_,
+      combos = matrix(integer(), nrow = 0, ncol = 0),
+      skill_totals = matrix(numeric(), nrow = 0, ncol = length(lineup_skill_names()), dimnames = list(NULL, lineup_skill_names())),
+      total_sum = numeric(),
+      lineup_size = 0L
+    ))
+  }
+
+  skills <- lineup_skill_names()
+  skill_matrix <- vapply(skills, function(skill) lineup_numeric_col(df, skill, 0), numeric(n))
+  if (!is.matrix(skill_matrix)) {
+    skill_matrix <- matrix(skill_matrix, nrow = n, dimnames = list(NULL, skills))
+  }
+  colnames(skill_matrix) <- skills
+
+  lineup_size <- min(5L, n)
+  combos <- if (lineup_size == n) {
+    matrix(seq_len(n), nrow = 1L)
+  } else {
+    t(utils::combn(seq_len(n), lineup_size))
+  }
+  if (!is.matrix(combos)) combos <- matrix(combos, nrow = 1L)
+
+  combo_count <- nrow(combos)
+  skill_totals <- matrix(0, nrow = combo_count, ncol = length(skills), dimnames = list(NULL, skills))
+  for (j in seq_along(skills)) {
+    skill_totals[, j] <- rowSums(matrix(skill_matrix[as.vector(combos), j], nrow = combo_count), na.rm = TRUE)
+  }
+
+  total <- lineup_numeric_col(df, "total", -99)
+  total_sum <- rowSums(matrix(total[as.vector(combos)], nrow = combo_count), na.rm = TRUE)
+
+  list(
+    year = lineup_group_year(df),
+    combos = combos,
+    skill_totals = skill_totals,
+    total_sum = total_sum,
+    lineup_size = lineup_size
+  )
+}
+
+build_lineup_candidate_sets <- function(grouped) {
+  lapply(grouped, build_lineup_candidate_set)
+}
+
+lineup_skill_benchmarks <- function(candidate_sets) {
+  skills <- lineup_skill_names()
+  if (!length(candidate_sets)) return(list())
+  years <- sort(unique(vapply(candidate_sets, function(candidate) candidate$year, integer(1))))
+  years <- years[is.finite(years)]
+  out <- setNames(vector("list", length(years)), as.character(years))
+
+  for (year in years) {
+    by_skill <- setNames(vector("list", length(skills)), skills)
+    year_sets <- candidate_sets[vapply(candidate_sets, function(candidate) isTRUE(candidate$year == year), logical(1))]
+    for (skill in skills) {
+      values <- unlist(lapply(year_sets, function(candidate) {
+        if (candidate$lineup_size < 5L || !nrow(candidate$skill_totals)) return(numeric())
+        candidate$skill_totals[, skill]
+      }), use.names = FALSE)
+      values <- sort(values[is.finite(values)])
+      by_skill[[skill]] <- values
+    }
+    out[[as.character(year)]] <- by_skill
+  }
+
+  out
+}
+
+lineup_percentile_against_sorted <- function(x, reference) {
+  x <- suppressWarnings(as.numeric(x))
+  reference <- reference[is.finite(reference)]
+  out <- rep(0.5, length(x))
+  ok <- is.finite(x)
+  if (!length(reference) || !any(ok)) return(out)
+  if (length(reference) == 1L) {
+    out[ok] <- ifelse(x[ok] >= reference[[1]], 1, 0)
+    return(out)
+  }
+  below <- findInterval(x[ok], reference, left.open = FALSE)
+  out[ok] <- clamp((below - 1) / (length(reference) - 1), 0, 1)
+  out
+}
+
+score_lineup_candidates <- function(candidate_set, benchmarks) {
+  skills <- lineup_skill_names()
+  combo_count <- nrow(candidate_set$combos)
+  if (!combo_count) return(data.frame())
+
+  pct <- matrix(0.5, nrow = combo_count, ncol = length(skills), dimnames = list(NULL, skills))
+  year_benchmarks <- benchmarks[[as.character(candidate_set$year)]]
+  for (skill in skills) {
+    pct[, skill] <- lineup_percentile_against_sorted(candidate_set$skill_totals[, skill], year_benchmarks[[skill]])
+  }
+
+  gap_threshold <- 0.4
+  spike_threshold <- 0.8
+  gaps <- rowSums(pct < gap_threshold, na.rm = TRUE)
+  spikes <- rowSums(pct >= spike_threshold, na.rm = TRUE)
+  gap_matrix <- gap_threshold - pct
+  gap_matrix[gap_matrix < 0] <- 0
+  spike_matrix <- pct - spike_threshold
+  spike_matrix[spike_matrix < 0] <- 0
+  gap_severity <- rowSums(gap_matrix, na.rm = TRUE)
+  spike_strength <- rowSums(spike_matrix, na.rm = TRUE)
+  data.frame(
+    combo_index = seq_len(combo_count),
+    gaps = gaps,
+    gap_severity = gap_severity,
+    spikes = spikes,
+    spike_strength = spike_strength,
+    total_sum = candidate_set$total_sum,
+    stringsAsFactors = FALSE
+  )
+}
+
+pick_lineup_starters <- function(candidate_set, benchmarks) {
+  if (!nrow(candidate_set$combos)) return(integer())
+  scored <- score_lineup_candidates(candidate_set, benchmarks)
+  if (!nrow(scored)) return(candidate_set$combos[1L, ])
+  scored <- scored[order(
+    scored$gaps,
+    scored$gap_severity,
+    -scored$spikes,
+    -scored$spike_strength,
+    -scored$total_sum,
+    scored$combo_index
+  ), , drop = FALSE]
+  as.integer(candidate_set$combos[scored$combo_index[[1]], ])
 }
 
 lineup_position_flags <- function(position) {
@@ -1795,68 +1947,43 @@ lineup_position_flags <- function(position) {
   )
 }
 
-lineup_candidate_indices <- function(df, position_group, selected) {
-  available <- which(!(df$.lineup_row_id %in% selected))
-  if (!length(available)) return(integer())
-  if (identical(position_group, "Bench")) return(available)
-
-  flags <- lineup_position_flags(df$position)
-  strict <- switch(position_group,
-    Guard = flags$has_guard,
-    Forward = flags$has_forward,
-    Center = flags$has_center,
-    rep(TRUE, nrow(df))
-  )
-  idx <- available[strict[available]]
-  if (!length(idx) && identical(position_group, "Center")) {
-    idx <- available[flags$has_pf[available]]
-  }
-  if (!length(idx)) idx <- available
-  idx
-}
-
-estimate_team_lineup_rows <- function(df) {
+estimate_team_lineup_rows <- function(df, candidate_set = NULL, benchmarks = NULL) {
   if (!nrow(df)) return(data.frame())
   if (!(".lineup_row_id" %in% names(df))) df$.lineup_row_id <- seq_len(nrow(df))
   plan <- lineup_role_plan()
   df$.lineup_role_score <- lineup_role_score(df)
-  flags <- lineup_position_flags(df$position)
   minutes <- suppressWarnings(as.numeric(df$Minutes))
   total <- suppressWarnings(as.numeric(df$total))
   player_name <- as.character(df$player_name)
-  selected <- rep(FALSE, nrow(df))
+  if (is.null(candidate_set)) candidate_set <- build_lineup_candidate_set(df)
+  if (is.null(benchmarks)) benchmarks <- lineup_skill_benchmarks(list(candidate_set))
+  starter_local_idx <- pick_lineup_starters(candidate_set, benchmarks)
+  starter_row_ids <- df$.lineup_row_id[starter_local_idx]
+  starter_row_ids <- starter_row_ids[order(-df$.lineup_role_score[starter_local_idx], player_name[starter_local_idx], na.last = TRUE)]
+  selected_ids <- integer()
   out <- vector("list", nrow(plan))
   out_count <- 0L
 
   for (i in seq_len(nrow(plan))) {
-    available <- which(!selected)
-    if (!length(available)) next
-    position_group <- plan$position_group[[i]]
-    if (identical(position_group, "Bench")) {
-      idx <- available
+    if (identical(plan$role_type[[i]], "Starter")) {
+      if (!length(starter_row_ids)) next
+      picked_id <- starter_row_ids[[1]]
+      starter_row_ids <- starter_row_ids[-1]
     } else {
-      strict <- switch(position_group,
-        Guard = flags$has_guard,
-        Forward = flags$has_forward,
-        Center = flags$has_center,
-        rep(TRUE, nrow(df))
-      )
-      idx <- available[strict[available]]
-      if (!length(idx) && identical(position_group, "Center")) {
-        idx <- available[flags$has_pf[available]]
-      }
-      if (!length(idx)) idx <- available
+      available <- which(!(df$.lineup_row_id %in% selected_ids))
+      if (!length(available)) next
+      available <- available[order(
+        -df$.lineup_role_score[available],
+        -minutes[available],
+        -total[available],
+        player_name[available],
+        na.last = TRUE
+      )]
+      picked_id <- df$.lineup_row_id[available[[1]]]
     }
-    if (!length(idx)) next
-    idx <- idx[order(
-      -df$.lineup_role_score[idx],
-      -minutes[idx],
-      -total[idx],
-      player_name[idx],
-      na.last = TRUE
-    )]
-    picked <- idx[[1]]
-    selected[picked] <- TRUE
+    picked <- match(picked_id, df$.lineup_row_id)
+    if (is.na(picked)) next
+    selected_ids <- c(selected_ids, picked_id)
     row <- cbind(plan[i, , drop = FALSE], df[picked, , drop = FALSE])
     out_count <- out_count + 1L
     row$lineup_rank <- out_count
@@ -1977,6 +2104,20 @@ apply_expected_free_agent_minute_adjustment <- function(rows) {
   rows
 }
 
+assign_lineup_minutes <- function(rows, idx, minutes) {
+  minutes <- suppressWarnings(as.numeric(minutes))
+  minutes[!is.finite(minutes)] <- 0
+  games <- suppressWarnings(as.numeric(rows$games[idx]))
+  missing_games <- !is.finite(games) | games <= 0
+  games[missing_games] <- ifelse(minutes[missing_games] > 0, pmin(82, minutes[missing_games] / 36), 0)
+  over_game_cap <- minutes > games * 36
+  games[over_game_cap] <- pmin(82, minutes[over_game_cap] / 36)
+  rows$Minutes[idx] <- round(minutes, 0)
+  rows$games[idx] <- round(games, 1)
+  rows$p_mpg[idx] <- round(ifelse(games > 0, rows$Minutes[idx] / games, rows$p_mpg[idx]), 1)
+  rows
+}
+
 apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
   if (!nrow(rows)) return(rows)
   rows$lineup_original_minutes <- suppressWarnings(as.numeric(rows$Minutes))
@@ -1996,56 +2137,132 @@ apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
     return(rows)
   }
 
-  grouped <- split(eligible, normalize_team(eligible$team))
-  selections <- do.call(rbind, lapply(grouped, estimate_team_lineup_rows))
+  group_key <- paste(eligible$year, normalize_team(eligible$team), sep = "||")
+  grouped <- split(eligible, group_key)
+  candidate_sets <- build_lineup_candidate_sets(grouped)
+  benchmarks <- lineup_skill_benchmarks(candidate_sets)
+  selections <- do.call(rbind, mapply(
+    function(group, candidate_set) estimate_team_lineup_rows(group, candidate_set, benchmarks),
+    grouped,
+    candidate_sets,
+    SIMPLIFY = FALSE
+  ))
   selected_ids <- if (!is.null(selections) && nrow(selections)) selections$.lineup_row_id else integer()
-  nonselected_ids <- setdiff(eligible$.lineup_row_id, selected_ids)
-  if (length(nonselected_ids)) {
-    original_minutes <- suppressWarnings(as.numeric(rows$Minutes[nonselected_ids]))
-    original_minutes[!is.finite(original_minutes)] <- 0
-    rows$Minutes[nonselected_ids] <- round(0.5 * original_minutes, 0)
-    games <- suppressWarnings(as.numeric(rows$games[nonselected_ids]))
-    rows$p_mpg[nonselected_ids] <- round(ifelse(is.finite(games) & games > 0, rows$Minutes[nonselected_ids] / games, rows$p_mpg[nonselected_ids]), 1)
-  }
   if (!is.null(selections) && nrow(selections)) {
     for (i in seq_len(nrow(selections))) {
       idx <- selections$.lineup_row_id[[i]]
-      original_minutes <- suppressWarnings(as.numeric(rows$Minutes[[idx]]))
-      if (!is.finite(original_minutes)) original_minutes <- 0
       role_target <- selections$role_band_minutes[[i]]
-      games <- suppressWarnings(as.numeric(rows$games[[idx]]))
-      adjusted <- 0.4 * original_minutes + 0.6 * role_target
-      adjusted <- clamp(adjusted, 0, 82 * 36)
-      if (!is.finite(games) || games <= 0) games <- ifelse(adjusted > 0, min(82, adjusted / 36), 0)
-      if (adjusted > games * 36) {
-        games <- min(82, adjusted / 36)
-      }
-      rows$Minutes[[idx]] <- round(adjusted, 0)
-      rows$games[[idx]] <- round(games, 1)
-      rows$p_mpg[[idx]] <- round(ifelse(games > 0, rows$Minutes[[idx]] / games, rows$p_mpg[[idx]]), 1)
+      rows <- assign_lineup_minutes(rows, idx, role_target)
       rows$lineup_role[[idx]] <- selections$role_label[[i]]
       rows$lineup_role_order[[idx]] <- selections$role_order[[i]]
       rows$lineup_role_band_minutes[[idx]] <- selections$role_band_minutes[[i]]
     }
   }
 
+  rotation_groups <- split(eligible$.lineup_row_id, group_key)
+  for (group_ids in rotation_groups) {
+    group_idx <- as.integer(group_ids)
+    group_selected <- intersect(group_idx, selected_ids)
+    group_nonselected <- setdiff(group_idx, selected_ids)
+    if (!length(group_nonselected)) next
+    selected_minutes <- sum(suppressWarnings(as.numeric(rows$Minutes[group_selected])), na.rm = TRUE)
+    leftover_minutes <- max(0, 19680 - selected_minutes)
+    original_minutes <- suppressWarnings(as.numeric(rows$lineup_original_minutes[group_nonselected]))
+    original_minutes[!is.finite(original_minutes) | original_minutes < 0] <- 0
+    if (sum(original_minutes) > 0 && leftover_minutes > 0) {
+      residual_minutes <- leftover_minutes * original_minutes / sum(original_minutes)
+    } else {
+      residual_minutes <- rep(0, length(group_nonselected))
+    }
+    rows <- assign_lineup_minutes(rows, group_nonselected, residual_minutes)
+  }
+
   if (isTRUE(adjust_free_agents)) {
     rows <- apply_expected_free_agent_minute_adjustment(rows)
   }
 
-  for (team in sort(unique(rows$team[rows$team != "FA" & !is.na(rows$team)]))) {
-    idx <- which(rows$team == team)
+  for (group_ids in rotation_groups) {
+    idx <- as.integer(group_ids)
     team_minutes <- sum(suppressWarnings(as.numeric(rows$Minutes[idx])), na.rm = TRUE)
     if (is.finite(team_minutes) && team_minutes > 19680) {
-      scale <- 19680 / team_minutes
-      rows$Minutes[idx] <- round(suppressWarnings(as.numeric(rows$Minutes[idx])) * scale, 0)
-      games <- suppressWarnings(as.numeric(rows$games[idx]))
-      rows$p_mpg[idx] <- round(ifelse(is.finite(games) & games > 0, rows$Minutes[idx] / games, rows$p_mpg[idx]), 1)
+      group_nonselected <- setdiff(idx, selected_ids)
+      nonselected_minutes <- suppressWarnings(as.numeric(rows$Minutes[group_nonselected]))
+      nonselected_minutes[!is.finite(nonselected_minutes) | nonselected_minutes < 0] <- 0
+      if (length(group_nonselected) && sum(nonselected_minutes) > 0) {
+        keep_minutes <- max(0, sum(nonselected_minutes) - (team_minutes - 19680))
+        rows <- assign_lineup_minutes(rows, group_nonselected, nonselected_minutes * keep_minutes / sum(nonselected_minutes))
+      } else {
+        scale <- 19680 / team_minutes
+        rows <- assign_lineup_minutes(rows, idx, suppressWarnings(as.numeric(rows$Minutes[idx])) * scale)
+      }
     }
   }
 
   rows$lineup_adjusted_minutes <- suppressWarnings(as.numeric(rows$Minutes))
   rows$.lineup_row_id <- NULL
+  rows
+}
+
+future_projection_role_minutes <- function(total) {
+  total <- suppressWarnings(as.numeric(total))
+  out <- rep(500, length(total))
+  out[is.finite(total) & total >= -1.6] <- 900
+  out[is.finite(total) & total >= -0.9] <- 1300
+  out[is.finite(total) & total >= -0.25] <- 1600
+  out[is.finite(total) & total >= 0.5] <- 1900
+  out[is.finite(total) & total >= 1.5] <- 2200
+  out[is.finite(total) & total >= 3] <- 2500
+  out[is.finite(total) & total >= 5] <- 2700
+  out
+}
+
+future_projection_step_factor <- function(horizon) {
+  factors <- c(0.88, 0.76, 0.64, 0.52, 0.44)
+  horizon <- suppressWarnings(as.integer(horizon))
+  if (!is.finite(horizon) || horizon < 1L) return(factors[[1]])
+  if (horizon > length(factors)) return(factors[[length(factors)]])
+  factors[[horizon]]
+}
+
+assign_projection_minutes <- function(rows, horizon, minutes) {
+  minutes_col <- paste0("projection_minutes_y", horizon)
+  games_col <- paste0("projection_games_y", horizon)
+  mpg_col <- paste0("projection_mpg_y", horizon)
+  if (!(minutes_col %in% names(rows))) return(rows)
+
+  minutes <- suppressWarnings(as.numeric(minutes))
+  minutes[!is.finite(minutes) | minutes < 0] <- 0
+  games <- if (games_col %in% names(rows)) suppressWarnings(as.numeric(rows[[games_col]])) else rep(NA_real_, nrow(rows))
+  mpg <- if (mpg_col %in% names(rows)) suppressWarnings(as.numeric(rows[[mpg_col]])) else rep(NA_real_, nrow(rows))
+  missing_games <- !is.finite(games) | games <= 0
+  games[missing_games] <- ifelse(minutes[missing_games] > 0, pmin(82, minutes[missing_games] / 36), 0)
+  over_game_cap <- minutes > games * 36
+  games[over_game_cap] <- pmin(82, minutes[over_game_cap] / 36)
+
+  rows[[minutes_col]] <- round(minutes, 0)
+  if (games_col %in% names(rows)) rows[[games_col]] <- round(games, 1)
+  if (mpg_col %in% names(rows)) rows[[mpg_col]] <- round(ifelse(games > 0, rows[[minutes_col]] / games, mpg), 1)
+  rows
+}
+
+buttress_future_projection_minutes <- function(rows) {
+  if (!nrow(rows) || !("Minutes" %in% names(rows))) return(rows)
+  current_minutes <- suppressWarnings(as.numeric(rows$Minutes))
+  current_minutes[!is.finite(current_minutes) | current_minutes < 0] <- 0
+
+  for (horizon in 1:5) {
+    minutes_col <- paste0("projection_minutes_y", horizon)
+    total_col <- paste0("projection_y", horizon)
+    if (!(minutes_col %in% names(rows)) || !(total_col %in% names(rows))) next
+
+    raw_minutes <- suppressWarnings(as.numeric(rows[[minutes_col]]))
+    raw_minutes[!is.finite(raw_minutes) | raw_minutes < 0] <- 0
+    role_minutes <- future_projection_role_minutes(rows[[total_col]])
+    step_minutes <- pmin(current_minutes * future_projection_step_factor(horizon), role_minutes)
+    adjusted_minutes <- pmax(raw_minutes, step_minutes)
+    rows <- assign_projection_minutes(rows, horizon, adjusted_minutes)
+  }
+
   rows
 }
 
@@ -2294,6 +2511,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     contract_capacity <- ifelse(is.finite(rows$contract) & rows$contract > 0, pmin(cap_proxy / rows$contract, 15), 15)
     round(pmax(0, pmin(minutes_capacity, contract_capacity) * rows$value / cap_proxy), 3)
   }
+  rows <- buttress_future_projection_minutes(rows)
 
   for (horizon in 1:5) {
     rows[[paste0("projection_timin_y", horizon)]] <- round((rows[[paste0("projection_y", horizon)]] - rows$replacement_total) *
@@ -3811,11 +4029,19 @@ build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label
   lineup_cols <- c(
     "year", "team", "nba_id", "player_name", "position",
     "lineup_original_minutes", "lineup_adjusted_minutes", "Minutes", "games", "p_mpg",
-    "offense", "defense", "total", "score", "tier", "contract_status", ".lineup_row_id"
+    "offense", "defense", "total", "score", "tier", "contract_status",
+    lineup_skill_names(), ".lineup_row_id"
   )
   x <- x[, intersect(lineup_cols, names(x)), drop = FALSE]
   grouped <- split(x, paste(x$year, x$team, sep = "||"))
-  out <- do.call(rbind, lapply(grouped, estimate_team_lineup_rows))
+  candidate_sets <- build_lineup_candidate_sets(grouped)
+  benchmarks <- lineup_skill_benchmarks(candidate_sets)
+  out <- do.call(rbind, mapply(
+    function(group, candidate_set) estimate_team_lineup_rows(group, candidate_set, benchmarks),
+    grouped,
+    candidate_sets,
+    SIMPLIFY = FALSE
+  ))
   if (is.null(out) || !nrow(out)) return(empty())
 
   out$scenario_id <- scenario_id

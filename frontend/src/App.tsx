@@ -1239,7 +1239,7 @@ function PlayerTable({
             <th colSpan={3}>Identity</th>
             <th colSpan={6}>Impact</th>
             <th colSpan={4}>Current Season</th>
-            <th colSpan={3}>Next 4Y</th>
+            <th colSpan={3}>This + 3Y</th>
             <th>Skills</th>
           </tr>
           <tr>
@@ -1887,7 +1887,7 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
         <section>
           <div className="section-heading-row">
             <h3>Starting Five</h3>
-            <span>2 guards / 2 forwards / 1 center</span>
+            <span>Fewest lineup gaps; minutes by total impact</span>
           </div>
           <div className="starter-card-grid">
             {starters.map((row) => (
@@ -2994,7 +2994,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
           <div className="trade-summary-title">
             <div>
               <h2>Trade Sandbox</h2>
-              <p>4-year value: Player Impact 4Y Value; picks scaled to the same horizon</p>
+              <p>4-year value: current season plus next 3 Player Impact value; picks scaled to the same horizon</p>
             </div>
             <div className="trade-summary-actions">
               <button className="clear-filters" disabled={!thirdSide && teamOptions.length < 3} onClick={thirdSide ? removeThirdTeam : addThirdTeam}>
@@ -6379,16 +6379,20 @@ function impactNumber(player: PlayerImpact, key: keyof PlayerImpact): number | n
 }
 
 function futureValue4y(player: PlayerImpact): number | null {
-  const values = [1, 2, 3, 4]
-    .map((index) => impactNumber(player, `projection_value_y${index}` as keyof PlayerImpact))
+  const values = [
+    impactNumber(player, "value"),
+    ...[1, 2, 3].map((index) => impactNumber(player, `projection_value_y${index}` as keyof PlayerImpact))
+  ]
     .filter((value): value is number => value !== null);
   if (values.length === 0) return null;
   return values.reduce((sum, value) => sum + value, 0);
 }
 
 function futureScale4y(player: PlayerImpact): number | null {
-  const scales = [1, 2, 3, 4]
-    .map((index) => impactNumber(player, `projection_scalability_y${index}` as keyof PlayerImpact))
+  const scales = [
+    currentScale(player),
+    ...[1, 2, 3].map((index) => impactNumber(player, `projection_scalability_y${index}` as keyof PlayerImpact))
+  ]
     .filter((value): value is number => value !== null);
   return scales.length > 0 ? scales.reduce((sum, value) => sum + value, 0) / scales.length : null;
 }
