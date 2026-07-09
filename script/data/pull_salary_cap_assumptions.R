@@ -19,7 +19,13 @@ resolve_base_dir <- function() {
 }
 
 clean_money <- function(x) {
-  suppressWarnings(as.numeric(gsub("[^0-9.-]", "", as.character(x))))
+  text <- trimws(gsub(",", "", as.character(x)))
+  multiplier <- ifelse(grepl("B$", text, ignore.case = TRUE), 1e9,
+    ifelse(grepl("M$", text, ignore.case = TRUE), 1e6,
+      ifelse(grepl("K$", text, ignore.case = TRUE), 1e3, 1)
+    )
+  )
+  suppressWarnings(as.numeric(gsub("[^0-9.-]", "", text)) * multiplier)
 }
 
 fallback_caps <- function() {
@@ -46,7 +52,7 @@ fallback_caps <- function() {
 extract_first <- function(text, pattern) {
   hit <- regmatches(text, regexpr(pattern, text, ignore.case = TRUE, perl = TRUE))
   if (length(hit) == 0 || hit == "") return(NA_real_)
-  money <- regmatches(hit, gregexpr("\\$[0-9,]+", hit, perl = TRUE))[[1]]
+  money <- regmatches(hit, gregexpr("\\$[0-9][0-9,]*(?:\\.[0-9]+)?\\s*[KMB]?", hit, ignore.case = TRUE, perl = TRUE))[[1]]
   if (length(money) == 0) return(NA_real_)
   clean_money(money[length(money)])
 }
@@ -62,9 +68,9 @@ fetch_spotrac_year <- function(year) {
   }
   data.frame(
     year = year + 1,
-    salary_cap = extract_first(html, "Maximum:\\s*\\$[0-9,]+"),
-    first_apron = extract_first(html, "OVER THE FIRST APRON[\\s\\S]{0,700}?Threshold:\\s*\\$[0-9,]+"),
-    second_apron = extract_first(html, "OVER THE SECOND APRON[\\s\\S]{0,700}?Threshold:\\s*\\$[0-9,]+"),
+    salary_cap = extract_first(html, "Maximum:\\s*\\$[0-9][0-9,]*(?:\\.[0-9]+)?\\s*[KMB]?"),
+    first_apron = extract_first(html, "OVER THE FIRST APRON[\\s\\S]{0,700}?Threshold:\\s*\\$[0-9][0-9,]*(?:\\.[0-9]+)?\\s*[KMB]?"),
+    second_apron = extract_first(html, "OVER THE SECOND APRON[\\s\\S]{0,700}?Threshold:\\s*\\$[0-9][0-9,]*(?:\\.[0-9]+)?\\s*[KMB]?"),
     source = url,
     stringsAsFactors = FALSE
   )

@@ -1021,6 +1021,7 @@ projection_roster_status <- function(status, salary) {
   out[status == "Team Option"] <- "team_controlled"
   out[status == "Player Option"] <- "player_option"
   out[status == "Rookie FA"] <- "rookie_fa"
+  out[status == "Two-Way"] <- "signed"
   out[status == "UFA"] <- "open_ufa"
   out
 }
@@ -1542,15 +1543,21 @@ blank_like <- function(template, n) {
   out
 }
 
-shift_future_columns <- function(rows, cap_assumptions) {
+shift_future_columns <- function(rows, cap_assumptions, shift_contract_columns = TRUE) {
   projection_groups <- c(
     "projection_y", "projection_games_y", "projection_mpg_y", "projection_minutes_y",
     "projection_offense_y", "projection_defense_y",
     "projection_skill_model_off_y", "projection_skill_model_def_y",
     "projection_timin_y", "projection_value_y", "projection_fa_value_y",
-    "projection_scalability_y", "projection_contract_y", "projection_effective_contract_y",
-    "projection_cap_y", "projection_contract_status_y", "projection_contract_source_y"
+    "projection_scalability_y", "projection_cap_y"
   )
+  if (isTRUE(shift_contract_columns)) {
+    projection_groups <- c(
+      projection_groups,
+      "projection_contract_y", "projection_effective_contract_y",
+      "projection_contract_status_y", "projection_contract_source_y"
+    )
+  }
   for (prefix in projection_groups) {
     old <- lapply(1:5, function(horizon) {
       col <- paste0(prefix, horizon)
@@ -1683,10 +1690,11 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   if (nrow(spotrac_contracts)) {
     spotrac_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(spotrac_contracts$nba_id)))
     spotrac_salary_y0 <- suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match]))
-    has_positive_spotrac_contract <- !is.na(spotrac_match) & spotrac_salary_y0 > 0
+    has_positive_spotrac_contract <- !is.na(spotrac_match) & is.finite(spotrac_salary_y0) & spotrac_salary_y0 > 0
     has_spotrac_zero_or_positive <- !is.na(spotrac_match) & is.finite(spotrac_salary_y0) & spotrac_salary_y0 >= 0
     missing_contract <- !is.finite(suppressWarnings(as.numeric(rows$contract))) | suppressWarnings(as.numeric(rows$contract)) <= 0
     fill_contract <- (has_positive_spotrac_contract & missing_contract) | (matched_rookie & has_spotrac_zero_or_positive)
+    fill_contract[is.na(fill_contract)] <- FALSE
     rows$contract[fill_contract] <- spotrac_salary_y0[fill_contract]
     rows$projection_roster_status[fill_contract] <- projection_roster_status(rows$contract_status[fill_contract], rows$contract[fill_contract])
   }
@@ -2187,16 +2195,16 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     if ("OFF" %in% names(vets)) vets$OFF <- vets$skill_model_off
     if ("DEF" %in% names(vets)) vets$DEF <- vets$skill_model_def
     if ("TOTAL" %in% names(vets)) vets$TOTAL <- vets$skill_model_off + vets$skill_model_def
-    next_contract <- suppressWarnings(as.numeric(original$projection_contract_y1))
-    vets$contract <- ifelse(is.finite(next_contract) & next_contract > 0, next_contract, NA_real_)
-    next_status <- if ("projection_contract_status_y1" %in% names(original)) as.character(original$projection_contract_status_y1) else NA_character_
+    current_contract <- suppressWarnings(as.numeric(original$contract))
+    vets$contract <- ifelse(is.finite(current_contract) & current_contract > 0, current_contract, NA_real_)
+    current_status <- if ("contract_status" %in% names(original)) as.character(original$contract_status) else NA_character_
     initial_status_team <- ifelse(!is.finite(vets$contract) | vets$contract <= 0, "FA", vets$team)
     vets$contract_status <- contract_status_from_salary(
       vets$contract,
       vets$yoe,
       vets$age,
       initial_status_team,
-      next_status,
+      current_status,
       vets$year,
       vets$draft_year,
       vets$overall_pick
@@ -2230,7 +2238,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     vets$availability_reason <- "Synthetic 2027 career projection"
     vets$skill_source <- "career_projection"
     vets$skill_source_year <- contract_year
-    vets <- shift_future_columns(vets, cap_assumptions)
+    vets <- shift_future_columns(vets, cap_assumptions, shift_contract_columns = FALSE)
     vets <- prune_low_impact_ufas(vets, "total")
   }
 

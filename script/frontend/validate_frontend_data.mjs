@@ -94,10 +94,11 @@ function validateRookieProjectionAssignments(manifest) {
       cleanTeam(row.market_team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.team_projection_base) === cleanTeam(row.roster_truth_team) &&
       ["signed", "rookie_fa"].includes(row.projection_roster_status) &&
-      ["Signed", "Rookie FA"].includes(row.contract_status) &&
-      row.contract !== null &&
-      row.contract !== undefined &&
-      Number(row.contract) >= 0;
+      ["Signed", "Rookie FA", "Two-Way"].includes(row.contract_status) &&
+      (
+        row.contract_status === "Two-Way" ||
+        (row.contract !== null && row.contract !== undefined && Number(row.contract) >= 0)
+      );
     const assigned = rookies.filter((row) => !teamControlledRookie(row) && (
       cleanTeam(row.team) !== "FA" ||
       cleanTeam(row.current_roster_team) !== "FA" ||

@@ -2,12 +2,12 @@
   "teams_requested": 30,
   "teams_ok": 30,
   "teams_error": 0,
-  "rows_wide": 810,
-  "rows_long": 4050,
-  "active_roster_truth_rows": 447,
-  "free_agent_or_cap_hold_truth_rows": 233,
-  "traded_marker_excluded_rows": 25,
-  "unmatched_rows": 46,
-  "generated_at": "2026-07-02T22:14:29Z"
+  "rows_wide": 770,
+  "rows_long": 3850,
+  "active_roster_truth_rows": 485,
+  "free_agent_or_cap_hold_truth_rows": 199,
+  "traded_marker_excluded_rows": 12,
+  "unmatched_rows": 64,
+  "generated_at": "2026-07-09T04:15:16Z"
 }
 

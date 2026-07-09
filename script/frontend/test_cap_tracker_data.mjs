@@ -99,11 +99,14 @@ function testGeneratedPayloadInvariants() {
   const jalen = payload.contracts.find((row) => row.team === "ATL" && row.player_name === "Jalen Johnson");
   assert.ok(jalen, "Jalen Johnson should be present in generated Spotrac cap tracker payload");
   const jalen2027 = jalen.cells.find((cell) => cell.year === 2027);
+  const jalen2029 = jalen.cells.find((cell) => cell.year === 2029);
   const jalen2030 = jalen.cells.find((cell) => cell.year === 2030);
   assert.equal(jalen2027?.kind, "guaranteed");
   assert.equal(jalen2027?.amount, 30_000_000);
-  assert.equal(jalen2030?.kind, "cap_hold");
-  assert.equal(jalen2030?.amount, 45_000_000);
+  assert.equal(jalen2029?.kind, "guaranteed");
+  assert.equal(jalen2029?.amount, 30_000_000);
+  assert.equal(jalen2030?.kind, "empty");
+  assert.equal(jalen2030?.amount, 0);
 }
 
 function duplicateCount(values) {

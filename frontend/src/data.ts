@@ -297,22 +297,23 @@ function cleanTeam(value: string | null | undefined): string {
 
 function normalizeTruthStatus(status: string | null | undefined, currentTeam: string): PlayerImpact["contract_status"] {
   const value = String(status ?? "").trim();
-  if (["Signed", "UFA", "RFA", "Player Option", "Team Option", "Non-Guaranteed", "Rookie FA"].includes(value)) return value;
+  if (["Signed", "UFA", "RFA", "Player Option", "Team Option", "Non-Guaranteed", "Two-Way", "Rookie FA"].includes(value)) return value;
   return cleanTeam(currentTeam) === "FA" ? "UFA" : "Signed";
 }
 
 function normalizeSeasonContractStatus(status: string | null | undefined, currentTeam: string): PlayerImpact["contract_status"] {
   const value = String(status ?? "").trim();
-  if (["Player Option", "Team Option", "Non-Guaranteed"].includes(value)) return value;
+  if (["Player Option", "Team Option", "Non-Guaranteed", "Two-Way"].includes(value)) return value;
   if (cleanTeam(currentTeam) === "FA") return value === "RFA" || value === "Rookie FA" ? value : "UFA";
   return "Signed";
 }
 
 function isContractControlledStatus(status: string | null | undefined): boolean {
-  return ["Signed", "Player Option", "Team Option", "Non-Guaranteed"].includes(String(status ?? "").trim());
+  return ["Signed", "Player Option", "Team Option", "Non-Guaranteed", "Two-Way"].includes(String(status ?? "").trim());
 }
 
 function projectionRosterStatus(status: PlayerImpact["contract_status"], contract: number | null | undefined): PlayerImpact["projection_roster_status"] {
+  if (status === "Two-Way") return "signed";
   if (isContractControlledStatus(status) && numberValue(contract) !== null && Number(contract) > 0) return "signed";
   if (status === "RFA") return "restricted";
   if (status === "Rookie FA") return "rookie_fa";

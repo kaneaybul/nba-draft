@@ -368,7 +368,7 @@ function optionalTeam(value) {
 
 function normalizeTruthStatus(status, currentTeam) {
   const value = String(status ?? "").trim();
-  return ["Signed", "UFA", "RFA", "Player Option", "Team Option", "Non-Guaranteed", "Rookie FA"].includes(value)
+  return ["Signed", "UFA", "RFA", "Player Option", "Team Option", "Non-Guaranteed", "Two-Way", "Rookie FA"].includes(value)
     ? value
     : cleanTeam(currentTeam) === "FA"
       ? "UFA"
@@ -377,16 +377,17 @@ function normalizeTruthStatus(status, currentTeam) {
 
 function normalizeSeasonContractStatus(status, currentTeam) {
   const value = String(status ?? "").trim();
-  if (["Player Option", "Team Option", "Non-Guaranteed"].includes(value)) return value;
+  if (["Player Option", "Team Option", "Non-Guaranteed", "Two-Way"].includes(value)) return value;
   if (cleanTeam(currentTeam) === "FA") return value === "RFA" || value === "Rookie FA" ? value : "UFA";
   return "Signed";
 }
 
 function isContractControlledStatus(status) {
-  return ["Signed", "Player Option", "Team Option", "Non-Guaranteed"].includes(String(status ?? "").trim());
+  return ["Signed", "Player Option", "Team Option", "Non-Guaranteed", "Two-Way"].includes(String(status ?? "").trim());
 }
 
 function projectionRosterStatus(status, contract) {
+  if (status === "Two-Way") return "signed";
   if (isContractControlledStatus(status) && numberValue(contract) !== null && numberValue(contract) > 0) return "signed";
   if (status === "RFA") return "restricted";
   if (status === "Rookie FA") return "rookie_fa";

@@ -6165,12 +6165,12 @@ function SkillLedger<TKey extends SkillLedgerSortKey>({
     <div className="skill-ledger">
       <div className="skill-ledger-groups" aria-label="Skill dimensions">
         <div className="skill-ledger-section offense">
-          <div className="skill-chip-group offense">{offSkills.map(renderSkill)}</div>
           {offAggregate && renderAggregate(offAggregate)}
+          <div className="skill-chip-group offense">{offSkills.map(renderSkill)}</div>
         </div>
         <div className="skill-ledger-section defense">
-          <div className="skill-chip-group defense">{defSkills.map(renderSkill)}</div>
           {defAggregate && renderAggregate(defAggregate)}
+          <div className="skill-chip-group defense">{defSkills.map(renderSkill)}</div>
         </div>
         {totalAggregate && (
           <div className="skill-total-rail">
