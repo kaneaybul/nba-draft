@@ -12,6 +12,7 @@ const LINEUP_SIMULATION_TEMPLATES = [
   { roles: ["guard", "guard", "forward", "big", "big"], weight: 1.5 },
   { roles: ["guard", "wing", "forward", "big", "big"], weight: 1 }
 ];
+const LINEUP_SIMULATION_ROLES = ["guard", "wing", "forward", "big"];
 
 const repoRoot = process.cwd();
 const manifestPath = path.join(repoRoot, "frontend", "public", "data", "manifest.json");
@@ -100,6 +101,7 @@ function buildSimulatedLineupCores(playerRows) {
 
   const poolSeason = pool.find((player) => Number.isFinite(player.year))?.year ?? 0;
   const random = createLineupPrng(LINEUP_SIMULATION_SEED + poolSeason * 1009 + pool.length * 17);
+  const rolePools = buildLineupRolePools(pool);
   const lineups = [];
   let attempts = 0;
   const maxAttempts = LINEUP_SIMULATION_COUNT * 8;
@@ -107,7 +109,7 @@ function buildSimulatedLineupCores(playerRows) {
   while (lineups.length < LINEUP_SIMULATION_COUNT && attempts < maxAttempts) {
     attempts += 1;
     const template = pickLineupSimulationTemplate(random);
-    const lineup = sampleSimulatedLineup(pool, template, random);
+    const lineup = sampleSimulatedLineup(rolePools, template, random);
     if (!lineup) continue;
     lineups.push([...lineup].sort(compareLineupBenchmarkPlayers));
   }
@@ -115,12 +117,12 @@ function buildSimulatedLineupCores(playerRows) {
   return lineups;
 }
 
-function sampleSimulatedLineup(pool, template, random) {
+function sampleSimulatedLineup(rolePools, template, random) {
   const selected = [];
   const used = new Set();
 
   for (const role of template.roles) {
-    const player = pickLineupSlotPlayer(pool, role, used, random);
+    const player = pickLineupSlotPlayer(rolePools[role], used, random);
     if (!player) return null;
     selected.push(player);
     used.add(lineupPlayerId(player));
@@ -129,24 +131,56 @@ function sampleSimulatedLineup(pool, template, random) {
   return lineupPassesSimulationSanity(selected) ? selected : null;
 }
 
-function pickLineupSlotPlayer(pool, role, used, random) {
+function buildLineupRolePools(pool) {
+  return LINEUP_SIMULATION_ROLES.reduce((rolePools, role) => {
+    rolePools[role] = buildLineupRolePool(pool, role);
+    return rolePools;
+  }, {});
+}
+
+function buildLineupRolePool(pool, role) {
   let totalWeight = 0;
-  const weightedPlayers = [];
+  const candidates = [];
 
   for (const player of pool) {
-    const id = lineupPlayerId(player);
-    if (used.has(id)) continue;
     const fit = lineupSlotFit(player, role);
     if (fit < 0.12) continue;
     const weight = fit * lineupSamplingWeight(player);
     if (!Number.isFinite(weight) || weight <= 0) continue;
     totalWeight += weight;
-    weightedPlayers.push({ player, cumulative: totalWeight });
+    candidates.push({ player, cumulative: totalWeight });
   }
 
-  if (totalWeight <= 0 || weightedPlayers.length === 0) return null;
-  const target = random() * totalWeight;
-  return weightedPlayers.find((item) => item.cumulative >= target)?.player ?? weightedPlayers[weightedPlayers.length - 1]?.player ?? null;
+  return { candidates, totalWeight };
+}
+
+function pickLineupSlotPlayer(rolePool, used, random) {
+  if (rolePool.totalWeight <= 0 || rolePool.candidates.length === 0) return null;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const player = pickWeightedLineupRoleCandidate(rolePool, random);
+    if (player && !used.has(lineupPlayerId(player))) return player;
+  }
+
+  const start = Math.floor(random() * rolePool.candidates.length);
+  for (let offset = 0; offset < rolePool.candidates.length; offset += 1) {
+    const player = rolePool.candidates[(start + offset) % rolePool.candidates.length]?.player;
+    if (player && !used.has(lineupPlayerId(player))) return player;
+  }
+
+  return null;
+}
+
+function pickWeightedLineupRoleCandidate(rolePool, random) {
+  const target = random() * rolePool.totalWeight;
+  let low = 0;
+  let high = rolePool.candidates.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (rolePool.candidates[mid].cumulative < target) low = mid + 1;
+    else high = mid;
+  }
+  return rolePool.candidates[low]?.player ?? null;
 }
 
 function pickLineupSimulationTemplate(random) {

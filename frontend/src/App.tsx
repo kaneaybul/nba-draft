@@ -175,6 +175,10 @@ type LineupSimulationTemplate = {
   roles: LineupSlotRole[];
   weight: number;
 };
+type LineupRolePool = {
+  candidates: Array<{ player: PlayerImpact; cumulative: number }>;
+  totalWeight: number;
+};
 type LineupSummary = {
   slots: LineupSlot[];
   players: PlayerImpact[];
@@ -344,6 +348,7 @@ const LINEUP_SIMULATION_TEMPLATES: LineupSimulationTemplate[] = [
   { roles: ["guard", "guard", "forward", "big", "big"], weight: 1.5 },
   { roles: ["guard", "wing", "forward", "big", "big"], weight: 1 }
 ];
+const LINEUP_SIMULATION_ROLES: LineupSlotRole[] = ["guard", "wing", "forward", "big"];
 const LINEUP_SUGGESTIONS_PER_PAGE = 8;
 const LINEUP_SUGGESTION_PAGE_COUNT = 6;
 const LINEUP_MAX_SUGGESTIONS = LINEUP_SUGGESTIONS_PER_PAGE * LINEUP_SUGGESTION_PAGE_COUNT;
@@ -5446,6 +5451,7 @@ function buildSimulatedLineupCores(players: PlayerImpact[]): PlayerImpact[][] {
 
   const season = pool.find((player) => Number.isFinite(player.year))?.year ?? 0;
   const random = createLineupPrng(LINEUP_SIMULATION_SEED + season * 1009 + pool.length * 17);
+  const rolePools = buildLineupRolePools(pool);
   const simulated: PlayerImpact[][] = [];
   let attempts = 0;
   const maxAttempts = LINEUP_SIMULATION_COUNT * 8;
@@ -5453,7 +5459,7 @@ function buildSimulatedLineupCores(players: PlayerImpact[]): PlayerImpact[][] {
   while (simulated.length < LINEUP_SIMULATION_COUNT && attempts < maxAttempts) {
     attempts += 1;
     const template = pickLineupSimulationTemplate(random);
-    const lineup = sampleSimulatedLineup(pool, template, random);
+    const lineup = sampleSimulatedLineup(rolePools, template, random);
     if (!lineup) continue;
     simulated.push([...lineup].sort(compareLineupBenchmarkPlayers));
   }
@@ -5462,7 +5468,7 @@ function buildSimulatedLineupCores(players: PlayerImpact[]): PlayerImpact[][] {
 }
 
 function sampleSimulatedLineup(
-  pool: PlayerImpact[],
+  rolePools: Record<LineupSlotRole, LineupRolePool>,
   template: LineupSimulationTemplate,
   random: () => number
 ): PlayerImpact[] | null {
@@ -5470,7 +5476,7 @@ function sampleSimulatedLineup(
   const used = new Set<string>();
 
   for (const role of template.roles) {
-    const player = pickLineupSlotPlayer(pool, role, used, random);
+    const player = pickLineupSlotPlayer(rolePools[role], used, random);
     if (!player) return null;
     selected.push(player);
     used.add(lineupPlayerId(player));
@@ -5479,29 +5485,56 @@ function sampleSimulatedLineup(
   return lineupPassesSimulationSanity(selected) ? selected : null;
 }
 
-function pickLineupSlotPlayer(
-  pool: PlayerImpact[],
-  role: LineupSlotRole,
-  used: Set<string>,
-  random: () => number
-): PlayerImpact | null {
+function buildLineupRolePools(pool: PlayerImpact[]): Record<LineupSlotRole, LineupRolePool> {
+  return LINEUP_SIMULATION_ROLES.reduce((rolePools, role) => {
+    rolePools[role] = buildLineupRolePool(pool, role);
+    return rolePools;
+  }, {} as Record<LineupSlotRole, LineupRolePool>);
+}
+
+function buildLineupRolePool(pool: PlayerImpact[], role: LineupSlotRole): LineupRolePool {
   let totalWeight = 0;
-  const weightedPlayers: Array<{ player: PlayerImpact; cumulative: number }> = [];
+  const candidates: LineupRolePool["candidates"] = [];
 
   pool.forEach((player) => {
-    const id = lineupPlayerId(player);
-    if (used.has(id)) return;
     const fit = lineupSlotFit(player, role);
     if (fit < 0.12) return;
     const weight = fit * lineupSamplingWeight(player);
     if (!Number.isFinite(weight) || weight <= 0) return;
     totalWeight += weight;
-    weightedPlayers.push({ player, cumulative: totalWeight });
+    candidates.push({ player, cumulative: totalWeight });
   });
 
-  if (totalWeight <= 0 || weightedPlayers.length === 0) return null;
-  const target = random() * totalWeight;
-  return weightedPlayers.find((item) => item.cumulative >= target)?.player ?? weightedPlayers[weightedPlayers.length - 1]?.player ?? null;
+  return { candidates, totalWeight };
+}
+
+function pickLineupSlotPlayer(rolePool: LineupRolePool, used: Set<string>, random: () => number): PlayerImpact | null {
+  if (rolePool.totalWeight <= 0 || rolePool.candidates.length === 0) return null;
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const player = pickWeightedLineupRoleCandidate(rolePool, random);
+    if (player && !used.has(lineupPlayerId(player))) return player;
+  }
+
+  const start = Math.floor(random() * rolePool.candidates.length);
+  for (let offset = 0; offset < rolePool.candidates.length; offset += 1) {
+    const player = rolePool.candidates[(start + offset) % rolePool.candidates.length]?.player;
+    if (player && !used.has(lineupPlayerId(player))) return player;
+  }
+
+  return null;
+}
+
+function pickWeightedLineupRoleCandidate(rolePool: LineupRolePool, random: () => number): PlayerImpact | null {
+  const target = random() * rolePool.totalWeight;
+  let low = 0;
+  let high = rolePool.candidates.length - 1;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (rolePool.candidates[mid].cumulative < target) low = mid + 1;
+    else high = mid;
+  }
+  return rolePool.candidates[low]?.player ?? null;
 }
 
 function pickLineupSimulationTemplate(random: () => number): LineupSimulationTemplate {
