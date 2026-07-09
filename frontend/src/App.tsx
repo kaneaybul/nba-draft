@@ -169,6 +169,12 @@ type LineupSkill = {
   label: string;
   source: SkillKey | SkillKey[];
 };
+type LineupSlotRole = "guard" | "wing" | "forward" | "big";
+type LineupPositionShares = Record<"pg" | "sg" | "sf" | "pf" | "c", number>;
+type LineupSimulationTemplate = {
+  roles: LineupSlotRole[];
+  weight: number;
+};
 type LineupSummary = {
   slots: LineupSlot[];
   players: PlayerImpact[];
@@ -184,6 +190,8 @@ type LineupSummary = {
 type LineupBenchmark = {
   values: number[];
   average: number;
+  simulatedValues: number[];
+  simulatedAverage: number;
 };
 type LineupBenchmarks = Map<number, Record<string, LineupBenchmark>>;
 type LineupSuggestion = {
@@ -324,6 +332,17 @@ const lineupSkills: LineupSkill[] = [
   { key: "DPM", label: "DPM", source: "DPM" },
   { key: "DREB", label: "DREB", source: "DREB" },
   { key: "RIMPRO", label: "RIMPRO", source: "RIMPRO" }
+];
+const LINEUP_SIMULATION_COUNT = 9000;
+const LINEUP_SIMULATION_SEED = 20260709;
+const LINEUP_SIMULATED_BLEND_WEIGHT = 0.75;
+const LINEUP_SIMULATION_TEMPLATES: LineupSimulationTemplate[] = [
+  { roles: ["guard", "guard", "wing", "forward", "big"], weight: 9 },
+  { roles: ["guard", "guard", "wing", "wing", "big"], weight: 6 },
+  { roles: ["guard", "wing", "wing", "forward", "big"], weight: 5 },
+  { roles: ["guard", "wing", "forward", "forward", "big"], weight: 3 },
+  { roles: ["guard", "guard", "forward", "big", "big"], weight: 1.5 },
+  { roles: ["guard", "wing", "forward", "big", "big"], weight: 1 }
 ];
 const LINEUP_SUGGESTIONS_PER_PAGE = 8;
 const LINEUP_SUGGESTION_PAGE_COUNT = 6;
@@ -5381,6 +5400,7 @@ function buildLineupBenchmarks(players: PlayerImpact[]): LineupBenchmarks {
   const teamCores = Array.from(byTeam.values())
     .map((teamPlayers) => [...teamPlayers].sort(compareLineupBenchmarkPlayers).slice(0, 5))
     .filter((teamPlayers) => teamPlayers.length > 0);
+  const simulatedCores = buildSimulatedLineupCores(players);
   const benchmarks: LineupBenchmarks = new Map();
 
   for (let size = 1; size <= 5; size += 1) {
@@ -5391,9 +5411,16 @@ function buildLineupBenchmarks(players: PlayerImpact[]): LineupBenchmarks {
         .map((teamPlayers) => teamPlayers.slice(0, size).reduce((sum, player) => sum + lineupSkillValue(player, skill), 0))
         .filter((value) => Number.isFinite(value))
         .sort((a, b) => a - b);
+      const simulatedValues = simulatedCores
+        .filter((teamPlayers) => teamPlayers.length >= size)
+        .map((teamPlayers) => teamPlayers.slice(0, size).reduce((sum, player) => sum + lineupSkillValue(player, skill), 0))
+        .filter((value) => Number.isFinite(value))
+        .sort((a, b) => a - b);
       bySkill[skill.key] = {
         values,
-        average: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0
+        average: lineupBenchmarkAverage(values),
+        simulatedValues,
+        simulatedAverage: lineupBenchmarkAverage(simulatedValues)
       };
     });
     benchmarks.set(size, bySkill);
@@ -5409,6 +5436,185 @@ function compareLineupBenchmarkPlayers(a: PlayerImpact, b: PlayerImpact): number
   const aMinutes = Number(a.lineup_adjusted_minutes ?? a.Minutes ?? 0);
   const bMinutes = Number(b.lineup_adjusted_minutes ?? b.Minutes ?? 0);
   return bMinutes - aMinutes || b.total - a.total || b.score - a.score || a.player_name.localeCompare(b.player_name);
+}
+
+function buildSimulatedLineupCores(players: PlayerImpact[]): PlayerImpact[][] {
+  const pool = players
+    .filter((player) => Number.isFinite(player.total) && Number.isFinite(player.score) && lineupHasAnySlotFit(player))
+    .sort((a, b) => lineupPlayerId(a).localeCompare(lineupPlayerId(b)));
+  if (pool.length < 5) return [];
+
+  const season = pool.find((player) => Number.isFinite(player.year))?.year ?? 0;
+  const random = createLineupPrng(LINEUP_SIMULATION_SEED + season * 1009 + pool.length * 17);
+  const simulated: PlayerImpact[][] = [];
+  let attempts = 0;
+  const maxAttempts = LINEUP_SIMULATION_COUNT * 8;
+
+  while (simulated.length < LINEUP_SIMULATION_COUNT && attempts < maxAttempts) {
+    attempts += 1;
+    const template = pickLineupSimulationTemplate(random);
+    const lineup = sampleSimulatedLineup(pool, template, random);
+    if (!lineup) continue;
+    simulated.push([...lineup].sort(compareLineupBenchmarkPlayers));
+  }
+
+  return simulated;
+}
+
+function sampleSimulatedLineup(
+  pool: PlayerImpact[],
+  template: LineupSimulationTemplate,
+  random: () => number
+): PlayerImpact[] | null {
+  const selected: PlayerImpact[] = [];
+  const used = new Set<string>();
+
+  for (const role of template.roles) {
+    const player = pickLineupSlotPlayer(pool, role, used, random);
+    if (!player) return null;
+    selected.push(player);
+    used.add(lineupPlayerId(player));
+  }
+
+  return lineupPassesSimulationSanity(selected) ? selected : null;
+}
+
+function pickLineupSlotPlayer(
+  pool: PlayerImpact[],
+  role: LineupSlotRole,
+  used: Set<string>,
+  random: () => number
+): PlayerImpact | null {
+  let totalWeight = 0;
+  const weightedPlayers: Array<{ player: PlayerImpact; cumulative: number }> = [];
+
+  pool.forEach((player) => {
+    const id = lineupPlayerId(player);
+    if (used.has(id)) return;
+    const fit = lineupSlotFit(player, role);
+    if (fit < 0.12) return;
+    const weight = fit * lineupSamplingWeight(player);
+    if (!Number.isFinite(weight) || weight <= 0) return;
+    totalWeight += weight;
+    weightedPlayers.push({ player, cumulative: totalWeight });
+  });
+
+  if (totalWeight <= 0 || weightedPlayers.length === 0) return null;
+  const target = random() * totalWeight;
+  return weightedPlayers.find((item) => item.cumulative >= target)?.player ?? weightedPlayers[weightedPlayers.length - 1]?.player ?? null;
+}
+
+function pickLineupSimulationTemplate(random: () => number): LineupSimulationTemplate {
+  const totalWeight = LINEUP_SIMULATION_TEMPLATES.reduce((sum, template) => sum + template.weight, 0);
+  const target = random() * totalWeight;
+  let cumulative = 0;
+  for (const template of LINEUP_SIMULATION_TEMPLATES) {
+    cumulative += template.weight;
+    if (target <= cumulative) return template;
+  }
+  return LINEUP_SIMULATION_TEMPLATES[0];
+}
+
+function createLineupPrng(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function lineupHasAnySlotFit(player: PlayerImpact): boolean {
+  return lineupSlotFit(player, "guard") >= 0.12 || lineupSlotFit(player, "wing") >= 0.12 || lineupSlotFit(player, "forward") >= 0.12 || lineupSlotFit(player, "big") >= 0.12;
+}
+
+function lineupSlotFit(player: PlayerImpact, role: LineupSlotRole): number {
+  const shares = lineupPositionShares(player);
+  if (role === "guard") return clamp(shares.pg + shares.sg * 0.85 + shares.sf * 0.2, 0, 1);
+  if (role === "wing") return clamp(shares.sg * 0.35 + shares.sf + shares.pf * 0.35, 0, 1);
+  if (role === "forward") return clamp(shares.sf * 0.25 + shares.pf + shares.c * 0.08, 0, 1);
+  return clamp(shares.pf * 0.25 + shares.c, 0, 1);
+}
+
+function lineupPassesSimulationSanity(lineup: PlayerImpact[]): boolean {
+  const primaryRoles = lineup.map(lineupPrimarySimulationRole);
+  const primaryBigs = primaryRoles.filter((role) => role === "big").length;
+  const primaryGuards = primaryRoles.filter((role) => role === "guard").length;
+  return primaryBigs <= 2 && primaryGuards <= 3;
+}
+
+function lineupPrimarySimulationRole(player: PlayerImpact): LineupSlotRole {
+  const shares = lineupPositionShares(player);
+  const roleValues: Array<{ role: LineupSlotRole; value: number }> = [
+    { role: "guard", value: shares.pg + shares.sg },
+    { role: "wing", value: shares.sf },
+    { role: "forward", value: shares.pf },
+    { role: "big", value: shares.c }
+  ];
+  return roleValues.sort((a, b) => b.value - a.value)[0]?.role ?? "wing";
+}
+
+function lineupPositionShares(player: PlayerImpact): LineupPositionShares {
+  const shares = {
+    pg: lineupShareValue(player.pg_share),
+    sg: lineupShareValue(player.sg_share),
+    sf: lineupShareValue(player.sf_share),
+    pf: lineupShareValue(player.pf_share),
+    c: lineupShareValue(player.c_share)
+  };
+  const total = shares.pg + shares.sg + shares.sf + shares.pf + shares.c;
+  if (total > 0.01) {
+    return {
+      pg: shares.pg / total,
+      sg: shares.sg / total,
+      sf: shares.sf / total,
+      pf: shares.pf / total,
+      c: shares.c / total
+    };
+  }
+
+  const position = displayPosition(player.position).toUpperCase();
+  if (position === "PG") return { pg: 1, sg: 0, sf: 0, pf: 0, c: 0 };
+  if (position === "SG") return { pg: 0.2, sg: 0.8, sf: 0, pf: 0, c: 0 };
+  if (position === "SF") return { pg: 0, sg: 0.1, sf: 0.8, pf: 0.1, c: 0 };
+  if (position === "PF") return { pg: 0, sg: 0, sf: 0.1, pf: 0.8, c: 0.1 };
+  if (position === "C") return { pg: 0, sg: 0, sf: 0, pf: 0.15, c: 0.85 };
+  if (position === "G") return { pg: 0.5, sg: 0.5, sf: 0, pf: 0, c: 0 };
+  if (position === "F") return { pg: 0, sg: 0, sf: 0.5, pf: 0.5, c: 0 };
+  return { pg: 0, sg: 0.15, sf: 0.35, pf: 0.35, c: 0.15 };
+}
+
+function lineupShareValue(value: number | null | undefined): number {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? clamp(numeric, 0, 1) : 0;
+}
+
+function lineupSamplingWeight(player: PlayerImpact): number {
+  const minutes = Math.max(80, Number(player.lineup_adjusted_minutes ?? player.Minutes ?? 0));
+  const score = Number(player.score ?? 50);
+  const total = Number(player.total ?? 0);
+  const minutesWeight = Math.sqrt(minutes);
+  const scoreWeight = clamp((score - 25) / 70, 0.25, 1.2);
+  const totalWeight = 0.75 + clamp((total + 2.5) / 7, 0, 1) * 0.65;
+  return minutesWeight * scoreWeight * totalWeight * lineupTierMultiplier(player.tier);
+}
+
+function lineupTierMultiplier(tier: string | null | undefined): number {
+  const value = String(tier ?? "").trim();
+  if (value === "MVP") return 1.75;
+  if (value === "Superstar") return 1.6;
+  if (value === "Star") return 1.42;
+  if (value === "Elite Starter") return 1.28;
+  if (value === "Starter") return 1.15;
+  if (value === "Fringe Starter") return 1;
+  if (value === "Strong Bench") return 0.9;
+  if (value === "Bench") return 0.65;
+  if (value === "Deep Bench") return 0.4;
+  if (value === "Project") return 0.25;
+  return 0.15;
+}
+
+function lineupBenchmarkAverage(values: number[]): number {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 
 function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImpact>, lineupBenchmarks: LineupBenchmarks): LineupSummary {
@@ -5439,11 +5645,47 @@ function summarizeLineup(selectedIds: string[], playerMap: Map<string, PlayerImp
 }
 
 function lineupAggregatePercentile(value: number, benchmark: LineupBenchmark | undefined): number {
-  const values = benchmark?.values ?? [];
-  if (!values.length) return 0.5;
-  const below = values.filter((item) => item < value).length;
-  const equal = values.filter((item) => item === value).length;
-  return clamp((below + equal * 0.5) / values.length, 0, 1);
+  const teamPercentile = lineupPercentileFromSortedValues(value, benchmark?.values ?? []);
+  const simulatedPercentile = lineupPercentileFromSortedValues(value, benchmark?.simulatedValues ?? []);
+  if (simulatedPercentile !== null && teamPercentile !== null) {
+    return clamp(
+      simulatedPercentile * LINEUP_SIMULATED_BLEND_WEIGHT + teamPercentile * (1 - LINEUP_SIMULATED_BLEND_WEIGHT),
+      0,
+      1
+    );
+  }
+  if (simulatedPercentile !== null) return simulatedPercentile;
+  if (teamPercentile !== null) return teamPercentile;
+  return 0.5;
+}
+
+function lineupPercentileFromSortedValues(value: number, values: number[]): number | null {
+  if (!values.length) return null;
+  const below = lineupLowerBound(values, value);
+  const above = lineupUpperBound(values, value);
+  return clamp((below + (above - below) * 0.5) / values.length, 0, 1);
+}
+
+function lineupLowerBound(values: number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (values[mid] < target) low = mid + 1;
+    else high = mid;
+  }
+  return low;
+}
+
+function lineupUpperBound(values: number[], target: number): number {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (values[mid] <= target) low = mid + 1;
+    else high = mid;
+  }
+  return low;
 }
 
 function lineupSkillValue(player: PlayerImpact, skill: LineupSkill): number {
