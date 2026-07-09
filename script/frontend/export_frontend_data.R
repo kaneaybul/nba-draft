@@ -2118,6 +2118,14 @@ assign_lineup_minutes <- function(rows, idx, minutes) {
   rows
 }
 
+lineup_blended_role_minutes <- function(original_minutes, role_target) {
+  original_minutes <- suppressWarnings(as.numeric(original_minutes))
+  original_minutes[!is.finite(original_minutes) | original_minutes < 0] <- 0
+  role_target <- suppressWarnings(as.numeric(role_target))
+  role_target[!is.finite(role_target) | role_target < 0] <- 0
+  clamp(0.4 * original_minutes + 0.6 * role_target, 0, 82 * 36)
+}
+
 apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
   if (!nrow(rows)) return(rows)
   rows$lineup_original_minutes <- suppressWarnings(as.numeric(rows$Minutes))
@@ -2152,7 +2160,9 @@ apply_lineup_minute_adjustment <- function(rows, adjust_free_agents = FALSE) {
     for (i in seq_len(nrow(selections))) {
       idx <- selections$.lineup_row_id[[i]]
       role_target <- selections$role_band_minutes[[i]]
-      rows <- assign_lineup_minutes(rows, idx, role_target)
+      original_minutes <- suppressWarnings(as.numeric(rows$lineup_original_minutes[[idx]]))
+      adjusted_minutes <- lineup_blended_role_minutes(original_minutes, role_target)
+      rows <- assign_lineup_minutes(rows, idx, adjusted_minutes)
       rows$lineup_role[[idx]] <- selections$role_label[[i]]
       rows$lineup_role_order[[idx]] <- selections$role_order[[i]]
       rows$lineup_role_band_minutes[[idx]] <- selections$role_band_minutes[[i]]
