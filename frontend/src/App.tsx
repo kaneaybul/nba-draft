@@ -1893,7 +1893,7 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
         <section>
           <div className="section-heading-row">
             <h3>Starting Five</h3>
-            <span>Fewest lineup gaps; ordered PG → C</span>
+            <span>Top-three impact above +1.0 locked; then fewest gaps; ordered PG → C</span>
           </div>
           <div className="starter-card-grid">
             {orderedStarters.map((row) => (

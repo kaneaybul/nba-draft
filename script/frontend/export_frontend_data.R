@@ -1804,6 +1804,7 @@ build_lineup_candidate_set <- function(df) {
       combos = matrix(integer(), nrow = 0, ncol = 0),
       skill_totals = matrix(numeric(), nrow = 0, ncol = length(lineup_skill_names()), dimnames = list(NULL, lineup_skill_names())),
       total_sum = numeric(),
+      required_starter_indices = integer(),
       lineup_size = 0L
     ))
   }
@@ -1831,12 +1832,15 @@ build_lineup_candidate_set <- function(df) {
 
   total <- lineup_numeric_col(df, "total", -99)
   total_sum <- rowSums(matrix(total[as.vector(combos)], nrow = combo_count), na.rm = TRUE)
+  impact_order <- order(-total, seq_len(n))
+  required_starter_indices <- head(impact_order[total[impact_order] > 1], 3L)
 
   list(
     year = lineup_group_year(df),
     combos = combos,
     skill_totals = skill_totals,
     total_sum = total_sum,
+    required_starter_indices = required_starter_indices,
     lineup_size = lineup_size
   )
 }
@@ -1920,6 +1924,14 @@ pick_lineup_starters <- function(candidate_set, benchmarks) {
   if (!nrow(candidate_set$combos)) return(integer())
   scored <- score_lineup_candidates(candidate_set, benchmarks)
   if (!nrow(scored)) return(candidate_set$combos[1L, ])
+  required_starter_indices <- candidate_set$required_starter_indices
+  if (length(required_starter_indices)) {
+    eligible <- rep(TRUE, nrow(candidate_set$combos))
+    for (idx in required_starter_indices) {
+      eligible <- eligible & rowSums(candidate_set$combos == idx) > 0
+    }
+    scored <- scored[eligible[scored$combo_index], , drop = FALSE]
+  }
   scored <- scored[order(
     scored$gaps,
     scored$gap_severity,

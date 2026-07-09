@@ -36,6 +36,7 @@ function main() {
   validateRowCounts(manifest);
   validateInitialPayload(manifest);
   validateRosterTruthPlacements(manifest);
+  validateStartingLineupImpactFloor(manifest);
   validateRookieProjectionAssignments(manifest);
   console.log(`frontend data contract passed: ${files.length} manifest files`);
 }
@@ -160,6 +161,31 @@ function validateRosterTruthPlacements(manifest) {
       staleLineups.length === 0,
       `Roster truth FA players present in team lineups in ${season}: ${staleLineups.slice(0, 8).map((row) => row.player_name).join(", ")}`
     );
+  }
+}
+
+function validateStartingLineupImpactFloor(manifest) {
+  const lineupShards = manifest.static_data.datasets.team_lineups?.shards ?? [];
+  for (const shard of lineupShards) {
+    const rows = readJson(path.join(dataDir, shard.file));
+    const groups = new Map();
+    for (const row of rows) {
+      const key = `${row.scenario_id}-${row.year}-${cleanTeam(row.team)}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(row);
+    }
+    for (const [key, group] of groups) {
+      const required = [...group]
+        .filter((row) => Number(row.total) > 1)
+        .sort((a, b) => Number(b.total) - Number(a.total))
+        .slice(0, 3);
+      const starterIds = new Set(group.filter((row) => row.role_type === "Starter").map((row) => row.nba_id));
+      const missing = required.filter((row) => !starterIds.has(row.nba_id));
+      assert(
+        missing.length === 0,
+        `Starting lineup omits top-three +1.0 impact player for ${key}: ${missing.map((row) => row.player_name).join(", ")}`
+      );
+    }
   }
 }
 
