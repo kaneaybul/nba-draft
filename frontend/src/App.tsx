@@ -1583,7 +1583,12 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   const selectedContributors = useMemo(() => {
     if (!currentTeam) return [];
     const rows = contributorsByTeam.get(currentTeam.team) ?? [];
-    return [...rows].sort((a, b) => compareTeamContributors(a, b, contributorSortKey, contributorSortDirection, currentTeam.minutes));
+    const rosterCount = Number(currentTeam.roster_count);
+    const projectedPlayerCount = Number.isFinite(rosterCount) ? Math.max(0, Math.trunc(rosterCount)) : rows.length;
+    const projectedPlayers = [...rows]
+      .sort(compareTeamProjectionUsage)
+      .slice(0, projectedPlayerCount);
+    return projectedPlayers.sort((a, b) => compareTeamContributors(a, b, contributorSortKey, contributorSortDirection, currentTeam.minutes));
   }, [contributorSortDirection, contributorSortKey, contributorsByTeam, currentTeam]);
   const teamSkillRows = useMemo(() => currentTeam ? buildTeamSkillRows(currentTeam) : [], [currentTeam]);
   const schedulesByTeam = useMemo(() => {
@@ -1610,7 +1615,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     );
   }
 
-  const contributors = selectedContributors.slice(0, 12);
+  const contributors = selectedContributors;
   const schedule = schedulesByTeam.get(currentTeam.team) ?? [];
   const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
   const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
@@ -1728,7 +1733,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
         <section>
           <div className="section-heading-row">
             <h3>Roster Contributions</h3>
-            <span>{contributors.length} of {selectedContributors.length} drivers</span>
+            <span>{contributors.length} projected players</span>
           </div>
           {contributors.length > 0 ? <div className="table-wrap compact team-contrib-wrap">
             <table className="data-table team-contrib-table">
@@ -8780,6 +8785,23 @@ function compareTeamContributors(a: PlayerImpact, b: PlayerImpact, key: TeamCont
   }
 
   return direction === "asc" ? result : -result;
+}
+
+function compareTeamProjectionUsage(a: PlayerImpact, b: PlayerImpact): number {
+  return (
+    teamProjectionMinutesRank(b) - teamProjectionMinutesRank(a) ||
+    a.player_name.localeCompare(b.player_name) ||
+    a.nba_id - b.nba_id
+  );
+}
+
+function teamProjectionMinutesRank(player: PlayerImpact): number {
+  const candidates = [player.lineup_adjusted_minutes, player.Minutes, player.projection_minutes_y1];
+  for (const candidate of candidates) {
+    const minutes = Number(candidate);
+    if (Number.isFinite(minutes)) return minutes;
+  }
+  return 0;
 }
 
 function getTeamContributorSortValue(player: PlayerImpact, key: TeamContributorSortKey, teamMinutes: number): string | number {
