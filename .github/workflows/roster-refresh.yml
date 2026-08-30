@@ -51,6 +51,7 @@ jobs:
         run: |
           rspm <- Sys.getenv("RSPM", "")
           repos <- c(CRAN = if (nzchar(rspm)) rspm else "https://cloud.r-project.org")
+          # Keep this limited to packages used by the Spotrac scraper and frontend exporter.
           pkgs <- c("data.table", "jsonlite", "mgcv", "ranger", "readr", "rpart", "rvest", "xml2")
           missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
           if (length(missing)) install.packages(missing, repos = repos)
