@@ -105,8 +105,8 @@ function testGeneratedPayloadInvariants() {
   assert.equal(jalen2027?.amount, 30_000_000);
   assert.equal(jalen2029?.kind, "guaranteed");
   assert.equal(jalen2029?.amount, 30_000_000);
-  assert.equal(jalen2030?.kind, "empty");
-  assert.equal(jalen2030?.amount, 0);
+  assert.equal(jalen2030?.kind, "cap_hold");
+  assert.ok(jalen2030?.amount > 0, "Jalen Johnson should carry a positive 2030 cap hold");
 }
 
 function duplicateCount(values) {
