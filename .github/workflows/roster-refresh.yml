@@ -45,11 +45,7 @@ jobs:
         shell: Rscript {0}
         run: |
           repos <- c(CRAN = "https://cloud.r-project.org")
-          pkgs <- c(
-            "data.table", "dplyr", "httr", "jsonlite", "openxlsx", "purrr",
-            "ranger", "readr", "rpart", "rvest", "tibble", "tidyr",
-            "tidyverse", "xml2"
-          )
+          pkgs <- c("jsonlite", "mgcv", "rvest", "xml2")
           missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
           if (length(missing)) install.packages(missing, repos = repos)
 
