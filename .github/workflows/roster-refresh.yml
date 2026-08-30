@@ -1,0 +1,116 @@
+name: Refresh current NBA rosters
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/roster-refresh.yml
+
+concurrency:
+  group: roster-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CURRENT_ROSTER_YEAR: "2026"
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          repos <- c(CRAN = "https://cloud.r-project.org")
+          pkgs <- c(
+            "data.table", "dplyr", "httr", "jsonlite", "openxlsx", "purrr",
+            "ranger", "readr", "rpart", "rvest", "tibble", "tidyr",
+            "tidyverse", "xml2"
+          )
+          missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repos)
+
+      - name: Scrape all 30 Spotrac rosters
+        run: Rscript script/data/pull_spotrac_current_rosters.R
+
+      - name: Require a fresh complete scrape
+        shell: Rscript {0}
+        run: |
+          path <- "processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv"
+          audit <- read.csv(path, stringsAsFactors = FALSE)
+          if (nrow(audit) != 30) stop("Expected 30 team audit rows; got ", nrow(audit))
+          if (any(audit$status != "ok")) {
+            bad <- audit$team[audit$status != "ok"]
+            stop("Fresh scrape failed or used cached data for: ", paste(bad, collapse = ", "))
+          }
+          pulled <- as.POSIXct(audit$scraped_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+          age_minutes <- as.numeric(difftime(Sys.time(), pulled, units = "mins"))
+          if (any(!is.finite(age_minutes)) || any(age_minutes > 30)) {
+            stop("Scrape audit is stale.")
+          }
+          if (any(audit$active_roster_rows < 10)) {
+            stop("Implausibly small active roster for: ", paste(audit$team[audit$active_roster_rows < 10], collapse = ", "))
+          }
+          message("Fresh Spotrac scrape verified for all 30 teams.")
+
+      - name: Export roster-dependent frontend data
+        run: Rscript script/frontend/export_frontend_data.R
+
+      - name: Validate frontend data
+        run: npm run validate:data
+        working-directory: frontend
+
+      - name: Run roster-sensitive regressions
+        run: |
+          npm run test:offseason-market
+          npm run test:offseason-view-models
+          npm run test:cap-sandbox
+          npm run test:cap-tracker
+          npm run test:trade-scenarios
+          npm run test:trade-machine
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Commit refreshed roster data
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data
+          git add processed/livedata/impactrefresh/current_rosters_2026.csv
+          git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
+          git add processed/livedata/impactrefresh/contracts_2026_spotrac.csv
+          git add processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/*.csv
+          git add processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/benchmark_summary.json
+          if git diff --cached --quiet; then
+            echo "No roster changes to commit."
+          else
+            git commit -m "Refresh current NBA rosters"
+            git push origin HEAD:main
+          fi
