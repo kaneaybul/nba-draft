@@ -1620,6 +1620,8 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
   const regularSchedule = schedule.filter((game) => game.season_type === "Regular Season");
   const playInSchedule = schedule.filter((game) => game.season_type === "Play-In");
   const playoffSchedule = schedule.filter((game) => game.season_type === "Playoffs");
+  const cupTbdGames = regularSchedule.filter((game) => game.is_placeholder).length;
+  const scheduledGames = regularSchedule.length - cupTbdGames;
   const handleSort = (key: TeamSortKey) => {
     if (sortKey === key) {
       setSortDirection(sortDirection === "desc" ? "asc" : "desc");
@@ -1644,7 +1646,9 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
         <div className="panel-heading">
           <div>
             <h2>Team Projections</h2>
-            <p>Minute-share ratings under base roster assumptions</p>
+            <p>{currentTeam.schedule_adjusted
+              ? "Actual schedule-adjusted wins; NBA Cup TBD slots use conference-field expected value"
+              : "Minute-share ratings under base roster assumptions"}</p>
           </div>
           <div className="team-controls">
             <div className="segmented-control" aria-label="Conference filter">
@@ -1721,7 +1725,9 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
           </div>
           <div className="team-record-hero">
             <strong>{formatNumber(currentTeam.projected_wins, 1)}-{formatNumber(currentTeam.projected_losses, 1)}</strong>
-            <span>{formatPercent(currentTeam.win_pct, 1)} over {formatNumber(seasonGames, 0)} games</span>
+            <span>{currentTeam.schedule_adjusted
+              ? `${formatPercent(currentTeam.win_pct, 1)} · ${scheduledGames} scheduled + ${cupTbdGames} Cup TBD`
+              : `${formatPercent(currentTeam.win_pct, 1)} over ${formatNumber(seasonGames, 0)} games`}</span>
           </div>
         </div>
         <div className="team-detail-statline">
@@ -2114,11 +2120,15 @@ function TeamSkillProfile({ rows }: { rows: TeamSkillProfileRow[] }) {
 }
 
 function TeamScheduleTable({ team, games, title, teamMeta }: { team: string; games: TeamScheduleGame[]; title: string; teamMeta: Map<string, TeamProjection> }) {
+  const placeholderGames = games.filter((game) => game.is_placeholder);
+  const scheduledGames = games.filter((game) => !game.is_placeholder);
   return (
     <section>
       <div className="section-heading-row">
         <h3>{title}</h3>
-        <span>{games.length} games</span>
+        <span>{placeholderGames.length > 0
+          ? `${scheduledGames.length} scheduled + ${placeholderGames.length} Cup TBD`
+          : `${games.length} games`}</span>
       </div>
       {games.length > 0 ? <div className="table-wrap compact team-schedule-wrap">
         <table className="data-table team-schedule-table">
@@ -2134,13 +2144,14 @@ function TeamScheduleTable({ team, games, title, teamMeta }: { team: string; gam
           </thead>
           <tbody>
             {games.map((game, index) => {
-              const isHome = game.home_team === team;
-              const opponent = isHome ? game.away_team : game.home_team;
-              const probability = isHome ? game.home_win_probability : game.away_win_probability;
+              const isPlaceholder = Boolean(game.is_placeholder);
+              const isHome = !isPlaceholder && game.home_team === team;
+              const opponent = isPlaceholder ? "TBD" : isHome ? game.away_team : game.home_team;
+              const probability = isPlaceholder ? game.home_win_probability : isHome ? game.home_win_probability : game.away_win_probability;
               const teamScore = isHome ? game.home_score : game.away_score;
               const opponentScore = isHome ? game.away_score : game.home_score;
               const won = game.is_completed && game.result === team;
-              const opponentMeta = teamMeta.get(opponent) ?? {
+              const opponentMeta = isPlaceholder ? null : teamMeta.get(opponent) ?? {
                 year: game.season,
                 team: opponent,
                 team_name: opponent,
@@ -2170,26 +2181,26 @@ function TeamScheduleTable({ team, games, title, teamMeta }: { team: string; gam
                 <tr key={`${game.date}-${game.home_team}-${game.away_team}-${index}`}>
                   <td>
                     <div className="schedule-date-cell">
-                      <strong>{formatDateLabel(game.date)}</strong>
+                      <strong>{isPlaceholder ? game.date_window ?? "Dec 4–10" : formatDateLabel(game.date)}</strong>
                       <span>{game.time || "-"}</span>
                     </div>
                   </td>
-                  <td>{isHome ? "Home" : "Away"}</td>
+                  <td>{isPlaceholder ? game.selected_team_location ?? "TBD" : isHome ? "Home" : "Away"}</td>
                   <td>
                     <div className="schedule-opponent">
-                      <TeamLogo team={opponentMeta} />
-                      <span>{opponent}</span>
+                      {opponentMeta && <TeamLogo team={opponentMeta} />}
+                      <span>{isPlaceholder ? "TBD after Cup Group Play" : opponent}</span>
                     </div>
                   </td>
-                  <td>{formatPercent(probability, 1)}</td>
-                  <td><span className={cls("result-pill", game.is_completed ? won ? "win" : "loss" : "future")}>{game.is_completed ? won ? "W" : "L" : "Proj"}</span></td>
+                  <td title={isPlaceholder ? game.probability_basis ?? undefined : undefined}>{formatPercent(probability, 1)}</td>
+                  <td><span className={cls("result-pill", game.is_completed ? won ? "win" : "loss" : "future")}>{isPlaceholder ? "TBD" : game.is_completed ? won ? "W" : "L" : "Proj"}</span></td>
                   <td>{game.is_completed ? `${formatNumber(teamScore, 0)}-${formatNumber(opponentScore, 0)}` : "-"}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-      </div> : <EmptyState title="No schedule rows" detail="No Basketball-Reference schedule rows are available for this team and season yet." />}
+      </div> : <EmptyState title="No schedule rows" detail="No schedule rows are available for this team and season yet." />}
     </section>
   );
 }

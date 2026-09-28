@@ -4118,6 +4118,13 @@ bref_schedule_empty <- function() {
     arena = character(),
     notes = character(),
     is_completed = logical(),
+    game_id = character(),
+    is_placeholder = logical(),
+    placeholder_slot = integer(),
+    date_window = character(),
+    selected_team = character(),
+    selected_team_location = character(),
+    probability_basis = character(),
     stringsAsFactors = FALSE
   )
 }
@@ -4216,7 +4223,8 @@ parse_bref_schedule <- function(season, season_type, url) {
 classify_extra_regular_games <- function(schedules) {
   if (!nrow(schedules)) return(schedules)
   for (season in sort(unique(schedules$season))) {
-    idx <- which(schedules$season == season & schedules$season_type == "Regular Season")
+    placeholder <- if ("is_placeholder" %in% names(schedules)) schedules$is_placeholder %in% TRUE else rep(FALSE, nrow(schedules))
+    idx <- which(schedules$season == season & schedules$season_type == "Regular Season" & !placeholder)
     if (!length(idx)) next
     idx <- idx[order(schedules$date[idx], schedules$time[idx], schedules$home_team[idx])]
     counts <- setNames(rep(0L, length(team_metadata()$team_abbr)), team_metadata()$team_abbr)
@@ -4235,27 +4243,107 @@ classify_extra_regular_games <- function(schedules) {
   schedules
 }
 
+normalize_schedule_columns <- function(schedules) {
+  if (is.null(schedules)) return(bref_schedule_empty())
+  defaults <- list(
+    game_id = NA_character_,
+    is_placeholder = FALSE,
+    placeholder_slot = NA_integer_,
+    date_window = NA_character_,
+    selected_team = NA_character_,
+    selected_team_location = NA_character_,
+    probability_basis = NA_character_
+  )
+  for (name in names(defaults)) {
+    if (!(name %in% names(schedules))) schedules[[name]] <- defaults[[name]]
+  }
+  schedules$is_placeholder <- tolower(as.character(schedules$is_placeholder)) %in% c("true", "t", "1", "yes")
+  schedules$placeholder_slot <- suppressWarnings(as.integer(schedules$placeholder_slot))
+  schedules
+}
+
+append_unscheduled_cup_placeholders <- function(schedules, rating_rows) {
+  cup_windows <- data.frame(
+    season = c(2027L, 2027L),
+    slot = c(1L, 2L),
+    date = c("2026-12-04", "2026-12-08"),
+    date_window = c("Dec 4–10", "Dec 4–10"),
+    stringsAsFactors = FALSE
+  )
+  for (season in unique(cup_windows$season)) {
+    season_ratings <- rating_rows[rating_rows$year == season, , drop = FALSE]
+    season_ratings <- season_ratings[!duplicated(season_ratings$team), , drop = FALSE]
+    if (nrow(season_ratings) != 30L) next
+    already_added <- schedules$season == season & schedules$is_placeholder
+    if (any(already_added, na.rm = TRUE)) next
+    regular <- schedules[
+      schedules$season == season & schedules$season_type == "Regular Season" & !schedules$is_placeholder,
+      ,
+      drop = FALSE
+    ]
+    appearances <- table(c(regular$home_team, regular$away_team))
+    if (length(appearances) != 30L || any(as.integer(appearances) != 80L)) next
+    windows <- cup_windows[cup_windows$season == season, , drop = FALSE]
+    placeholders <- do.call(rbind, lapply(seq_len(nrow(season_ratings)), function(i) {
+      team <- season_ratings$team[i]
+      conference <- season_ratings$conference[i]
+      rating <- suppressWarnings(as.numeric(season_ratings$adjusted_total[i]))
+      peers <- season_ratings[season_ratings$conference == conference & season_ratings$team != team, , drop = FALSE]
+      peer_ratings <- suppressWarnings(as.numeric(peers$adjusted_total))
+      probability <- mean(1 / (1 + exp(-(rating - peer_ratings) / (2.2 * 3))), na.rm = TRUE)
+      do.call(rbind, lapply(seq_len(nrow(windows)), function(j) {
+        data.frame(
+          season = season,
+          season_type = "Regular Season",
+          date = windows$date[j],
+          time = "TBD",
+          home_team = team,
+          away_team = team,
+          home_score = NA_real_,
+          away_score = NA_real_,
+          home_win_probability = round(probability, 3),
+          away_win_probability = round(probability, 3),
+          result = "",
+          arena = "TBD",
+          notes = "NBA Cup opponent set after Group Play",
+          is_completed = FALSE,
+          game_id = sprintf("%s-NBA-CUP-TBD-%s-%s", season, team, windows$slot[j]),
+          is_placeholder = TRUE,
+          placeholder_slot = windows$slot[j],
+          date_window = windows$date_window[j],
+          selected_team = team,
+          selected_team_location = "TBD",
+          probability_basis = "Expected win probability vs. the other 14 teams in the same conference",
+          stringsAsFactors = FALSE
+        )
+      }))
+    }))
+    schedules <- rbind(schedules, placeholders[, names(schedules), drop = FALSE])
+  }
+  schedules[order(schedules$season, schedules$date, schedules$time, schedules$game_id), , drop = FALSE]
+}
+
 build_team_schedules <- function(teams) {
   schedule_dir <- file.path(resolve_base_dir(), "processed", "livedata", "schedules")
   options(bref_schedule_cache_dir = file.path(schedule_dir, "bref_html"))
   schedule_cache <- file.path(schedule_dir, "bref_team_schedules.csv")
-  seasons <- sort(unique(teams$year[is.finite(teams$year) & teams$year <= 2026]))
+  seasons <- sort(unique(teams$year[is.finite(teams$year)]))
   if (!length(seasons)) return(bref_schedule_empty())
   force_refresh <- tolower(Sys.getenv("NBA_REFRESH_SCHEDULES", "false")) %in% c("1", "true", "yes")
   if (file.exists(schedule_cache) && !force_refresh) {
-    schedules <- read.csv(schedule_cache, stringsAsFactors = FALSE, check.names = FALSE)
+    schedules <- read.csv(schedule_cache, stringsAsFactors = FALSE, check.names = FALSE, fill = TRUE)
   } else {
     schedules <- do.call(rbind, lapply(seasons, function(season) {
-      regular <- parse_bref_schedule(
+      regular <- normalize_schedule_columns(parse_bref_schedule(
         season,
         "Regular Season",
         sprintf("https://www.basketball-reference.com/leagues/NBA_%s_games.html", season)
-      )
-      playoffs <- parse_bref_schedule(
+      ))
+      playoffs <- normalize_schedule_columns(parse_bref_schedule(
         season,
         "Playoffs",
         sprintf("https://www.basketball-reference.com/playoffs/NBA_%s_games.html", season)
-      )
+      ))
       if (nrow(regular) && nrow(playoffs)) {
         playoff_keys <- paste(playoffs$date, playoffs$home_team, playoffs$away_team)
         regular <- regular[!(paste(regular$date, regular$home_team, regular$away_team) %in% playoff_keys), , drop = FALSE]
@@ -4268,16 +4356,40 @@ build_team_schedules <- function(teams) {
     }
   }
   if (is.null(schedules) || !nrow(schedules)) return(bref_schedule_empty())
+  schedules <- normalize_schedule_columns(schedules)
+  schedules <- schedules[!schedules$is_placeholder, , drop = FALSE]
   schedules <- classify_extra_regular_games(schedules)
-  rating_key <- paste(teams$year, teams$team, sep = "||")
-  ratings <- teams$adjusted_total
+  rating_rows <- teams
+  if ("scenario_id" %in% names(rating_rows)) {
+    base_rows <- rating_rows$scenario_id == "base"
+    if (any(base_rows, na.rm = TRUE)) rating_rows <- rating_rows[base_rows, , drop = FALSE]
+  }
+  rating_rows <- rating_rows[!duplicated(paste(rating_rows$year, rating_rows$team, sep = "||")), , drop = FALSE]
+  rating_key <- paste(rating_rows$year, rating_rows$team, sep = "||")
+  ratings <- rating_rows$adjusted_total
   names(ratings) <- rating_key
   home_rating <- ratings[paste(schedules$season, schedules$home_team, sep = "||")]
   away_rating <- ratings[paste(schedules$season, schedules$away_team, sep = "||")]
   diff <- suppressWarnings(as.numeric(home_rating) - as.numeric(away_rating))
   schedules$home_win_probability <- round(1 / (1 + exp(-diff / (2.2 * 3))), 3)
   schedules$away_win_probability <- round(1 - schedules$home_win_probability, 3)
+  schedules <- append_unscheduled_cup_placeholders(schedules, rating_rows)
   schedules
+}
+
+balanced_tenth_round <- function(values, target_sum) {
+  values <- suppressWarnings(as.numeric(values))
+  if (!length(values) || any(!is.finite(values)) || !is.finite(target_sum)) return(round(values, 1))
+  floor_units <- floor(values * 10 + 1e-9)
+  remaining <- as.integer(round(target_sum * 10) - sum(floor_units))
+  if (remaining > 0L) {
+    order_idx <- order(values * 10 - floor_units, decreasing = TRUE)
+    floor_units[order_idx[seq_len(min(remaining, length(order_idx)))]] <- floor_units[order_idx[seq_len(min(remaining, length(order_idx)))]] + 1L
+  } else if (remaining < 0L) {
+    order_idx <- order(values * 10 - floor_units, decreasing = FALSE)
+    floor_units[order_idx[seq_len(min(abs(remaining), length(order_idx)))]] <- floor_units[order_idx[seq_len(min(abs(remaining), length(order_idx)))]] - 1L
+  }
+  floor_units / 10
 }
 
 apply_schedule_projections <- function(teams, schedules) {
@@ -4291,6 +4403,13 @@ apply_schedule_projections <- function(teams, schedules) {
   teams$playoff_projected_losses <- NA_real_
   teams$playoff_actual_wins <- NA_real_
   teams$playoff_actual_losses <- NA_real_
+  teams$scheduled_games <- NA_real_
+  teams$cup_tbd_games <- NA_real_
+  teams$schedule_adjusted <- FALSE
+  teams$schedule_as_of <- NA_character_
+  exact_projected_wins <- rep(NA_real_, nrow(teams))
+  exact_expected_wins <- rep(NA_real_, nrow(teams))
+  regular_game_count <- rep(NA_real_, nrow(teams))
   for (idx in seq_len(nrow(teams))) {
     team <- teams$team[idx]
     season <- teams$year[idx]
@@ -4299,7 +4418,8 @@ apply_schedule_projections <- function(teams, schedules) {
     regular <- games[games$season_type == "Regular Season", , drop = FALSE]
     playoffs <- games[games$season_type == "Playoffs", , drop = FALSE]
     is_home <- regular$home_team == team
-    completed <- regular$is_completed
+    completed <- !is.na(regular$is_completed) & as.logical(regular$is_completed)
+    placeholder <- if ("is_placeholder" %in% names(regular)) regular$is_placeholder %in% TRUE else rep(FALSE, nrow(regular))
     win_prob <- ifelse(is_home, regular$home_win_probability, regular$away_win_probability)
     actual_wins <- sum(completed & regular$result == team, na.rm = TRUE)
     actual_losses <- sum(completed & regular$result != team, na.rm = TRUE)
@@ -4308,6 +4428,13 @@ apply_schedule_projections <- function(teams, schedules) {
     teams$actual_wins[idx] <- actual_wins
     teams$actual_losses[idx] <- actual_losses
     teams$remaining_games[idx] <- sum(!completed, na.rm = TRUE)
+    teams$scheduled_games[idx] <- sum(!placeholder)
+    teams$cup_tbd_games[idx] <- sum(placeholder)
+    teams$schedule_adjusted[idx] <- nrow(regular) > 0
+    teams$schedule_as_of[idx] <- as.character(Sys.Date())
+    exact_expected_wins[idx] <- expected_wins
+    exact_projected_wins[idx] <- actual_wins + future_wins
+    regular_game_count[idx] <- nrow(regular)
     teams$expected_wins[idx] <- round(expected_wins, 1)
     teams$expected_losses[idx] <- round(nrow(regular) - expected_wins, 1)
     teams$projected_wins[idx] <- round(actual_wins + future_wins, 1)
@@ -4326,6 +4453,16 @@ apply_schedule_projections <- function(teams, schedules) {
     }
   }
   rank_group <- if ("scenario_id" %in% names(teams)) paste(teams$year, teams$scenario_id) else teams$year
+  for (group in unique(rank_group)) {
+    group_idx <- which(rank_group == group & is.finite(regular_game_count) & is.finite(exact_projected_wins) & is.finite(exact_expected_wins))
+    if (!length(group_idx)) next
+    target_wins <- sum(regular_game_count[group_idx]) / 2
+    teams$projected_wins[group_idx] <- balanced_tenth_round(exact_projected_wins[group_idx], target_wins)
+    teams$expected_wins[group_idx] <- balanced_tenth_round(exact_expected_wins[group_idx], target_wins)
+    teams$projected_losses[group_idx] <- round(regular_game_count[group_idx] - teams$projected_wins[group_idx], 1)
+    teams$expected_losses[group_idx] <- round(regular_game_count[group_idx] - teams$expected_wins[group_idx], 1)
+    teams$win_pct[group_idx] <- round(teams$projected_wins[group_idx] / regular_game_count[group_idx], 3)
+  }
   conference_rank_group <- if ("scenario_id" %in% names(teams)) paste(teams$year, teams$scenario_id, teams$conference) else paste(teams$year, teams$conference)
   teams$league_rank <- ave(-teams$projected_wins, rank_group, FUN = function(v) rank(v, ties.method = "first"))
   teams$rank <- teams$league_rank

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-30T22:20:53Z",
+  "generated_at": "2026-09-28T00:00:00Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -19,7 +19,7 @@
     },
     {
       "dataset": "team_schedules",
-      "rows": 14159,
+      "rows": 15419,
       "file": "v2/team_schedules/{season}.json"
     },
     {
@@ -80,7 +80,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-08-30T22:20:53.438Z",
+    "generated_at": "2026-09-28T00:00:00.000Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -310,8 +310,8 @@
             "year": 2027,
             "rows": 90,
             "file": "v2/team_projections/2027.json",
-            "bytes": 80954,
-            "sha256": "8f8be2697ada0a0a37d69259f2c408db2a336fe538387879c75ff33dc26bfbff"
+            "bytes": 89014,
+            "sha256": "17b2e6dfe98d750e5fdadbc303df61467a61b0c92046bfa58d4aeeb801c2965f"
           }
         ]
       },
@@ -419,7 +419,7 @@
       },
       "team_schedules": {
         "strategy": "season",
-        "rows": 14159,
+        "rows": 15419,
         "shards": [
           {
             "key": "2016",
@@ -508,6 +508,14 @@
             "file": "v2/team_schedules/2026.json",
             "bytes": 370117,
             "sha256": "fffc09d3fc3cb13eef9cda8af9959cda1627f528dd0fdbf4e96327308906fc9c"
+          },
+          {
+            "key": "2027",
+            "year": 2027,
+            "rows": 1260,
+            "file": "v2/team_schedules/2027.json",
+            "bytes": 431997,
+            "sha256": "191c5540998f8dcc73a04d0cc8d444708d8fea6317c182629efc420dfb3fcd7b"
           }
         ]
       },

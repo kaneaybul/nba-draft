@@ -243,6 +243,10 @@ export type TeamProjection = {
   actual_wins?: number | null;
   actual_losses?: number | null;
   remaining_games?: number | null;
+  scheduled_games?: number | null;
+  cup_tbd_games?: number | null;
+  schedule_adjusted?: boolean | null;
+  schedule_as_of?: string | null;
   playoff_projected_wins?: number | null;
   playoff_projected_losses?: number | null;
   playoff_actual_wins?: number | null;
@@ -269,6 +273,7 @@ export type TeamScheduleGame = {
   time?: string | null;
   home_team: string;
   away_team: string;
+  game_id?: string | null;
   home_score?: number | null;
   away_score?: number | null;
   home_win_probability?: number | null;
@@ -278,6 +283,11 @@ export type TeamScheduleGame = {
   arena?: string | null;
   notes?: string | null;
   is_completed: boolean;
+  is_placeholder?: boolean | null;
+  placeholder_slot?: number | null;
+  date_window?: string | null;
+  selected_team?: string | null;
+  probability_basis?: string | null;
 };
 
 export type TeamLineupRow = {
