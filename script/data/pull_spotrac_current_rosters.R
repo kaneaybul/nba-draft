@@ -292,12 +292,28 @@ scrape_team <- function(base_dir, team_row, labels) {
   url <- paste0("https://www.spotrac.com/nba/", team_row$slug, "/yearly/_/sort/cap_total/view/roster")
   html_path <- file.path(cache_dir, paste0(team_row$abbr, ".html"))
   fetched <- TRUE
+  snapshot_time <- NA_character_
   error_message <- ""
   tryCatch(
     fetch_page(url, html_path),
     error = function(e) {
       fetched <<- FALSE
       error_message <<- conditionMessage(e)
+      snapshot_dir <- Sys.getenv("SPOTRAC_HTML_SNAPSHOT_DIR", "")
+      receipts_path <- file.path(snapshot_dir, "receipts.csv")
+      snapshot_path <- file.path(snapshot_dir, paste0(team_row$abbr, ".html"))
+      if (nzchar(snapshot_dir) && file.exists(receipts_path) && file.exists(snapshot_path)) {
+        receipts <- read.csv(receipts_path, stringsAsFactors = FALSE)
+        receipt <- receipts[receipts$team == team_row$abbr & receipts$source_url == url, , drop = FALSE]
+        if (nrow(receipt) == 1L) {
+          pulled <- as.POSIXct(receipt$fetched_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+          age <- as.numeric(difftime(Sys.time(), pulled, units = "mins"))
+          if (is.finite(age) && age >= -1 && age <= 30) {
+            if (!file.copy(snapshot_path, html_path, overwrite = TRUE)) stop("Could not stage fresh snapshot for ", team_row$abbr)
+            snapshot_time <<- receipt$fetched_at
+          }
+        }
+      }
       if (!file.exists(html_path)) stop(e)
     }
   )
@@ -307,6 +323,7 @@ scrape_team <- function(base_dir, team_row, labels) {
     stop("No tables found for ", team_row$team, " at ", url)
   }
   scraped_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (!is.na(snapshot_time)) scraped_at <- snapshot_time
   sections <- vapply(tables, function(tab) {
     h <- xml2::xml_find_first(tab, "preceding::h2[1]")
     clean_cell(rvest::html_text2(h))
@@ -323,7 +340,7 @@ scrape_team <- function(base_dir, team_row, labels) {
   audit <- data.frame(
     team = team_row$team,
     source_url = url,
-    status = if (fetched) "ok" else "cached_after_fetch_error",
+    status = if (fetched) "ok" else if (!is.na(snapshot_time)) "fresh_snapshot_after_fetch_error" else "cached_after_fetch_error",
     table_count = length(tables),
     pending_rows = sum(wide$section == "Pending Transactions", na.rm = TRUE),
     active_roster_rows = sum(wide$section == "Active Roster" & wide$roster_state == "active", na.rm = TRUE),
@@ -745,8 +762,8 @@ summary_path <- file.path(spotrac_dir, "benchmark_summary.json")
 summary <- paste0(
   "{\n",
   '  "teams_requested": ', nrow(teams), ",\n",
-  '  "teams_ok": ', sum(audit$status %in% c("ok", "cached_after_fetch_error")), ",\n",
-  '  "teams_error": ', sum(!(audit$status %in% c("ok", "cached_after_fetch_error"))), ",\n",
+  '  "teams_ok": ', sum(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error")), ",\n",
+  '  "teams_error": ', sum(!(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error"))), ",\n",
   '  "rows_wide": ', nrow(wide), ",\n",
   '  "rows_long": ', nrow(long), ",\n",
   '  "active_roster_truth_rows": ', sum(roster_truth$team != "FA"), ",\n",

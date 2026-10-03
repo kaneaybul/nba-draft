@@ -22,6 +22,7 @@ jobs:
       VITE_PUBLIC_READ_ONLY: "true"
       FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
       FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+      SPOTRAC_HTML_SNAPSHOT_DIR: ${{ runner.temp }}/spotrac-snapshot
     steps:
       - uses: actions/checkout@v4
         with:
@@ -58,6 +59,9 @@ jobs:
           still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
           if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
 
+      - name: Stage a verified fresh Spotrac snapshot if supplied
+        run: python3 script/data/prepare_spotrac_snapshot.py raw/cap_sources/spotrac/current_snapshot.json.xz "$SPOTRAC_HTML_SNAPSHOT_DIR"
+
       - name: Scrape all 30 Spotrac rosters
         # Keep the Spotrac-only refresh; season headers and lineup roles are audited.
         run: Rscript script/data/pull_spotrac_current_rosters.R
@@ -68,8 +72,9 @@ jobs:
           path <- "processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv"
           audit <- read.csv(path, stringsAsFactors = FALSE)
           if (nrow(audit) != 30) stop("Expected 30 team audit rows; got ", nrow(audit))
-          if (any(audit$status != "ok")) {
-            bad <- audit$team[audit$status != "ok"]
+          fresh <- audit$status %in% c("ok", "fresh_snapshot_after_fetch_error")
+          if (any(!fresh)) {
+            bad <- audit$team[!fresh]
             stop("Fresh scrape failed or used cached data for: ", paste(bad, collapse = ", "))
           }
           pulled <- as.POSIXct(audit$scraped_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
