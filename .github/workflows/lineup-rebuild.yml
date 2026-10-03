@@ -6,6 +6,7 @@ on:
     branches:
       - main
     paths:
+      - .github/workflows/lineup-rebuild.yml
       - script/frontend/export_frontend_data.R
       - script/frontend/test_lineup_positions.R
 
@@ -62,13 +63,7 @@ jobs:
 
       - name: Record cached source inputs
         run: |
-          sha256sum \\
-            processed/livedata/impactrefresh/current_rosters_2026.csv \\
-            processed/livedata/impactrefresh/current_roster_audit_2026.csv \\
-            processed/livedata/impactrefresh/contracts_2026_spotrac.csv \\
-            processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv \\
-            processed/livedata/schedules/bref_team_schedules.csv \\
-            > "$RUNNER_TEMP/nba-lineup-inputs.sha256"
+          sha256sum processed/livedata/impactrefresh/current_rosters_2026.csv processed/livedata/impactrefresh/current_roster_audit_2026.csv processed/livedata/impactrefresh/contracts_2026_spotrac.csv processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv processed/livedata/schedules/bref_team_schedules.csv > "$RUNNER_TEMP/nba-lineup-inputs.sha256"
 
       - name: Rebuild lineups from cached roster and model inputs
         run: Rscript script/frontend/export_frontend_data.R
