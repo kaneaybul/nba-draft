@@ -490,6 +490,10 @@ match_spotrac_players <- function(wide, universe, aliases) {
   key <- normalize_name(wide$player_or_entity)
   key <- ifelse(key %in% names(key_to_canonical), unname(key_to_canonical[key]), key)
   wide$name_key <- key
+  # Canonicalize both sources. A GG/Gregory alias on only the Spotrac side
+  # would otherwise hide an NBA ID already present in the player universe.
+  universe$name_key <- ifelse(universe$name_key %in% names(key_to_canonical),
+    unname(key_to_canonical[universe$name_key]), universe$name_key)
 
   exact_counts <- aggregate(universe$nba_id, by = list(name_key = universe$name_key), FUN = function(v) length(unique(v)))
   names(exact_counts)[2] <- "id_count"

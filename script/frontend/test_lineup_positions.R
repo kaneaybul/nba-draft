@@ -13,6 +13,15 @@ load_functions("script/frontend/export_frontend_data.R", model)
 scraper <- new.env(parent = globalenv())
 load_functions("script/data/pull_spotrac_current_rosters.R", scraper)
 
+# Nicknames and formal names must resolve symmetrically to the existing NBA
+# identity, including aliases already used by the cached model/contract data.
+universe <- data.frame(nba_id = c(1630529L, 1642353L, 1641713L, 1641842L),
+  player_name = c("Herbert Jones", "Cam Christie", "GG Jackson", "Ronald Holland II"))
+universe$name_key <- scraper$normalize_name(universe$player_name)
+matched <- scraper$match_spotrac_players(data.frame(player_or_entity =
+  c("Herb Jones", "Cameron Christie", "G.G. Jackson", "Ron Holland II")), universe, scraper$read_aliases("."))
+stopifnot(identical(matched$nba_id, universe$nba_id), all(matched$match_confidence == 1))
+
 fixture <- function(positions, totals = seq_along(positions), passing = 0, shooting = 0, rimpro = 0, rebounding = 0) {
   n <- length(positions)
   rows <- data.frame(year = 2027L, team = "TEST", nba_id = seq_len(n), player_name = paste0("Player ", seq_len(n)),
