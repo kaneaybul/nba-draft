@@ -150,7 +150,7 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
     stopifnot(length(dataset$shards) > 0)
     paths <- vapply(dataset$shards, function(shard) file.path(data_dir, shard$file), character(1))
     stopifnot(all(file.exists(paths)))
-    rows <- do.call(rbind, lapply(paths, jsonlite::fromJSON))
+    rows <- as.data.frame(data.table::rbindlist(lapply(paths, jsonlite::fromJSON), use.names = TRUE, fill = TRUE))
     stopifnot(is.data.frame(rows), nrow(rows) == dataset$rows)
     rows
   }
