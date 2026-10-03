@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/roster-refresh.yml
       - script/frontend/test_lineup_positions.R
+      - script/frontend/export_frontend_data.R
       - raw/cap_sources/spotrac/current_snapshot.json.xz
 
 concurrency:

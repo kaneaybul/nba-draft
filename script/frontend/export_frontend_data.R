@@ -5248,7 +5248,13 @@ if (file.exists(static_manifest_script) && nzchar(node_bin)) {
     base_dir,
     "frontend_export_write",
     "write_static_data_manifest",
-    system2(node_bin, static_manifest_script, stdout = TRUE, stderr = TRUE),
+    {
+      output <- system2(node_bin, shQuote(static_manifest_script), stdout = TRUE, stderr = TRUE)
+      if (length(output)) message(paste(output, collapse = "\n"))
+      status <- attr(output, "status")
+      if (!is.null(status) && status != 0L) stop("Static data packaging failed (exit ", status, ").")
+      invisible(output)
+    },
     "season shards and deploy manifest"
   )
 }
