@@ -129,9 +129,20 @@ if (requireNamespace("rvest", quietly = TRUE) && requireNamespace("xml2", quietl
 
 # Validate the generated selections against the complete exported player pool.
 # This catches role deficits and unnecessary star omissions on real rosters.
-if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public/data/team_lineups.json")) {
-  players <- jsonlite::fromJSON("frontend/public/data/impact_players.json")
-  lineups <- jsonlite::fromJSON("frontend/public/data/team_lineups.json")
+if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public/data/manifest.json")) {
+  data_dir <- "frontend/public/data"
+  manifest <- jsonlite::fromJSON(file.path(data_dir, "manifest.json"), simplifyVector = FALSE)
+  read_export <- function(name) {
+    dataset <- manifest$static_data$datasets[[name]]
+    stopifnot(length(dataset$shards) > 0)
+    paths <- vapply(dataset$shards, function(shard) file.path(data_dir, shard$file), character(1))
+    stopifnot(all(file.exists(paths)))
+    rows <- do.call(rbind, lapply(paths, jsonlite::fromJSON))
+    stopifnot(is.data.frame(rows), nrow(rows) == dataset$rows)
+    rows
+  }
+  players <- read_export("impact_players")
+  lineups <- read_export("team_lineups")
   contract_path <- "processed/livedata/impactrefresh/contracts_2026_spotrac.csv"
   if (file.exists(contract_path)) {
     contracts <- read.csv(contract_path, stringsAsFactors = FALSE)
