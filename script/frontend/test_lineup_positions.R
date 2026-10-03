@@ -165,13 +165,20 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
     stopifnot(all(is.finite(current$contract[known])), all(abs(current$contract[known] - contracts$salary_y1[match_idx[known]]) < 1))
     message("2026-27 salaries match the fresh Spotrac contract season: ", sum(known), " players.")
   }
+  scenario_pools <- setNames(lapply(unique(lineups$scenario_id), function(scenario) {
+    assigned <- model$assign_team_projection_scenario(players, scenario)
+    split(assigned, paste(assigned$year, assigned$team, sep = "||"))
+  }), unique(lineups$scenario_id))
   groups <- split(lineups, paste(lineups$scenario_id, lineups$year, lineups$team, sep = "||"))
   for (group in groups) {
     scenario <- group$scenario_id[[1]]
-    pool <- model$assign_team_projection_scenario(players[players$year == group$year[[1]], , drop = FALSE], scenario)
-    pool <- pool[pool$team == group$team[[1]], , drop = FALSE]
+    key <- paste(group$year[[1]], group$team[[1]], sep = "||")
+    pool <- scenario_pools[[scenario]][[key]]
+    if (is.null(pool)) stop("Generated lineup has no player pool: ", scenario, "||", key)
     selected <- group[group$is_starter, , drop = FALSE]
-    stopifnot(!anyDuplicated(selected$lineup_position), nrow(selected) == min(5L, nrow(pool)))
+    if (anyDuplicated(selected$lineup_position) || nrow(selected) != min(5L, nrow(pool))) {
+      stop("Incorrect starter count or repeated role in ", scenario, "||", key, ": ", nrow(selected), " starters from ", nrow(pool), " players")
+    }
     candidates <- model$build_lineup_candidate_set(pool)
     actual <- pool[match(selected$nba_id, pool$nba_id), , drop = FALSE]
     eligibility <- model$lineup_position_eligibility(actual)

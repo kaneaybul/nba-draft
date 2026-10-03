@@ -270,7 +270,7 @@ function normalizePlayers(players, truth) {
   if (!truth?.players) return enforceExportedFreeAgentTruth(players);
   return players.map((player) => {
     const row = truth.players[`${player.year}-${player.nba_id}-${player.player_name}`];
-    const exportedTruthTeam = cleanTeam(player.roster_truth_team);
+    const exportedTruthTeam = optionalTeam(player.roster_truth_team);
     const explicitFreeAgentTruth = exportedTruthTeam === "FA";
     if (!row) return explicitFreeAgentTruth ? freeAgentPlayerRow(player) : player;
     const currentTeam = explicitFreeAgentTruth ? "FA" : cleanTeam(row.current_roster_team);
@@ -308,7 +308,7 @@ function normalizePlayers(players, truth) {
 }
 
 function enforceExportedFreeAgentTruth(players) {
-  return players.map((player) => cleanTeam(player.roster_truth_team) === "FA" ? freeAgentPlayerRow(player) : player);
+  return players.map((player) => optionalTeam(player.roster_truth_team) === "FA" ? freeAgentPlayerRow(player) : player);
 }
 
 function freeAgentPlayerRow(player) {
