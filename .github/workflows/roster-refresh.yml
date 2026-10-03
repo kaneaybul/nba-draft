@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/roster-refresh.yml
       - script/frontend/test_lineup_positions.R
+      - script/frontend/test_cap_tracker_data.mjs
       - script/frontend/export_frontend_data.R
       - script/frontend/build_static_data_manifest.mjs
       - raw/cap_sources/spotrac/current_snapshot.json.xz

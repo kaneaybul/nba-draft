@@ -101,12 +101,15 @@ function testGeneratedPayloadInvariants() {
   const jalen2027 = jalen.cells.find((cell) => cell.year === 2027);
   const jalen2029 = jalen.cells.find((cell) => cell.year === 2029);
   const jalen2030 = jalen.cells.find((cell) => cell.year === 2030);
+  const jalen2031 = jalen.cells.find((cell) => cell.year === 2031);
   assert.equal(jalen2027?.kind, "guaranteed");
   assert.equal(jalen2027?.amount, 30_000_000);
   assert.equal(jalen2029?.kind, "guaranteed");
   assert.equal(jalen2029?.amount, 30_000_000);
-  assert.equal(jalen2030?.kind, "cap_hold");
-  assert.ok(jalen2030?.amount > 0, "Jalen Johnson should carry a positive 2030 cap hold");
+  assert.equal(jalen2030?.kind, "guaranteed");
+  assert.equal(jalen2030?.amount, 30_000_000);
+  assert.equal(jalen2031?.kind, "cap_hold");
+  assert.ok(jalen2031?.amount > 0, "Jalen Johnson should carry a positive 2031 cap hold after his 2029-30 salary");
 }
 
 function duplicateCount(values) {
