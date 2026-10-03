@@ -8,6 +8,7 @@ on:
   workflow_run:
     workflows:
       - Refresh current NBA rosters
+      - Rebuild lineup projections
     types:
       - completed
 

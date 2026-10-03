@@ -1,0 +1,113 @@
+name: Rebuild lineup projections
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - script/frontend/export_frontend_data.R
+      - script/frontend/test_lineup_positions.R
+
+# Serialize data commits with a deliberate roster refresh.
+concurrency:
+  group: roster-refresh
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CURRENT_ROSTER_YEAR: "2026"
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install R system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          rspm <- Sys.getenv("RSPM", "")
+          repos <- c(CRAN = if (nzchar(rspm)) rspm else "https://cloud.r-project.org")
+          # Keep this limited to packages used by the Spotrac scraper and frontend exporter.
+          pkgs <- c("data.table", "jsonlite", "mgcv", "ranger", "readr", "rpart", "rvest", "xml2")
+          missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repos)
+          still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
+
+      - name: Record cached source inputs
+        run: |
+          sha256sum \\
+            processed/livedata/impactrefresh/current_rosters_2026.csv \\
+            processed/livedata/impactrefresh/current_roster_audit_2026.csv \\
+            processed/livedata/impactrefresh/contracts_2026_spotrac.csv \\
+            processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv \\
+            processed/livedata/schedules/bref_team_schedules.csv \\
+            > "$RUNNER_TEMP/nba-lineup-inputs.sha256"
+
+      - name: Rebuild lineups from cached roster and model inputs
+        run: Rscript script/frontend/export_frontend_data.R
+
+      - name: Verify positional lineups and contract-season alignment
+        run: Rscript script/frontend/test_lineup_positions.R
+
+      - name: Validate frontend data
+        run: |
+          npm run validate:data
+          npm run validate:schedule
+        working-directory: frontend
+
+      - name: Run roster-sensitive regressions
+        run: |
+          npm run test:offseason-market
+          npm run test:offseason-view-models
+          npm run test:cap-sandbox
+          npm run test:cap-tracker
+          npm run test:trade-scenarios
+          npm run test:trade-machine
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Verify roster, contract and schedule sources were preserved
+        run: sha256sum --check "$RUNNER_TEMP/nba-lineup-inputs.sha256"
+
+      - name: Commit regenerated frontend data
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data
+          if git diff --cached --quiet; then
+            echo "No lineup data changes to commit."
+          else
+            git commit -m "Rebuild NBA lineup projections"
+            git push origin HEAD:main
+          fi

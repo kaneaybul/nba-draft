@@ -1920,6 +1920,24 @@ build_lineup_candidate_sets <- function(grouped) {
   lapply(grouped, build_lineup_candidate_set)
 }
 
+lineup_impact_tolerance <- function() 0.5
+
+lineup_eligible_candidate_indices <- function(candidate_set, within_impact_band = TRUE) {
+  if (!nrow(candidate_set$combos)) return(integer())
+  shortfalls <- candidate_set$position_shortfalls
+  eligible <- which(shortfalls == min(shortfalls))
+  # Preserve compatible star locks in impact order, without losing role coverage.
+  for (idx in candidate_set$required_starter_indices) {
+    includes_star <- rowSums(candidate_set$combos[eligible, , drop = FALSE] == idx) > 0
+    if (any(includes_star)) eligible <- eligible[includes_star]
+  }
+  if (within_impact_band && length(eligible)) {
+    best_total <- max(candidate_set$total_sum[eligible])
+    eligible <- eligible[candidate_set$total_sum[eligible] >= best_total - lineup_impact_tolerance() - 1e-9]
+  }
+  eligible
+}
+
 lineup_skill_benchmarks <- function(candidate_sets) {
   skills <- lineup_skill_names()
   if (!length(candidate_sets)) return(list())
@@ -1930,11 +1948,14 @@ lineup_skill_benchmarks <- function(candidate_sets) {
   for (year in years) {
     by_skill <- setNames(vector("list", length(skills)), skills)
     year_sets <- candidate_sets[vapply(candidate_sets, function(candidate) isTRUE(candidate$year == year), logical(1))]
+    year_fives <- lapply(year_sets, function(candidate) {
+      plausible <- if (candidate$lineup_size == 5L) lineup_eligible_candidate_indices(candidate) else integer()
+      # Competitive, fully balanced fives establish the reference distribution.
+      plausible <- plausible[candidate$position_shortfalls[plausible] == 0L]
+      candidate$skill_totals[plausible, , drop = FALSE]
+    })
     for (skill in skills) {
-      values <- unlist(lapply(year_sets, function(candidate) {
-        if (candidate$lineup_size < 5L || !nrow(candidate$skill_totals)) return(numeric())
-        candidate$skill_totals[, skill]
-      }), use.names = FALSE)
+      values <- unlist(lapply(year_fives, function(totals) totals[, skill]), use.names = FALSE)
       values <- sort(values[is.finite(values)])
       by_skill[[skill]] <- values
     }
@@ -1980,12 +2001,19 @@ score_lineup_candidates <- function(candidate_set, benchmarks) {
   spike_matrix[spike_matrix < 0] <- 0
   gap_severity <- rowSums(gap_matrix, na.rm = TRUE)
   spike_strength <- rowSums(spike_matrix, na.rm = TRUE)
+  # Continuous scoring makes a deep weakness cost more than a slight deficit.
+  # Gap/spike counts remain diagnostics; crossing a percentile is not a jump
+  # in selection priority. Fit can only choose within the impact window.
+  weakness_penalty <- rowSums(gap_matrix ^ 2, na.rm = TRUE)
+  fit_score <- -4 * weakness_penalty + spike_strength
   data.frame(
     combo_index = seq_len(combo_count),
     gaps = gaps,
     gap_severity = gap_severity,
     spikes = spikes,
     spike_strength = spike_strength,
+    weakness_penalty = weakness_penalty,
+    fit_score = fit_score,
     total_sum = candidate_set$total_sum,
     stringsAsFactors = FALSE
   )
@@ -1995,24 +2023,10 @@ pick_lineup_starters <- function(candidate_set, benchmarks) {
   if (!nrow(candidate_set$combos)) return(integer())
   scored <- score_lineup_candidates(candidate_set, benchmarks)
   if (!nrow(scored)) return(candidate_set$combos[1L, ])
-  # Choose the most positionally complete fives before applying star locks.
-  # If a roster lacks a role, use the fewest necessary compromises.
-  shortfalls <- candidate_set$position_shortfalls
-  scored <- scored[shortfalls == min(shortfalls), , drop = FALSE]
-  required_starter_indices <- candidate_set$required_starter_indices
-  if (length(required_starter_indices)) {
-    eligible <- scored$combo_index
-    for (idx in required_starter_indices) {
-      includes_star <- rowSums(candidate_set$combos[eligible, , drop = FALSE] == idx) > 0
-      if (any(includes_star)) eligible <- eligible[includes_star]
-    }
-    scored <- scored[scored$combo_index %in% eligible, , drop = FALSE]
-  }
+  eligible <- lineup_eligible_candidate_indices(candidate_set)
+  scored <- scored[scored$combo_index %in% eligible, , drop = FALSE]
   scored <- scored[order(
-    scored$gaps,
-    scored$gap_severity,
-    -scored$spikes,
-    -scored$spike_strength,
+    -scored$fit_score,
     -scored$total_sum,
     scored$combo_index
   ), , drop = FALSE]

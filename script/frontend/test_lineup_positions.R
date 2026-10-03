@@ -95,6 +95,36 @@ for (i in seq_len(30)) {
   stopifnot(model$build_lineup_candidate_set(rows)$position_shortfalls == expected)
 }
 
+# A major impact loss cannot win on skill fit (the Collier/George failure).
+rows <- fixture(c("PG", "SG", "SF", "PF", "C", "PG"), c(-0.38, 0.2, 2, 2, 2, -1.75))
+rows[6, model$lineup_skill_names()] <- 3
+starters <- pick(rows)
+stopifnot(1L %in% starters$nba_id, !(6L %in% starters$nba_id))
+
+# Fit may choose a modestly weaker guard inside the band, including its edge.
+rows$total[6] <- -0.68
+stopifnot(6L %in% pick(rows)$nba_id)
+rows$total[6] <- -0.88
+stopifnot(6L %in% pick(rows)$nba_id)
+rows$total[6] <- -0.88001
+stopifnot(1L %in% pick(rows)$nba_id)
+
+# Unbalanced and incompatible bench-heavy fives cannot distort benchmarks.
+rows <- fixture(c("PG", "SG", "SF", "PF", "C", "C", "C"), c(-1, -1, -1, -1, 3, 2.9, 2.8))
+rows$PASS[6:7] <- 100
+candidate <- model$build_lineup_candidate_set(rows)
+references <- model$lineup_skill_benchmarks(list(candidate))[["2027"]]
+stopifnot(all(vapply(references, function(values) identical(values, 0), logical(1))))
+
+# A percentile threshold changes fit continuously, even when gap count changes.
+candidate <- list(year = 2027L, combos = matrix(seq_len(10), nrow = 2),
+  skill_totals = matrix(0.9, nrow = 2, ncol = length(model$lineup_skill_names()),
+    dimnames = list(NULL, model$lineup_skill_names())), total_sum = c(0, 0))
+candidate$skill_totals[, "FTD"] <- c(0.4999, 0.5001)
+references <- list("2027" = setNames(rep(list(seq(0, 1, by = 0.0001)), length(model$lineup_skill_names())), model$lineup_skill_names()))
+scored <- model$score_lineup_candidates(candidate, references)
+stopifnot(scored$gaps[1] != scored$gaps[2], abs(diff(scored$fit_score)) < 1e-5)
+
 # Blank source seasons leave historical salaries alone; an explicit future UFA
 # supersedes an old contract. A season advance shifts contract horizons with impact.
 old <- data.frame(nba_id = 1L, player_name = "Player", team = "TEST", salary_y0 = 10, salary_y1 = 20,
@@ -207,6 +237,9 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
         viable <- viable[includes_star]
       }
     }
+    actual_impact <- sum(model$lineup_numeric_col(actual, "total", -99))
+    best_impact <- max(candidates$total_sum[viable])
+    stopifnot(actual_impact >= best_impact - model$lineup_impact_tolerance() - 1e-6)
   }
   message("Generated lineup positional audits passed: ", length(groups), " team/season/scenario groups.")
 }

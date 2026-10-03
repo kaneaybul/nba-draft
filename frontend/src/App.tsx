@@ -1904,7 +1904,7 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
         <section>
           <div className="section-heading-row">
             <h3>Starting Five</h3>
-            <span>Ball handler · guard · wing · forward · big; stars prioritized, then skill fit</span>
+            <span>Balanced roles · stars prioritized · skill fit within 0.5 impact points of the strongest five</span>
           </div>
           {starters.some((row) => row.lineup_position_fallback) && (
             <p>This roster needs a positional compromise to fill all five roles.</p>
