@@ -4407,6 +4407,22 @@ append_unscheduled_cup_placeholders <- function(schedules, rating_rows) {
   schedules[order(schedules$season, schedules$date, schedules$time, schedules$game_id), , drop = FALSE]
 }
 
+read_schedule_cache <- function(path) {
+  header <- names(read.csv(path, nrows = 0L, stringsAsFactors = FALSE, check.names = FALSE, fill = TRUE))
+  required <- c("season", "season_type", "date", "home_team", "away_team")
+  if (!all(required %in% header)) stop("Schedule cache is missing required columns.")
+  classes <- setNames(rep(NA_character_, length(header)), header)
+  if ("game_id" %in% header) classes[["game_id"]] <- "character"
+  schedules <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE, fill = TRUE, colClasses = classes)
+  seasons <- suppressWarnings(as.integer(schedules$season))
+  dates <- suppressWarnings(as.Date(schedules$date, format = "%Y-%m-%d"))
+  if (any(!is.finite(seasons)) || any(is.na(dates)) || any(!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", schedules$date))) {
+    stop("Schedule cache contains incomplete or invalid season/date records.")
+  }
+  schedules$season <- seasons
+  schedules
+}
+
 build_team_schedules <- function(teams) {
   schedule_dir <- file.path(resolve_base_dir(), "processed", "livedata", "schedules")
   options(bref_schedule_cache_dir = file.path(schedule_dir, "bref_html"))
@@ -4415,7 +4431,7 @@ build_team_schedules <- function(teams) {
   if (!length(seasons)) return(bref_schedule_empty())
   force_refresh <- tolower(Sys.getenv("NBA_REFRESH_SCHEDULES", "false")) %in% c("1", "true", "yes")
   if (file.exists(schedule_cache) && !force_refresh) {
-    schedules <- read.csv(schedule_cache, stringsAsFactors = FALSE, check.names = FALSE, fill = TRUE)
+    schedules <- read_schedule_cache(schedule_cache)
   } else {
     schedules <- do.call(rbind, lapply(seasons, function(season) {
       regular <- normalize_schedule_columns(parse_bref_schedule(

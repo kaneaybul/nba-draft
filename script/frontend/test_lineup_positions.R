@@ -102,6 +102,19 @@ rows <- data.frame(year = 2027L, contract_y1 = 10, contract_y2 = 20, contract_st
 shifted <- model$shift_future_columns(rows, data.frame())
 stopifnot(shifted$contract_y1 == 20, shifted$contract_status_y1 == "Team Option")
 
+# Official game IDs retain leading zeroes, and truncated cached rows cannot
+# silently corrupt season grouping during a roster-dependent data export.
+schedule_fixture <- tempfile(fileext = ".csv")
+writeLines(c('season,season_type,date,home_team,away_team,game_id',
+  '2027,Regular Season,2026-10-20,DET,BOS,0022600001'), schedule_fixture)
+cached <- model$read_schedule_cache(schedule_fixture)
+stopifnot(identical(cached$game_id, "0022600001"), cached$season == 2027L)
+writeLines(c('season,season_type,date,home_team,away_team,game_id',
+  '... bytes omitted ...'), schedule_fixture)
+invalid_cache <- try(model$read_schedule_cache(schedule_fixture), silent = TRUE)
+stopifnot(inherits(invalid_cache, "try-error"))
+unlink(schedule_fixture)
+
 # Exercise the real HTML parser with a shifted season, extra future columns,
 # header descriptions, a two-way player and a rookie hold.
 if (requireNamespace("rvest", quietly = TRUE) && requireNamespace("xml2", quietly = TRUE)) {
