@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-03T21:25:14.784Z",
+  "generated_at": "2026-10-03T21:51:02.985Z",
   "source_policy": "Public sources first: RealGM roster/transaction corrections, local databallr contract salaries, Basketball-Reference contract option markers, Spotrac as validation only.",
   "notes": [
     "This file is a frontend/offseason truth overlay; impact projections remain intact.",
@@ -2244,7 +2244,7 @@
       "guaranteed_salary": 14898786,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
+      "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Early Bird Rights",
@@ -9274,7 +9274,7 @@
       "guaranteed_salary": 2296271,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
+      "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "second-round-exception",
