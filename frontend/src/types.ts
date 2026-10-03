@@ -306,6 +306,9 @@ export type TeamLineupRow = {
   role_band_minutes: number;
   lineup_rank: number;
   is_starter: boolean;
+  lineup_position?: "PG" | "SG" | "SF" | "PF" | "C" | null;
+  lineup_position_fallback?: boolean;
+  lineup_star_lock_relaxed?: boolean;
   nba_id: number;
   player_name: string;
   position: string;

@@ -59,6 +59,7 @@ jobs:
           if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
 
       - name: Scrape all 30 Spotrac rosters
+        # Keep the Spotrac-only refresh; season headers and lineup roles are audited.
         run: Rscript script/data/pull_spotrac_current_rosters.R
 
       - name: Require a fresh complete scrape
@@ -84,8 +85,13 @@ jobs:
       - name: Export roster-dependent frontend data
         run: Rscript script/frontend/export_frontend_data.R
 
+      - name: Verify positional lineups and contract-season alignment
+        run: Rscript script/frontend/test_lineup_positions.R
+
       - name: Validate frontend data
-        run: npm run validate:data
+        run: |
+          npm run validate:data
+          npm run validate:schedule
         working-directory: frontend
 
       - name: Run roster-sensitive regressions

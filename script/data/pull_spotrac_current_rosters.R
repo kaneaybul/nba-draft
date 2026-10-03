@@ -73,7 +73,7 @@ infer_roster_year <- function(base_dir) {
 }
 
 season_labels <- function(roster_year) {
-  starts <- roster_year:(roster_year + 4L)
+  starts <- roster_year:(roster_year + 6L)
   paste0(starts - 1L, "-", substr(starts, 3, 4))
 }
 
@@ -205,6 +205,16 @@ empty_rows <- function() {
 }
 
 parse_section_table <- function(table_node, section, team_name, abbr, source_url, scraped_at, labels) {
+  headers <- clean_cell(rvest::html_text2(rvest::html_elements(table_node, "thead tr:last-child th")))
+  season_headers <- vapply(headers, function(header) {
+    hit <- regmatches(header, regexpr("[0-9]{4}-[0-9]{2}", header))
+    if (length(hit)) hit else ""
+  }, character(1))
+  source_seasons <- season_headers[nzchar(season_headers)]
+  if (!length(source_seasons) || !any(labels %in% source_seasons)) {
+    stop("No matching season headers for ", section, " at ", source_url)
+  }
+  season_columns <- match(labels, season_headers)
   body_rows <- rvest::html_elements(table_node, "tbody tr")
   if (!length(body_rows)) return(empty_rows())
   out <- lapply(seq_along(body_rows), function(i) {
@@ -231,8 +241,8 @@ parse_section_table <- function(table_node, section, team_name, abbr, source_url
       tolower(gsub("[^a-z0-9]+", "_", section))
     }
     season_values <- rep("", length(labels))
-    raw_seasons <- cell_text[seq.int(4, min(length(cell_text), 3 + length(labels)))]
-    season_values[seq_along(raw_seasons)] <- raw_seasons
+    present <- !is.na(season_columns) & season_columns <= length(cell_text)
+    season_values[present] <- cell_text[season_columns[present]]
     names(season_values) <- labels
     data.frame(
       team = team_name,
@@ -245,6 +255,7 @@ parse_section_table <- function(table_node, section, team_name, abbr, source_url
       pos = if (is_roster_charge) "" else cell_text[[2]],
       age = if (is_roster_charge) NA_real_ else suppressWarnings(as.numeric(cell_text[[3]])),
       source_url = source_url,
+      source_first_season = source_seasons[[1]],
       scraped_at = scraped_at,
       guarantee_capture_status = "not_attempted_hover_only",
       trade_marker = marker,
@@ -496,11 +507,19 @@ match_spotrac_players <- function(wide, universe, aliases) {
   wide
 }
 
+spotrac_current_season_cells <- function(wide, labels) {
+  vapply(seq_len(nrow(wide)), function(i) {
+    label <- if ("source_first_season" %in% names(wide)) wide$source_first_season[[i]] else labels[[1]]
+    if (!(label %in% names(wide))) return("")
+    as.character(wide[[label]][[i]])
+  }, character(1))
+}
+
 classify_rookie_cap_holds <- function(wide, labels) {
   if (!nrow(wide) || !length(labels)) return(wide)
   first_label <- labels[[1]]
   if (!(first_label %in% names(wide))) return(wide)
-  current_status <- mapply(parse_status, as.character(wide[[first_label]]), wide$section, USE.NAMES = FALSE)
+  current_status <- mapply(parse_status, spotrac_current_season_cells(wide, labels), wide$section, USE.NAMES = FALSE)
   rookie_hold <- wide$roster_state == "cap_hold" & current_status == "Rookie FA"
   wide$roster_state[rookie_hold] <- "rookie_cap_hold"
   wide
@@ -511,7 +530,7 @@ build_current_roster_truth <- function(wide, roster_year, labels) {
   wide <- wide[wide$entity_type == "player", , drop = FALSE]
   if (!nrow(wide)) return(data.frame())
   first_label <- labels[[1]]
-  wide$current_status <- mapply(parse_status, as.character(wide[[first_label]]), wide$section, USE.NAMES = FALSE)
+  wide$current_status <- mapply(parse_status, spotrac_current_season_cells(wide, labels), wide$section, USE.NAMES = FALSE)
   wide$current_status <- ifelse(
     wide$roster_state %in% c("active", "active_pending_done") & (is.na(wide$current_status) | wide$current_status %in% c("Cap Hold", "UFA", "RFA")),
     "Signed",

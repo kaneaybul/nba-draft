@@ -1904,8 +1904,11 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
         <section>
           <div className="section-heading-row">
             <h3>Starting Five</h3>
-            <span>Top-three impact above +1.0 locked; then fewest gaps; ordered PG → C</span>
+            <span>Ball handler · guard · wing · forward · big; stars prioritized, then skill fit</span>
           </div>
+          {starters.some((row) => row.lineup_position_fallback) && (
+            <p>This roster needs a positional compromise to fill all five roles.</p>
+          )}
           <div className="starter-card-grid">
             {orderedStarters.map((row) => (
               <StartingLineupCard key={`${row.scenario_id ?? "base"}-${row.team}-${row.role_order}-${row.nba_id}`} row={row} player={playerMap.get(`${row.nba_id}-${row.team}`) ?? playerMap.get(`${row.nba_id}`)} />
@@ -1926,6 +1929,7 @@ function StartingLineupsWorkspace({ data, season }: { data: AppData; season: num
 }
 
 function startingLineupPositionCenter(row: TeamLineupRow, player?: PlayerImpact): number {
+  if (row.lineup_position) return ["PG", "SG", "SF", "PF", "C"].indexOf(row.lineup_position) + 1;
   if (player) {
     const shares = lineupPositionShares(player);
     return shares.pg + shares.sg * 2 + shares.sf * 3 + shares.pf * 4 + shares.c * 5;
@@ -1940,7 +1944,7 @@ function StartingLineupCard({ row, player }: { row: TeamLineupRow; player?: Play
       <div className="starter-card-top">
         {player ? <PlayerHeadshot player={player} /> : <span className="player-headshot">{row.player_name.slice(0, 2).toUpperCase()}</span>}
         <div>
-          <span>{row.role_label} / {displayPosition(row.position)}</span>
+          <span>{row.lineup_position ? `${row.lineup_position} role${row.lineup_position_fallback ? " (fill-in)" : ""}` : row.role_label} / {displayPosition(row.position)}</span>
           <strong>{row.player_name}</strong>
         </div>
       </div>

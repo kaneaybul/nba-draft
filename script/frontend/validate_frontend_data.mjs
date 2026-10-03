@@ -181,8 +181,18 @@ function validateStartingLineupImpactFloor(manifest) {
         .slice(0, 3);
       const starterIds = new Set(group.filter((row) => row.role_type === "Starter").map((row) => row.nba_id));
       const missing = required.filter((row) => !starterIds.has(row.nba_id));
+      const starters = group.filter((row) => row.role_type === "Starter");
+      const hasPositionRoles = starters.some((row) => row.lineup_position);
+      if (hasPositionRoles) {
+        const slots = starters.map((row) => row.lineup_position);
+        assert(slots.every((slot) => ["PG", "SG", "SF", "PF", "C"].includes(slot)), `Invalid lineup role in ${key}`);
+        assert(new Set(slots).size === slots.length, `Duplicated lineup role in ${key}`);
+        assert(starters.length === Math.min(5, group.length), `Incorrect starter count in ${key}`);
+        assert(starters.every((row) => typeof row.lineup_position_fallback === "boolean"), `Missing positional fit status in ${key}`);
+        assert(starters.every((row) => row.lineup_star_lock_relaxed === (missing.length > 0)), `Incorrect star-lock status in ${key}`);
+      }
       assert(
-        missing.length === 0,
+        missing.length === 0 || (hasPositionRoles && starters.every((row) => row.lineup_star_lock_relaxed)),
         `Starting lineup omits top-three +1.0 impact player for ${key}: ${missing.map((row) => row.player_name).join(", ")}`
       );
     }

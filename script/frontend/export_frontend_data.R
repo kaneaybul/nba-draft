@@ -1554,6 +1554,7 @@ shift_future_columns <- function(rows, cap_assumptions, shift_contract_columns =
   if (isTRUE(shift_contract_columns)) {
     projection_groups <- c(
       projection_groups,
+      "contract_y", "contract_status_y",
       "projection_contract_y", "projection_effective_contract_y",
       "projection_contract_status_y", "projection_contract_source_y"
     )
@@ -1689,7 +1690,12 @@ build_rookie_2027_rows <- function(template, base_dir, cap_assumptions, impact_r
   spotrac_contracts <- read_spotrac_contracts(base_dir, target_year - 1L)
   if (nrow(spotrac_contracts)) {
     spotrac_match <- match(suppressWarnings(as.integer(rows$nba_id)), suppressWarnings(as.integer(spotrac_contracts$nba_id)))
-    spotrac_salary_y0 <- suppressWarnings(as.numeric(spotrac_contracts$salary_y0[spotrac_match]))
+    salary_horizon <- target_year - suppressWarnings(as.integer(spotrac_contracts$source_contract_year[spotrac_match]))
+    spotrac_salary_y0 <- vapply(seq_along(spotrac_match), function(i) {
+      col <- paste0("salary_y", salary_horizon[[i]])
+      if (is.na(spotrac_match[[i]]) || !(col %in% names(spotrac_contracts))) return(NA_real_)
+      suppressWarnings(as.numeric(spotrac_contracts[[col]][spotrac_match[[i]]]))
+    }, numeric(1))
     has_positive_spotrac_contract <- !is.na(spotrac_match) & is.finite(spotrac_salary_y0) & spotrac_salary_y0 > 0
     has_spotrac_zero_or_positive <- !is.na(spotrac_match) & is.finite(spotrac_salary_y0) & spotrac_salary_y0 >= 0
     missing_contract <- !is.finite(suppressWarnings(as.numeric(rows$contract))) | suppressWarnings(as.numeric(rows$contract)) <= 0
@@ -1796,6 +1802,69 @@ lineup_group_year <- function(df) {
   if (length(year)) year[[1]] else NA_integer_
 }
 
+lineup_position_eligibility <- function(df) {
+  shares <- normalize_position_share_matrix(df[, intersect(position_share_columns(), names(df)), drop = FALSE], df$position)
+  pg <- shares[, "pg_share"]
+  sg <- shares[, "sg_share"]
+  sf <- shares[, "sf_share"]
+  pf <- shares[, "pf_share"]
+  center <- shares[, "c_share"]
+  passing <- lineup_numeric_col(df, "PASS", 0)
+  # Secondary positions count. Passing can qualify perimeter creators at PG;
+  # it cannot turn a passing center into a guard.
+  cbind(
+    PG = pg >= 0.20 | (pg + sg >= 0.50 & passing >= 0.50) |
+      (sf >= 0.20 & pg + sg + sf >= 0.50 & passing >= 1.50),
+    SG = pg + sg >= 0.50 | sg + sf >= 0.50,
+    SF = sg + sf >= 0.50 | sf >= 0.20,
+    PF = sf + pf >= 0.50 | pf >= 0.20 |
+      (center >= 0.50 & lineup_numeric_col(df, "SHOOT", 0) >= 0.50),
+    C = center >= 0.20 | (pf >= 0.50 &
+      (lineup_numeric_col(df, "RIMPRO", 0) >= 0.50 | lineup_numeric_col(df, "DREB", 0) >= 0.50))
+  )
+}
+
+lineup_position_shortfalls <- function(combos, eligibility) {
+  if (!nrow(combos)) return(integer())
+  shortfalls <- rep(0L, nrow(combos))
+  # Hall's matching condition checks all slot subsets. Counting a PG/SF
+  # player twice would otherwise make a guardless five appear balanced.
+  for (mask in seq_len(31L)) {
+    slots <- which(as.logical(intToBits(mask)[seq_len(5L)]))
+    covers <- rowSums(eligibility[, slots, drop = FALSE]) > 0
+    available <- rowSums(matrix(covers[as.vector(combos)], nrow = nrow(combos)))
+    shortfalls <- pmax(shortfalls, length(slots) - available)
+  }
+  as.integer(shortfalls)
+}
+
+assign_lineup_positions <- function(df) {
+  n <- nrow(df)
+  if (!n) return(character())
+  eligible <- lineup_position_eligibility(df)
+  shares <- normalize_position_share_matrix(df[, intersect(position_share_columns(), names(df)), drop = FALSE], df$position)
+  best <- integer()
+  best_missing <- Inf
+  best_share <- -Inf
+  visit <- function(assigned, available, missing, share) {
+    i <- length(assigned) + 1L
+    if (i > n) {
+      if (missing < best_missing || (missing == best_missing && share > best_share)) {
+        best <<- assigned
+        best_missing <<- missing
+        best_share <<- share
+      }
+      return(invisible(NULL))
+    }
+    for (slot in available) {
+      visit(c(assigned, slot), setdiff(available, slot),
+        missing + as.integer(!eligible[i, slot]), share + shares[i, slot])
+    }
+  }
+  visit(integer(), seq_len(5L), 0L, 0)
+  valid_positions()[best]
+}
+
 build_lineup_candidate_set <- function(df) {
   n <- nrow(df)
   if (!n) {
@@ -1804,6 +1873,7 @@ build_lineup_candidate_set <- function(df) {
       combos = matrix(integer(), nrow = 0, ncol = 0),
       skill_totals = matrix(numeric(), nrow = 0, ncol = length(lineup_skill_names()), dimnames = list(NULL, lineup_skill_names())),
       total_sum = numeric(),
+      position_shortfalls = integer(),
       required_starter_indices = integer(),
       lineup_size = 0L
     ))
@@ -1840,6 +1910,7 @@ build_lineup_candidate_set <- function(df) {
     combos = combos,
     skill_totals = skill_totals,
     total_sum = total_sum,
+    position_shortfalls = lineup_position_shortfalls(combos, lineup_position_eligibility(df)),
     required_starter_indices = required_starter_indices,
     lineup_size = lineup_size
   )
@@ -1924,13 +1995,18 @@ pick_lineup_starters <- function(candidate_set, benchmarks) {
   if (!nrow(candidate_set$combos)) return(integer())
   scored <- score_lineup_candidates(candidate_set, benchmarks)
   if (!nrow(scored)) return(candidate_set$combos[1L, ])
+  # Choose the most positionally complete fives before applying star locks.
+  # If a roster lacks a role, use the fewest necessary compromises.
+  shortfalls <- candidate_set$position_shortfalls
+  scored <- scored[shortfalls == min(shortfalls), , drop = FALSE]
   required_starter_indices <- candidate_set$required_starter_indices
   if (length(required_starter_indices)) {
-    eligible <- rep(TRUE, nrow(candidate_set$combos))
+    eligible <- scored$combo_index
     for (idx in required_starter_indices) {
-      eligible <- eligible & rowSums(candidate_set$combos == idx) > 0
+      includes_star <- rowSums(candidate_set$combos[eligible, , drop = FALSE] == idx) > 0
+      if (any(includes_star)) eligible <- eligible[includes_star]
     }
-    scored <- scored[eligible[scored$combo_index], , drop = FALSE]
+    scored <- scored[scored$combo_index %in% eligible, , drop = FALSE]
   }
   scored <- scored[order(
     scored$gaps,
@@ -1970,6 +2046,12 @@ estimate_team_lineup_rows <- function(df, candidate_set = NULL, benchmarks = NUL
   if (is.null(candidate_set)) candidate_set <- build_lineup_candidate_set(df)
   if (is.null(benchmarks)) benchmarks <- lineup_skill_benchmarks(list(candidate_set))
   starter_local_idx <- pick_lineup_starters(candidate_set, benchmarks)
+  starter_positions <- assign_lineup_positions(df[starter_local_idx, , drop = FALSE])
+  starter_position_map <- setNames(starter_positions, as.character(df$.lineup_row_id[starter_local_idx]))
+  starter_eligibility <- lineup_position_eligibility(df[starter_local_idx, , drop = FALSE])
+  fallback_map <- setNames(!starter_eligibility[cbind(seq_along(starter_local_idx), match(starter_positions, valid_positions()))],
+    as.character(df$.lineup_row_id[starter_local_idx]))
+  relaxed_star_lock <- any(!(candidate_set$required_starter_indices %in% starter_local_idx))
   starter_row_ids <- df$.lineup_row_id[starter_local_idx]
   starter_row_ids <- starter_row_ids[order(-df$.lineup_role_score[starter_local_idx], player_name[starter_local_idx], na.last = TRUE)]
   selected_ids <- integer()
@@ -2000,6 +2082,9 @@ estimate_team_lineup_rows <- function(df, candidate_set = NULL, benchmarks = NUL
     out_count <- out_count + 1L
     row$lineup_rank <- out_count
     row$is_starter <- row$role_type == "Starter"
+    row$lineup_position <- if (row$is_starter) unname(starter_position_map[as.character(picked_id)]) else NA_character_
+    row$lineup_position_fallback <- if (row$is_starter) unname(fallback_map[as.character(picked_id)]) else FALSE
+    row$lineup_star_lock_relaxed <- row$is_starter && relaxed_star_lock
     row$role_score <- round(df$.lineup_role_score[[picked]], 2)
     out[[out_count]] <- row
   }
@@ -2434,9 +2519,9 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     if ("OFF" %in% names(vets)) vets$OFF <- vets$skill_model_off
     if ("DEF" %in% names(vets)) vets$DEF <- vets$skill_model_def
     if ("TOTAL" %in% names(vets)) vets$TOTAL <- vets$skill_model_off + vets$skill_model_def
-    current_contract <- suppressWarnings(as.numeric(original$contract))
+    current_contract <- suppressWarnings(as.numeric(original$contract_y1))
     vets$contract <- ifelse(is.finite(current_contract) & current_contract > 0, current_contract, NA_real_)
-    current_status <- if ("contract_status" %in% names(original)) as.character(original$contract_status) else NA_character_
+    current_status <- if ("contract_status_y1" %in% names(original)) as.character(original$contract_status_y1) else NA_character_
     initial_status_team <- ifelse(!is.finite(vets$contract) | vets$contract <= 0, "FA", vets$team)
     vets$contract_status <- contract_status_from_salary(
       vets$contract,
@@ -2477,7 +2562,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     vets$availability_reason <- "Synthetic 2027 career projection"
     vets$skill_source <- "career_projection"
     vets$skill_source_year <- contract_year
-    vets <- shift_future_columns(vets, cap_assumptions, shift_contract_columns = FALSE)
+    vets <- shift_future_columns(vets, cap_assumptions)
     vets <- prune_low_impact_ufas(vets, "total")
   }
 
@@ -2738,16 +2823,11 @@ overlay_spotrac_contracts <- function(contracts, spotrac) {
       status <- if (status_col %in% names(spotrac)) as.character(spotrac[[status_col]][[i]]) else NA_character_
       has_status <- !is.na(status) && nzchar(trimws(status))
       has_amount <- is.finite(amount) && amount > 0
-      existing_amount <- suppressWarnings(as.numeric(contracts[[salary_col]][[idx]]))
-      existing_status <- if (status_col %in% names(contracts)) as.character(contracts[[status_col]][[idx]]) else NA_character_
-      has_existing_amount <- is.finite(existing_amount) && existing_amount > 0
-      has_existing_status <- !is.na(existing_status) && nzchar(trimws(existing_status))
-      is_fa_estimate <- has_status && status %in% c("UFA", "RFA") && !has_amount
       if (has_status || has_amount) {
         if (has_amount) {
           contracts[[salary_col]][[idx]] <- amount
           contracts[[status_col]][[idx]] <- normalize_spotrac_contract_status(status, amount)
-        } else if (!is_fa_estimate || (!has_existing_amount && !has_existing_status)) {
+        } else {
           contracts[[salary_col]][[idx]] <- NA_real_
           contracts[[status_col]][[idx]] <- normalize_spotrac_contract_status(status, amount)
         }
@@ -4021,6 +4101,9 @@ build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label
       role_band_minutes = numeric(),
       lineup_rank = integer(),
       is_starter = logical(),
+      lineup_position = character(),
+      lineup_position_fallback = logical(),
+      lineup_star_lock_relaxed = logical(),
       nba_id = integer(),
       player_name = character(),
       position = character(),
@@ -4052,7 +4135,7 @@ build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label
     "year", "team", "nba_id", "player_name", "position",
     "lineup_original_minutes", "lineup_adjusted_minutes", "Minutes", "games", "p_mpg",
     "offense", "defense", "total", "score", "tier", "contract_status",
-    lineup_skill_names(), ".lineup_row_id"
+    position_share_columns(), lineup_skill_names(), ".lineup_row_id"
   )
   x <- x[, intersect(lineup_cols, names(x)), drop = FALSE]
   grouped <- split(x, paste(x$year, x$team, sep = "||"))
@@ -4085,6 +4168,7 @@ build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label
     "scenario_id", "scenario_label", "year", "team", "team_name", "team_abbr", "team_logo_url", "conference",
     "role_order", "role_label", "role_type", "position_group", "role_band_minutes",
     "lineup_rank", "is_starter", "nba_id", "player_name", "position",
+    "lineup_position", "lineup_position_fallback", "lineup_star_lock_relaxed",
     "original_minutes", "adjusted_minutes", "minutes_delta", "games", "mpg",
     "offense", "defense", "total", "score", "tier", "role_score", "contract_status"
   )
