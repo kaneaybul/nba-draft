@@ -22,7 +22,7 @@ jobs:
       VITE_PUBLIC_READ_ONLY: "true"
       FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
       FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
-      SPOTRAC_HTML_SNAPSHOT_DIR: ${{ runner.temp }}/spotrac-snapshot
+      SPOTRAC_HTML_SNAPSHOT_DIR: /tmp/nba-impact-spotrac-snapshot
     steps:
       - uses: actions/checkout@v4
         with:
