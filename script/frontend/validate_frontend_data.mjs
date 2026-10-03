@@ -94,10 +94,12 @@ function validateRookieProjectionAssignments(manifest) {
       cleanTeam(row.incumbent_team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.market_team) === cleanTeam(row.roster_truth_team) &&
       cleanTeam(row.team_projection_base) === cleanTeam(row.roster_truth_team) &&
-      ["signed", "rookie_fa"].includes(row.projection_roster_status) &&
-      ["Signed", "Rookie FA", "Two-Way"].includes(row.contract_status) &&
+      (["signed", "rookie_fa"].includes(row.projection_roster_status) ||
+        (row.contract_status === "Non-Guaranteed" && row.projection_roster_status === "open_market")) &&
+      ["Signed", "Rookie FA", "Two-Way", "Non-Guaranteed"].includes(row.contract_status) &&
       (
         row.contract_status === "Two-Way" ||
+        (row.contract_status === "Non-Guaranteed" && row.contract == null) ||
         (row.contract !== null && row.contract !== undefined && Number(row.contract) >= 0)
       );
     const assigned = rookies.filter((row) => !teamControlledRookie(row) && (

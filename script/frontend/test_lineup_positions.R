@@ -101,6 +101,10 @@ model$cap_for_year <- function(...) 100
 rows <- data.frame(year = 2027L, contract_y1 = 10, contract_y2 = 20, contract_status_y1 = "Signed", contract_status_y2 = "Team Option")
 shifted <- model$shift_future_columns(rows, data.frame())
 stopifnot(shifted$contract_y1 == 20, shifted$contract_status_y1 == "Team Option")
+stopifnot(scraper$parse_status("Exhibit 10", "Active Roster") == "Non-Guaranteed")
+stopifnot(scraper$contract_status_from_spotrac_cell("Exhibit 9", "Active Roster") == "Non-Guaranteed")
+stopifnot(is.na(scraper$contract_amount_from_spotrac_cell("Exhibit 10", "Active Roster")))
+stopifnot(model$projection_roster_status("Non-Guaranteed", NA_real_) == "open_market")
 
 # Official game IDs retain leading zeroes, and truncated cached rows cannot
 # silently corrupt season grouping during a roster-dependent data export.
