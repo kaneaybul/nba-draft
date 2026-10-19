@@ -23,6 +23,7 @@ espn_rows <- scraper$espn_roster_rows(espn_fixture, data.frame(team = "New Orlea
 espn_rows$nba_id <- seq_len(10)
 espn_rows$name_key <- scraper$normalize_name(espn_rows$player_or_entity)
 stopifnot(nrow(espn_rows) == 10L, all(espn_rows$source_first_season == "2026-27"))
+stopifnot("name_key" %in% names(espn_rows), all(espn_rows$name_key == scraper$normalize_name(espn_rows$player_or_entity)))
 stopifnot(!nrow(scraper$build_spotrac_contract_export(espn_rows, 2026L, scraper$season_labels(2026L))))
 espn_truth <- scraper$build_current_roster_truth(espn_rows, 2026L, scraper$season_labels(2026L))
 stopifnot(all(espn_truth$team == "NOP"), all(espn_truth$roster_source == "ESPN Active Roster"))

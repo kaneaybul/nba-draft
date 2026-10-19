@@ -303,6 +303,7 @@ espn_roster_rows <- function(payload, team_row, labels, source_url, pulled_at) {
   out <- do.call(rbind, rows)
   if (anyDuplicated(normalize_name(out$player_or_entity))) stop("Duplicate names in ESPN roster fallback.")
   for (label in labels) out[[label]] <- ""
+  out$name_key <- normalize_name(out$player_or_entity)
   out
 }
 
