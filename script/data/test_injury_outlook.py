@@ -83,6 +83,11 @@ class InjuryOutlookTests(unittest.TestCase):
         games = [dict(date=d, id=str(i)) for i, d in enumerate(["2026-10-21", "2026-10-23", "2026-10-24", "2026-10-27"])]
         self.assertEqual(calculate_absence(row, games, self.today)["games_missed_expected"], 2)
 
+    def test_next_games_are_anchored_to_report_not_season_start(self):
+        row = self.parse("He will miss at least the next five games.")
+        absence = calculate_absence(row, [], self.today, completed=30, completed_since_report=2)
+        self.assertEqual(absence["games_missed_min"], 3)
+
     def test_incomplete_schedule_fails(self):
         with self.assertRaisesRegex(ValueError, "Incomplete"):
             schedule_games(dict(season=dict(year=2027), events=[]), 2027, datetime.now(timezone.utc))

@@ -68,7 +68,7 @@ def parse_timeline(injury, season, today):
         provider = None
     stale = (today - report).days > 30
     result = dict(return_earliest=None, return_expected=None, return_latest=None,
-                  reevaluation_date=None, reevaluation_latest=None, minimum_games=None,
+                  reevaluation_date=None, reevaluation_latest=None, minimum_games=None, minimum_games_from_start=False,
                   provider_return_date=provider.isoformat() if provider else None,
                   basis="unknown", confidence="low", season_ending=False,
                   stale_report=stale, timeline_note="Return timetable unknown.")
@@ -125,6 +125,7 @@ def parse_timeline(injury, season, today):
                           confidence="medium", timeline_note="Reported minimum absence; later return possible." if minimum else "Reported absence duration, measured from the report date.")
         elif duration:
             result.update(minimum_games=number(duration["lo"].lower()), basis="reported_games", confidence="medium",
+                          minimum_games_from_start=bool(re.search(r"\bfirst\b", duration[0], re.I)),
                           timeline_note="Reported minimum games missed; no confirmed return date.")
 
     no_timetable = re.search(r"(?:without|no|doesn.t have|hasn.t (?:set|provided))\s+(?:(?:a|any|definitive|firm|clear|set|specific|official)\s+)*(?:return\s+)?(?:timetable|timeline)|return (?:timetable|timeline)\s+(?:is\s+)?(?:unclear|unknown)", text, re.I)
@@ -163,7 +164,7 @@ def schedule_games(payload, season, now):
     return sorted(games, key=lambda x: (x["date"], x["id"])), completed, max(0, 82 - len(events))
 
 
-def calculate_absence(timeline, games, today, completed=0):
+def calculate_absence(timeline, games, today, completed=0, completed_since_report=0):
     def count_until(value):
         return sum(g["date"] < value for g in games) if value else None
     def days_until(value):
@@ -172,8 +173,9 @@ def calculate_absence(timeline, games, today, completed=0):
     if timeline["season_ending"]:
         low = expected = high = max(0, 82 - completed)
     if timeline["minimum_games"] is not None:
-        # 'First five games' does not reset after each refresh.
-        low = max(low or 0, max(0, timeline["minimum_games"] - completed))
+        # Opening games count from season start; 'next N' counts from the report.
+        elapsed_games = completed if timeline["minimum_games_from_start"] else completed_since_report
+        low = max(low or 0, max(0, timeline["minimum_games"] - elapsed_games))
     if expected is not None and low is not None:
         expected = max(low, expected)
     return dict(days_remaining_min=days_until(timeline["return_earliest"]),
@@ -215,13 +217,18 @@ def build_outlook(feed, schedules, now):
         for injury in group.get("injuries", []):
             athlete = injury["athlete"]
             timeline = parse_timeline(injury, season, today)
+            report_time = iso_datetime(injury["date"])
+            completed_since_report = len({str(event["id"]) for event in schedules[team].get("events", [])
+                if int(event.get("seasonType", {}).get("type", 0)) == 2
+                and event.get("competitions", [{}])[0].get("status", {}).get("type", {}).get("completed", False)
+                and iso_datetime(event["date"]) >= report_time})
             link = next((x["href"] for x in athlete.get("links", []) if "news" in x.get("rel", []) and x["href"].startswith("https://")), "https://www.espn.com/nba/injuries")
             row = dict(player_name=athlete["displayName"], name_key=name_key(athlete["displayName"]),
                        team=team, season=season, status=injury["status"],
                        injury_type=(injury.get("details") or {}).get("type", "Undisclosed"),
                        report_date=injury["date"], source="ESPN / RotoWire", source_url=link,
                        schedule_games_remaining=len(games), schedule_games_tbd=tbd,
-                       **timeline, **calculate_absence(timeline, games, today, completed))
+                       **timeline, **calculate_absence(timeline, games, today, completed, completed_since_report))
             key = (team, row["name_key"])
             if key not in rows or row["report_date"] > rows[key]["report_date"]:
                 rows[key] = row
