@@ -227,6 +227,9 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
   }
   scenario_pools <- setNames(lapply(unique(lineups$scenario_id), function(scenario) {
     assigned <- model$assign_team_projection_scenario(players, scenario)
+    if ("injury_availability" %in% names(assigned)) {
+      assigned <- assigned[is.na(assigned$injury_availability) | assigned$injury_availability > 0, , drop = FALSE]
+    }
     split(assigned, paste(assigned$year, assigned$team, sep = "||"))
   }), unique(lineups$scenario_id))
   groups <- split(lineups, paste(lineups$scenario_id, lineups$year, lineups$team, sep = "||"))

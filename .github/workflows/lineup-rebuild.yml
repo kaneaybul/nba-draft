@@ -9,6 +9,8 @@ on:
       - .github/workflows/lineup-rebuild.yml
       - script/frontend/export_frontend_data.R
       - script/frontend/test_lineup_positions.R
+      - script/frontend/injury_projections.R
+      - script/frontend/test_injury_projections.R
 
 # Serialize data commits with a deliberate roster refresh.
 concurrency:
@@ -65,11 +67,19 @@ jobs:
         run: |
           sha256sum processed/livedata/impactrefresh/current_rosters_2026.csv processed/livedata/impactrefresh/contracts_2026_spotrac.csv processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv processed/livedata/schedules/bref_team_schedules.csv > "$RUNNER_TEMP/nba-lineup-inputs.sha256"
 
-      - name: Rebuild lineups from cached roster and model inputs
+      - name: Refresh and test injury outlook before projecting minutes
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
+          python3 script/data/refresh_injury_outlook.py
+
+      - name: Rebuild projections from cached rosters and fresh injuries
         run: Rscript script/frontend/export_frontend_data.R
 
       - name: Verify positional lineups and contract-season alignment
         run: Rscript script/frontend/test_lineup_positions.R
+
+      - name: Verify injury minutes and game forecasts
+        run: Rscript script/frontend/test_injury_projections.R --require-export
 
       - name: Validate frontend data
         run: |
@@ -107,3 +117,4 @@ jobs:
             git commit -m "Rebuild NBA lineup projections"
             git push origin HEAD:main
           fi
+

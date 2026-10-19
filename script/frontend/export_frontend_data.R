@@ -4142,6 +4142,9 @@ build_team_lineups_for_scenario <- function(players, scenario_id, scenario_label
 
   players <- assign_team_projection_scenario(players, scenario_id)
   x <- players[players$team != "FA" & !is.na(players$team), , drop = FALSE]
+  if ("injury_availability" %in% names(x)) {
+    x <- x[is.na(x$injury_availability) | x$injury_availability > 0, , drop = FALSE]
+  }
   if (!nrow(x)) return(empty())
   x$team <- normalize_team(x$team)
   x$.lineup_row_id <- seq_len(nrow(x))
@@ -5141,13 +5144,20 @@ build_draft_tracker <- function(base_dir) {
 base_dir <- resolve_base_dir()
 source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = FALSE)
+source(file.path(base_dir, "script", "frontend", "injury_projections.R"), local = FALSE)
 out_dir <- file.path(base_dir, "frontend", "public", "data")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 players <- with_frontend_timing(base_dir, "frontend_export", "build_impact_players", build_impact_players(base_dir))
+injury_outlook <- read_injury_projection_outlook(base_dir)
+healthy_teams <- with_frontend_timing(base_dir, "frontend_export", "build_baseline_teams", build_team_projections(players))
+schedules <- with_frontend_timing(base_dir, "frontend_export", "build_team_schedules", build_team_schedules(healthy_teams))
+injury_projections <- with_frontend_timing(base_dir, "frontend_export", "apply_injury_projections",
+  apply_injury_projections(players, schedules, injury_outlook))
+players <- injury_projections$players
+schedules <- injury_projections$schedules
 teams <- with_frontend_timing(base_dir, "frontend_export", "build_team_projections", build_team_projections(players))
 team_lineups <- with_frontend_timing(base_dir, "frontend_export", "build_team_lineups", build_team_lineups(players))
-schedules <- with_frontend_timing(base_dir, "frontend_export", "build_team_schedules", build_team_schedules(teams))
 teams <- with_frontend_timing(base_dir, "frontend_export", "apply_schedule_projections", apply_schedule_projections(teams, schedules))
 picks <- with_frontend_timing(base_dir, "frontend_export", "build_pick_assets", build_pick_assets(base_dir, players))
 latest_impact_year <- max(suppressWarnings(as.integer(players$skill_source_year)), na.rm = TRUE)
@@ -5294,3 +5304,4 @@ message("Rows: players=", nrow(players), ", teams=", nrow(teams), ", draft=", nr
 if (!identical(tolower(Sys.getenv("FRONTEND_REFRESH_SUPPRESS_EXPORT_SUMMARY", "false")), "true")) {
   print_frontend_timing_summary(base_dir)
 }
+

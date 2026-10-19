@@ -65,6 +65,16 @@ export type PlayerImpact = {
   yoe?: number | null;
   games?: number | null;
   Minutes: number;
+  injury_base_minutes?: number | null;
+  injury_base_games?: number | null;
+  injury_availability?: number | null;
+  injury_games_missed?: number | null;
+  injury_minutes_lost?: number | null;
+  injury_minutes_delta?: number | null;
+  injury_projection_note?: string | null;
+  injury_projection_basis?: string | null;
+  injury_projection_as_of?: string | null;
+  injury_source_url?: string | null;
   p_mpg?: number | null;
   p_usg?: number | null;
   o_epm?: number | null;

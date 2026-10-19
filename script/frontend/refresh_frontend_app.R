@@ -177,12 +177,12 @@ run_script(base_dir, "Refresh contract data", file.path("script", "data", "pull_
 run_node_script(base_dir, "Build cap transaction review", file.path("script", "frontend", "build_cap_transaction_review.mjs"))
 run_script(base_dir, "Refresh salary cap assumptions", file.path("script", "data", "pull_salary_cap_assumptions.R"))
 run_script(base_dir, "Score career projections", file.path("script", "models", "score_career_projection_models.R"))
-run_script(base_dir, "Export frontend data", file.path("script", "frontend", "export_frontend_data.R"))
 injury_python <- Sys.which("python3")
 if (!nzchar(injury_python)) injury_python <- Sys.which("python")
 if (!nzchar(injury_python)) stop("Python 3 is required to refresh the injury outlook.")
 injury_status <- system2(injury_python, shQuote(file.path(base_dir, "script", "data", "refresh_injury_outlook.py")))
 if (!identical(injury_status, 0L)) stop("Injury outlook refresh failed; the previous snapshot was preserved.")
+run_script(base_dir, "Export frontend data", file.path("script", "frontend", "export_frontend_data.R"))
 run_node_script(base_dir, "Build Spotrac cap tracker", file.path("script", "frontend", "build_cap_tracker_spotrac_data.mjs"))
 run_node_script(base_dir, "Refresh static data manifest", file.path("script", "frontend", "build_static_data_manifest.mjs"))
 

@@ -35,6 +35,7 @@ function main() {
 
   validateRowCounts(manifest);
   validateInjuryOutlook(manifest);
+  validateInjuryProjectionIntegration(manifest);
   validateInitialPayload(manifest);
   validateRosterTruthPlacements(manifest);
   validateStartingLineupImpactFloor(manifest);
@@ -72,6 +73,36 @@ function collectManifestFiles(manifest) {
     for (const shard of dataset.shards ?? []) files.add(shard.file);
   }
   return Array.from(files);
+}
+
+function validateInjuryProjectionIntegration(manifest) {
+  const injuryFile = manifest.static_data.datasets.injury_outlook?.file;
+  if (!injuryFile) return;
+  const outlook = readJson(path.join(dataDir, injuryFile));
+  const shard = manifest.static_data.datasets.impact_players?.shards?.find((row) => Number(row.year ?? row.key) === outlook.season);
+  if (!shard) return;
+  const players = readJson(path.join(dataDir, shard.file));
+  // Compatibility with pre-integration snapshots; the export regression requires
+  // these fields on every newly generated forecast.
+  if (!players.some((row) => row.injury_base_minutes != null)) return;
+  const budgets = new Map();
+  for (const row of players.filter((p) => ["projected", "rookie_projection"].includes(p.availability_status))) {
+    assert(row.injury_projection_as_of === outlook.generated_at, `Injury/minutes snapshot mismatch: ${row.player_name}`);
+    assert(Number.isFinite(row.injury_availability) && row.injury_availability >= 0 && row.injury_availability <= 1, `Invalid availability: ${row.player_name}`);
+    assert(Number.isFinite(row.Minutes) && row.Minutes >= 0 && row.games >= 0 && row.games <= row.injury_base_games + 0.001, `Invalid injury-adjusted workload: ${row.player_name}`);
+    assert(row.injury_availability !== 0 || row.Minutes === 0, `Unavailable player has projected minutes: ${row.player_name}`);
+    const team = cleanTeam(row.team_projection_base || row.team);
+    if (team !== "FA") budgets.set(team, (budgets.get(team) ?? 0) + row.Minutes);
+  }
+  for (const [team, minutes] of budgets) assert(minutes <= 19680.01, `Injury-adjusted minutes exceed team budget: ${team} ${minutes}`);
+  const scheduleShard = manifest.static_data.datasets.team_schedules?.shards?.find((row) => Number(row.year ?? row.key) === outlook.season);
+  if (!scheduleShard) return;
+  for (const row of readJson(path.join(dataDir, scheduleShard.file)).filter((game) => game.injury_adjusted)) {
+    assert(!row.is_completed && row.injury_projection_as_of === outlook.generated_at, `Invalid dated injury forecast: ${row.game_id}`);
+    assert(Number.isFinite(row.home_projected_rating) && Number.isFinite(row.away_projected_rating), `Missing dated injury rating: ${row.game_id}`);
+    assert(row.home_win_probability >= 0 && row.home_win_probability <= 1, `Invalid injury-adjusted odds: ${row.game_id}`);
+    if (!row.is_placeholder) assert(Math.abs(row.home_win_probability + row.away_win_probability - 1) < 1e-6, `Injury-adjusted odds do not sum to one: ${row.game_id}`);
+  }
 }
 
 function validateRowCounts(manifest) {
@@ -137,7 +168,7 @@ function validateRookieProjectionAssignments(manifest) {
       row.contract_status !== "Rookie FA"
     ));
     assert(assigned.length === 0, `Rookie projections must remain unassigned or explicit team-controlled rookie rows in ${season}: ${assigned.slice(0, 5).map((row) => row.player_name).join(", ")}`);
-    const missingMinutes = rookies.filter((row) => !(Number(row.Minutes) > 0));
+    const missingMinutes = rookies.filter((row) => !(Number(row.Minutes) > 0) && row.injury_availability !== 0);
     assert(missingMinutes.length === 0, `Rookie projections must keep positive minutes in ${season}: ${missingMinutes.slice(0, 5).map((row) => row.player_name).join(", ")}`);
   }
 }

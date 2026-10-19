@@ -1458,7 +1458,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
       </div>
 
       <div className="dp-body">
-        <PlayerInjuryNote injury={injuryForPlayer(player, injuryOutlook)} />
+        <PlayerInjuryNote injury={injuryForPlayer(player, injuryOutlook)} player={player} />
         {player.availability_status === "DNQ" && (
           <p className="availability-note">
             {player.availability_reason || "DNQ"} / skills from {player.skill_source_year ?? "-"}
@@ -1643,6 +1643,7 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
     }
   };
   const seasonGames = Math.max(82, Number(currentTeam.projected_wins ?? 0) + Number(currentTeam.projected_losses ?? 0));
+  const injuryAdjusted = data.players.some((player) => player.year === season && player.injury_projection_as_of != null);
 
   return (
     <main className="workspace team-board-workspace">
@@ -1650,7 +1651,9 @@ function TeamWorkspace({ data, season }: { data: AppData; season: number }) {
         <div className="panel-heading">
           <div>
             <h2>Team Projections</h2>
-            <p>{currentTeam.schedule_adjusted
+            <p>{injuryAdjusted
+              ? "Injury-adjusted minutes and dated game odds; NBA Cup TBD slots use conference-field expected value"
+              : currentTeam.schedule_adjusted
               ? "Actual schedule-adjusted wins; NBA Cup TBD slots use conference-field expected value"
               : "Minute-share ratings under base roster assumptions"}</p>
           </div>
