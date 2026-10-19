@@ -142,10 +142,10 @@ allocate_injury_rotation <- function(players, availability) {
   games[!is.finite(games)] <- 0
   mpg <- ifelse(games > 0, minutes / games, 0)
   availability <- pmax(0, pmin(1, availability))
-  adjusted <- minutes * availability
+  adjusted <- pmin(minutes, games * 36) * availability
   # Replacement opportunity can increase a player's usual workload by at most
   # six minutes per expected appearance, with the model's existing 36-MPG cap.
-  capacity <- pmax(adjusted, games * availability * pmin(pmax(36, mpg), mpg + 6))
+  capacity <- games * availability * pmin(36, mpg + 6)
   groups <- split(seq_len(nrow(players)), players$team)
   shares <- injury_position_shares(players)
   for (indices in groups) {
@@ -276,8 +276,7 @@ apply_injury_projections <- function(players, schedules, outlook) {
   adjusted_minutes[active] <- total_minutes[active] / count[active]
   adjusted_games[active] <- round(total_games[active] / count[active], 3)
   availability[active] <- total_availability[active] / count[active]
-  baseline_mpg <- ifelse(forecast$games > 0, forecast$Minutes / forecast$games, 0)
-  adjusted_minutes <- floor(pmin(adjusted_minutes, adjusted_games * pmax(36, baseline_mpg)) * 10 + 1e-7) / 10
+  adjusted_minutes <- floor(pmin(adjusted_minutes, adjusted_games * 36) * 10 + 1e-7) / 10
   players$Minutes[indices] <- adjusted_minutes
   players$games[indices] <- adjusted_games
   players$p_mpg[indices] <- ifelse(adjusted_games > 0, round(adjusted_minutes / adjusted_games, 1), 0)

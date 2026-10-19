@@ -128,6 +128,12 @@ overfull$Minutes <- 2800
 overfull$games <- 82
 overfull_allocation <- model$allocate_injury_rotation(overfull, rep(1, nrow(overfull)))
 stopifnot(sum(overfull_allocation$minutes) <= 19680 + 1e-6)
+rounded_baseline <- simple[1, , drop = FALSE]
+rounded_baseline$team <- "FA"
+rounded_baseline$Minutes <- 304
+rounded_baseline$games <- 8.4
+rounded_allocation <- model$allocate_injury_rotation(rounded_baseline, 1)
+stopifnot(rounded_allocation$minutes <= rounded_allocation$games * 36)
 simple$Minutes <- 1500
 simple$games <- 60
 allocation <- model$allocate_injury_rotation(simple, c(1, 1, 1, 1, 0, 1, 1, 1))
