@@ -16,6 +16,7 @@ const seasonDatasets = [
 ];
 
 const singletonDatasets = [
+  "injury_outlook",
   "impact_player_history",
   "pick_assets",
   "draft_prospects",
@@ -205,6 +206,7 @@ function writeSeasonShards(rows, spec) {
 }
 
 function rowCountFor(dataset, payload) {
+  if (dataset === "injury_outlook" && Array.isArray(payload?.players)) return payload.players.length;
   if (Array.isArray(payload)) return payload.length;
   if (dataset === "cap_tracker" && Array.isArray(payload?.team_seasons)) return payload.team_seasons.length;
   if (dataset === "cap_transaction_review" && Array.isArray(payload?.rows)) return payload.rows.length;
@@ -399,3 +401,4 @@ function numberValue(value) {
   const parsed = Number(String(value).replace(/[$,%]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
+

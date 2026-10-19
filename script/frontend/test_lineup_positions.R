@@ -13,6 +13,20 @@ load_functions("script/frontend/export_frontend_data.R", model)
 scraper <- new.env(parent = globalenv())
 load_functions("script/data/pull_spotrac_current_rosters.R", scraper)
 
+# Fresh roster fallback must keep its provider identity and must never create
+# Spotrac salary claims from ESPN's roster-only data.
+espn_fixture <- list(season = list(year = 2027), team = list(displayName = "New Orleans Pelicans"),
+  athletes = lapply(seq_len(10), function(i) list(displayName = paste("Fallback Player", i), age = 23,
+    position = list(abbreviation = "F"))))
+espn_rows <- scraper$espn_roster_rows(espn_fixture, data.frame(team = "New Orleans Pelicans", abbr = "NOP"),
+  scraper$season_labels(2026L), "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/3/roster?season=2027", "2026-10-19T04:00:00Z")
+espn_rows$nba_id <- seq_len(10)
+espn_rows$name_key <- scraper$normalize_name(espn_rows$player_or_entity)
+stopifnot(nrow(espn_rows) == 10L, all(espn_rows$source_first_season == "2026-27"))
+stopifnot(!nrow(scraper$build_spotrac_contract_export(espn_rows, 2026L, scraper$season_labels(2026L))))
+espn_truth <- scraper$build_current_roster_truth(espn_rows, 2026L, scraper$season_labels(2026L))
+stopifnot(all(espn_truth$team == "NOP"), all(espn_truth$roster_source == "ESPN Active Roster"))
+
 # Nicknames and formal names must resolve symmetrically to the existing NBA
 # identity, including aliases already used by the cached model/contract data.
 universe <- data.frame(nba_id = c(1630529L, 1642353L, 1641713L, 1641842L),
@@ -245,3 +259,4 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
 }
 
 message("Lineup positional and contract-season regressions passed.")
+

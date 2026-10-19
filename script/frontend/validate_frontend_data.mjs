@@ -34,11 +34,35 @@ function main() {
   }
 
   validateRowCounts(manifest);
+  validateInjuryOutlook(manifest);
   validateInitialPayload(manifest);
   validateRosterTruthPlacements(manifest);
   validateStartingLineupImpactFloor(manifest);
   validateRookieProjectionAssignments(manifest);
   console.log(`frontend data contract passed: ${files.length} manifest files`);
+}
+
+function validateInjuryOutlook(manifest) {
+  const file = manifest.static_data.datasets.injury_outlook?.file;
+  if (!file) return;
+  const outlook = readJson(path.join(dataDir, file));
+  assert(outlook.schema_version === 1 && outlook.teams_checked === 30, "Injury outlook coverage is invalid");
+  assert(Array.isArray(outlook.players), "Injury outlook players must be an array");
+  assert(Number.isFinite(Date.parse(outlook.generated_at)), "Injury outlook timestamp is invalid");
+  const keys = new Set();
+  for (const row of outlook.players) {
+    const key = `${row.team}-${row.name_key}`;
+    assert(!keys.has(key), `Duplicate injury: ${key}`);
+    keys.add(key);
+    assert(row.season === outlook.season && row.player_name && row.team, `Invalid injury identity: ${key}`);
+    assert(row.source_url?.startsWith("https://www.espn.com/"), `Invalid injury source: ${key}`);
+    for (const field of ["games_missed_min", "games_missed_expected", "games_missed_max", "days_remaining_min", "days_remaining_expected", "days_remaining_max"]) {
+      assert(row[field] === null || (Number.isFinite(row[field]) && row[field] >= 0), `Invalid injury duration ${field}: ${key}`);
+    }
+    if (row.games_missed_expected !== null && row.games_missed_min !== null) assert(row.games_missed_expected >= row.games_missed_min, `Injury estimate below minimum: ${key}`);
+    if (row.games_missed_expected !== null && row.games_missed_max !== null) assert(row.games_missed_expected <= row.games_missed_max, `Injury estimate above maximum: ${key}`);
+    if (["unknown", "reevaluation", "reported_minimum", "reported_games"].includes(row.basis)) assert(row.return_expected === null, `Uncertain injury has an exact return: ${key}`);
+  }
 }
 
 function collectManifestFiles(manifest) {
@@ -73,7 +97,8 @@ function validateInitialPayload(manifest) {
   const players = manifest.static_data.datasets.impact_players?.shards?.find((shard) => Number(shard.year ?? shard.key) === latestSeason);
   assert(players, `No impact_players shard for latest season ${latestSeason}`);
   const manifestBytes = fs.statSync(manifestPath).size;
-  const initialBytes = manifestBytes + fs.statSync(path.join(dataDir, players.file)).size;
+  const injuryFile = manifest.static_data.datasets.injury_outlook?.file;
+  const initialBytes = manifestBytes + fs.statSync(path.join(dataDir, players.file)).size + (injuryFile ? fs.statSync(path.join(dataDir, injuryFile)).size : 0);
   assert(initialBytes <= maxInitialBytes, `Initial manifest + player shard payload exceeds ${maxInitialBytes} bytes (${initialBytes})`);
 }
 
@@ -202,6 +227,7 @@ function validateStartingLineupImpactFloor(manifest) {
 }
 
 function rowCountFor(dataset, payload) {
+  if (dataset === "injury_outlook" && Array.isArray(payload?.players)) return payload.players.length;
   if (Array.isArray(payload)) return payload.length;
   if (dataset === "cap_tracker" && Array.isArray(payload?.team_seasons)) return payload.team_seasons.length;
   if (dataset === "cap_transaction_review" && Array.isArray(payload?.rows)) return payload.rows.length;
@@ -237,3 +263,4 @@ function assert(condition, message) {
 function cleanTeam(value) {
   return String(value ?? "").trim().toUpperCase() || "FA";
 }
+

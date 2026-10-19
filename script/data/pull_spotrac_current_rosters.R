@@ -283,6 +283,54 @@ apply_trade_destination_truth <- function(wide, trade_destinations) {
   wide
 }
 
+espn_roster_rows <- function(payload, team_row, labels, source_url, pulled_at) {
+  source_year <- suppressWarnings(as.integer(payload$season$year))
+  if (!identical(normalize_team(payload$team$displayName), as.character(team_row$abbr))) stop("ESPN roster team mismatch.")
+  athletes <- payload$athletes
+  if (length(athletes) < 10L || length(athletes) > 30L) stop("Incomplete ESPN roster fallback.")
+  rows <- lapply(athletes, function(player) {
+    data.frame(
+      team = team_row$team, team_abbr = team_row$abbr, section = "Active Roster",
+      roster_state = "active", entity_type = "player", player_or_entity = player$displayName,
+      spotrac_player_id = NA_integer_, pos = player$position$abbreviation,
+      age = if (is.null(player$age)) NA_real_ else as.numeric(player$age), source_url = source_url,
+      source_first_season = paste0(source_year - 1L, "-", substr(source_year, 3, 4)),
+      scraped_at = pulled_at, guarantee_capture_status = "unavailable_espn_roster_fallback",
+      trade_marker = FALSE, raw_row_text = paste0("ESPN roster: ", player$displayName),
+      stringsAsFactors = FALSE, check.names = FALSE
+    )
+  })
+  out <- do.call(rbind, rows)
+  if (anyDuplicated(normalize_name(out$player_or_entity))) stop("Duplicate names in ESPN roster fallback.")
+  for (label in labels) out[[label]] <- ""
+  out
+}
+
+fresh_espn_roster_fallback <- function(team_row, labels, spotrac_error) {
+  ids <- c(ATL=1, BOS=2, BKN=17, CHA=30, CHI=4, CLE=5, DAL=6, DEN=7, DET=8, GSW=9,
+    HOU=10, IND=11, LAC=12, LAL=13, MEM=29, MIA=14, MIL=15, MIN=16, NOP=3, NYK=18,
+    OKC=25, ORL=19, PHI=20, PHX=21, POR=22, SAC=23, SAS=24, TOR=28, UTA=26, WAS=27)
+  season <- as.integer(format(Sys.Date(), "%Y")) + as.integer(as.integer(format(Sys.Date(), "%m")) >= 7L)
+  source_url <- paste0("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/", ids[[team_row$abbr]], "/roster?season=", season)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  fetch_page(source_url, path)
+  payload <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+  if (!identical(payload$status, "success") || as.integer(payload$season$year) != season) stop("Invalid current-season ESPN roster fallback.")
+  pulled <- as.POSIXct(sub("Z$", "", payload$timestamp), format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC")
+  age <- as.numeric(difftime(Sys.time(), pulled, units = "mins"))
+  if (!is.finite(age) || age < -1 || age > 30) stop("Stale ESPN roster fallback.")
+  pulled_at <- format(pulled, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  wide <- espn_roster_rows(payload, team_row, labels, source_url, pulled_at)
+  audit <- data.frame(team = team_row$team, source_url = source_url, status = "fresh_espn_roster_after_spotrac_error",
+    table_count = 0L, pending_rows = 0L, active_roster_rows = nrow(wide), traded_marker_excluded_rows = 0L,
+    cap_hold_player_rows = 0L, elapsed_seconds = NA_real_, scraped_at = pulled_at,
+    method = "Fresh ESPN roster fallback; no new salary or rights claims; retain cached contracts",
+    error_message = spotrac_error, stringsAsFactors = FALSE)
+  message("Fresh ESPN roster fallback: ", team_row$abbr, " (", nrow(wide), " players).")
+  list(wide = wide, audit = audit)
+}
+
 scrape_team <- function(base_dir, team_row, labels) {
   if (!requireNamespace("rvest", quietly = TRUE) || !requireNamespace("xml2", quietly = TRUE)) {
     stop("Packages 'rvest' and 'xml2' are required to scrape Spotrac roster state.")
@@ -314,9 +362,11 @@ scrape_team <- function(base_dir, team_row, labels) {
           }
         }
       }
-      if (!file.exists(html_path)) stop(e)
     }
   )
+  if (!fetched && is.na(snapshot_time)) {
+    return(fresh_espn_roster_fallback(team_row, labels, error_message))
+  }
   page <- rvest::read_html(html_path)
   tables <- rvest::html_elements(page, "table")
   if (!length(tables)) {
@@ -582,7 +632,7 @@ build_current_roster_truth <- function(wide, roster_year, labels) {
     rights_team = active$team_abbr,
     contract_status = active$current_status,
     roster_state = active$roster_state,
-    roster_source = paste0("Spotrac ", active$section),
+    roster_source = paste0(ifelse(grepl("^https://site.api.espn.com/", active$source_url), "ESPN ", "Spotrac "), active$section),
     pulled_at = active$scraped_at,
     spotrac_player_id = suppressWarnings(as.integer(active$spotrac_player_id)),
     match_method = active$match_method,
@@ -666,6 +716,7 @@ build_spotrac_contract_export <- function(wide, roster_year, labels) {
   if (!nrow(wide)) return(data.frame())
   active <- wide[
     wide$entity_type == "player" &
+      !grepl("^https://site.api.espn.com/", wide$source_url) &
       wide$roster_state %in% c("active", "active_pending_done", "rookie_cap_hold"),
     ,
     drop = FALSE
@@ -766,8 +817,8 @@ summary_path <- file.path(spotrac_dir, "benchmark_summary.json")
 summary <- paste0(
   "{\n",
   '  "teams_requested": ', nrow(teams), ",\n",
-  '  "teams_ok": ', sum(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error")), ",\n",
-  '  "teams_error": ', sum(!(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error"))), ",\n",
+  '  "teams_ok": ', sum(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error")), ",\n",
+  '  "teams_error": ', sum(!(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error"))), ",\n",
   '  "rows_wide": ', nrow(wide), ",\n",
   '  "rows_long": ', nrow(long), ",\n",
   '  "active_roster_truth_rows": ', sum(roster_truth$team != "FA"), ",\n",
@@ -785,3 +836,4 @@ message("Roster truth written: ", roster_path)
 message("Spotrac contracts written: ", contract_path)
 message("Rows: active=", sum(roster_truth$team != "FA"), "; FA/cap-hold=", sum(roster_truth$team == "FA"), "; review=", nrow(read.csv(review_path)))
 message("Contracts: ", nrow(spotrac_contracts), " active/pending rows")
+

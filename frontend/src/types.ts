@@ -957,8 +957,53 @@ export type MarketLedgerRow = {
   marketMinutesSource?: string;
 };
 
+export type InjuryOutlookRow = {
+  player_name: string;
+  name_key: string;
+  team: string;
+  season: number;
+  status: string;
+  injury_type: string;
+  report_date: string;
+  source: string;
+  source_url: string;
+  return_earliest: string | null;
+  return_expected: string | null;
+  return_latest: string | null;
+  reevaluation_date: string | null;
+  reevaluation_latest: string | null;
+  provider_return_date: string | null;
+  minimum_games: number | null;
+  basis: string;
+  confidence: "low" | "medium" | "high";
+  season_ending: boolean;
+  stale_report: boolean;
+  timeline_note: string;
+  days_remaining_min: number | null;
+  days_remaining_expected: number | null;
+  days_remaining_max: number | null;
+  games_missed_min: number | null;
+  games_missed_expected: number | null;
+  games_missed_max: number | null;
+  schedule_games_remaining: number;
+  schedule_games_tbd: number;
+};
+
+export type InjuryOutlookData = {
+  schema_version: number;
+  generated_at: string;
+  source_updated_at: string;
+  season: number;
+  teams_checked: number;
+  source: string;
+  source_url: string;
+  policy: string;
+  players: InjuryOutlookRow[];
+};
+
 export type AppData = {
   manifest: Manifest;
+  injuryOutlook?: InjuryOutlookData;
   players: PlayerImpact[];
   teams: TeamProjection[];
   lineups: TeamLineupRow[];
@@ -973,3 +1018,4 @@ export type AppData = {
   capTracker?: CapTrackerData;
   capReview?: CapReviewData;
 };
+

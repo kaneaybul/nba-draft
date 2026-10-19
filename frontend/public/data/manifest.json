@@ -76,6 +76,11 @@
       "dataset": "cap_transaction_review",
       "rows": 955,
       "file": "cap_transaction_review.json"
+    },
+    {
+      "dataset": "injury_outlook",
+      "rows": 92,
+      "file": "injury_outlook.json"
     }
   ],
   "static_data": {
@@ -595,6 +600,13 @@
         "file": "cap_transaction_review.json",
         "bytes": 1375714,
         "sha256": "a8dcd247629e939ee22e3ce12988ded214f8b1ad5735705abaab927607f6ffbd"
+      },
+      "injury_outlook": {
+        "strategy": "singleton",
+        "rows": 92,
+        "file": "injury_outlook.json",
+        "bytes": 77227,
+        "sha256": "92e95bcbbd59e9a4d851950ab31dd40da3ca2df6fd5780fc79ac6f67b7133081"
       }
     }
   }

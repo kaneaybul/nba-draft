@@ -1,5 +1,6 @@
 import type {
   AppData,
+  InjuryOutlookData,
   CapReviewData,
   CapTrackerData,
   DraftProspect,
@@ -151,8 +152,11 @@ function isStaticManifest(manifest: Manifest): manifest is Manifest & { static_d
 
 async function loadStaticInitialData(manifest: Manifest & { static_data: NonNullable<Manifest["static_data"]> }, cacheBust?: string): Promise<AppData> {
   const season = latestManifestSeason(manifest) ?? new Date().getFullYear();
-  const players = await loadSeasonDataset<PlayerImpact>(manifest, "impact_players", season, cacheBust);
-  return emptyAppData(manifest, { players });
+  const [players, injuryOutlook] = await Promise.all([
+    loadSeasonDataset<PlayerImpact>(manifest, "impact_players", season, cacheBust),
+    loadOptionalSingleton<InjuryOutlookData>(manifest, "injury_outlook", cacheBust)
+  ]);
+  return emptyAppData(manifest, { players, injuryOutlook });
 }
 
 async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promise<AppData> {
@@ -173,7 +177,8 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
   ]);
 
   const normalized = applyOffseasonTruth(players, lineups, offseasonTruth);
-  return { manifest, players: normalized.players, teams, lineups: normalized.lineups, schedules, picks, prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview };
+  const injuryOutlook = await loadOptionalSingleton<InjuryOutlookData>(manifest, "injury_outlook", cacheBust);
+  return { manifest, players: normalized.players, teams, lineups: normalized.lineups, schedules, picks, prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview, injuryOutlook };
 }
 
 function emptyAppData(manifest: Manifest, values: Partial<AppData> = {}): AppData {
@@ -325,3 +330,4 @@ function numberValue(value: string | number | null | undefined): number | null {
   const parsed = Number(String(value).replace(/[$,%]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
+

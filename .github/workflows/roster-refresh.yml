@@ -9,6 +9,8 @@ on:
     # The usual refresh supplies verified fresh HTML before this push trigger runs.
     paths:
       - raw/cap_sources/spotrac/current_snapshot.json.xz
+      # Explicit refresh requests; ordinary code edits do not run live scrapes.
+      - raw/roster_refresh_request.json
 
 concurrency:
   group: roster-refresh
@@ -65,7 +67,7 @@ jobs:
         run: python3 script/data/prepare_spotrac_snapshot.py raw/cap_sources/spotrac/current_snapshot.json.xz "$SPOTRAC_HTML_SNAPSHOT_DIR"
 
       - name: Scrape all 30 Spotrac rosters
-        # Keep the Spotrac-only refresh; season headers and lineup roles are audited.
+        # Spotrac is primary; a fresh ESPN roster can cover a failed team page.
         run: Rscript script/data/pull_spotrac_current_rosters.R
 
       - name: Require a fresh complete scrape
@@ -74,7 +76,7 @@ jobs:
           path <- "processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv"
           audit <- read.csv(path, stringsAsFactors = FALSE)
           if (nrow(audit) != 30) stop("Expected 30 team audit rows; got ", nrow(audit))
-          fresh <- audit$status %in% c("ok", "fresh_snapshot_after_fetch_error")
+          fresh <- audit$status %in% c("ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error")
           if (any(!fresh)) {
             bad <- audit$team[!fresh]
             stop("Fresh scrape failed or used cached data for: ", paste(bad, collapse = ", "))
@@ -87,13 +89,21 @@ jobs:
           if (any(audit$active_roster_rows < 10)) {
             stop("Implausibly small active roster for: ", paste(audit$team[audit$active_roster_rows < 10], collapse = ", "))
           }
-          message("Fresh Spotrac scrape verified for all 30 teams.")
+          message("Fresh roster sources verified for all 30 teams; ESPN fallbacks: ", sum(audit$status == "fresh_espn_roster_after_spotrac_error"))
 
       - name: Export roster-dependent frontend data
         run: Rscript script/frontend/export_frontend_data.R
 
       - name: Verify positional lineups and contract-season alignment
         run: Rscript script/frontend/test_lineup_positions.R
+
+      - name: Test injury timeline calculations
+        run: python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
+
+      - name: Refresh injury outlook and expected absences
+        run: |
+          python3 script/data/refresh_injury_outlook.py
+          node script/frontend/build_static_data_manifest.mjs
 
       - name: Validate frontend data
         run: |
@@ -129,6 +139,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No roster changes to commit."
           else
-            git commit -m "Refresh current NBA rosters"
+            git commit -m "Refresh current NBA rosters and injury outlook"
             git push origin HEAD:main
           fi
+

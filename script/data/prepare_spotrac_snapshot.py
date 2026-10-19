@@ -14,8 +14,15 @@ if not snapshot_path.exists():
     sys.exit(0)
 snapshot = json.loads(lzma.decompress(snapshot_path.read_bytes()))
 rows = snapshot["teams"]
-assert snapshot.get("schema_version") == 1
-assert len(rows) == 30 and {row["team"] for row in rows} == expected
+assert snapshot.get("schema_version") in (1, 2)
+fallback_teams = set(snapshot.get("live_espn_fallback_teams", []))
+assert len(rows) == len({row["team"] for row in rows})
+assert not ({row["team"] for row in rows} & fallback_teams)
+assert {row["team"] for row in rows} | fallback_teams == expected
+assert len(fallback_teams) <= 2
+if fallback_teams:
+    assert snapshot["schema_version"] == 2
+    print("Spotrac unavailable for " + ", ".join(sorted(fallback_teams)) + "; require a fresh ESPN roster fallback on the runner.")
 now = datetime.now(timezone.utc)
 ages = [(now - datetime.fromisoformat(row["fetched_at"].replace("Z", "+00:00"))).total_seconds() for row in rows]
 if any(age < -60 or age > 1800 for age in ages):
@@ -32,4 +39,5 @@ with (output_path / "receipts.csv").open("w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=["team", "source_url", "fetched_at", "sha256"])
     writer.writeheader()
     writer.writerows({key: row[key] for key in writer.fieldnames} for row in rows)
-print("Verified fresh Spotrac snapshot for all 30 teams.")
+print(f"Verified fresh Spotrac snapshot for {len(rows)} teams.")
+

@@ -1,6 +1,7 @@
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadPlayerCareerHistory, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
+import { InjuryOutlookWorkspace, PlayerInjuryNote, injuryForPlayer } from "./InjuryOutlook";
 import {
   capTrackerSeasonForYear,
   evaluateTradeMachine,
@@ -55,7 +56,7 @@ import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./util
 const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
 const OffseasonSimulatorWorkspace = lazy(() => import("./OffseasonSimulator").then((module) => ({ default: module.OffseasonSimulatorWorkspace })));
 
-type View = "impact" | "teams" | "startingLineups" | "tradeRecs" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker";
+type View = "impact" | "teams" | "startingLineups" | "tradeRecs" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker" | "injuries";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type SkillAggregateSortKey = "skill_total" | "skill_off" | "skill_def";
 type ImpactSkillSortKey = SkillKey | SkillAggregateSortKey;
@@ -132,6 +133,7 @@ type FilterRule = {
 const viewLabels: Record<View, string> = {
   impact: "Player Impact",
   teams: "Team Projections",
+  injuries: "Injury Outlook",
   startingLineups: "Starting Lineups",
   tradeRecs: "Trade Recs",
   trade: "Trade Sandbox",
@@ -811,6 +813,7 @@ function App() {
           <Suspense fallback={<main className="loading"><p>Loading workspace</p></main>}>
             {view === "impact" && <ImpactWorkspace data={data} season={season} />}
             {view === "teams" && <TeamWorkspace data={data} season={season} />}
+            {view === "injuries" && <InjuryOutlookWorkspace outlook={data.injuryOutlook} />}
             {view === "startingLineups" && <StartingLineupsWorkspace data={data} season={season} />}
             {view === "tradeRecs" && <TradeRecommendationsWorkspace data={data} season={season} onOpenSandbox={() => setView("trade")} />}
             {view === "trade" && <TradeWorkspace data={data} season={season} />}
@@ -1139,7 +1142,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
             style={{ ...detailPosition, "--detail-top": `${detailPosition.top}px` } as CSSProperties}
             onClick={(event) => event.stopPropagation()}
           >
-            <PlayerDetail player={detailPlayer} allPlayers={data.players} careerHistory={careerHistory} careerHistoryError={careerHistoryError} />
+            <PlayerDetail player={detailPlayer} allPlayers={data.players} careerHistory={careerHistory} careerHistoryError={careerHistoryError} injuryOutlook={data.injuryOutlook} />
           </div>
         </div>
       )}
@@ -1420,7 +1423,7 @@ function EmptyState({ title, detail }: { title: string; detail: string }) {
   );
 }
 
-function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }: { player: PlayerImpact; allPlayers: PlayerImpact[]; careerHistory: PlayerCareerHistoryRow[]; careerHistoryError: string | null }) {
+function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, injuryOutlook }: { player: PlayerImpact; allPlayers: PlayerImpact[]; careerHistory: PlayerCareerHistoryRow[]; careerHistoryError: string | null; injuryOutlook?: AppData["injuryOutlook"] }) {
   const trajectory = buildCareerTrajectory(player, allPlayers, careerHistory);
   const scoreVars = scoreStyle(player.score) as CSSProperties & { "--score-fill"?: string };
   const scoreColor = player.score_label === "DNQ" ? "var(--muted)" : scoreVars["--score-fill"] ?? "var(--teal)";
@@ -1455,6 +1458,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError }:
       </div>
 
       <div className="dp-body">
+        <PlayerInjuryNote injury={injuryForPlayer(player, injuryOutlook)} />
         {player.availability_status === "DNQ" && (
           <p className="availability-note">
             {player.availability_reason || "DNQ"} / skills from {player.skill_source_year ?? "-"}
