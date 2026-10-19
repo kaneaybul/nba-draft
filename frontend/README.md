@@ -61,7 +61,7 @@ The frontend reads generated JSON only. The Excel workbooks remain reference mat
 
 ## Roster and injury refresh
 
-The **Refresh current NBA rosters** workflow scrapes all 30 Spotrac rosters, exports roster-dependent projections, and refreshes `injury_outlook.json` from ESPN/RotoWire and all 30 current regular-season schedules. Model fitting is not part of this refresh. Run it manually, supply a fresh verified Spotrac snapshot, or update `raw/roster_refresh_request.json` for an explicit refresh. Ordinary code edits do not start live scrapes.
+The **Refresh current NBA rosters** workflow refreshes all 30 rosters using Spotrac, with a fresh ESPN roster fallback for an unavailable team page, exports roster-dependent projections, and refreshes `injury_outlook.json` from ESPN/RotoWire and all 30 current regular-season schedules. Model fitting is not part of this refresh. Run it manually, supply a fresh verified Spotrac snapshot, or update `raw/roster_refresh_request.json` for an explicit refresh. Ordinary code edits do not start live scrapes.
 
 The Injury Outlook tab shows source timestamps, reported return windows, minimum absences, re-evaluation dates, confidence, and remaining scheduled games missed. A re-evaluation is not a return date. A source saying there is no timetable overrides ESPN's estimated date. Unknown durations stay unknown; old dates are not advanced automatically. Current injury notes appear only on matching players in the active injury season. Missing a player from the list is not proof of health.
 
@@ -69,3 +69,5 @@ Game counts use future regular-season game dates in NBA Eastern time, exclude co
 
 Run injury checks with `python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'`. Run the injury refresh independently with `python3 script/data/refresh_injury_outlook.py`, then `node script/frontend/build_static_data_manifest.mjs`. A fetch or incomplete-schedule failure leaves the last valid injury artifact in place and fails the refresh.
 
+
+A roster-only ESPN fallback preserves the affected team's last published cap ledger. The Cap Tracker labels those figures as cached and preserves their original timestamp; an unavailable salary source never becomes a zero-dollar roster.

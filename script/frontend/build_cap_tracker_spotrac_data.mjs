@@ -1,3 +1,4 @@
+import { retainCachedCapTeams } from "./cap_roster_fallback.mjs";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,12 +90,18 @@ export function buildSpotracCapTrackerData() {
   const guaranteeOverrides = buildGuaranteeOverrideMap(readCsvFile(guaranteeOverridePath));
   const seasons = buildSeasons(capRows);
   const teamMeta = buildTeamMeta(teamProjectionRows, spotracRows);
-  const contractRows = [
+  let contractRows = [
     ...buildContractRows(spotracRows, teamMeta, guaranteeOverrides, databallrContractMeta),
     ...buildProjectedRookieContractRows(impactPlayers)
   ].sort(contractRowSort);
-  const deadMoney = buildDeadMoneyRows(spotracRows);
-  const teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
+  let deadMoney = buildDeadMoneyRows(spotracRows);
+  let teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
+  const fallbackTeams = [...new Set(spotracRows.filter((row) => row.source_url?.startsWith("https://site.api.espn.com/")).map((row) => cleanTeam(row.team_abbr || TEAM_ABBR[row.team])))];
+  const retained = retainCachedCapTeams({ teams: fallbackTeams, previous: readJson(outPath, null), years: YEARS,
+    contracts: contractRows, deadMoney, teamSeasons });
+  contractRows = retained.contracts;
+  deadMoney = retained.deadMoney;
+  teamSeasons = retained.teamSeasons;
   const exceptions = buildExceptions(teamSeasons, seasons, readCsvFile(exceptionOverridePath));
   const hardCaps = buildOverrideHardCaps(readCsvFile(hardCapOverridePath));
   const picks = buildOverridePicks(readCsvFile(pickOverridePath));
@@ -102,6 +109,7 @@ export function buildSpotracCapTrackerData() {
   const discrepancyRows = buildDataballrDiscrepancies(contractRows, databallrRows);
 
   const warnings = [
+    ...retained.fallbacks.map((row) => `${row.team}: roster refreshed from ESPN; cap figures are cached as of ${row.cached_as_of}.`),
     ...buildAuditWarnings(),
     ...projectedSystemLevelWarnings(seasons),
     "Guarantee percentages are not scraped from Spotrac hover-only tooltips; normal active salary cells are treated as fully on-book salary unless ref/cap_tracker_guarantees.csv overrides them.",
@@ -111,6 +119,7 @@ export function buildSpotracCapTrackerData() {
   const payload = {
     schema_version: CAP_TRACKER_SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
+    cap_fallbacks: retained.fallbacks,
     source_policy: "Spotrac-first cap tracker v1: pending transactions, active roster, cap holds, and visible money cells come from Spotrac multi-year team pages. Databallr contract metadata is retained for CBA rule inference and QA, but does not override displayed salary rows.",
     notes: [
       "Season years use NBA season end year: 2027 is 2026-27, 2028 is 2027-28, and so on.",
@@ -137,6 +146,7 @@ export function buildSpotracCapTrackerData() {
     },
     warnings,
     source_audit: [
+      ...retained.fallbacks.map((row) => ({ label: `${row.team} cap snapshot`, detail: `${row.reason} As of ${row.cached_as_of}.`, quality: "cached" })),
       { label: "Primary cap source", detail: "Spotrac all-team scrape: Pending Transactions, Active Roster, and Cap Hold sections.", quality: "spotrac" },
       { label: "Guarantees", detail: "Manual override only; Spotrac hover-only guarantee percentages are not scraped in v1.", quality: "unavailable" },
       { label: "Dead money", detail: "Supported by this builder when Spotrac dead-money rows are present in the normalized input; current scrape does not include a persisted dead-money section.", quality: "unavailable" },
@@ -758,7 +768,7 @@ function guaranteeOverrideFor(row, year, guaranteeMap) {
 function buildAuditWarnings() {
   const audit = readCsvFile(spotracAuditPath);
   const warnings = [];
-  const failed = audit.filter((row) => row.status && row.status !== "ok");
+  const failed = audit.filter((row) => row.status && !["ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error"].includes(row.status));
   if (failed.length) warnings.push(`${failed.length} Spotrac scrape audit rows failed: ${failed.map((row) => row.team).join(", ")}.`);
   const longRows = readCsvFile(spotracLongPath);
   if (!longRows.length) warnings.push("Spotrac long-form QA file is missing or empty.");
@@ -950,3 +960,4 @@ function sum(values) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   buildSpotracCapTrackerData();
 }
+

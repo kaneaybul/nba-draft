@@ -21,7 +21,6 @@ espn_fixture <- list(season = list(year = 2027), team = list(displayName = "New 
 espn_rows <- scraper$espn_roster_rows(espn_fixture, data.frame(team = "New Orleans Pelicans", abbr = "NOP"),
   scraper$season_labels(2026L), "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/3/roster?season=2027", "2026-10-19T04:00:00Z")
 espn_rows$nba_id <- seq_len(10)
-espn_rows$name_key <- scraper$normalize_name(espn_rows$player_or_entity)
 stopifnot(nrow(espn_rows) == 10L, all(espn_rows$source_first_season == "2026-27"))
 stopifnot("name_key" %in% names(espn_rows), all(espn_rows$name_key == scraper$normalize_name(espn_rows$player_or_entity)))
 stopifnot(!nrow(scraper$build_spotrac_contract_export(espn_rows, 2026L, scraper$season_labels(2026L))))

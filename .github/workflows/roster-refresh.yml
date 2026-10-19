@@ -92,7 +92,9 @@ jobs:
           message("Fresh roster sources verified for all 30 teams; ESPN fallbacks: ", sum(audit$status == "fresh_espn_roster_after_spotrac_error"))
 
       - name: Export roster-dependent frontend data
-        run: Rscript script/frontend/export_frontend_data.R
+        run: |
+          node script/frontend/test_cap_roster_fallback.mjs
+          Rscript script/frontend/export_frontend_data.R
 
       - name: Verify positional lineups and contract-season alignment
         run: Rscript script/frontend/test_lineup_positions.R
