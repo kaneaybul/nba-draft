@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import assert from 'node:assert/strict';
+const root='frontend/public/data/archive/2027-preseason/';
+const meta=JSON.parse(fs.readFileSync(root+'snapshot.json'));
+for(const v of Object.values(meta.files))assert.equal(crypto.createHash('sha256').update(fs.readFileSync(root+v.file)).digest('hex'),v.sha256,'Frozen preseason archive changed: '+v.file);
+const games=JSON.parse(fs.readFileSync(root+'team_schedules.json'));
+assert(!games.some(g=>g.is_completed),'Preseason snapshot includes completed regular-season games');
+assert.equal(JSON.parse(fs.readFileSync(root+'team_projections.json')).filter(t=>t.scenario_id==='base').length,30);
+console.log('Frozen preseason archive hashes verified');

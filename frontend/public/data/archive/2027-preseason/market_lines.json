@@ -1,0 +1,247 @@
+{
+  "season": 2027,
+  "captured_at": "2026-10-23",
+  "note": "\u2020 Last documented pre-tip lines located: Oct 20 DraftKings for five teams and Oct 19 reported FanDuel for the rest. Exact closing status is unverified; these are frozen reference lines, not current betting offers.",
+  "lines": [
+    {
+      "team": "OKC",
+      "line": 61.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "SAS",
+      "line": 60.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "NYK",
+      "line": 51.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "BOS",
+      "line": 50.5,
+      "book": "DraftKings",
+      "as_of": "2026-10-20",
+      "source_url": "https://dknetwork.draftkings.com/2026/10/20/2026-27-nba-win-totals-futures-best-bets-cheat-sheet/",
+      "closing_verified": false
+    },
+    {
+      "team": "PHI",
+      "line": 50.5,
+      "book": "DraftKings",
+      "as_of": "2026-10-20",
+      "source_url": "https://dknetwork.draftkings.com/2026/10/20/2026-27-nba-win-totals-futures-best-bets-cheat-sheet/",
+      "closing_verified": false
+    },
+    {
+      "team": "CLE",
+      "line": 48.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "HOU",
+      "line": 48.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "DEN",
+      "line": 48.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "DET",
+      "line": 47.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "TOR",
+      "line": 46.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "MIN",
+      "line": 46.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "LAL",
+      "line": 45.5,
+      "book": "DraftKings",
+      "as_of": "2026-10-20",
+      "source_url": "https://dknetwork.draftkings.com/2026/10/20/2026-27-nba-win-totals-futures-best-bets-cheat-sheet/",
+      "closing_verified": false
+    },
+    {
+      "team": "IND",
+      "line": 44.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "MIA",
+      "line": 44.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "ATL",
+      "line": 43.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "ORL",
+      "line": 43.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "POR",
+      "line": 41.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "PHX",
+      "line": 38.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "UTA",
+      "line": 36.5,
+      "book": "DraftKings",
+      "as_of": "2026-10-20",
+      "source_url": "https://dknetwork.draftkings.com/2026/10/20/2026-27-nba-win-totals-futures-best-bets-cheat-sheet/",
+      "closing_verified": false
+    },
+    {
+      "team": "CHA",
+      "line": 38.5,
+      "book": "DraftKings",
+      "as_of": "2026-10-20",
+      "source_url": "https://dknetwork.draftkings.com/2026/10/20/2026-27-nba-win-totals-futures-best-bets-cheat-sheet/",
+      "closing_verified": false
+    },
+    {
+      "team": "GSW",
+      "line": 36.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "WAS",
+      "line": 34.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "DAL",
+      "line": 33.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "MEM",
+      "line": 30.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "CHI",
+      "line": 29.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "NOP",
+      "line": 28.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "LAC",
+      "line": 27.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "MIL",
+      "line": 25.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "BKN",
+      "line": 24.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    },
+    {
+      "team": "SAC",
+      "line": 20.5,
+      "book": "FanDuel (reported)",
+      "as_of": "2026-10-19",
+      "source_url": "https://baltimoresportsandlife.com/2026-27-nba-preview/",
+      "closing_verified": false
+    }
+  ]
+}

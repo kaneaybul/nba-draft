@@ -1,3 +1,4 @@
+import { ProjectionHistory } from "./PreseasonArchive";
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadPlayerCareerHistory, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
@@ -779,6 +780,7 @@ function App() {
               ))}
             </select>
           </label>
+          <ProjectionHistory />
           <div className="manifest data-stamp">
             <span>Data</span>
             <strong>{new Date(data.manifest.generated_at).toLocaleString()}</strong>

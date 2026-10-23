@@ -2584,6 +2584,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rows <- rbind(vets, rookies[, names(vets), drop = FALSE])
   if (!nrow(rows)) return(rows)
   rows <- recalculate_projected_skill_rollups(rows, x)
+  rows <- apply_live_expected_ratings(rows, base_dir)
 
   rows$replacement_total <- draft_replacement_total(
     rows$position,
@@ -4475,6 +4476,7 @@ build_team_schedules <- function(teams) {
   if (is.null(schedules) || !nrow(schedules)) return(bref_schedule_empty())
   schedules <- normalize_schedule_columns(schedules)
   schedules <- schedules[!schedules$is_placeholder, , drop = FALSE]
+  schedules <- apply_live_game_results(schedules, resolve_base_dir())
   schedules <- classify_extra_regular_games(schedules)
   rating_rows <- teams
   if ("scenario_id" %in% names(rating_rows)) {
@@ -5145,6 +5147,7 @@ base_dir <- resolve_base_dir()
 source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = FALSE)
 source(file.path(base_dir, "script", "frontend", "injury_projections.R"), local = FALSE)
+source(file.path(base_dir, "script", "frontend", "live_ratings.R"), local = FALSE)
 out_dir <- file.path(base_dir, "frontend", "public", "data")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 

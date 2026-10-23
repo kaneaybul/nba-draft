@@ -245,6 +245,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / "frontend/public/data/injury_outlook.json")
     parser.add_argument("--feed", type=Path, help="Read an already fetched feed for reproducible checks")
     parser.add_argument("--schedules-dir", type=Path, help="Read already fetched team schedules")
+    parser.add_argument("--results-output", type=Path)
     args = parser.parse_args()
     feed = json.loads(args.feed.read_text()) if args.feed else fetch_json(f"{API}/injuries")
     season = int(feed["season"]["year"])
@@ -256,6 +257,13 @@ def main():
     with ThreadPoolExecutor(max_workers=6) as pool:
         schedules = dict(pool.map(get_schedule, TEAM_IDS.items()))
     outlook = build_outlook(feed, schedules, datetime.now(timezone.utc))
+    if args.results_output:
+        from live_results import build_results
+        results = build_results(schedules, season, datetime.now(timezone.utc))
+        args.results_output.parent.mkdir(parents=True, exist_ok=True)
+        args.results_output.with_suffix(".tmp").write_text(json.dumps(results) + "\n")
+        args.results_output.with_suffix(".tmp").replace(args.results_output)
+        print(f"Final scores refreshed: {len(results['games'])} regular-season games")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix(".json.tmp")
     temporary.write_text(json.dumps(outlook, ensure_ascii=False, separators=(",", ":")) + "\n")

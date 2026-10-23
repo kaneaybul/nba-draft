@@ -293,6 +293,16 @@ apply_injury_projections <- function(players, schedules, outlook) {
   if (all(c("value_add", "season_value", "contract") %in% names(players))) {
     players$value_add[indices] <- players$season_value[indices] - players$contract[indices]
   }
+  # Current dollar value and Scale must follow the same injury-adjusted volume.
+  if ('raw_minutes' %in% names(players)) players$raw_minutes[indices] <- adjusted_minutes
+  if ('raw_timin' %in% names(players)) players$raw_timin[indices] <- players$timin[indices]
+  if ('trade_value' %in% names(players)) players$trade_value[indices] <- round(players$value[indices] * (.45 + players$score[indices]/170),0)
+  if ('scalability' %in% names(players)) {
+    new_capacity <- pmin(ifelse(adjusted_minutes>0,19680/adjusted_minutes,15),15)
+    cap <- cap_for_year(load_cap_assumptions(resolve_base_dir()),outlook$season,'scale_cap')
+    contract_capacity <- ifelse(is.finite(players$contract[indices]) & players$contract[indices]>0,pmin(cap/players$contract[indices],15),15)
+    players$scalability[indices] <- round(pmax(0,pmin(new_capacity,contract_capacity)*players$value[indices]/cap),3)
+  }
   players$injury_availability[indices] <- round(availability, 5)
   players$injury_games_missed[indices] <- round(missed, 2)
   players$injury_minutes_lost[indices] <- round(forecast$Minutes * (1 - availability), 1)
@@ -311,7 +321,7 @@ apply_injury_projections <- function(players, schedules, outlook) {
   previous <- which(players$year == outlook$season - 1L)
   match_previous <- match(players$nba_id[previous], players$nba_id[indices])
   known <- !is.na(match_previous)
-  for (pair in list(c("projection_minutes_y1", "Minutes"), c("projection_games_y1", "games"),
+  for (pair in list(c("projection_y1", "total"), c("projection_offense_y1", "offense"), c("projection_defense_y1", "defense"), c("projection_scalability_y1", "scalability"), c("projection_minutes_y1", "Minutes"), c("projection_games_y1", "games"),
       c("projection_mpg_y1", "p_mpg"), c("projection_timin_y1", "timin"), c("projection_value_y1", "season_value"))) {
     if (all(pair %in% names(players))) {
       players[[pair[1]]][previous[known]] <- players[[pair[2]]][indices[match_previous[known]]]

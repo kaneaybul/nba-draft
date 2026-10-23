@@ -75,3 +75,27 @@ Run injury checks with `python3 -m unittest discover -s script/data -p 'test_inj
 
 
 A roster-only ESPN fallback preserves the affected team's last published cap ledger. The Cap Tracker labels those figures as cached and preserves their original timestamp; an unavailable salary source never becomes a zero-dollar roster.
+
+
+# Live 2026–27 projections and preseason archive
+
+The October 19 published export is frozen under `frontend/public/data/archive/2027-preseason`. `snapshot.json` records its source commit and SHA-256 checksums. Refresh workflows validate those hashes and never write into the archive. The header’s Preseason archive opens player comparisons, team win totals/O-U edges and original game odds without adding main navigation tabs.
+
+The sportsbook reference is the last documented pre-tip line located for each team (Oct 19 reported FanDuel; Oct 20 DraftKings for five teams). Exact final closing status is **not verified** and is labeled in the interface. This is a fixed season win-total benchmark, not live odds or game point spreads.
+
+The existing **Rebuild lineup projections** GitHub workflow now runs daily at 13:15 UTC and can be run manually. It downloads public expected EPM from `https://dunksandthrees.com/epm` (never `/epm/actual`) and current DARKO from `https://www.darko.app/`. Public Svelte page data is decoded with a literal-only parser; remote JavaScript is never evaluated. Dates, season, values, duplicates and coverage are validated. A login wall, stale source or schema change stops publication and preserves the last successful export. Credentials are not required for the currently accessible source pages.
+
+Active-season forecasts use the existing standardized EPM/DARKO blend (80%) plus the existing projected skill model (20%). The skill-model features and multi-year career priors are not retrained from a two-game sample. Player values, Scale, rotations and team forecasts are recomputed in the ordinary exporter. Draft synthetic IDs resolve to current providers only by unique normalized name plus current team. Missing source pairs retain their prior ratings and are listed in Refresh details.
+
+ESPN final regular-season results share the same 30 schedule downloads used by the injury refresh. Finals are deduplicated, scores validated and joined by date/home/away. Projected wins = actual wins + expected wins in remaining games. Preseason, ongoing games and the Cup championship do not become earned regular-season wins. The normal injury model reduces dated availability and redistributes minutes before game odds are calculated. Per-minute ratings do not receive a second injury penalty.
+
+Local refresh, after installing frontend dependencies:
+
+```sh
+node script/data/refresh_live_ratings.mjs
+python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
+Rscript script/frontend/export_frontend_data.R
+node script/frontend/validate_preseason_archive.mjs
+```
+
+Publishing uses the existing Cloudflare Pages deployment after the workflow’s tests, full export and frontend build pass. Source dates are shown separately from the export timestamp.
