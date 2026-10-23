@@ -12,11 +12,17 @@ stopifnot(file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/sk
 dir.create(file.path(test_root,'frontend/public/data/archive/2027-preseason'),recursive=TRUE)
 stopifnot(file.copy('frontend/public/data/archive/2027-preseason/impact_players.json',file.path(test_root,'frontend/public/data/archive/2027-preseason/impact_players.json')))
 stopifnot(model$live_evidence_weight(0,list(),2027)$weight==0,
- abs(model$live_evidence_weight(60,list(),2027)$weight-60/1560)<1e-9,
+ abs(model$live_evidence_weight(60,list(),2027)$weight-.04)<1e-9,
+ model$live_evidence_weight(750,list(),2027)$weight==.5,
+ model$live_evidence_weight(1500,list(),2027)$weight==1,
+ model$live_evidence_weight(2000,list(),2027)$weight==1,
+ model$live_evidence_weight(1500,list('2026'=2500),2027)$weight<1,
  model$live_evidence_weight(60,list('2026'=2500,'2025'=2000),2027)$weight<.025,
  model$live_evidence_weight(4000,list('2026'=2500),2027)$weight==1)
 w <- vapply(seq(0,4000,50),function(m) model$live_evidence_weight(m,list('2026'=2500,'2025'=2000),2027)$weight,numeric(1))
 stopifnot(all(diff(w)>=0))
+rookie_w <- vapply(seq(0,4000,50),function(m) model$live_evidence_weight(m,list(),2027)$weight,numeric(1))
+stopifnot(all(diff(rookie_w)>=0),all(rookie_w>=0 & rookie_w<=1))
 p <- jsonlite::fromJSON('frontend/public/data/archive/2027-preseason/impact_players.json')
 r <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(identical(r$Minutes,p$Minutes),identical(r$contract,p$contract),all(is.finite(r$total)))
