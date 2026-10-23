@@ -3,12 +3,17 @@ for(expr in parse('script/frontend/export_frontend_data.R')) {
  if(is.call(expr) && identical(expr[[1]],as.name('<-')) && length(expr)==3L && is.call(expr[[3]]) && identical(expr[[3]][[1]],as.name('function'))) eval(expr,model)
 }
 source('script/frontend/live_ratings.R',local=model)
+# Fixture applications must not overwrite the real export's source audit.
+test_root <- tempfile('live-rating-test-')
+dir.create(file.path(test_root,'raw/live'),recursive=TRUE)
+dir.create(file.path(test_root,'frontend/public/data'),recursive=TRUE)
+stopifnot(file.copy('raw/live/ratings.json',file.path(test_root,'raw/live/ratings.json')))
 p <- jsonlite::fromJSON('frontend/public/data/archive/2027-preseason/impact_players.json')
-r <- model$apply_live_expected_ratings(p,'.')
+r <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(identical(r$Minutes,p$Minutes),identical(r$contract,p$contract),all(is.finite(r$total)))
 stopifnot(sum(r$skill_source=='live_expected_epm_darko')>400)
 # Reapplying identical input must not compound the adjustment.
-r2 <- model$apply_live_expected_ratings(r,'.');stopifnot(identical(r$total,r2$total))
+r2 <- model$apply_live_expected_ratings(r,test_root);stopifnot(identical(r$total,r2$total))
 feed <- jsonlite::fromJSON('raw/live/ratings.json')
 j <- match(203999,feed$players$nba_id);i <- match(203999,r$nba_id)
 stopifnot(abs(r$o_epm[i]-feed$players$o_epm[j])<1e-8)
@@ -29,4 +34,5 @@ if('--require-export' %in% commandArgs(TRUE)) {
  stopifnot(any(abs(pub$total-p$total[match(pub$nba_id,p$nba_id)])>.001,na.rm=TRUE))
  out <- jsonlite::fromJSON('frontend/public/data/v2/team_projections/2027.json');stopifnot(sum(out$actual_wins[out$scenario_id=='base'])==sum(s2$is_completed))
 }
+unlink(test_root,recursive=TRUE)
 cat('Live metric identity, idempotence, current-result accounting and export tests passed\n')
