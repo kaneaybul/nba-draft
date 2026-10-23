@@ -3877,6 +3877,7 @@ build_impact_players <- function(base_dir) {
   x$lineup_role_order <- NA_integer_
   x$lineup_role_band_minutes <- NA_real_
 
+  for (col in c("live_evidence_minutes", "live_current_weight", "live_prior_minutes", "live_skill_components_updated")) x[[col]] <- NA_real_
   projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year, contract_scale_model)
   if (nrow(projected_2027) > 0) {
     x <- rbind(x, projected_2027[, names(x), drop = FALSE])
@@ -3886,6 +3887,8 @@ build_impact_players <- function(base_dir) {
 
   x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Position is built from Basketball-Reference play-by-play position-share estimates when available, and replacement is a trailing 3-year plurality-position cutoff at the 75th rotation-useful player per position-season; each player's replacement value is then weighted by his position shares. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
+  live_note <- x$year == contract_year + 1L & is.finite(x$live_current_weight)
+  x$source_note[live_note] <- paste0("Actual-minute transition from the frozen preseason forecast; 80% external / 20% SKILL. ", x$availability_reason[live_note], " Missing skill components and switch/perimeter retain preseason priors.")
   cols <- c(
     "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "rights_team", "roster_state", "roster_status_source", "roster_truth_pulled_at",
     "incumbent_team", "market_team", "team_projection_base",
@@ -3893,6 +3896,7 @@ build_impact_players <- function(base_dir) {
     "position_index", "position_entropy", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "replacement_total", "score", "score_label", "score_delta", "tier", "availability_status", "availability_reason",
+    "live_evidence_minutes", "live_current_weight", "live_prior_minutes", "live_skill_components_updated",
     "skill_source", "skill_source_year", "timin", "season_value", "raw_minutes", "raw_timin",
     "value", "contract", "contract_status", "value_add", "trade_value",
     "fa_value", "fa_raw_value", "fa_uncapped_value", "fa_min_salary", "fa_max_salary",

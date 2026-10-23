@@ -85,7 +85,7 @@ The sportsbook reference is the last documented pre-tip line located for each te
 
 The existing **Rebuild lineup projections** GitHub workflow now runs daily at 13:15 UTC and can be run manually. It downloads public expected EPM from `https://dunksandthrees.com/epm` (never `/epm/actual`) and current DARKO from `https://www.darko.app/`. Public Svelte page data is decoded with a literal-only parser; remote JavaScript is never evaluated. Dates, season, values, duplicates and coverage are validated. A login wall, stale source or schema change stops publication and preserves the last successful export. Credentials are not required for the currently accessible source pages.
 
-Active-season forecasts use the existing standardized EPM/DARKO blend (80%) plus the existing projected skill model (20%). The skill-model features and multi-year career priors are not retrained from a two-game sample. Player values, Scale, rotations and team forecasts are recomputed in the ordinary exporter. Draft synthetic IDs resolve to current providers only by unique normalized name plus current team. Missing source pairs retain their prior ratings and are listed in Refresh details.
+Active-season forecasts retain an 80% external / 20% SKILL mix, with an actual-minute transition from the frozen preseason forecast described below. Current skill statistics are rescored with existing coefficients; model coefficients and multi-year career models are not retrained from a two-game sample. Player values, Scale, rotations and team forecasts are recomputed in the ordinary exporter. Draft synthetic IDs resolve to current providers only by unique normalized name plus current team. Missing source pairs retain their external forecast priors and are listed in Refresh details; available measured skill components can still update.
 
 ESPN final regular-season results share the same 30 schedule downloads used by the injury refresh. Finals are deduplicated, scores validated and joined by date/home/away. Projected wins = actual wins + expected wins in remaining games. Preseason, ongoing games and the Cup championship do not become earned regular-season wins. The normal injury model reduces dated availability and redistributes minutes before game odds are calculated. Per-minute ratings do not receive a second injury penalty.
 
@@ -94,8 +94,18 @@ Local refresh, after installing frontend dependencies:
 ```sh
 node script/data/refresh_live_ratings.mjs
 python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
+python3 script/data/refresh_live_skill_stats.py
 Rscript script/frontend/export_frontend_data.R
 node script/frontend/validate_preseason_archive.mjs
 ```
 
 Publishing uses the existing Cloudflare Pages deployment after the workflow’s tests, full export and frontend build pass. Source dates are shown separately from the export timestamp.
+
+
+## Gradual in-season evidence
+
+The daily workflow also pulls current regular-season statistics through the repository's existing Databallr connection. It scores observed FTD, SHOOT, PASS, RIM, OREB, DPM, DREB and RIMPRO with the existing coefficients. Missing components retain their preseason values; SWITCH/perimeter retains its prior until compatible current matchup inputs are available. Historical statistics and fitted models are not rewritten. Current skill observations use the previous season's fixed calibration, with individual observations bounded at five historical standard deviations.
+
+Actual played minutes determine the transition from the immutable preseason player forecast. The 4,000-minute window takes the current season first, then up to three prior seasons, whose minutes receive weights 0.75, 0.5625 and 0.421875. Effective prior evidence has a conservative 1,500-minute minimum, capped by 0.75 times the remaining window so it tapers to zero at 4,000 current-season minutes. Current weight is current minutes / (current minutes + effective prior minutes). A rookie with 60 actual minutes therefore has 3.85% current-evidence weight; a veteran with 2,500 minutes last year and 2,000 the previous year has 2.19%. At zero current minutes, the preseason talent forecast is unchanged. These are explicit conservative defaults, not backtested optimal weights.
+
+The overall 80% external / 20% SKILL split remains. The external portion implied by the preseason forecast transitions toward current expected EPM/DARKO at the same evidence weight; measured SKILL components transition once at that weight as well. This is a forecast-transition rule, not a claim that expected EPM/DARKO are raw independent observations or that their own historical priors have disappeared. Injuries, rotations and completed team results still apply immediately. Every refresh recomputes from the frozen anchor, preventing repeated pulls from compounding an adjustment. Player details show actual minutes and the current/prior weights; archive refresh details report skill coverage and retained components.

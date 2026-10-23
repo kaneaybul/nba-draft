@@ -1461,6 +1461,9 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
 
       <div className="dp-body">
         <PlayerInjuryNote injury={injuryForPlayer(player, injuryOutlook)} player={player} />
+        {player.live_current_weight != null && <p className="availability-note" title={player.availability_reason ?? undefined}>
+          Season evidence: {formatNumber(player.live_evidence_minutes ?? 0, 0)} actual minutes · {(100 * player.live_current_weight).toFixed(1)}% current evidence / {(100 * (1 - player.live_current_weight)).toFixed(1)}% preseason prior. Injuries apply separately.
+        </p>}
         {player.availability_status === "DNQ" && (
           <p className="availability-note">
             {player.availability_reason || "DNQ"} / skills from {player.skill_source_year ?? "-"}

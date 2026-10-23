@@ -34,6 +34,10 @@ export type StaticDataManifest = {
 };
 
 export type PlayerImpact = {
+  live_evidence_minutes?: number | null;
+  live_current_weight?: number | null;
+  live_prior_minutes?: number | null;
+  live_skill_components_updated?: number | null;
   nba_id: number;
   player_name: string;
   year: number;

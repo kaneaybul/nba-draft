@@ -17,6 +17,9 @@ on:
       - script/data/refresh_live_ratings.mjs
       - script/data/read_svelte_data.mjs
       - script/data/live_results.py
+      - script/data/refresh_live_skill_stats.py
+      - script/data/test_live_skill_stats.py
+      - script/frontend/test_live_ratings.R
       - raw/live_refresh_request.json
 
 # Serialize data commits with a deliberate roster refresh.
@@ -85,6 +88,11 @@ jobs:
         run: |
           python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
           python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
+
+      - name: Refresh current skill statistics with conservative evidence weights
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
+          python3 script/data/refresh_live_skill_stats.py
 
       - name: Rebuild projections from cached rosters and fresh injuries
         run: Rscript script/frontend/export_frontend_data.R
