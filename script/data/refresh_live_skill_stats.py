@@ -26,6 +26,19 @@ def term_value(row, term):
         return None if a is None or b is None else a*b
     return number(row.get(aliases.get(term,term)))
 
+def read_historical_minutes(path, season):
+    with path.open() as f:
+        reader=csv.DictReader(f)
+        if not {'nba_id','year','Minutes'}.issubset(reader.fieldnames or []):
+            raise ValueError('Historical source lacks actual Minutes')
+        rows=list(reader)
+    out={}
+    for row in rows:
+        year=int(row['year']); minutes=number(row.get('Minutes'))
+        if season-3<=year<season and minutes is not None:
+            out.setdefault(str(int(float(row['nba_id']))),{})[str(year)]=max(0,minutes)
+    return out
+
 def build_feed(data, season, root=ROOT):
     if len(data)<100 or len(data)>=2000: raise ValueError('Incomplete or truncated current-season stats')
     coefficients={}
@@ -45,11 +58,9 @@ def build_feed(data, season, root=ROOT):
         vals=[number(x.get(skill+'_raw')) for x in reference]; vals=[x for x in vals if x is not None]
         if len(vals)<100 or statistics.stdev(vals)<=0: raise ValueError('Invalid skill calibration: '+skill)
         calibration[skill]={'mean':statistics.mean(vals),'sd':statistics.stdev(vals)}
-    historical_minutes={}
-    for row in history:
-        year=int(row['year']); minutes=number(row.get('SOURCE_MINUTES'))
-        if season-3<=year<season and minutes is not None:
-            historical_minutes.setdefault(str(int(float(row['nba_id']))),{})[str(year)]=max(0,minutes)
+    historical_minutes=read_historical_minutes(root/'processed/livedata/impactrefresh/impactoutput.csv',season)
+    if len(historical_minutes)<100 or sum(str(season-1) in h for h in historical_minutes.values())<100:
+        raise ValueError('Historical actual-minute coverage is incomplete')
     players=[]; seen=set()
     for row in data:
         if int(row.get('year',0))!=season or int(row.get('playoffs',0))!=0: raise ValueError('Wrong stats season/type')
