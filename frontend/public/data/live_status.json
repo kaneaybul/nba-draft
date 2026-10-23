@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "season": 2027,
+  "generated_at": "2026-10-23T18:05:12.951Z",
+  "epm_type": "expected",
+  "epm_as_of": "2026-10-23",
+  "darko_through": "2026-10-22",
+  "epm_url": "https://dunksandthrees.com/epm",
+  "darko_url": "https://www.darko.app/",
+  "matched_players": 462,
+  "total_players": 544,
+  "unmatched_players": ["Kevin Porter Jr.", "Brandon Clarke", "Chris Boucher", "Dwight Powell", "Lonzo Ball", "Cameron Payne", "DAngelo Russell", "John Konchar", "Vince Williams Jr.", "Haywood Highsmith", "Jonas Valanciunas", "Kevin Love", "Aaron Holiday", "Garrison Mathews", "Cam Thomas", "Guerschon Yabusele", "Jeremy Sochan", "Cody Martin", "Chris Paul", "Monte Morris", "Russell Westbrook", "Kelly Olynyk", "Dalen Terry", "Killian Hayes", "Nicolas Batum", "Cole Anthony", "Seth Curry", "Jaden Ivey", "Xavier Tillman", "Jaden Springer", "Gary Harris", "Caleb Houstan", "Dario Saric", "Dante Exum", "Ochai Agbaji", "Pat Connaughton", "Dalano Banton", "MarJon Beauchamp", "Amir Coffey", "Terry Rozier", "JD Davison", "Ethan Thompson", "Drew Eubanks", "Micah Peavy", "Jeremiah Robinson-Earl", "Patrick Baldwin Jr.", "Tyrese Martin", "Johnny Juzang", "Gabe Vincent", "Mason Plumlee", "David Roddy", "Blake Hinson", "Dalton Knecht", "Antonio Reeves", "Colby Jones", "Lindy Waters III", "A.J. Lawson", "John Poulakidas", "Malaki Branham", "Maxi Kleber", "Lachlan Olbrich", "Tristen Newton", "Andre Jackson Jr.", "Yuki Kawamura", "Alex Antetokounmpo", "E.J. Liddell", "Keaton Wallace", "KJ Simpson", "Taelon Peter", "Bez Mbeng", "Tyler Smith", "Kobe Bufkin", "Blake Wesley", "Nick Smith Jr.", "Hunter Tyson", "Rob Dillingham", "Dariq Whitehead", "Taj Gibson", "Mouhamadou Gueye", "Richie Saunders", "Luigi Suigo", "Milos Uzan"],
+  "method": "80% standardized equal-weight expected EPM/DARKO blend plus 20% existing skill-model prior. Ratings feed the usual minutes, value, Scale and team projection calculations. Missing source pairs retain their preseason forecast."
+}
