@@ -128,6 +128,17 @@ overfull$Minutes <- 2800
 overfull$games <- 82
 overfull_allocation <- model$allocate_injury_rotation(overfull, rep(1, nrow(overfull)))
 stopifnot(sum(overfull_allocation$minutes) <= 19680 + 1e-6)
+# Completed exposure must not reintroduce an over-budget cached baseline.
+midseason <- fixture
+current <- midseason$year == 2027L
+midseason$Minutes[current] <- 2800
+midseason$games[current] <- 82
+midseason_result <- model$apply_injury_projections(midseason, schedule,
+  list(season = 2027L, generated_at = "2026-10-19T12:00:00Z", players = list()))
+midseason_totals <- tapply(midseason_result$players$Minutes[current],
+  midseason_result$players$team[current], sum)
+stopifnot(all(midseason_totals <= 19680 + 1e-6),
+  midseason_result$players$Minutes[!current] == fixture$Minutes[!current])
 rounded_baseline <- simple[1, , drop = FALSE]
 rounded_baseline$team <- "FA"
 rounded_baseline$Minutes <- 304

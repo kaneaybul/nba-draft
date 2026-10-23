@@ -218,6 +218,10 @@ apply_injury_projections <- function(players, schedules, outlook) {
   schedules$home_projected_rating <- NA_real_
   schedules$away_projected_rating <- NA_real_
   schedules$injury_projection_as_of <- NA_character_
+  # Cached player baselines can sum above the team cap. Completed-game
+  # exposure uses the same healthy budget reconciliation as future rotations,
+  # so mixing completed and remaining games cannot reintroduce that excess.
+  baseline_rotation <- allocate_injury_rotation(forecast, rep(1, nrow(forecast)))
   dates <- sort(unique(c(calendar$date, schedules$date[future_schedule])))
   for (date in dates) {
     factors <- vapply(plans, injury_availability_on_date, numeric(1), date = date)
@@ -228,7 +232,7 @@ apply_injury_projections <- function(players, schedules, outlook) {
       completed <- today$completed[today$team == team]
       past <- sum(completed | as.Date(date) < as_of)
       future <- length(completed) - past
-      total_minutes[selected] <- total_minutes[selected] + forecast$Minutes[selected] * past + rotation$minutes[selected] * future
+      total_minutes[selected] <- total_minutes[selected] + baseline_rotation$minutes[selected] * past + rotation$minutes[selected] * future
       total_games[selected] <- total_games[selected] + forecast$games[selected] * past + rotation$games[selected] * future
       total_availability[selected] <- total_availability[selected] + past + factors[selected] * future
       missed[selected] <- missed[selected] + (1 - factors[selected]) * future

@@ -11,7 +11,11 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   matched <- match(rows$nba_id, src$nba_id)
   # Draft rows use stable synthetic IDs. Resolve only unique exact normalized
   # names with matching current teams; never fuzzy-match two players.
-  key <- function(v) gsub('[^a-z0-9]', '', tolower(iconv(v,to='ASCII//TRANSLIT')))
+  key <- function(v) {
+    v <- tolower(iconv(v,to='ASCII//TRANSLIT'))
+    v <- sub(' (jr[.]?|sr[.]?|ii|iii|iv)$', '', trimws(v))
+    gsub('[^a-z0-9]', '', v)
+  }
   source_keys <- paste(key(src$player_name),src$team)
   target_keys <- paste(key(rows$player_name),rows$team_projection_base)
   unique_source <- !duplicated(source_keys) & !duplicated(source_keys,fromLast=TRUE)

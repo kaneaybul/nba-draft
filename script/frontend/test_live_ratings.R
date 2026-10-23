@@ -12,6 +12,9 @@ r2 <- model$apply_live_expected_ratings(r,'.');stopifnot(identical(r$total,r2$to
 feed <- jsonlite::fromJSON('raw/live/ratings.json')
 j <- match(203999,feed$players$nba_id);i <- match(203999,r$nba_id)
 stopifnot(abs(r$o_epm[i]-feed$players$o_epm[j])<1e-8)
+# Provider omission of a generational suffix must preserve a unique rookie match.
+rookie <- match(-2027019,r$nba_id); source_rookie <- match(1643516,feed$players$nba_id)
+if (!is.na(rookie) && !is.na(source_rookie)) stopifnot(abs(r$o_epm[rookie]-feed$players$o_epm[source_rookie])<1e-8)
 s <- jsonlite::fromJSON('frontend/public/data/archive/2027-preseason/team_schedules.json')
 s2 <- model$apply_live_game_results(s,'.');s3 <- model$apply_live_game_results(s2,'.');stopifnot(identical(s2,s3))
 t <- jsonlite::fromJSON('frontend/public/data/archive/2027-preseason/team_projections.json');t <- model$apply_schedule_projections(t,s2)
