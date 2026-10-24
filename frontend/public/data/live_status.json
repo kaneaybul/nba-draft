@@ -1,20 +1,30 @@
 {
   "schema_version": 2,
   "season": 2027,
-  "generated_at": "2026-10-23T20:52:51.741Z",
+  "generated_at": "2026-10-24T12:45:46.776Z",
   "epm_type": "expected",
-  "epm_as_of": "2026-10-23",
+  "epm_as_of": "2026-10-24",
   "darko_through": "2026-10-22",
   "epm_url": "https://dunksandthrees.com/epm",
   "darko_url": "https://www.darko.app/",
   "matched_players": 462,
   "total_players": 544,
   "unmatched_players": ["Kevin Porter Jr.", "Brandon Clarke", "Chris Boucher", "Dwight Powell", "Lonzo Ball", "Cameron Payne", "DAngelo Russell", "John Konchar", "Vince Williams Jr.", "Haywood Highsmith", "Jonas Valanciunas", "Kevin Love", "Aaron Holiday", "Garrison Mathews", "Cam Thomas", "Guerschon Yabusele", "Jeremy Sochan", "Cody Martin", "Chris Paul", "Monte Morris", "Russell Westbrook", "Kelly Olynyk", "Dalen Terry", "Killian Hayes", "Nicolas Batum", "Cole Anthony", "Seth Curry", "Jaden Ivey", "Xavier Tillman", "Jaden Springer", "Gary Harris", "Caleb Houstan", "Dario Saric", "Dante Exum", "Ochai Agbaji", "Pat Connaughton", "Dalano Banton", "MarJon Beauchamp", "Amir Coffey", "Terry Rozier", "JD Davison", "Ethan Thompson", "Drew Eubanks", "Micah Peavy", "Jeremiah Robinson-Earl", "Patrick Baldwin Jr.", "Tyrese Martin", "Johnny Juzang", "Gabe Vincent", "Mason Plumlee", "David Roddy", "Blake Hinson", "Dalton Knecht", "Antonio Reeves", "Colby Jones", "Lindy Waters III", "A.J. Lawson", "John Poulakidas", "Malaki Branham", "Maxi Kleber", "Lachlan Olbrich", "Tristen Newton", "Andre Jackson Jr.", "Yuki Kawamura", "Alex Antetokounmpo", "E.J. Liddell", "Keaton Wallace", "KJ Simpson", "Taelon Peter", "Bez Mbeng", "Tyler Smith", "Kobe Bufkin", "Blake Wesley", "Nick Smith Jr.", "Hunter Tyson", "Rob Dillingham", "Dariq Whitehead", "Taj Gibson", "Mouhamadou Gueye", "Richie Saunders", "Luigi Suigo", "Milos Uzan"],
-  "skill_stats_fetched_at": "2026-10-23T20:52:55.430285+00:00",
-  "skill_updated_players": 330,
-  "max_current_weight": 0.0369,
+  "skill_stats_fetched_at": "2026-10-24T12:45:48.756603+00:00",
+  "skill_updated_players": 354,
+  "max_current_weight": 0.048,
   "held_skill_components": [
     "SWITCH"
   ],
-  "method": "Actual-minute transition from the frozen preseason forecast. Up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one with current NBA minutes; rookies fully replace this prior at 1,500 minutes. Actual historical evidence remains in the veteran weighting. SKILL incorporates available current stats using fixed historical calibration; switch/perimeter and missing components retain priors. Overall impact keeps an 80% external / 20% SKILL mix, with the external forecast moving toward expected EPM/DARKO at the same evidence weight. This transition is a conservative modeling default, not a backtested optimal weighting. Injuries and actual game results apply immediately."
+  "switch_status": {
+    "season": 2027,
+    "season_label": "2026-27",
+    "checked_at": "2026-10-24T12:45:48.761768+00:00",
+    "source": "https://stats.nba.com/stats/leagueseasonmatchups",
+    "status": "unavailable",
+    "reason": "Current matchup data unavailable or failed validation (TimeoutError); SWITCH remains at preseason.",
+    "matchup_rows": 0,
+    "updated_players": 0
+  },
+  "method": "Actual-minute transition from the frozen preseason forecast. Up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one with current NBA minutes; rookies fully replace this prior at 1,500 minutes. Actual historical evidence remains in the veteran weighting. SKILL incorporates available current stats using fixed historical calibration; SWITCH updates when current NBA matchups and perimeter inputs pass validation; missing components retain priors. Overall impact keeps an 80% external / 20% SKILL mix, with the external forecast moving toward expected EPM/DARKO at the same evidence weight. This transition is a conservative modeling default, not a backtested optimal weighting. Injuries and actual game results apply immediately."
 }
