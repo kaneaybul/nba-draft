@@ -6,12 +6,33 @@ feed <- jsonlite::fromJSON(path,simplifyVector=FALSE)
 assignment <- feed$switch_assignments
 updated <- 0L
 if(length(assignment)>0) {
-  library(dplyr)
-  library(readr)
-  source(file.path(base_dir,'script/nbamodel/perimeter_defense_features.R'))
-  hist <- readr::read_csv(file.path(base_dir,'processed/livedata/impactrefresh/defdata.csv'),show_col_types=FALSE)
+  # Base-R equivalent of add_perimeter_alloc_residual's feature preparation.
+  # This keeps the daily job on its existing jsonlite-only dependency set.
+  hist <- read.csv(file.path(base_dir,'processed/livedata/impactrefresh/defdata.csv'),check.names=FALSE)
   hist <- hist[hist$year<feed$season,]
-  hist <- add_perimeter_alloc_residual(hist,base_dir)
+  db <- read.csv(file.path(base_dir,'raw/databallr_stats.csv'),check.names=FALSE)
+  key <- function(x) paste(trimws(as.character(x$nba_id)),x$year,sep='|')
+  db <- db[!duplicated(key(db)),]
+  idx <- match(key(hist),key(db))
+  column <- function(names,raw) {
+    out <- rep(NA_real_,nrow(hist))
+    for(k in names) if(k %in% colnames(hist)) {
+      v <- suppressWarnings(as.numeric(hist[[k]]));out <- ifelse(is.finite(out),out,v)
+    }
+    if(raw %in% colnames(db)) {
+      v <- suppressWarnings(as.numeric(db[[raw]][idx]));out <- ifelse(is.finite(out),out,v)
+    }
+    out
+  }
+  pos <- if('Pos2' %in% names(hist)) hist$Pos2 else db$Pos2[idx]
+  hist$is_center <- as.numeric(grepl('C',pos,ignore.case=TRUE))
+  points <- column('points_saved_100','points_saved_100')
+  hist$rim_points_saved_100 <- column('rim_points_saved_100','rim_points_saved_100')
+  hist$rimdfga_100 <- column(c('rimdfga/100','rimdfga_100'),'rimdfga/100')
+  perimeter <- column('d_FG3A_Per100','d_FG3A_Per100')+column('d_LongMidRangeFGA_Per100','d_LongMidRangeFGA_Per100')
+  nonrim <- perimeter+column('d_ShortMidRangeFGA_Per100','d_ShortMidRangeFGA_Per100')
+  hist$perimeter_alloc_points_saved_100 <- (points-hist$rim_points_saved_100)*ifelse(is.finite(nonrim)&nonrim>0,perimeter/nonrim,NA_real_)
+
   terms <- c('is_center','d_Blocks_Per100','d_DefRebounds_Per100','rimdfga_100','rim_points_saved_100')
   target <- 'perimeter_alloc_points_saved_100'
   training <- hist[!hist$year %in% c(2016,2017) & complete.cases(hist[,c(target,terms)]),]

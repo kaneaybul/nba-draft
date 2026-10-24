@@ -1,8 +1,7 @@
 # Exercise the full perimeter scoring step with a known role-only signal.
 original <- getwd()
 root <- tempfile('switch-test-');dir.create(root)
-for(p in c('raw/live','processed/livedata/impactrefresh','processed/modelresults','script/nbamodel')) dir.create(file.path(root,p),recursive=TRUE)
-file.copy('script/nbamodel/perimeter_defense_features.R',file.path(root,'script/nbamodel/perimeter_defense_features.R'))
+for(p in c('raw/live','processed/livedata/impactrefresh','processed/modelresults')) dir.create(file.path(root,p),recursive=TRUE)
 set.seed(7);n <- 120
 center <- rep(0:1,length.out=n);blocks <- runif(n);rebounds <- runif(n,1,10);rim <- runif(n,1,8);saved <- runif(n,-2,2)
 target <- .3+center*.2+blocks*.4+rebounds*.1+rim*.05+saved*.7
