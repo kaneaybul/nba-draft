@@ -51,13 +51,19 @@ updated <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(abs(updated$skill_model_def[i]-held$skill_model_def[i]-held$live_current_weight[i])<1e-8,
           updated$SWITCH[i]>held$SWITCH[i],identical(updated$SWITCH[-i],held$SWITCH[-i]))
 file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/skill_stats.json'),overwrite=TRUE)
-# Zero actual minutes cannot cause a provider or skill-model switch.
+# Zero actual minutes retain SKILL, but do not suppress predictive EPM/DARKO.
 ev <- jsonlite::fromJSON(file.path(test_root,'raw/live/skill_stats.json'),simplifyVector=FALSE)
 for(i in seq_along(ev$players)) ev$players[[i]]$minutes <- 0
 jsonlite::write_json(ev,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
 zero <- model$apply_live_expected_ratings(p,test_root)
-stopifnot(identical(zero$total,p$total),identical(zero$skill_model_off,p$skill_model_off))
-stopifnot(identical(zero$projection_y1,p$projection_y1),identical(zero$projection_y5,p$projection_y5))
+stopifnot(identical(zero$skill_model_off,p$skill_model_off),identical(zero$skill_model_def,p$skill_model_def))
+stopifnot(identical(zero$off_dep,r$off_dep),identical(zero$def_dep,r$def_dep))
+stopifnot(any(abs(zero$total-p$total)>.1),all(zero$live_current_weight==0))
+stopifnot(identical(zero$offense,round(.8*zero$off_dep+.2*p$skill_model_off,3)))
+for(h in 1:5) {
+ col <- paste0('projection_y',h)
+ stopifnot(isTRUE(all.equal(zero[[col]],p[[col]]+zero$total-p$total)))
+}
 file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/skill_stats.json'),overwrite=TRUE)
 feed <- jsonlite::fromJSON('raw/live/ratings.json')
 j <- match(203999,feed$players$nba_id);i <- match(203999,r$nba_id)

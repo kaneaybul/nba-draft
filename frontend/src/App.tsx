@@ -1504,7 +1504,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
       <div className="dp-body">
         <PlayerInjuryNote injury={injuryForPlayer(player, injuryOutlook)} player={player} />
         {player.live_current_weight != null && <p className="availability-note" title={player.availability_reason ?? undefined}>
-          Season evidence: {formatNumber(player.live_evidence_minutes ?? 0, 0)} actual minutes · {(100 * player.live_current_weight).toFixed(1)}% current evidence / {(100 * (1 - player.live_current_weight)).toFixed(1)}% preseason prior. Injuries apply separately.
+          SKILL evidence: {formatNumber(player.live_evidence_minutes ?? 0, 0)} actual minutes · {(100 * player.live_current_weight).toFixed(1)}% current statistics / {(100 * (1 - player.live_current_weight)).toFixed(1)}% preseason SKILL prior. Overall impact: 80% latest EPM/DARKO forecast + 20% SKILL; missing forecasts retain their prior. Injuries apply separately.
         </p>}
         {player.availability_status === "DNQ" && (
           <p className="availability-note">

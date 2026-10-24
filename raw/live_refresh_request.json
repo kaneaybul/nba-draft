@@ -1,4 +1,4 @@
 {
-  "requested_at": "2026-10-24T14:15:45.847137+00:00",
-  "reason": "Reconcile live versus preseason values, propagate future ratings, and verify consolidated refresh publication."
+  "requested_at": "2026-10-24T14:27:15.413093+00:00",
+  "reason": "Correct weighting: latest expected EPM/DARKO at full 80% external weight; actual-minute shrinkage only inside 20% SKILL."
 }
