@@ -89,7 +89,9 @@ apply_live_player_pool <- function(rows,history,base_dir) {
     if(!active) rows$contract[i] <- NA_real_ else if(!is.na(known_contract)&&is.finite(contracts$salary_y1[known_contract])&&contracts$salary_y1[known_contract]>0) {
       rows$contract[i] <- contracts$salary_y1[known_contract]
     } else if(!is.finite(rows$contract[i])&&!is.null(p$salary)&&is.finite(p$salary)&&p$salary>0) rows$contract[i] <- p$salary
-    rows$contract_status[i] <- if(active) pool_scalar(p$contract_status,'Signed') else 'UFA'
+    status <- pool_scalar(p$contract_status,'Signed')
+    if(active && status %in% c('UFA','RFA','Rookie FA')) status <- 'Signed'
+    rows$contract_status[i] <- if(active) status else 'UFA'
     rows$projection_roster_status[i] <- if(active) 'signed' else 'open_market'
   }
   rows <- rows[rows$pool_status!='draft',,drop=FALSE]
@@ -124,5 +126,6 @@ fixed_pool_scores <- function(rows,base_dir) {
   rows$score_delta <- round(rows$score-preseason$score[idx],1)
   rows$score_label <- format(rows$score,trim=TRUE,nsmall=1)
   rows$tier <- tier_from_score(rows$score)
+  if('trade_value' %in% names(rows) && 'value' %in% names(rows)) rows$trade_value <- round(rows$value*(.45+rows$score/170),0)
   rows
 }

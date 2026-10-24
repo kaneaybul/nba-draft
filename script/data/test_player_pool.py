@@ -29,6 +29,11 @@ class PoolTests(unittest.TestCase):
         a=dict(espn_id='123',player_name='Example Player',team='BOS',salary=None,position='G')
         rows,_=reconcile([self.player()],[a],[],2027,NOW)
         self.assertEqual(rows[0]['app_nba_id'],42);self.assertEqual(rows[0]['team'],'BOS')
+    def test_roster_confirmation_supersedes_free_agent_label(self):
+        p=self.player();p['contract_status']='UFA'
+        a=dict(espn_id='123',player_name='Example Player',team='UTA',salary=None,position='G')
+        rows,_=reconcile([p],[a],[],2027,NOW)
+        self.assertEqual(rows[0]['contract_status'],'Signed')
     def test_retirement_and_inactivity_are_hidden(self):
         t=dict(date='2026-10-23',team='UTA',description='Retired G Example Player.')
         rows,_=reconcile([self.player()],[],[t],2027,NOW);self.assertEqual(rows[0]['pool_status'],'inactive')

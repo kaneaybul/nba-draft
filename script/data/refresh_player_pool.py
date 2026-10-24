@@ -72,6 +72,8 @@ def reconcile(existing,active,transactions,season,now,overrides=()):
         if p.get('team')!=a['team']: p['salary']=None
         p.update(a,pool_status='roster',roster_state='active',last_seen=now.isoformat(),review_pending=False,inactive_confirmed=False,
                  note='Confirmed on current ESPN team roster.',identity_status='nba_id' if p.get('nba_id') else 'provisional_id')
+        if p.get('contract_status') in (None,'UFA','RFA','Rookie FA'):
+            p['contract_status']='Signed'
         for t in transactions:
             if name_key(a['player_name']) in name_key(t['description']) and 'two-way' in t['description'].lower() and t['date'][:10]>=f'{season-1}-07-01':
                 p['contract_status']='Two-Way';break
