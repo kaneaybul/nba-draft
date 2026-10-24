@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-24T14:31:59Z",
+  "generated_at": "2026-10-24T16:38:16Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -24,7 +24,7 @@
     },
     {
       "dataset": "injury_outlook",
-      "rows": 72,
+      "rows": 75,
       "file": "injury_outlook.json"
     },
     {
@@ -85,7 +85,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-10-24T14:31:59.594Z",
+    "generated_at": "2026-10-24T16:38:16.563Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -205,16 +205,16 @@
             "year": 2026,
             "rows": 535,
             "file": "v2/impact_players/2026.json",
-            "bytes": 2817433,
-            "sha256": "724cf1169aee3ee90ee55938b138e18e10db302aaa57a526ceccf6da3d0608bc"
+            "bytes": 2817437,
+            "sha256": "903b90ffbb9fbbc2dd56d76a43736d7080093b8fffe45ab6e6f437b2ccbd8c50"
           },
           {
             "key": "2027",
             "year": 2027,
             "rows": 631,
             "file": "v2/impact_players/2027.json",
-            "bytes": 3424599,
-            "sha256": "70c99bfe41f347819f2416765c2285df600ca5333862f4a3f8392c58859a0b39"
+            "bytes": 3425178,
+            "sha256": "778ba88597ba046654800d91223cd3c959bcb45d3571e61eb97195a25b45d6e8"
           }
         ]
       },
@@ -315,8 +315,8 @@
             "year": 2027,
             "rows": 90,
             "file": "v2/team_projections/2027.json",
-            "bytes": 88839,
-            "sha256": "c9c4985b5e0e60d9cb1e8b906518ce41df073e2a8e7434d8f6ae1a2919b1b317"
+            "bytes": 88814,
+            "sha256": "71ee09916fb417410d1f7681389d9372f89a0cbc003615933639f0c4231d5b52"
           }
         ]
       },
@@ -417,8 +417,8 @@
             "year": 2027,
             "rows": 900,
             "file": "v2/team_lineups/2027.json",
-            "bytes": 669484,
-            "sha256": "951605862dcdc7749da6c2aee624e02ca93edb08ba331fc1233ad915c1f74ca5"
+            "bytes": 669506,
+            "sha256": "54e6ac876bf5d9c9256ba7dbec95a127ddb6462d6fbf0380def196ce54708a8d"
           }
         ]
       },
@@ -519,24 +519,24 @@
             "year": 2027,
             "rows": 1260,
             "file": "v2/team_schedules/2027.json",
-            "bytes": 857487,
-            "sha256": "45fe00db67413980905bb271a839e9be63596cb7defe69c92fccf842d4fc95c7"
+            "bytes": 857461,
+            "sha256": "91a91cb1ffea37285cc6775132a4a5e76014db40a2880e9cb251d5d4871ad23c"
           }
         ]
       },
       "injury_outlook": {
         "strategy": "singleton",
-        "rows": 72,
+        "rows": 75,
         "file": "injury_outlook.json",
-        "bytes": 62881,
-        "sha256": "f858bd7b16f2b306614e040311ee3053d364f0ed4d4eb2a32a1404fffaa74e14"
+        "bytes": 65457,
+        "sha256": "934be7e491f84e15db639bc2764113a7fd62e34cfb53cc71241fed94172375f1"
       },
       "impact_player_history": {
         "strategy": "singleton",
         "rows": 6101,
         "file": "impact_player_history.json",
-        "bytes": 646798,
-        "sha256": "6073a89c359e5bbfbd67c35e31c3611906f5458d8b7db1a232413cc27c4d977a"
+        "bytes": 646802,
+        "sha256": "4b1a649f995452d1d867563e9ed308296cade87be20218b15709184751ab14a6"
       },
       "pick_assets": {
         "strategy": "singleton",
@@ -592,14 +592,14 @@
         "rows": 535,
         "file": "offseason_truth.json",
         "bytes": 349179,
-        "sha256": "db3be1ec54c61b232c8870beabdee51f03fbb7ca9b95d726e0ebd0b09e39f83e"
+        "sha256": "a8f4d7681513369c2b2b8be6fa85449f8ad640887c52f76e4b2779665462d504"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
         "bytes": 1839619,
-        "sha256": "b0d70a10b931a6d6409a2a6866233edef7c9ed707636f41e5c00382d34364bc2"
+        "sha256": "4685548ca140814d1a864abe57e180abaf64d52472efc086fd2fc6b4d15e4fe6"
       },
       "cap_transaction_review": {
         "strategy": "singleton",
