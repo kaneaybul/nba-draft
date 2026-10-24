@@ -8,27 +8,7 @@ on:
     branches:
       - main
     paths:
-      - .github/workflows/lineup-rebuild.yml
-      - script/frontend/export_frontend_data.R
-      - script/frontend/test_lineup_positions.R
-      - script/frontend/injury_projections.R
-      - script/frontend/test_injury_projections.R
-      - script/frontend/live_ratings.R
-      - script/data/refresh_live_ratings.mjs
-      - script/data/read_svelte_data.mjs
-      - script/data/live_results.py
-      - script/data/refresh_live_skill_stats.py
-      - script/data/test_live_skill_stats.py
-      - script/data/live_switch.py
-      - script/data/test_live_switch.py
-      - script/frontend/refresh_live_switch.R
-      - script/frontend/test_live_switch.R
-      - script/data/refresh_player_pool.py
-      - script/data/test_player_pool.py
-      - script/frontend/player_pool.R
-      - script/frontend/test_player_pool.R
-      - ref/player_pool_overrides.json
-      - script/frontend/test_live_ratings.R
+      # Deliberate refresh only; model code edits are tested before requesting a run.
       - raw/live_refresh_request.json
 
 # Serialize data commits with a deliberate roster refresh.
@@ -50,6 +30,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
 
       - uses: actions/setup-node@v4
         with:
@@ -84,6 +65,7 @@ jobs:
 
       - name: Refresh player membership from rosters and transactions
         run: |
+          python3 script/frontend/test_publish_refresh.py
           python3 -m unittest discover -s script/data -p "test_player_pool.py"
           python3 script/data/refresh_player_pool.py
 
@@ -128,6 +110,7 @@ jobs:
 
       - name: Validate frontend data
         run: |
+          node ../script/frontend/test_data_refresh.mjs
           npm run validate:data
           npm run validate:schedule
         working-directory: frontend
@@ -157,10 +140,5 @@ jobs:
           node script/frontend/validate_preseason_archive.mjs
           git add frontend/public/data raw/live
           git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
-          if git diff --cached --quiet; then
-            echo "No lineup data changes to commit."
-          else
-            git commit -m "Refresh expected NBA ratings, injuries and completed results"
-            git push origin HEAD:main
-          fi
+          bash script/frontend/publish_refresh.sh "Refresh expected NBA ratings, injuries and completed results"
 

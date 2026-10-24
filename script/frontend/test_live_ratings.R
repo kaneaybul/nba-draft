@@ -30,6 +30,10 @@ stopifnot(sum(r$skill_source=='live_expected_epm_darko')>400)
 # Reapplying identical input must not compound the adjustment.
 r2 <- model$apply_live_expected_ratings(r,test_root)
 stopifnot(identical(r$total,r2$total),identical(r$skill_model_off,r2$skill_model_off),identical(r$SHOOT,r2$SHOOT),identical(r$SWITCH,r2$SWITCH))
+for(h in 1:5) {
+ col <- paste0('projection_y',h)
+ stopifnot(isTRUE(all.equal(r[[col]],p[[col]]+r$total-p$total)),identical(r[[col]],r2[[col]]))
+}
 stopifnot(all(r$live_current_weight>=0 & r$live_current_weight<=1),any(abs(r$skill_model_off-p$skill_model_off)>.0001))
 # A newly available SWITCH observation must flow into defensive SKILL.
 fixture <- jsonlite::fromJSON(file.path(test_root,'raw/live/skill_stats.json'),simplifyVector=FALSE)
@@ -53,6 +57,7 @@ for(i in seq_along(ev$players)) ev$players[[i]]$minutes <- 0
 jsonlite::write_json(ev,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
 zero <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(identical(zero$total,p$total),identical(zero$skill_model_off,p$skill_model_off))
+stopifnot(identical(zero$projection_y1,p$projection_y1),identical(zero$projection_y5,p$projection_y5))
 file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/skill_stats.json'),overwrite=TRUE)
 feed <- jsonlite::fromJSON('raw/live/ratings.json')
 j <- match(203999,feed$players$nba_id);i <- match(203999,r$nba_id)
@@ -75,6 +80,11 @@ if('--require-export' %in% commandArgs(TRUE)) {
  all(is.finite(pub$live_current_weight)),any(pub$live_skill_components_updated>0))
  baseline <- p$score[match(pub$nba_id,p$nba_id)]
  stopifnot(isTRUE(all.equal(pub$score_delta,round(pub$score-baseline,1),check.attributes=FALSE)))
+ idx <- match(pub$nba_id,p$nba_id); matched <- !is.na(idx)
+ for(h in 1:5) {
+  col <- paste0('projection_y',h)
+  stopifnot(max(abs(pub[[col]][matched]-(p[[col]][idx[matched]]+pub$total[matched]-p$total[idx[matched]])),na.rm=TRUE)<.001)
+ }
  out <- jsonlite::fromJSON('frontend/public/data/v2/team_projections/2027.json');stopifnot(sum(out$actual_wins[out$scenario_id=='base'])==sum(s2$is_completed))
 }
 unlink(test_root,recursive=TRUE)

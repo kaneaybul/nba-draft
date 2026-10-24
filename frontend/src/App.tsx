@@ -1,6 +1,6 @@
 import { ProjectionHistory } from "./PreseasonArchive";
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { latestManifestSeason, loadAppData, loadDataForView, loadPlayerCareerHistory, manifestSeasons } from "./data";
+import { latestManifestSeason, loadAppData, loadDataForView, loadNewerAppData, loadPlayerCareerHistory, manifestSeasons } from "./data";
 import { isLocalRefreshEnabled, isPublicReadOnlyMode } from "./runtime";
 import { InjuryOutlookWorkspace, PlayerInjuryNote, injuryForPlayer } from "./InjuryOutlook";
 import {
@@ -692,6 +692,35 @@ function App() {
       active = false;
     };
   }, [data, season, view]);
+
+  useEffect(() => {
+    if (!data || refreshing) return;
+    let active = true;
+    let checking = false;
+    const check = async () => {
+      if (document.visibilityState === "hidden" || checking) return;
+      checking = true;
+      try {
+        const loaded = await loadNewerAppData(data.manifest);
+        if (!active || !loaded) return;
+        setData(loaded);
+        const seasons = manifestSeasons(loaded.manifest, loaded.players);
+        setSeason((current) => current !== null && seasons.includes(current) ? current : seasons[0] ?? null);
+        setRefreshNote("Updated to latest published data");
+      } catch {
+        // Keep the working snapshot during a transient connection failure.
+      } finally { checking = false; }
+    };
+    const timer = window.setInterval(check, 60_000);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", check);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", check);
+    };
+  }, [data, refreshing]);
 
   const reloadData = async () => {
     setRefreshing(true);

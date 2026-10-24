@@ -46,6 +46,12 @@ export async function loadAppData(cacheBust?: string): Promise<AppData> {
   return loadLegacyAppData(manifest, cacheBust);
 }
 
+export async function loadNewerAppData(current: Manifest): Promise<AppData | null> {
+  const manifest = await loadJson<Manifest>("/data/manifest.json", String(Date.now()));
+  if (manifest.generated_at === current.generated_at) return null;
+  return isStaticManifest(manifest) ? loadStaticInitialData(manifest) : loadLegacyAppData(manifest);
+}
+
 export async function loadDataForView(data: AppData, view: string, season: number, cacheBust?: string): Promise<AppData> {
   if (!isStaticManifest(data.manifest)) return data;
   let next = data;

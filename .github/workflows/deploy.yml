@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+    paths:
+      - frontend/**
+      - .github/workflows/deploy.yml
+      - script/frontend/validate_frontend_data.mjs
+      - script/frontend/test_data_refresh.mjs
   workflow_dispatch:
   workflow_run:
     workflows:
