@@ -834,6 +834,8 @@ function App() {
 
 function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const seasonPlayers = useMemo(() => data.players.filter((player) => player.year === season), [data.players, season]);
+  const hasPlayerPool = seasonPlayers.some((player) => !!player.pool_status);
+  const [poolScope, setPoolScope] = useSessionState<"roster" | "free_agent" | "all">("impact:poolScope", "roster");
   const [query, setQuery] = useSessionState("impact:query", "");
   const [team, setTeam] = useSessionState("impact:team", "All");
   const [faStatus, setFaStatus] = useSessionState<FaStatusFilter>("impact:faStatus", "All");
@@ -869,19 +871,20 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
   const selectedPositionSet = useMemo(() => new Set(activePositionSelections), [activePositionSelections]);
   const selectedFilterField = filterFields.find((field) => field.key === filterKey) ?? filterFields[0];
   const availableOperators = selectedFilterField.type === "number" ? numericOperators : textOperators;
-  const quickFilterCount = [query.trim(), team !== "All", faStatus !== "All", activePositionSelections.length > 0].filter(Boolean).length;
+  const quickFilterCount = [hasPlayerPool && poolScope !== "roster", query.trim(), team !== "All", faStatus !== "All", activePositionSelections.length > 0].filter(Boolean).length;
   const activeFilterCount = quickFilterCount + filterRules.length;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return seasonPlayers
+      .filter((player) => !hasPlayerPool || poolScope === "all" || player.pool_status === poolScope)
       .filter((player) => !q || player.player_name.toLowerCase().includes(q))
       .filter((player) => team === "All" || playerTeamFilterValue(player) === team)
       .filter((player) => faStatus === "All" || faStatusLabel(player) === faStatus)
       .filter((player) => activePositionSelections.length === 0 || selectedPositionSet.has(displayPosition(player.position)))
       .filter((player) => passesFilterRules(player, filterRules))
       .sort((a, b) => comparePlayers(a, b, sortKey, sortDirection));
-  }, [activePositionSelections.length, faStatus, filterRules, query, seasonPlayers, selectedPositionSet, sortDirection, sortKey, team]);
+  }, [hasPlayerPool, poolScope, activePositionSelections.length, faStatus, filterRules, query, seasonPlayers, selectedPositionSet, sortDirection, sortKey, team]);
 
   useEffect(() => {
     setPositionSelections((current) => {
@@ -968,6 +971,7 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
     setFilterValueTo("");
   }, [filterKey, setFilterKey, setFilterOperator, setFilterValue, setFilterValueTo]);
   const clearAllFilters = () => {
+    setPoolScope("roster");
     setQuery("");
     setTeam("All");
     setFaStatus("All");
@@ -1010,6 +1014,14 @@ function ImpactWorkspace({ data, season }: { data: AppData; season: number }) {
               <span>Find</span>
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Player name" />
             </div>
+            {hasPlayerPool && <label className="mobile-drawer-filter">
+              Player pool
+              <select value={poolScope} onChange={(event) => setPoolScope(event.target.value as "roster" | "free_agent" | "all")}>
+                <option value="roster">NBA rosters</option>
+                <option value="free_agent">Free agents</option>
+                <option value="all">All tracked</option>
+              </select>
+            </label>}
             <label className="mobile-drawer-filter">
               Team
               <select value={team} onChange={(event) => setTeam(event.target.value)}>
@@ -1447,6 +1459,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
             <div className="dp-title-block">
               <div className="dp-meta">{player.team} / {displayPosition(player.position)}</div>
               <div className="dp-name">{player.player_name}</div>
+              {player.pool_status && <p className="availability-note">{player.pool_review_pending ? "Roster needs review. " : ""}{player.pool_note}{player.pool_checked_at && <> Checked {new Date(player.pool_checked_at).toLocaleDateString()}.</>}</p>}
               <div className="dp-tags">
                 <span className="tier-text">{player.tier}</span>
                 {player.score_delta !== null && player.score_delta !== undefined && (

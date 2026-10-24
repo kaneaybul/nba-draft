@@ -27,7 +27,9 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   keys <- c('offense','defense','total','skill_model_off','skill_model_def','FTD','SHOOT','PASS','RIM','OREB','DPM','DREB','RIMPRO','SWITCH')
   for(k in keys) prior[[k]][anchored] <- archive[[k]][anchor[anchored]]
   src <- feed$players
-  matched <- match(rows$nba_id,src$nba_id)
+  identity_ids <- rows$nba_id
+  if('source_nba_id' %in% names(rows)) { known <- is.finite(rows$source_nba_id); identity_ids[known] <- rows$source_nba_id[known] }
+  matched <- match(identity_ids,src$nba_id)
   key <- function(v) {
     v <- tolower(iconv(v,to='ASCII//TRANSLIT'))
     v <- sub(' (jr[.]?|sr[.]?|ii|iii|iv)$','',trimws(v))
@@ -51,7 +53,7 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   }
   off <- blend(src$o_epm,src$o_dpm); def <- blend(src$d_epm,src$d_dpm)
   evidence_ids <- vapply(evidence$players,function(x) as.numeric(x$nba_id),numeric(1))
-  canonical <- rows$nba_id; canonical[good] <- src$nba_id[matched[good]]
+  canonical <- identity_ids; canonical[good] <- src$nba_id[matched[good]]
   observed <- match(canonical,evidence_ids)
   rows$live_evidence_minutes <- 0; rows$live_current_weight <- 0; rows$live_prior_minutes <- 0
   rows$live_skill_components_updated <- 0

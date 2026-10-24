@@ -23,6 +23,11 @@ on:
       - script/data/test_live_switch.py
       - script/frontend/refresh_live_switch.R
       - script/frontend/test_live_switch.R
+      - script/data/refresh_player_pool.py
+      - script/data/test_player_pool.py
+      - script/frontend/player_pool.R
+      - script/frontend/test_player_pool.R
+      - ref/player_pool_overrides.json
       - script/frontend/test_live_ratings.R
       - raw/live_refresh_request.json
 
@@ -77,6 +82,11 @@ jobs:
           still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
           if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
 
+      - name: Refresh player membership from rosters and transactions
+        run: |
+          python3 -m unittest discover -s script/data -p "test_player_pool.py"
+          python3 script/data/refresh_player_pool.py
+
       - name: Test and refresh expected EPM and DARKO
         run: |
           node --test script/data/test_live_ratings.mjs
@@ -100,12 +110,15 @@ jobs:
           python3 script/data/refresh_live_skill_stats.py
           Rscript script/frontend/test_live_switch.R
           Rscript script/frontend/refresh_live_switch.R
+          python3 script/data/refresh_player_pool.py --enrich
 
       - name: Rebuild projections from cached rosters and fresh injuries
         run: Rscript script/frontend/export_frontend_data.R
 
       - name: Verify live ratings and completed results
-        run: Rscript script/frontend/test_live_ratings.R --require-export
+        run: |
+          Rscript script/frontend/test_live_ratings.R --require-export
+          Rscript script/frontend/test_player_pool.R --require-export
 
       - name: Verify positional lineups and contract-season alignment
         run: Rscript script/frontend/test_lineup_positions.R

@@ -2577,13 +2577,14 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     vets$skill_source <- "career_projection"
     vets$skill_source_year <- contract_year
     vets <- shift_future_columns(vets, cap_assumptions)
-    vets <- prune_low_impact_ufas(vets, "total")
+    # Current inclusion is maintained by the daily player registry.
   }
 
   rookies <- build_rookie_2027_rows(latest, base_dir, cap_assumptions, impact_reference, replacement_reference, target_year)
   rows <- rbind(vets, rookies[, names(vets), drop = FALSE])
   if (!nrow(rows)) return(rows)
   rows <- recalculate_projected_skill_rollups(rows, x)
+  rows <- apply_live_player_pool(rows, x, base_dir)
   rows <- apply_live_expected_ratings(rows, base_dir)
 
   rows$replacement_total <- draft_replacement_total(
@@ -2592,10 +2593,10 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     rows[, intersect(position_share_columns(), names(rows)), drop = FALSE]
   )
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
-  rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
-  rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
+  rows <- fixed_pool_scores(rows, base_dir)
   minute_rows <- assign_team_projection_scenario(rows, "base")
   minute_rows <- apply_lineup_minute_adjustment(minute_rows, adjust_free_agents = TRUE)
+  minute_rows <- zero_inactive_pool_minutes(minute_rows)
   rows$games <- minute_rows$games
   rows$Minutes <- minute_rows$Minutes
   rows$p_mpg <- minute_rows$p_mpg
@@ -2616,7 +2617,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   preseason_path <- file.path(base_dir, "frontend/public/data/archive", paste0(target_year, "-preseason"), "impact_players.json")
   preseason <- jsonlite::fromJSON(preseason_path)
   preseason_scores <- preseason$score[match(rows$nba_id, preseason$nba_id)]
-  rows$score_delta <- round(rows$score - preseason_scores, 1)
+  rows <- fixed_pool_scores(rows, base_dir)
   rows$score_label <- format(round(rows$score, 1), trim = TRUE, nsmall = 1)
   rows$tier <- tier_from_score(rows$score)
 
@@ -2634,6 +2635,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     round(pmax(0, pmin(minutes_capacity, contract_capacity) * rows$value / cap_proxy), 3)
   }
   rows <- buttress_future_projection_minutes(rows)
+  rows <- zero_inactive_pool_minutes(rows)
 
   for (horizon in 1:5) {
     rows[[paste0("projection_timin_y", horizon)]] <- round((rows[[paste0("projection_y", horizon)]] - rows$replacement_total) *
@@ -3828,7 +3830,7 @@ build_impact_players <- function(base_dir) {
       x$key <- NULL
     }
   }
-  x <- prune_low_impact_ufas(x, "projection_y1")
+  # Keep recent players regardless of rating; the live registry controls visibility.
   current_dnq <- x$year == contract_year & x$availability_status == "DNQ"
 
   current_games <- ifelse(!is.na(x$p_mpg) & x$p_mpg > 0, x$Minutes / x$p_mpg, NA_real_)
@@ -3878,6 +3880,8 @@ build_impact_players <- function(base_dir) {
   x$lineup_role_band_minutes <- NA_real_
 
   for (col in c("live_evidence_minutes", "live_current_weight", "live_prior_minutes", "live_skill_components_updated")) x[[col]] <- NA_real_
+  for (col in pool_character_fields) x[[col]] <- NA_character_
+  x$pool_review_pending <- FALSE; x$source_nba_id <- NA_real_
   projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year, contract_scale_model)
   if (nrow(projected_2027) > 0) {
     x <- rbind(x, projected_2027[, names(x), drop = FALSE])
@@ -3897,6 +3901,7 @@ build_impact_players <- function(base_dir) {
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "replacement_total", "score", "score_label", "score_delta", "tier", "availability_status", "availability_reason",
     "live_evidence_minutes", "live_current_weight", "live_prior_minutes", "live_skill_components_updated",
+    "pool_status", "pool_note", "pool_checked_at", "pool_identity_status", "pool_review_pending", "source_nba_id",
     "skill_source", "skill_source_year", "timin", "season_value", "raw_minutes", "raw_timin",
     "value", "contract", "contract_status", "value_add", "trade_value",
     "fa_value", "fa_raw_value", "fa_uncapped_value", "fa_min_salary", "fa_max_salary",
@@ -5152,6 +5157,7 @@ source(file.path(base_dir, "script", "draft", "name_matching.R"), local = FALSE)
 source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = FALSE)
 source(file.path(base_dir, "script", "frontend", "injury_projections.R"), local = FALSE)
 source(file.path(base_dir, "script", "frontend", "live_ratings.R"), local = FALSE)
+source(file.path(base_dir, "script", "frontend", "player_pool.R"), local = FALSE)
 out_dir <- file.path(base_dir, "frontend", "public", "data")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -5162,6 +5168,8 @@ schedules <- with_frontend_timing(base_dir, "frontend_export", "build_team_sched
 injury_projections <- with_frontend_timing(base_dir, "frontend_export", "apply_injury_projections",
   apply_injury_projections(players, schedules, injury_outlook))
 players <- injury_projections$players
+active_pool <- which(players$year == 2027)
+players[active_pool,] <- fixed_pool_scores(players[active_pool,], base_dir)
 schedules <- injury_projections$schedules
 teams <- with_frontend_timing(base_dir, "frontend_export", "build_team_projections", build_team_projections(players))
 team_lineups <- with_frontend_timing(base_dir, "frontend_export", "build_team_lineups", build_team_lineups(players))

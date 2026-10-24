@@ -34,6 +34,12 @@ export type StaticDataManifest = {
 };
 
 export type PlayerImpact = {
+  pool_status?: "roster" | "free_agent" | "inactive" | "draft" | null;
+  pool_note?: string | null;
+  pool_checked_at?: string | null;
+  pool_identity_status?: string | null;
+  pool_review_pending?: boolean;
+  source_nba_id?: number | null;
   live_evidence_minutes?: number | null;
   live_current_weight?: number | null;
   live_prior_minutes?: number | null;
