@@ -73,6 +73,8 @@ if('--require-export' %in% commandArgs(TRUE)) {
  pub <- jsonlite::fromJSON('frontend/public/data/v2/impact_players/2027.json')
  stopifnot(any(abs(pub$total-p$total[match(pub$nba_id,p$nba_id)])>.001,na.rm=TRUE),
  all(is.finite(pub$live_current_weight)),any(pub$live_skill_components_updated>0))
+ baseline <- p$score[match(pub$nba_id,p$nba_id)]
+ stopifnot(isTRUE(all.equal(pub$score_delta,round(pub$score-baseline,1),check.attributes=FALSE)))
  out <- jsonlite::fromJSON('frontend/public/data/v2/team_projections/2027.json');stopifnot(sum(out$actual_wins[out$scenario_id=='base'])==sum(s2$is_completed))
 }
 unlink(test_root,recursive=TRUE)

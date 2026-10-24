@@ -2613,10 +2613,10 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
   rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
   rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
-  previous_pool <- x[x$year == contract_year, c("nba_id", "score"), drop = FALSE]
-  previous_scores <- previous_pool$score[match(rows$nba_id, previous_pool$nba_id)]
-  rows$score_delta <- round(rows$score - previous_scores, 1)
-  rows$score_delta[rows$availability_status == "rookie_projection"] <- NA_real_
+  preseason_path <- file.path(base_dir, "frontend/public/data/archive", paste0(target_year, "-preseason"), "impact_players.json")
+  preseason <- jsonlite::fromJSON(preseason_path)
+  preseason_scores <- preseason$score[match(rows$nba_id, preseason$nba_id)]
+  rows$score_delta <- round(rows$score - preseason_scores, 1)
   rows$score_label <- format(round(rows$score, 1), trim = TRUE, nsmall = 1)
   rows$tier <- tier_from_score(rows$score)
 

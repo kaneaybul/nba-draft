@@ -1259,7 +1259,7 @@ function PlayerTable({
             <th className="col-rate c-rate align-center">{sortableHeader("defense", "Def")}</th>
             <th className="col-rate c-rate impact-total-head align-center">{sortableHeader("total", "Total")}</th>
             <th className="col-score c-score align-center">{sortableHeader("score", "Score")}</th>
-            <th className="col-rate c-delta align-center">{sortableHeader("score_delta", "Delta")}</th>
+<th className="col-rate c-delta align-center" title={players[0]?.year === 2027 ? "Score change versus frozen preseason" : "Score change versus last season"}>{sortableHeader("score_delta", players[0]?.year === 2027 ? "Δ Pre" : "Δ Year")}</th>
             <th className="col-tier c-tier align-center group-end">{sortableHeader("tier", "Tier")}</th>
             <th className="col-money c-money c-current-money align-right">{sortableHeader("value", "Value")}</th>
             <th className="col-money c-money c-current-money align-right">{sortableHeader("contract", "Contract")}</th>
@@ -1450,7 +1450,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
               <div className="dp-tags">
                 <span className="tier-text">{player.tier}</span>
                 {player.score_delta !== null && player.score_delta !== undefined && (
-                  <span>{formatSigned(player.score_delta, 0)} pts this season</span>
+                  <span>{formatSigned(player.score_delta, 0)} pts vs {player.year === 2027 ? "preseason" : "last season"}</span>
                 )}
               </div>
             </div>
