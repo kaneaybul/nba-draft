@@ -75,7 +75,10 @@ apply_live_player_pool <- function(rows,history,base_dir) {
   records <- setNames(registry$players,vapply(registry$players,function(p) as.character(p$app_nba_id),character(1)))
   for(i in seq_len(nrow(rows))) {
     p <- records[[as.character(rows$nba_id[i])]]
-    if(is.null(p)) { rows$pool_status[i] <- 'inactive';next }
+    if(is.null(p)) {
+      rows$pool_status[i] <- if(isTRUE(rows$availability_status[i]=='rookie_projection')) 'draft' else 'inactive'
+      next
+    }
     active <- p$pool_status=='roster';team <- if(active) p$team else 'FA'
     rows$pool_status[i] <- p$pool_status
     rows$pool_note[i] <- paste(pool_scalar(p$note,''),if(isTRUE(rows$skill_source[i]=='limited_history_fallback')) rows$availability_reason[i] else '')

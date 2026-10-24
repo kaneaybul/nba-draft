@@ -139,7 +139,18 @@ function validateRookieProjectionAssignments(manifest) {
     const season = Number(shard.year ?? shard.key);
     if (!Number.isFinite(season)) continue;
     const rows = readJson(path.join(dataDir, shard.file));
-    const rookies = rows.filter((row) => row.availability_status === "rookie_projection");
+    // Live membership supersedes the old Spotrac-only rookie assignment rules.
+    const liveRookies = rows.filter((row) => row.availability_status === "rookie_projection" && row.pool_status);
+    for (const row of liveRookies) {
+      assert(["roster", "free_agent", "inactive"].includes(row.pool_status), `Draft-only player leaked into live pool: ${row.player_name}`);
+      const rostered = row.pool_status === "roster";
+      const team = cleanTeam(row.roster_truth_team);
+      assert(rostered ? team !== "FA" : team === "FA", `Live rookie membership/team mismatch: ${row.player_name}`);
+      assert(["team", "current_roster_team", "incumbent_team", "market_team", "team_projection_base"].every((key) => cleanTeam(row[key]) === team), `Live rookie team fields disagree: ${row.player_name}`);
+      assert(rostered ? row.projection_roster_status === "signed" : row.projection_roster_status === "open_market", `Live rookie contract membership mismatch: ${row.player_name}`);
+      assert(row.pool_status === "inactive" || Number(row.Minutes) > 0 || row.injury_availability === 0, `Live rookie missing projected minutes: ${row.player_name}`);
+    }
+    const rookies = rows.filter((row) => row.availability_status === "rookie_projection" && !row.pool_status);
     if (rookies.length === 0) continue;
     const teamControlledRookie = (row) =>
       ["active", "active_pending_done", "rookie_cap_hold"].includes(row.roster_state) &&

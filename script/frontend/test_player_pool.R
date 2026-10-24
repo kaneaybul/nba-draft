@@ -12,7 +12,10 @@ stopifnot(identical(expanded$score[seq_len(nrow(p))],same$score),is.na(tail(expa
 shifted <- p;shifted$total[100] <- shifted$total[100]+1
 changed <- model$fixed_pool_scores(shifted,'.')
 stopifnot(changed$score_delta[100]>0,identical(changed$score[-100],same$score[-100]))
-pool <- model$apply_live_player_pool(p,p,'.')
+untracked_prospect <- p[1,,drop=FALSE];untracked_prospect$nba_id <- -99999999
+untracked_prospect$availability_status <- 'rookie_projection'
+pool <- model$apply_live_player_pool(rbind(p,untracked_prospect),p,'.')
+stopifnot(!untracked_prospect$nba_id %in% pool$nba_id)
 registry <- jsonlite::fromJSON('raw/live/player_pool.json')
 roster_ids <- registry$players$app_nba_id[registry$players$pool_status=='roster']
 stopifnot(all(roster_ids %in% pool$nba_id),!anyDuplicated(pool$nba_id),all(is.finite(pool$total)))
