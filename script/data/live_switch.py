@@ -32,12 +32,14 @@ def score_assignments(matchups, players, positions):
         poss=float(r['PARTIAL_POSS']);pts=float(pts)
         if not math.isfinite(poss) or not math.isfinite(pts) or poss<0: raise ValueError('Invalid matchup values')
         if poss==0: continue
-        g=groups.setdefault(defender,{'poss':0,'pts':0,'C':0,'F':0,'G':0,'games':0})
+        g=groups.setdefault(defender,{'poss':0,'pts':0,'C':0,'F':0,'G':0,'games':{}})
         g['poss']+=poss;g['pts']+=poss*pts;g[pos]+=poss
-        g['games']=max(g['games'],int(r['GP']))
+        team=lookup[offender].get('TeamId')
+        if team is not None:
+            team=str(team);g['games'][team]=max(g['games'].get(team,0),int(r['GP']))
     # Require enough distinct defenders for the original season z-score.
     # Partial game coverage retains the prior rather than using all season minutes.
-    groups={pid:g for pid,g in groups.items() if g['games']>=int(lookup[pid]['GamesPlayed']) and g['poss']>0}
+    groups={pid:g for pid,g in groups.items() if sum(g['games'].values())>=int(lookup[pid]['GamesPlayed']) and g['poss']>0}
     if len(groups)<100: raise ValueError('Insufficient complete matchup coverage')
     ids=list(groups);difficulty=[];versatility=[]
     for pid in ids:

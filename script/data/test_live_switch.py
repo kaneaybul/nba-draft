@@ -22,7 +22,7 @@ class SwitchTests(unittest.TestCase):
         self.assertEqual(audit['status'],'unavailable')
 
     def test_current_low_minute_players_are_scored(self):
-        players=[{'nba_id':i,'GamesPlayed':2,'Minutes':40,'d_Points_Per100':10+i/10} for i in range(1,111)]
+        players=[{'nba_id':i,'GamesPlayed':2,'Minutes':40,'TeamId':1,'d_Points_Per100':10+i/10} for i in range(1,111)]
         positions={i:['G','F','C'][i%3] for i in range(1,111)}
         rows=[]
         for i in range(1,111):
@@ -33,6 +33,10 @@ class SwitchTests(unittest.TestCase):
         self.assertAlmostEqual(sum(scores.values()),0,places=8)
         # Repeated pulls are deterministic; duplicate pairs and missing coverage fail.
         self.assertEqual(scores,score_assignments(rows,players,positions))
+        # Two games against different teams have GP=1 per opponent pair.
+        teams=[dict(p,TeamId=p['nba_id']%2) for p in players]
+        two_opponents=[dict(r,GP=1) for r in rows]
+        self.assertEqual(len(score_assignments(two_opponents,teams,positions)),110)
         with self.assertRaises(ValueError):score_assignments(rows+[rows[0]],players,positions)
         with self.assertRaises(ValueError):score_assignments([dict(r,GP=1) for r in rows],players,positions)
 
