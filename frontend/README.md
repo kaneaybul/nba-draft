@@ -95,6 +95,7 @@ Local refresh, after installing frontend dependencies:
 node script/data/refresh_live_ratings.mjs
 python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
 python3 script/data/refresh_live_skill_stats.py
+Rscript script/frontend/refresh_live_switch.R
 Rscript script/frontend/export_frontend_data.R
 node script/frontend/validate_preseason_archive.mjs
 ```
