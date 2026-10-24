@@ -80,13 +80,13 @@ apply_live_expected_ratings <- function(rows, base_dir) {
       rows[[k]][i] <- round((1-w)*prior[[k]][i]+w*z,3)
     }
     offensive <- c('FTD','SHOOT','PASS','RIM','OREB')
-    defensive <- c('DPM','DREB','RIMPRO')
+    defensive <- c('DPM','DREB','RIMPRO','SWITCH')
     if(all(offensive %in% names(observed_raw))) {
       current_off <- evidence$intercepts$off+sum(observed_raw[offensive])
       rows$skill_model_off[i] <- (1-w)*prior$skill_model_off[i]+w*current_off
     } else rows$skill_model_off[i] <- prior$skill_model_off[i]+w*sum(deltas[intersect(offensive,names(deltas))])
-    # Retain the preseason switch/perimeter contribution; missing inputs never
-    # become zero-defense observations.
+    # Update SWITCH only when both current assignment and perimeter inputs exist.
+    # Missing components retain their preseason contribution.
     rows$skill_model_def[i] <- prior$skill_model_def[i]+w*sum(deltas[intersect(defensive,names(deltas))])
     rows$live_skill_components_updated[i] <- length(deltas)
   }
@@ -109,8 +109,8 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   rows$skill_source[good] <- 'live_expected_epm_darko'
   rows$availability_reason <- paste0('Season evidence: ',rows$live_evidence_minutes,' actual minutes; ',round(100*rows$live_current_weight,1),'% current evidence / ',round(100*(1-rows$live_current_weight),1),'% preseason prior. Expected EPM ',feed$epm_as_of,'; DARKO through ',feed$darko_through,'. Injuries affect minutes separately.')
   rows$availability_reason[!good] <- paste0(rows$availability_reason[!good],' No complete current EPM/DARKO pair; external forecast prior retained.')
-  audit <- list(schema_version=2,season=feed$season,generated_at=feed$generated_at,epm_type='expected',epm_as_of=feed$epm_as_of,darko_through=feed$darko_through,epm_url=feed$epm_url,darko_url=feed$darko_url,matched_players=sum(good),total_players=nrow(rows),unmatched_players=rows$player_name[!good],skill_stats_fetched_at=evidence$generated_at,skill_updated_players=sum(rows$live_skill_components_updated>0),max_current_weight=max(rows$live_current_weight),held_skill_components=evidence$held_components,
-    method='Actual-minute transition from the frozen preseason forecast. Up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one with current NBA minutes; rookies fully replace this prior at 1,500 minutes. Actual historical evidence remains in the veteran weighting. SKILL incorporates available current stats using fixed historical calibration; switch/perimeter and missing components retain priors. Overall impact keeps an 80% external / 20% SKILL mix, with the external forecast moving toward expected EPM/DARKO at the same evidence weight. This transition is a conservative modeling default, not a backtested optimal weighting. Injuries and actual game results apply immediately.')
+  audit <- list(schema_version=2,season=feed$season,generated_at=feed$generated_at,epm_type='expected',epm_as_of=feed$epm_as_of,darko_through=feed$darko_through,epm_url=feed$epm_url,darko_url=feed$darko_url,matched_players=sum(good),total_players=nrow(rows),unmatched_players=rows$player_name[!good],skill_stats_fetched_at=evidence$generated_at,skill_updated_players=sum(rows$live_skill_components_updated>0),max_current_weight=max(rows$live_current_weight),held_skill_components=evidence$held_components,switch_status=evidence$switch_status,
+    method='Actual-minute transition from the frozen preseason forecast. Up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one with current NBA minutes; rookies fully replace this prior at 1,500 minutes. Actual historical evidence remains in the veteran weighting. SKILL incorporates available current stats using fixed historical calibration; SWITCH updates when current NBA matchups and perimeter inputs pass validation; missing components retain priors. Overall impact keeps an 80% external / 20% SKILL mix, with the external forecast moving toward expected EPM/DARKO at the same evidence weight. This transition is a conservative modeling default, not a backtested optimal weighting. Injuries and actual game results apply immediately.')
   jsonlite::write_json(audit,file.path(base_dir,'frontend/public/data/live_status.json'),auto_unbox=TRUE,pretty=TRUE)
   message('Live ratings matched: ',sum(good),' / ',nrow(rows),'; SKILL updated: ',audit$skill_updated_players,'; max current weight: ',round(100*audit$max_current_weight,2),'%')
   rows

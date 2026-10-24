@@ -19,6 +19,10 @@ on:
       - script/data/live_results.py
       - script/data/refresh_live_skill_stats.py
       - script/data/test_live_skill_stats.py
+      - script/data/live_switch.py
+      - script/data/test_live_switch.py
+      - script/frontend/refresh_live_switch.R
+      - script/frontend/test_live_switch.R
       - script/frontend/test_live_ratings.R
       - raw/live_refresh_request.json
 
@@ -92,7 +96,10 @@ jobs:
       - name: Refresh current skill statistics with conservative evidence weights
         run: |
           python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
+          python3 -m unittest discover -s script/data -p "test_live_switch.py"
           python3 script/data/refresh_live_skill_stats.py
+          Rscript script/frontend/test_live_switch.R
+          Rscript script/frontend/refresh_live_switch.R
 
       - name: Rebuild projections from cached rosters and fresh injuries
         run: Rscript script/frontend/export_frontend_data.R

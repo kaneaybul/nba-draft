@@ -29,8 +29,24 @@ stopifnot(identical(r$Minutes,p$Minutes),identical(r$contract,p$contract),all(is
 stopifnot(sum(r$skill_source=='live_expected_epm_darko')>400)
 # Reapplying identical input must not compound the adjustment.
 r2 <- model$apply_live_expected_ratings(r,test_root)
-stopifnot(identical(r$total,r2$total),identical(r$skill_model_off,r2$skill_model_off),identical(r$SHOOT,r2$SHOOT),identical(r$SWITCH,p$SWITCH))
+stopifnot(identical(r$total,r2$total),identical(r$skill_model_off,r2$skill_model_off),identical(r$SHOOT,r2$SHOOT),identical(r$SWITCH,r2$SWITCH))
 stopifnot(all(r$live_current_weight>=0 & r$live_current_weight<=1),any(abs(r$skill_model_off-p$skill_model_off)>.0001))
+# A newly available SWITCH observation must flow into defensive SKILL.
+fixture <- jsonlite::fromJSON(file.path(test_root,'raw/live/skill_stats.json'),simplifyVector=FALSE)
+i <- which(r$live_current_weight>0 & is.finite(p$SWITCH) & abs(p$SWITCH)<3 & p$nba_id>0)[1]
+j <- which(vapply(fixture$players,function(x) x$nba_id==p$nba_id[i],logical(1)))[1]
+stopifnot(!is.na(j))
+fixture$calibration$SWITCH <- list(mean=0,sd=1)
+for(k in seq_along(fixture$players)) fixture$players[[k]]$raw_skills$SWITCH <- NULL
+jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
+held <- model$apply_live_expected_ratings(p,test_root)
+stopifnot(identical(held$SWITCH,p$SWITCH))
+fixture$players[[j]]$raw_skills$SWITCH <- p$SWITCH[i]+1
+jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
+updated <- model$apply_live_expected_ratings(p,test_root)
+stopifnot(abs(updated$skill_model_def[i]-held$skill_model_def[i]-held$live_current_weight[i])<1e-8,
+          updated$SWITCH[i]>held$SWITCH[i],identical(updated$SWITCH[-i],held$SWITCH[-i]))
+file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/skill_stats.json'),overwrite=TRUE)
 # Zero actual minutes cannot cause a provider or skill-model switch.
 ev <- jsonlite::fromJSON(file.path(test_root,'raw/live/skill_stats.json'),simplifyVector=FALSE)
 for(i in seq_along(ev$players)) ev$players[[i]]$minutes <- 0

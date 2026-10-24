@@ -3,8 +3,10 @@ Never rewrites historical stats or refits model coefficients.
 """
 import csv, hashlib, hmac, json, math, pathlib, re, statistics, time, urllib.request, uuid
 from datetime import datetime, timezone
+from live_switch import refresh_assignments
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SKILLS = {
+ 'SWITCH':['switch','perimeter_alloc_ps_resid_role'],
  'FTD':['I(FTA_100 * FT_PERC)'],
  'SHOOT':['I(X3PA_100 * X3P_PERC)','I(d_ShortMidRangeFGA_Per100 * ShortMidFGPerc)','I(d_LongMidRangeFGA_Per100 * LongMidFGPerc)'],
  'PASS':['d_Assists_Per100','cTOV'], 'RIM':['d_AtRimFGA_Per100','RimFGPerc'], 'OREB':['OffFGReboundPct'],
@@ -104,6 +106,12 @@ def main():
         except Exception:
             if attempt==2: raise RuntimeError('Current skill stats unavailable; existing published data preserved') from None
     feed=build_feed(data,season)
+    assignment,audit=refresh_assignments(data,season)
+    feed['switch_assignments']=assignment;feed['switch_status']=audit
+    source={int(x['nba_id']):x for x in data}
+    fields=['Pos2','points_saved_100','rim_points_saved_100','rimdfga/100','dfga/100','d_FG3A_Per100','d_LongMidRangeFGA_Per100','d_ShortMidRangeFGA_Per100','d_Blocks_Per100','d_DefRebounds_Per100']
+    for p in feed['players']:
+        p['perimeter_inputs']={k:source[p['nba_id']].get(k) for k in fields}
     dest=ROOT/'raw/live/skill_stats.json';tmp=dest.with_suffix('.tmp')
     tmp.write_text(json.dumps(feed,allow_nan=False,separators=(',',':'))+'\n');tmp.replace(dest)
     print(f"Current skill evidence: {len(feed['players'])} players, {feed['total_actual_minutes']:.0f} actual minutes, {feed['completed_games_at_fetch']} completed games")
