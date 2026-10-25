@@ -26,7 +26,9 @@ jobs:
           r-version: '4.3.2'
       - name: Install position-check dependencies
         shell: Rscript {0}
-        run: install.packages(c('jsonlite','rvest','xml2'),repos='https://cloud.r-project.org')
+        run: |
+          rspm <- Sys.getenv('RSPM','')
+          install.packages(c('jsonlite','rvest','xml2'),repos=if(nzchar(rspm)) rspm else 'https://cloud.r-project.org')
       - name: Test position and request behavior
         run: |
           python3 -m unittest discover -s script/data -p 'test_live_positions.py'

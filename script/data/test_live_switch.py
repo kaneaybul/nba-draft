@@ -11,6 +11,10 @@ class SwitchTests(unittest.TestCase):
         self.assertEqual(len(scores),110)
         self.assertEqual(audit['status'],'assignments_available')
         self.assertEqual(fetch.call_count,1)
+        # NBA treats ID=0 as a filter and returns an empty table; omitted
+        # optional player/team filters are represented by blank strings.
+        for key in ('DefPlayerID','OffPlayerID','DefTeamID','OffTeamID'):
+            self.assertEqual(fetch.call_args.args[1][key],'')
 
     def test_empty_current_table_holds_prior(self):
         with patch('live_switch.nba_table',return_value=([],{'SeasonYear':'2026-27','SeasonType':'Regular Season'})):

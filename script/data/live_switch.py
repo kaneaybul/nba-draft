@@ -20,7 +20,8 @@ def diagnose_nba_access(season):
         return audit
     common = dict(LeagueID='00', SeasonType='Regular Season', PerMode='Totals',
                   DefTeamID='', OffTeamID='', DefPlayerID='', OffPlayerID='')
-    probes = [('leagueseasonmatchups',dict(common,Season=prior),'SeasonMatchups'),
+    probes = [('leagueseasonmatchups',dict(common,Season=label),'SeasonMatchups'),
+              ('leagueseasonmatchups',dict(common,Season=prior),'SeasonMatchups'),
               ('playerindex',dict(LeagueID='00',Season=label,Historical=0,TeamID=0),'PlayerIndex')]
     with ThreadPoolExecutor(max_workers=2) as executor:
         results = list(executor.map(probe, probes))
