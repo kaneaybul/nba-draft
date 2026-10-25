@@ -1,4 +1,5 @@
 {
-  "requested_at": "2026-10-25T15:17:44.246Z",
-  "reason": "Catch up missed October 25 morning refresh; refresh current ratings, player membership, injuries, skill inputs, and completed results."
+  "requested_at": "2026-10-25T15:42:19.932808+00:00",
+  "reason": "Use provider-led live minutes with actual-plus-remaining accounting; measure the isolated player and team impact.",
+  "compare_minutes": true
 }

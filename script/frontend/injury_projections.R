@@ -136,6 +136,7 @@ injury_position_shares <- function(players) {
 }
 
 allocate_injury_rotation <- function(players, availability) {
+  if("minutes_source" %in% names(players) && any(!is.na(players$minutes_source))) return(allocate_live_rotation(players,availability))
   minutes <- pmax(0, as.numeric(players$Minutes))
   minutes[!is.finite(minutes)] <- 0
   games <- pmax(0, pmin(82, as.numeric(players$games)))
@@ -181,6 +182,7 @@ apply_injury_projections <- function(players, schedules, outlook) {
   indices <- which(players$year == outlook$season & projected)
   if (!length(indices)) return(list(players = players, schedules = schedules))
   forecast <- assign_team_projection_scenario(players[indices, , drop = FALSE], "base")
+  live_minutes <- "minutes_source" %in% names(forecast) && any(!is.na(forecast$minutes_source))
   as_of_time <- as.POSIXct(outlook$generated_at, format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC")
   as_of <- as.Date(format(as_of_time, "%Y-%m-%d", tz = "America/New_York"))
   if (is.na(as_of)) stop("Invalid injury snapshot date.")
@@ -232,8 +234,13 @@ apply_injury_projections <- function(players, schedules, outlook) {
       completed <- today$completed[today$team == team]
       past <- sum(completed | as.Date(date) < as_of)
       future <- length(completed) - past
-      total_minutes[selected] <- total_minutes[selected] + baseline_rotation$minutes[selected] * past + rotation$minutes[selected] * future
-      total_games[selected] <- total_games[selected] + forecast$games[selected] * past + rotation$games[selected] * future
+      if(live_minutes) {
+        total_minutes[selected] <- total_minutes[selected] + rotation$minutes[selected] * future
+        total_games[selected] <- total_games[selected] + rotation$games[selected] * future
+      } else {
+        total_minutes[selected] <- total_minutes[selected] + baseline_rotation$minutes[selected] * past + rotation$minutes[selected] * future
+        total_games[selected] <- total_games[selected] + forecast$games[selected] * past + rotation$games[selected] * future
+      }
       total_availability[selected] <- total_availability[selected] + past + factors[selected] * future
       missed[selected] <- missed[selected] + (1 - factors[selected]) * future
     }
@@ -280,7 +287,25 @@ apply_injury_projections <- function(players, schedules, outlook) {
   adjusted_minutes[active] <- total_minutes[active] / count[active]
   adjusted_games[active] <- round(total_games[active] / count[active], 3)
   availability[active] <- total_availability[active] / count[active]
-  adjusted_minutes <- floor(pmin(adjusted_minutes, adjusted_games * 36) * 10 + 1e-7) / 10
+  if(live_minutes) {
+    remaining_count <- vapply(forecast$team,function(team) if(team=='FA') 0L else sum(!team_calendars[[team]]$completed & as.Date(team_calendars[[team]]$date)>=as_of),integer(1))
+    remaining_minutes <- total_minutes/82; remaining_games <- total_games/82
+    adjusted_minutes <- forecast$minutes_actual+remaining_minutes
+    adjusted_games <- forecast$minutes_actual_games+remaining_games
+    availability <- ifelse(remaining_count>0,(total_availability-(count-remaining_count))/pmax(1,remaining_count),1)
+    players$minutes_remaining[indices] <- remaining_minutes
+    players$minutes_remaining_games[indices] <- remaining_games
+    players$minutes_remaining_mpg[indices] <- ifelse(remaining_games>0,remaining_minutes/remaining_games,0)
+    players$minutes_remaining_team_games[indices] <- remaining_count
+    players$injury_base_minutes[indices] <- forecast$minutes_actual+baseline_rotation$minutes/82*remaining_count
+    players$injury_base_games[indices] <- forecast$minutes_actual_games+forecast$minutes_play_probability*remaining_count
+    for(idx in split(seq_len(nrow(forecast)),forecast$team)) {
+      players$minutes_team_budget[indices[idx]] <- sum(forecast$minutes_actual[idx])+240*max(remaining_count[idx])
+    }
+    adjusted_minutes <- floor(adjusted_minutes*10+1e-7)/10
+  } else {
+    adjusted_minutes <- floor(pmin(adjusted_minutes, adjusted_games * 36) * 10 + 1e-7) / 10
+  }
   players$Minutes[indices] <- adjusted_minutes
   players$games[indices] <- adjusted_games
   players$p_mpg[indices] <- ifelse(adjusted_games > 0, round(adjusted_minutes / adjusted_games, 1), 0)
@@ -293,6 +318,14 @@ apply_injury_projections <- function(players, schedules, outlook) {
   ratio <- ifelse(forecast$Minutes > 0, adjusted_minutes / forecast$Minutes, 0)
   for (col in intersect(c("timin", "season_value", "value"), names(players))) {
     players[[col]][indices] <- round(players[[col]][indices] * ratio, if (col == "timin") 1 else 0)
+  }
+  if(live_minutes) {
+    dollars <- sum(forecast$season_value,na.rm=TRUE)/sum(forecast$timin,na.rm=TRUE)
+    players$timin[indices] <- round((forecast$total-forecast$replacement_total)*adjusted_minutes,1)
+    if(is.finite(dollars)) {
+      players$season_value[indices] <- round(players$timin[indices]*dollars,0)
+      players$value[indices] <- players$season_value[indices]
+    }
   }
   if (all(c("value_add", "season_value", "contract") %in% names(players))) {
     players$value_add[indices] <- players$season_value[indices] - players$contract[indices]
@@ -310,7 +343,8 @@ apply_injury_projections <- function(players, schedules, outlook) {
   players$injury_availability[indices] <- round(availability, 5)
   players$injury_games_missed[indices] <- round(missed, 2)
   players$injury_minutes_lost[indices] <- round(forecast$Minutes * (1 - availability), 1)
-  players$injury_minutes_delta[indices] <- round(adjusted_minutes - forecast$Minutes, 1)
+  players$injury_minutes_delta[indices] <- round(adjusted_minutes - players$injury_base_minutes[indices], 1)
+  if(live_minutes) players$injury_minutes_lost[indices] <- pmax(0,round(players$injury_base_minutes[indices]-adjusted_minutes,1))
   players$injury_projection_as_of[indices] <- outlook$generated_at
   for (i in seq_along(plans)) {
     plan <- plans[[i]]

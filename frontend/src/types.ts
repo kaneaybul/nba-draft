@@ -34,6 +34,15 @@ export type StaticDataManifest = {
 };
 
 export type PlayerImpact = {
+  minutes_source?: string | null;
+  minutes_input_mpg?: number | null;
+  minutes_healthy_mpg?: number | null;
+  minutes_actual?: number | null;
+  minutes_actual_games?: number | null;
+  minutes_remaining?: number | null;
+  minutes_remaining_games?: number | null;
+  minutes_remaining_mpg?: number | null;
+  minutes_note?: string | null;
   pool_status?: "roster" | "free_agent" | "inactive" | "draft" | null;
   pool_note?: string | null;
   pool_checked_at?: string | null;

@@ -2595,7 +2595,12 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
   rows <- fixed_pool_scores(rows, base_dir)
   minute_rows <- assign_team_projection_scenario(rows, "base")
-  minute_rows <- apply_lineup_minute_adjustment(minute_rows, adjust_free_agents = TRUE)
+  if(Sys.getenv("LIVE_MINUTES_METHOD") == "legacy") {
+    minute_rows <- apply_lineup_minute_adjustment(minute_rows, adjust_free_agents = TRUE)
+  } else {
+    minute_rows <- apply_live_minute_inputs(minute_rows, base_dir)
+    for(k in c(live_minute_numeric_fields,live_minute_character_fields)) rows[[k]] <- minute_rows[[k]]
+  }
   minute_rows <- zero_inactive_pool_minutes(minute_rows)
   rows$games <- minute_rows$games
   rows$Minutes <- minute_rows$Minutes
@@ -3881,6 +3886,8 @@ build_impact_players <- function(base_dir) {
 
   for (col in c("live_evidence_minutes", "live_current_weight", "live_prior_minutes", "live_skill_components_updated")) x[[col]] <- NA_real_
   for (col in pool_character_fields) x[[col]] <- NA_character_
+  for (col in live_minute_numeric_fields) x[[col]] <- NA_real_
+  for (col in live_minute_character_fields) x[[col]] <- NA_character_
   x$pool_review_pending <- FALSE; x$source_nba_id <- NA_real_
   projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year, contract_scale_model)
   if (nrow(projected_2027) > 0) {
@@ -3928,7 +3935,7 @@ build_impact_players <- function(base_dir) {
     "lineup_original_minutes", "lineup_adjusted_minutes", "lineup_role", "lineup_role_order", "lineup_role_band_minutes",
     "source_note"
   )
-  cols <- intersect(cols, names(x))
+  cols <- intersect(c(cols,live_minute_numeric_fields,live_minute_character_fields), names(x))
   x[, cols, drop = FALSE]
 }
 
@@ -3964,6 +3971,7 @@ team_projection_minutes_rank <- function(players) {
 }
 
 limit_team_projection_players <- function(players, limit = TEAM_PROJECTION_PLAYER_LIMIT) {
+  if("minutes_source" %in% names(players) && any(!is.na(players$minutes_source))) return(players[is.finite(players$Minutes)&players$Minutes>0,,drop=FALSE])
   if (!nrow(players) || nrow(players) <= limit) return(players)
   minutes <- team_projection_minutes_rank(players)
   order_idx <- order(-minutes, players$player_name, players$nba_id, na.last = TRUE)
@@ -5158,6 +5166,7 @@ source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = FA
 source(file.path(base_dir, "script", "frontend", "injury_projections.R"), local = FALSE)
 source(file.path(base_dir, "script", "frontend", "live_ratings.R"), local = FALSE)
 source(file.path(base_dir, "script", "frontend", "player_pool.R"), local = FALSE)
+source(file.path(base_dir, "script", "frontend", "live_minutes.R"), local = FALSE)
 out_dir <- file.path(base_dir, "frontend", "public", "data")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 

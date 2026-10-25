@@ -1503,6 +1503,9 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
 
       <div className="dp-body">
         <PlayerInjuryNote injury={injuryForPlayer(player, injuryOutlook)} player={player} />
+        {player.minutes_source && <p className="availability-note" title={player.minutes_note ?? undefined}>
+          Minutes: {player.minutes_source} baseline {formatNumber(player.minutes_input_mpg, 1)} MPG · team-adjusted {formatNumber(player.minutes_healthy_mpg, 1)} MPG when available. Logged {formatNumber(player.minutes_actual, 0)} minutes; {formatNumber(player.minutes_remaining, 0)} projected remaining minutes at {formatNumber(player.minutes_remaining_mpg, 1)} MPG when playing.
+        </p>}
         {player.live_current_weight != null && <p className="availability-note" title={player.availability_reason ?? undefined}>
           SKILL evidence: {formatNumber(player.live_evidence_minutes ?? 0, 0)} actual minutes · {(100 * player.live_current_weight).toFixed(1)}% current statistics / {(100 * (1 - player.live_current_weight)).toFixed(1)}% preseason SKILL prior. Overall impact: 80% latest EPM/DARKO forecast + 20% SKILL; missing forecasts retain their prior. Injuries apply separately.
         </p>}

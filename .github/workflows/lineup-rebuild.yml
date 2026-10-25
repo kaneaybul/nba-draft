@@ -94,13 +94,30 @@ jobs:
           Rscript script/frontend/refresh_live_switch.R
           python3 script/data/refresh_player_pool.py --enrich
 
+      - name: Capture the old minutes method on identical inputs when requested
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          if python3 -c "import json,sys;sys.exit(not json.load(open('raw/live_refresh_request.json')).get('compare_minutes',False))"; then
+            LIVE_MINUTES_METHOD=legacy Rscript script/frontend/export_frontend_data.R
+            mkdir -p "$RUNNER_TEMP/minutes-before"
+            cp frontend/public/data/v2/impact_players/2027.json "$RUNNER_TEMP/minutes-before/players.json"
+            cp frontend/public/data/v2/team_projections/2027.json "$RUNNER_TEMP/minutes-before/teams.json"
+            python3 script/frontend/compare_minutes.py --capture "$RUNNER_TEMP/minutes-before"
+          fi
+
       - name: Rebuild projections from cached rosters and fresh injuries
-        run: Rscript script/frontend/export_frontend_data.R
+        run: |
+          Rscript script/frontend/export_frontend_data.R
+          if [ -f "$RUNNER_TEMP/minutes-before/source_hashes.json" ]; then
+            python3 script/frontend/compare_minutes.py --before "$RUNNER_TEMP/minutes-before"
+          fi
 
       - name: Verify live ratings and completed results
         run: |
           Rscript script/frontend/test_live_ratings.R --require-export
           Rscript script/frontend/test_player_pool.R --require-export
+          Rscript script/frontend/test_live_minutes.R --require-export
 
       - name: Verify positional lineups and contract-season alignment
         run: Rscript script/frontend/test_lineup_positions.R

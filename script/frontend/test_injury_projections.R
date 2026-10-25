@@ -173,8 +173,8 @@ if (file.exists(manifest_path)) {
     }
     if ("injury_availability" %in% names(exported)) {
       stopifnot(all(exported$injury_availability >= 0 & exported$injury_availability <= 1, na.rm = TRUE),
-        all(exported$Minutes >= 0), all(exported$p_mpg <= 36.1, na.rm = TRUE),
-        all(exported$Minutes[exported$injury_availability == 0 & !is.na(exported$injury_availability)] == 0))
+        all(exported$Minutes >= 0), all(exported$p_mpg <= if("minutes_source" %in% names(exported) && any(!is.na(exported$minutes_source))) 48.1 else 36.1, na.rm = TRUE),
+        all((if("minutes_source" %in% names(exported) && any(!is.na(exported$minutes_source))) exported$minutes_remaining else exported$Minutes)[exported$injury_availability == 0 & !is.na(exported$injury_availability)] == 0))
       message("Published injury-aware minutes verified for ", nrow(exported), " players.")
     }
   }

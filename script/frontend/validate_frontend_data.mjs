@@ -86,15 +86,24 @@ function validateInjuryProjectionIntegration(manifest) {
   // these fields on every newly generated forecast.
   if (!players.some((row) => row.injury_base_minutes != null)) return;
   const budgets = new Map();
+  const budgetLimits = new Map();
   for (const row of players.filter((p) => ["projected", "rookie_projection"].includes(p.availability_status))) {
     assert(row.injury_projection_as_of === outlook.generated_at, `Injury/minutes snapshot mismatch: ${row.player_name}`);
     assert(Number.isFinite(row.injury_availability) && row.injury_availability >= 0 && row.injury_availability <= 1, `Invalid availability: ${row.player_name}`);
     assert(Number.isFinite(row.Minutes) && row.Minutes >= 0 && row.games >= 0 && row.games <= row.injury_base_games + 0.001, `Invalid injury-adjusted workload: ${row.player_name}`);
-    assert(row.injury_availability !== 0 || row.Minutes === 0, `Unavailable player has projected minutes: ${row.player_name}`);
+    assert(row.injury_availability !== 0 || (row.minutes_source ? row.minutes_remaining === 0 : row.Minutes === 0), `Unavailable player has remaining minutes: ${row.player_name}`);
+    if (row.minutes_source) {
+      assert(Math.abs(row.Minutes - row.minutes_actual - row.minutes_remaining) < 0.11, `Actual plus remaining minutes mismatch: ${row.player_name}`);
+      assert(row.minutes_remaining_mpg <= 48.001 && row.minutes_remaining >= 0, `Invalid remaining MPG: ${row.player_name}`);
+      assert(row.pool_status === "roster" || row.minutes_remaining === 0, `Unrostered player has future team minutes: ${row.player_name}`);
+    }
     const team = cleanTeam(row.team_projection_base || row.team);
-    if (team !== "FA") budgets.set(team, (budgets.get(team) ?? 0) + row.Minutes);
+    if (team !== "FA") {
+      budgets.set(team, (budgets.get(team) ?? 0) + row.Minutes);
+      budgetLimits.set(team, Math.max(budgetLimits.get(team) ?? 19680, row.minutes_team_budget ?? 19680));
+    }
   }
-  for (const [team, minutes] of budgets) assert(minutes <= 19680.01, `Injury-adjusted minutes exceed team budget: ${team} ${minutes}`);
+  for (const [team, minutes] of budgets) assert(minutes <= (budgetLimits.get(team) ?? 19680) + 0.01, `Injury-adjusted minutes exceed team budget: ${team} ${minutes}`);
   const scheduleShard = manifest.static_data.datasets.team_schedules?.shards?.find((row) => Number(row.year ?? row.key) === outlook.season);
   if (!scheduleShard) return;
   for (const row of readJson(path.join(dataDir, scheduleShard.file)).filter((game) => game.injury_adjusted)) {
@@ -148,7 +157,7 @@ function validateRookieProjectionAssignments(manifest) {
       assert(rostered ? team !== "FA" : team === "FA", `Live rookie membership/team mismatch: ${row.player_name}`);
       assert(["team", "current_roster_team", "incumbent_team", "market_team", "team_projection_base"].every((key) => cleanTeam(row[key]) === team), `Live rookie team fields disagree: ${row.player_name}`);
       assert(rostered ? row.projection_roster_status === "signed" : row.projection_roster_status === "open_market", `Live rookie contract membership mismatch: ${row.player_name}`);
-      assert(row.pool_status === "inactive" || Number(row.Minutes) > 0 || row.injury_availability === 0, `Live rookie missing projected minutes: ${row.player_name}`);
+      assert(row.minutes_source || row.pool_status === "inactive" || Number(row.Minutes) > 0 || row.injury_availability === 0, `Live rookie missing projected minutes: ${row.player_name}`);
     }
     const rookies = rows.filter((row) => row.availability_status === "rookie_projection" && !row.pool_status);
     if (rookies.length === 0) continue;
