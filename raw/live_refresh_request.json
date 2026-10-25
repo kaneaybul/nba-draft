@@ -1,6 +1,6 @@
 {
-  "requested_at": "2026-10-25T19:38:44.509Z",
-  "reason": "Use the verified external NBA matchup snapshot and complete the daily position and SWITCH refresh.",
+  "requested_at": "2026-10-25T19:47:47.254Z",
+  "reason": "Publish the verified daily position and SWITCH rebuild after the collector input commit completed.",
   "compare_minutes": false,
   "diagnose_switch": false
 }
