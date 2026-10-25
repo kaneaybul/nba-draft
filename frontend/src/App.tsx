@@ -8354,7 +8354,9 @@ export function playerTradeValue(player: PlayerImpact): number {
       const value = season.value ?? 0;
       const contract = season.contract ?? 0;
       const scale = Math.max(0, season.scale ?? 1);
-      return value - contract * (1 - scale);
+      // Bargain premiums follow production; downside follows salary exposure.
+      // A higher salary must never increase a player's asset value.
+      return value + value * Math.max(scale - 1, 0) - contract * Math.max(1 - scale, 0);
     });
   if (seasonValues.length > 0) return seasonValues.reduce((sum, value) => sum + value, 0);
   return Number(player.trade_value ?? 0);

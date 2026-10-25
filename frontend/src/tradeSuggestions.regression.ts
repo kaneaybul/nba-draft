@@ -4,6 +4,9 @@ import type { AppData, PickAsset, PlayerImpact, TeamProjection } from "./types";
 export function runTradeSuggestionRegressionTests(): string[] {
   return [
     fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(),
+    bargainPremiumUsesProductionInsteadOfSalary(),
+    badContractsAndNegativeProductionRemainLiabilities(),
+    salaryIncreasesNeverImprovePlayerAssetValue(),
     targetPlayerAcquisitionBuildsPickPackage()
   ];
 }
@@ -26,9 +29,52 @@ function fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(): string {
     projection_effective_contract_y3: 5_000_000
   });
 
-  const expected = 30_000_000 + 34_000_000 + 15_000_000 + 10_000_000;
-  expect(playerTradeValue(row) === expected, "four-year trade value should apply Option 2 to each season and use imputed effective contracts");
+  const expected = 30_000_000 + 36_000_000 + 15_000_000 + 10_000_000;
+  expect(playerTradeValue(row) === expected, "four-year trade value should apply production-based Scale premiums and salary-based discounts separately each season");
   return "four-year trade value uses scale-adjusted contract opportunity cost";
+}
+
+function singleSeasonPlayer(value: number, salary: number, scale: number): PlayerImpact {
+  const row = player(98, "Asset value fixture", "VAL", salary, [value], 1);
+  Object.assign(row, {
+    scalability: scale,
+    projection_value_y1: null,
+    projection_value_y2: null,
+    projection_value_y3: null,
+    projection_value_y4: 1_000_000_000
+  });
+  return row;
+}
+
+function bargainPremiumUsesProductionInsteadOfSalary(): string {
+  const cheap = singleSeasonPlayer(50_000_000, 10_000_000, 1.5);
+  const higherSalary = singleSeasonPlayer(50_000_000, 20_000_000, 1.5);
+  expect(playerTradeValue(cheap) === 75_000_000, "Scale above one should multiply production and reward a bargain contract");
+  expect(playerTradeValue(higherSalary) === playerTradeValue(cheap), "a larger salary must not enlarge the bargain premium when Scale is unchanged");
+  return "bargain premiums follow production, with no salary-driven increase or fifth-season credit";
+}
+
+function badContractsAndNegativeProductionRemainLiabilities(): string {
+  expect(playerTradeValue(singleSeasonPlayer(0, 10_000_000, 0)) === -10_000_000, "zero production must retain the entire salary liability");
+  expect(playerTradeValue(singleSeasonPlayer(-2_000_000, 6_000_000, 0)) === -8_000_000, "negative production must not disappear through multiplication by zero Scale");
+  expect(Math.abs(playerTradeValue(singleSeasonPlayer(50_000_000, 52_000_000, 50 / 52)) - 48_000_000) < 0.01, "a slightly overpaid star must retain substantial player value");
+  return "salary dumps, negative production and slightly overpaid stars retain their economic meaning";
+}
+
+function salaryIncreasesNeverImprovePlayerAssetValue(): string {
+  const budget = 209_015_000;
+  for (const value of [-2_000_000, 0, 6_000_000, 30_000_000, 50_000_000, 100_000_000]) {
+    for (const minutes of [500, 1500, 2500, 3500]) {
+      let previous = Infinity;
+      for (const salary of [0, 1_000_000, 3_000_000, 10_000_000, 20_000_000, 40_000_000, 60_000_000, 100_000_000]) {
+        const scale = Math.max(0, value) / Math.max(salary, budget * minutes / 19_680, budget / 15);
+        const quote = playerTradeValue(singleSeasonPlayer(value, salary, scale));
+        expect(quote <= previous + 0.01, "raising salary at fixed production and minutes must never increase value");
+        previous = quote;
+      }
+    }
+  }
+  return "player value never increases when salary rises at fixed production and minutes";
 }
 
 function targetPlayerAcquisitionBuildsPickPackage(): string {
@@ -181,3 +227,4 @@ function player(nbaId: number, name: string, teamName: string, salary: number, v
 function expect(condition: unknown, message: string): void {
   if (!condition) throw new Error(message);
 }
+
