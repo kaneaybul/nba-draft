@@ -43,6 +43,9 @@ stopifnot(all(abs(finished$Minutes-(finished$minutes_actual+finished$minutes_rem
 stopifnot(all(abs(finished$games-(finished$minutes_actual_games+finished$minutes_remaining_games))<1e-7))
 stopifnot(abs(sum(finished$minutes_remaining[finished$team=='UTA'])-480)<1e-6)
 stopifnot(identical(finished$total,fixture$total))
+overtime <- fixture;overtime$minutes_actual_games[1] <- 1
+ot <- model$apply_injury_projections(overtime,schedule,outlook)$players
+stopifnot(ot$Minutes[1]==60,ot$games[1]==1,ot$p_mpg[1]==60,ot$minutes_remaining[1]==0)
 if('--require-export' %in% commandArgs(TRUE)) {
   pub <- jsonlite::fromJSON('frontend/public/data/v2/impact_players/2027.json')
   stopifnot(all(!is.na(pub$minutes_source)),all(abs(pub$Minutes-pub$minutes_actual-pub$minutes_remaining)<.11),

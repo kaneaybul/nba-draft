@@ -172,8 +172,10 @@ if (file.exists(manifest_path)) {
       stop("The exporter did not incorporate the injury adjustment.")
     }
     if ("injury_availability" %in% names(exported)) {
+      live_workload <- "minutes_source" %in% names(exported) && any(!is.na(exported$minutes_source))
+      mpg_limit <- if(live_workload) pmax(48.1,ifelse(exported$minutes_actual_games>0,exported$minutes_actual/exported$minutes_actual_games+.1,0)) else 36.1
       stopifnot(all(exported$injury_availability >= 0 & exported$injury_availability <= 1, na.rm = TRUE),
-        all(exported$Minutes >= 0), all(exported$p_mpg <= if("minutes_source" %in% names(exported) && any(!is.na(exported$minutes_source))) 48.1 else 36.1, na.rm = TRUE),
+        all(exported$Minutes >= 0), all(exported$p_mpg <= mpg_limit, na.rm = TRUE),
         all((if("minutes_source" %in% names(exported) && any(!is.na(exported$minutes_source))) exported$minutes_remaining else exported$Minutes)[exported$injury_availability == 0 & !is.na(exported$injury_availability)] == 0))
       message("Published injury-aware minutes verified for ", nrow(exported), " players.")
     }
