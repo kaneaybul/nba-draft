@@ -1,4 +1,4 @@
 {
-  "requested_at": "2026-10-24T14:27:15.413093+00:00",
-  "reason": "Correct weighting: latest expected EPM/DARKO at full 80% external weight; actual-minute shrinkage only inside 20% SKILL."
+  "requested_at": "2026-10-25T15:17:44.246Z",
+  "reason": "Catch up missed October 25 morning refresh; refresh current ratings, player membership, injuries, skill inputs, and completed results."
 }
