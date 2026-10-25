@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "season": 2027,
-  "generated_at": "2026-10-25T15:52:20.523Z",
+  "generated_at": "2026-10-25T17:05:14.212Z",
   "epm_type": "expected",
   "epm_as_of": "2026-10-25",
   "darko_through": "2026-10-24",
@@ -10,7 +10,7 @@
   "matched_players": 519,
   "total_players": 631,
   "unmatched_players": ["Kevin Porter Jr.", "Brandon Clarke", "Chris Boucher", "Dwight Powell", "Lonzo Ball", "Cameron Payne", "DAngelo Russell", "John Konchar", "Vince Williams Jr.", "Haywood Highsmith", "Jonas Valanciunas", "Kevin Love", "Aaron Holiday", "Garrison Mathews", "Cam Thomas", "Guerschon Yabusele", "Jeremy Sochan", "Cody Martin", "Chris Paul", "Monte Morris", "Russell Westbrook", "Kelly Olynyk", "Dalen Terry", "Killian Hayes", "Nicolas Batum", "Cole Anthony", "Seth Curry", "Jaden Ivey", "Xavier Tillman", "Jaden Springer", "Gary Harris", "Caleb Houstan", "Dario Saric", "Dante Exum", "Ochai Agbaji", "Eric Gordon", "Pat Connaughton", "Dalano Banton", "MarJon Beauchamp", "Amir Coffey", "Terry Rozier", "JD Davison", "Ethan Thompson", "Drew Eubanks", "Micah Peavy", "Jeremiah Robinson-Earl", "Patrick Baldwin Jr.", "Tyrese Martin", "Johnny Juzang", "Gabe Vincent", "Mason Plumlee", "Skal Labissiere", "David Roddy", "Blake Hinson", "Markelle Fultz", "Dalton Knecht", "Antonio Reeves", "Colby Jones", "Lindy Waters III", "DeJon Jarreau", "A.J. Lawson", "John Poulakidas", "Malaki Branham", "Maxi Kleber", "Lachlan Olbrich", "Tristen Newton", "Andre Jackson Jr.", "Yuki Kawamura", "Alex Antetokounmpo", "E.J. Liddell", "Doug McDermott", "Keaton Wallace", "KJ Simpson", "Alondes Williams", "Bruce Brown", "Isaiah Livers", "Tyler Burton", "Kyle Lowry", "Mac McClung", "Garrett Temple", "Taelon Peter", "Nate Williams", "Bez Mbeng", "Christian Koloko", "Kevin McCullar Jr.", "Omer Yurtseven", "Luke Travers", "Kennedy Chandler", "Tyler Smith", "Sharife Cooper", "Kobe Bufkin", "Andersson Garcia", "Tyson Etienne", "Blake Wesley", "Joe Ingles", "Adama Bal", "Thanasis Antetokounmpo", "Nick Smith Jr.", "Miles Kelly", "Lucas Williamson", "Trevon Scott", "Hunter Tyson", "Rob Dillingham", "DaQuan Jeffries", "Dariq Whitehead", "Nigel Hayes-Davis", "Jeff Green", "Taj Gibson", "Toby Okani", "Mouhamadou Gueye", "Bismack Biyombo", "Milos Uzan"],
-  "skill_stats_fetched_at": "2026-10-25T15:52:23.702559+00:00",
+  "skill_stats_fetched_at": "2026-10-25T17:05:16.513698+00:00",
   "skill_updated_players": 384,
   "max_current_weight": 0.0693,
   "held_skill_components": [
@@ -19,7 +19,7 @@
   "switch_status": {
     "season": 2027,
     "season_label": "2026-27",
-    "checked_at": "2026-10-25T15:52:23.707113+00:00",
+    "checked_at": "2026-10-25T17:05:16.518965+00:00",
     "source": "https://stats.nba.com/stats/leagueseasonmatchups",
     "status": "unavailable",
     "reason": "Current matchup data unavailable or failed validation (TimeoutError); SWITCH remains at preseason.",
