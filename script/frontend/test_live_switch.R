@@ -29,3 +29,26 @@ out <- jsonlite::fromJSON(path,simplifyVector=FALSE)
 stopifnot(out$switch_status$updated_players==0,is.null(out$players[[1]]$raw_skills$SWITCH),'SWITCH' %in% unlist(out$held_components))
 setwd(original);unlink(root,recursive=TRUE)
 cat('SWITCH perimeter calibration, missing-exposure and unavailable-source tests passed\n')
+
+# Exercise the actual historical calibration on a saved current-season example.
+# Inputs are the app's published Oct 25 perimeter data and a public NBA matchup
+# assignment score. No live service or credential is needed for this regression.
+root <- tempfile('switch-real-test-');dir.create(root)
+for(p in c('raw/live','processed/livedata/impactrefresh','processed/modelresults')) dir.create(file.path(root,p),recursive=TRUE)
+for(p in c('raw/databallr_stats.csv','processed/livedata/impactrefresh/defdata.csv','processed/modelresults/def_lm_1_results.csv')) {
+  stopifnot(file.symlink(file.path(original,p),file.path(root,p)))
+}
+x <- list(Pos2='SG',points_saved_100=-2.106,rim_points_saved_100=-1.544,
+  'rimdfga/100'=4,'dfga/100'=11.2,d_FG3A_Per100=2.419,d_LongMidRangeFGA_Per100=.806,
+  d_ShortMidRangeFGA_Per100=7.258,d_Blocks_Per100=0,d_DefRebounds_Per100=3.226)
+feed <- list(season=2027,switch_assignments=list('1643408'=.7188977278750194),
+  switch_status=list(status='assignments_available'),players=list(list(nba_id=1643408,raw_skills=list(SWITCH=NULL),perimeter_inputs=x)))
+path <- file.path(root,'raw/live/skill_stats.json')
+jsonlite::write_json(feed,path,auto_unbox=TRUE,null='null',digits=NA)
+setwd(root)
+source(file.path(original,'script/frontend/refresh_live_switch.R'),local=new.env())
+out <- jsonlite::fromJSON(path,simplifyVector=FALSE)
+stopifnot(out$switch_status$updated_players==1,is.finite(out$players[[1]]$raw_skills$SWITCH))
+cat('Actual historical SWITCH calibration passed; Peterson example raw contribution:',out$players[[1]]$raw_skills$SWITCH,'\n')
+setwd(original);unlink(root,recursive=TRUE)
+

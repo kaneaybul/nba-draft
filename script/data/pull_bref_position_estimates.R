@@ -76,7 +76,12 @@ fetch_year <- function(year) {
   if (!requireNamespace("xml2", quietly = TRUE)) stop("Package 'xml2' is required.")
 
   url <- sprintf("https://www.basketball-reference.com/leagues/NBA_%s_play-by-play.html", year)
-  page <- rvest::read_html(url)
+  html_path <- tempfile(fileext = '.html')
+  on.exit(unlink(html_path), add = TRUE)
+  status <- utils::download.file(url, html_path, method = 'libcurl', quiet = TRUE,
+    headers = c('User-Agent' = 'Mozilla/5.0', 'Accept' = 'text/html'))
+  if (status != 0L) stop('Position source download failed: ', status)
+  page <- rvest::read_html(html_path)
   table_node <- rvest::html_element(page, "table#pbp_stats")
   if (is.na(table_node)) stop("Could not find play-by-play table for ", year)
 
