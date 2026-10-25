@@ -2,16 +2,30 @@
 
 Optional tracking data fail closed: unavailable is not zero or cached history.
 """
-import json, math, statistics, urllib.parse, urllib.request
+import math, statistics
 from datetime import datetime, timezone
+from live_positions import matchup_position
+from nba_transport import nba_table
 
-def nba_table(endpoint, params, table):
-    url='https://stats.nba.com/stats/'+endpoint+'?'+urllib.parse.urlencode(params)
-    req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0','Referer':'https://www.nba.com/'})
-    with urllib.request.urlopen(req,timeout=20) as response: data=json.load(response)
-    sets=data.get('resultSets',[])
-    found=next(x for x in sets if x['name']==table)
-    return [dict(zip(found['headers'],row)) for row in found['rowSet']],data.get('parameters',{})
+def diagnose_nba_access(season):
+    """Deliberate controls; another season is never used as rating evidence."""
+    from concurrent.futures import ThreadPoolExecutor
+    label = f'{season-1}-{str(season)[-2:]}'
+    prior = f'{season-2}-{str(season-1)[-2:]}'
+    def probe(item):
+        endpoint, params, table = item
+        audit = []
+        try: nba_table(endpoint, params, table, audit, timeouts=(25,))
+        except Exception: pass
+        return audit
+    common = dict(LeagueID='00', SeasonType='Regular Season', PerMode='Totals',
+                  DefTeamID='', OffTeamID='', DefPlayerID='', OffPlayerID='')
+    probes = [('leagueseasonmatchups',dict(common,Season=prior),'SeasonMatchups'),
+              ('playerindex',dict(LeagueID='00',Season=label,Historical=0,TeamID=0),'PlayerIndex')]
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(probe, probes))
+    return dict(checked_at=datetime.now(timezone.utc).isoformat(), season=season,
+                controls=[x for result in results for x in result])
 
 def zscores(values):
     if len(values)<2 or statistics.stdev(values)<=0: raise ValueError('Degenerate assignment distribution')
@@ -51,9 +65,9 @@ def score_assignments(matchups, players, positions):
 def refresh_assignments(players,season):
     label=f'{season-1}-{str(season)[-2:]}'
     audit={'season':season,'season_label':label,'checked_at':datetime.now(timezone.utc).isoformat(),
-           'source':'https://stats.nba.com/stats/leagueseasonmatchups','status':'unavailable','reason':'','matchup_rows':0}
+           'source':'https://stats.nba.com/stats/leagueseasonmatchups','status':'unavailable','reason':'','matchup_rows':0,'requests':[]}
     try:
-        rows,params=nba_table('leagueseasonmatchups',dict(LeagueID='00',Season=label,SeasonType='Regular Season',DefTeamID=0,OffTeamID=0,DefPlayerID=0,OffPlayerID=0,PerMode='Totals'),'SeasonMatchups')
+        rows,params=nba_table('leagueseasonmatchups',dict(LeagueID='00',Season=label,SeasonType='Regular Season',DefTeamID='',OffTeamID='',DefPlayerID='',OffPlayerID='',PerMode='Totals'),'SeasonMatchups',audit['requests'])
         if params.get('SeasonYear',params.get('Season'))!=label: raise ValueError('Matchup season mismatch')
         if params.get('SeasonType')!='Regular Season': raise ValueError('Matchup season type mismatch')
         audit['matchup_rows']=len(rows)
@@ -62,11 +76,13 @@ def refresh_assignments(players,season):
             return {},audit
         expected='2'+str(season-1)
         if any(str(r.get('SEASON_ID'))!=expected for r in rows): raise ValueError('Matchup row season mismatch')
-        pos,_=nba_table('playerindex',dict(LeagueID='00',Season=label,Historical=0,TeamID=0),'PlayerIndex')
-        positions={int(r['PERSON_ID']):str(r['POSITION'])[:1] for r in pos}
+        # Reuse daily positions instead of making another NBA API request.
+        positions={int(r['nba_id']):matchup_position(r.get('Pos2')) for r in players}
         scores=score_assignments(rows,players,positions)
         audit.update(status='assignments_available',reason='Assignment data available; perimeter inputs must also pass validation.')
         return scores,audit
     except Exception as error:
-        audit['reason']='Current matchup data unavailable or failed validation ('+type(error).__name__+'); SWITCH remains at preseason.'
+        audit['error_type']=type(error).__name__
+        audit['reason']='Current matchup data unavailable or failed validation ('+type(error).__name__+': '+str(error)[:300]+'); SWITCH remains at preseason.'
         return {},audit
+

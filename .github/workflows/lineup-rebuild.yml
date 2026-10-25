@@ -85,10 +85,19 @@ jobs:
           python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
           python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
 
+      - name: Refresh current position estimates
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_live_positions.py'
+          Rscript script/frontend/test_live_positions.R
+          BREF_POSITION_YEARS="$((CURRENT_ROSTER_YEAR + 1))" BREF_POSITION_REFRESH=true Rscript script/data/pull_bref_position_estimates.R
+
       - name: Refresh current skill statistics with conservative evidence weights
+        env:
+          SWITCH_DIAGNOSE: ${{ github.event_name == 'push' && '1' || '0' }}
         run: |
           python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
           python3 -m unittest discover -s script/data -p "test_live_switch.py"
+          python3 -m unittest discover -s script/data -p "test_nba_transport.py"
           python3 script/data/refresh_live_skill_stats.py
           Rscript script/frontend/test_live_switch.R
           Rscript script/frontend/refresh_live_switch.R
@@ -156,6 +165,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node script/frontend/validate_preseason_archive.mjs
           git add frontend/public/data raw/live
+          git add raw/bref_position_estimates.csv raw/bref_position_estimates_by_year
           git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
           bash script/frontend/publish_refresh.sh "Refresh expected NBA ratings, injuries and completed results"
+
 

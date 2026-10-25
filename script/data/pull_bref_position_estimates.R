@@ -152,29 +152,66 @@ infer_years <- function(base_dir) {
   seq.int(min(2016L, min(epm_years)), max(epm_years))
 }
 
-base_dir <- resolve_base_dir()
+run_position_refresh <- function(base_dir = resolve_base_dir()) {
 out_path <- file.path(base_dir, "raw", "bref_position_estimates.csv")
 cache_dir <- file.path(base_dir, "raw", "bref_position_estimates_by_year")
 dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
 dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
 
 years <- infer_years(base_dir)
+refresh <- tolower(Sys.getenv("BREF_POSITION_REFRESH", "false")) %in% c("1", "true", "yes")
+audit <- list(checked_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), seasons = list())
+old_timeout <- getOption("timeout"); options(timeout = 45)
+on.exit(options(timeout = old_timeout), add = TRUE)
 seasons <- do.call(rbind, lapply(years, function(year) {
   cache_path <- file.path(cache_dir, paste0("bref_position_estimates_", year, ".csv"))
-  if (file.exists(cache_path)) {
+  if (file.exists(cache_path) && !refresh) {
     message("Using cached Basketball-Reference position estimates ", year)
     return(read.csv(cache_path, stringsAsFactors = FALSE, check.names = FALSE))
   }
   message("Fetching Basketball-Reference position estimates ", year)
-  out <- tryCatch(fetch_year(year), error = function(e) {
+  status <- "fresh"; reason <- ""
+  out <- tryCatch({
+    value <- fetch_year(year)
+    needed <- c('year','player_name','pg_share','sg_share','sf_share','pf_share','c_share')
+    if (is.null(value) || nrow(value) < 100 || !all(needed %in% names(value)) || any(is.na(value$year) | value$year != year)) {
+      stop("Incomplete or wrong-season position table: ", year)
+    }
+    value
+  }, error = function(e) {
+    status <<- if (file.exists(cache_path)) "cached" else "unavailable"
+    reason <<- substr(conditionMessage(e), 1, 300)
     if (file.exists(cache_path)) return(read.csv(cache_path, stringsAsFactors = FALSE, check.names = FALSE))
+    if (refresh) return(NULL)
     stop(e)
   })
-  write.csv(out, cache_path, row.names = FALSE, na = "")
-  Sys.sleep(2)
+  audit$seasons[[as.character(year)]] <<- list(year = year, status = status, reason = reason,
+    rows = if (is.null(out)) 0L else nrow(out), source = sprintf("https://www.basketball-reference.com/leagues/NBA_%s_play-by-play.html", year))
+  if (status == "fresh" && !is.null(out)) write.csv(out, cache_path, row.names = FALSE, na = "")
+  if (length(years) > 1) Sys.sleep(2)
   out
 }))
 
-write.csv(seasons, out_path, row.names = FALSE, na = "")
+# Refreshing one live year must preserve every historical season.
+if (!is.null(seasons) && nrow(seasons)) {
+  if (file.exists(out_path)) {
+    old <- read.csv(out_path, stringsAsFactors = FALSE, check.names = FALSE)
+    old <- old[!old$year %in% unique(seasons$year), , drop = FALSE]
+    all_cols <- union(names(old), names(seasons))
+    for (k in setdiff(all_cols, names(old))) old[[k]] <- NA
+    for (k in setdiff(all_cols, names(seasons))) seasons[[k]] <- NA
+    seasons <- rbind(old[, all_cols], seasons[, all_cols])
+  }
+  write.csv(seasons, out_path, row.names = FALSE, na = "")
+}
+if (refresh) {
+  dir.create(file.path(base_dir, "raw", "live"), recursive = TRUE, showWarnings = FALSE)
+  jsonlite::write_json(audit, file.path(base_dir, "raw", "live", "position_status.json"), auto_unbox = TRUE, pretty = TRUE)
+}
 message("Basketball-Reference position estimates written: ", out_path)
 message("Rows: ", nrow(seasons))
+invisible(audit)
+}
+
+if (sys.nframe() == 0L) run_position_refresh()
+

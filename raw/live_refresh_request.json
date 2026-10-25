@@ -1,5 +1,6 @@
 {
-  "requested_at": "2026-10-25T15:42:19.932808+00:00",
-  "reason": "Use provider-led live minutes with actual-plus-remaining accounting; measure the isolated player and team impact.",
-  "compare_minutes": true
+  "requested_at": "2026-10-25T19:14:20.380Z",
+  "reason": "Refresh daily PBP/roster positions and diagnose SWITCH with longer timed requests and current opponent positions.",
+  "compare_minutes": false,
+  "diagnose_switch": true
 }

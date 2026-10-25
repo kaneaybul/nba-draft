@@ -2585,6 +2585,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   if (!nrow(rows)) return(rows)
   rows <- recalculate_projected_skill_rollups(rows, x)
   rows <- apply_live_player_pool(rows, x, base_dir)
+  rows <- apply_live_positions(rows, base_dir)
   rows <- apply_live_expected_ratings(rows, base_dir)
 
   rows$replacement_total <- draft_replacement_total(
@@ -3904,7 +3905,7 @@ build_impact_players <- function(base_dir) {
     "nba_id", "player_name", "year", "team", "current_roster_team", "roster_truth_team", "rights_team", "roster_state", "roster_status_source", "roster_truth_pulled_at",
     "incumbent_team", "market_team", "team_projection_base",
     "projection_roster_status", "position", "pg_share", "sg_share", "sf_share", "pf_share", "c_share",
-    "position_index", "position_entropy", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
+    "position_index", "position_entropy", "position_source", "position_checked_at", "age", "yoe", "games", "Minutes", "p_mpg", "p_usg",
     "o_epm", "o_dpm", "d_epm", "d_dpm", "off_dep", "def_dep", "offense", "defense",
     "total", "replacement_total", "score", "score_label", "score_delta", "tier", "availability_status", "availability_reason",
     "live_evidence_minutes", "live_current_weight", "live_prior_minutes", "live_skill_components_updated",

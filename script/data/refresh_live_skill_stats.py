@@ -1,9 +1,10 @@
 """Fetch current-season skill evidence using the repository's existing Databallr connection.
 Never rewrites historical stats or refits model coefficients.
 """
-import csv, hashlib, hmac, json, math, pathlib, re, statistics, time, urllib.request, uuid
+import csv, hashlib, hmac, json, math, os, pathlib, re, statistics, time, urllib.request, uuid
 from datetime import datetime, timezone
-from live_switch import refresh_assignments
+from live_switch import refresh_assignments, diagnose_nba_access
+from live_positions import build_positions, enrich_stats_positions
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SKILLS = {
  'SWITCH':['switch','perimeter_alloc_ps_resid_role'],
@@ -105,14 +106,28 @@ def main():
             break
         except Exception:
             if attempt==2: raise RuntimeError('Current skill stats unavailable; existing published data preserved') from None
+    positions=build_positions(data,season,ROOT)
+    enrich_stats_positions(data,positions)
+    (ROOT/'raw/live/positions.json').write_text(json.dumps(positions,allow_nan=False,separators=(',',':'))+'\n')
+    print('Daily position coverage:',positions['sources'],flush=True)
     feed=build_feed(data,season)
     assignment,audit=refresh_assignments(data,season)
     feed['switch_assignments']=assignment;feed['switch_status']=audit
+    print('SWITCH assignment refresh:',json.dumps(audit),flush=True)
+    request_path=ROOT/'raw/live_refresh_request.json'
+    request=json.loads(request_path.read_text()) if request_path.exists() else {}
+    if request.get('diagnose_switch') and os.environ.get('SWITCH_DIAGNOSE')=='1':
+        diagnostic=diagnose_nba_access(season)
+        diagnostic['current_matchup_requests']=audit.get('requests',[])
+        diagnostic['current_stat_position_fields']={k:sum(r.get(k) is not None and r.get(k)!='' for r in data) for k in data[0] if re.search('switch|matchup|assignment|pos',k,re.I)}
+        (ROOT/'raw/live/switch_diagnostics.json').write_text(json.dumps(diagnostic,allow_nan=False,indent=2)+'\n')
+        print('SWITCH request diagnostics:',json.dumps(diagnostic),flush=True)
     source={int(x['nba_id']):x for x in data}
-    fields=['Pos2','points_saved_100','rim_points_saved_100','rimdfga/100','dfga/100','d_FG3A_Per100','d_LongMidRangeFGA_Per100','d_ShortMidRangeFGA_Per100','d_Blocks_Per100','d_DefRebounds_Per100']
+    fields=['Pos2','position_source','points_saved_100','rim_points_saved_100','rimdfga/100','dfga/100','d_FG3A_Per100','d_LongMidRangeFGA_Per100','d_ShortMidRangeFGA_Per100','d_Blocks_Per100','d_DefRebounds_Per100']
     for p in feed['players']:
         p['perimeter_inputs']={k:source[p['nba_id']].get(k) for k in fields}
     dest=ROOT/'raw/live/skill_stats.json';tmp=dest.with_suffix('.tmp')
     tmp.write_text(json.dumps(feed,allow_nan=False,separators=(',',':'))+'\n');tmp.replace(dest)
     print(f"Current skill evidence: {len(feed['players'])} players, {feed['total_actual_minutes']:.0f} actual minutes, {feed['completed_games_at_fetch']} completed games")
 if __name__=='__main__': main()
+

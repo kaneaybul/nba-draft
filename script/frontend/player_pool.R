@@ -1,4 +1,28 @@
-pool_character_fields <- c('pool_status','pool_note','pool_checked_at','pool_identity_status')
+pool_character_fields <- c('pool_status','pool_note','pool_checked_at','pool_identity_status','position_source','position_checked_at')
+
+apply_live_positions <- function(rows, base_dir) {
+  path <- file.path(base_dir,'raw/live/positions.json')
+  if (!file.exists(path)) stop('Daily position feed is required')
+  feed <- jsonlite::fromJSON(path, simplifyVector=FALSE)
+  if (any(rows$year != feed$season)) stop('Live position season mismatch')
+  for (k in c('position_source','position_checked_at')) if (!k %in% names(rows)) rows[[k]] <- NA_character_
+  records <- setNames(feed$players, vapply(feed$players, function(p) as.character(p$app_nba_id), character(1)))
+  cols <- c('pg_share','sg_share','sf_share','pf_share','c_share')
+  for (i in seq_len(nrow(rows))) {
+    p <- records[[as.character(rows$nba_id[i])]]
+    if (is.null(p) || identical(p$position,'UNK')) next
+    shares <- vapply(cols, function(k) as.numeric(p[[k]]), numeric(1))
+    if (any(!is.finite(shares) | shares < 0) || sum(shares) <= 0) stop('Invalid daily position shares')
+    shares <- shares/sum(shares)
+    for (j in seq_along(cols)) rows[[cols[j]]][i] <- shares[j]
+    rows$position[i] <- p$position
+    rows$position_index[i] <- sum(shares*1:5)
+    rows$position_entropy[i] <- -sum(shares[shares>0]*log(shares[shares>0]))/log(5)
+    rows$position_source[i] <- p$source
+    rows$position_checked_at[i] <- feed$generated_at
+  }
+  rows
+}
 
 pool_scalar <- function(x,default=NA) if(is.null(x)||length(x)==0||is.na(x[1])) default else x[1]
 
@@ -132,3 +156,4 @@ fixed_pool_scores <- function(rows,base_dir) {
   if('trade_value' %in% names(rows) && 'value' %in% names(rows)) rows$trade_value <- round(rows$value*(.45+rows$score/170),0)
   rows
 }
+
