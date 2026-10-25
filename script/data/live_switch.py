@@ -2,10 +2,12 @@
 
 Optional tracking data fail closed: unavailable is not zero or cached history.
 """
-import math, statistics
+import math, statistics, os
 from datetime import datetime, timezone
+from pathlib import Path
 from live_positions import matchup_position
 from nba_transport import nba_table
+from matchup_snapshot import read_snapshot
 
 def diagnose_nba_access(season):
     """Deliberate controls; another season is never used as rating evidence."""
@@ -68,7 +70,21 @@ def refresh_assignments(players,season):
     audit={'season':season,'season_label':label,'checked_at':datetime.now(timezone.utc).isoformat(),
            'source':'https://stats.nba.com/stats/leagueseasonmatchups','status':'unavailable','reason':'','matchup_rows':0,'requests':[]}
     try:
-        rows,params=nba_table('leagueseasonmatchups',dict(LeagueID='00',Season=label,SeasonType='Regular Season',DefTeamID='',OffTeamID='',DefPlayerID='',OffPlayerID='',PerMode='Totals'),'SeasonMatchups',audit['requests'])
+        snapshot = Path(os.environ.get('NBA_MATCHUP_SNAPSHOT',str(Path(__file__).resolve().parents[2]/'raw/live/matchup_snapshot.json')))
+        rows = None
+        if snapshot.exists():
+            try:
+                rows,metadata = read_snapshot(snapshot,season)
+                params = metadata['parameters']
+                audit.update(transport='verified_external_snapshot',snapshot_generated_at=metadata['generated_at'],snapshot_sha256=metadata['sha256'])
+            except Exception as error:
+                audit['snapshot_rejected']=str(error)
+        if rows is None:
+            # The runner's direct network path is known to stall. A bounded
+            # fallback preserves availability without delaying every daily run.
+            timeouts = (20,) if os.environ.get('GITHUB_ACTIONS')=='true' else (60,90)
+            rows,params=nba_table('leagueseasonmatchups',dict(LeagueID='00',Season=label,SeasonType='Regular Season',DefTeamID='',OffTeamID='',DefPlayerID='',OffPlayerID='',PerMode='Totals'),'SeasonMatchups',audit['requests'],timeouts=timeouts)
+            audit['transport']='direct_nba'
         if params.get('SeasonYear',params.get('Season'))!=label: raise ValueError('Matchup season mismatch')
         if params.get('SeasonType')!='Regular Season': raise ValueError('Matchup season type mismatch')
         audit['matchup_rows']=len(rows)

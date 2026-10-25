@@ -1,6 +1,6 @@
 {
-  "requested_at": "2026-10-25T19:14:20.380Z",
-  "reason": "Refresh daily PBP/roster positions and diagnose SWITCH with longer timed requests and current opponent positions.",
+  "requested_at": "2026-10-25T19:38:44.509Z",
+  "reason": "Use the verified external NBA matchup snapshot and complete the daily position and SWITCH refresh.",
   "compare_minutes": false,
-  "diagnose_switch": true
+  "diagnose_switch": false
 }

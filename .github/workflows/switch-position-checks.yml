@@ -6,6 +6,7 @@ on:
       - script/data/*positions*
       - script/data/*switch*
       - script/data/*transport*
+      - script/data/*snapshot*
       - script/frontend/player_pool.R
       - script/frontend/*positions.R
       - script/frontend/refresh_live_switch.R
@@ -40,6 +41,7 @@ jobs:
           python3 -m unittest discover -s script/data -p 'test_nba_transport.py'
           python3 -m unittest discover -s script/data -p 'test_live_switch.py'
           python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
+          python3 -m unittest discover -s script/data -p 'test_matchup_snapshot.py'
           Rscript script/frontend/test_live_positions.R
           Rscript script/frontend/test_live_switch.R
       - name: Check daily positions without credentials or deployment

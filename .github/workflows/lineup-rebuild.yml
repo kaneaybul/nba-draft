@@ -98,6 +98,7 @@ jobs:
           python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
           python3 -m unittest discover -s script/data -p "test_live_switch.py"
           python3 -m unittest discover -s script/data -p "test_nba_transport.py"
+          python3 -m unittest discover -s script/data -p "test_matchup_snapshot.py"
           python3 script/data/refresh_live_skill_stats.py
           Rscript script/frontend/test_live_switch.R
           Rscript script/frontend/refresh_live_switch.R

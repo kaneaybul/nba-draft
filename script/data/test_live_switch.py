@@ -1,8 +1,26 @@
-import unittest
+import unittest,json,tempfile
+from pathlib import Path
 from unittest.mock import patch
 from live_switch import refresh_assignments,score_assignments
+from matchup_snapshot import make_snapshot
 
 class SwitchTests(unittest.TestCase):
+    def setUp(self):
+        isolated=patch.dict('os.environ',{'NBA_MATCHUP_SNAPSHOT':'/missing/test-matchup-snapshot.json'})
+        isolated.start();self.addCleanup(isolated.stop)
+
+    def test_fresh_external_snapshot_avoids_runner_network(self):
+        players=[dict(nba_id=i,GamesPlayed=2,TeamId=1,d_Points_Per100=10+i/10,Pos2=['SG','PF','C'][i%3]) for i in range(1,111)]
+        rows=[dict(SEASON_ID='22026',DEF_PLAYER_ID=i,OFF_PLAYER_ID=j,PARTIAL_POSS=10+i%5,GP=2) for i in range(1,111) for j in (i,i%110+1)]
+        data=make_snapshot(rows,dict(SeasonYear='2026-27',SeasonType='Regular Season'),2027)
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'snapshot.json';path.write_text(json.dumps(data))
+            with patch.dict('os.environ',{'NBA_MATCHUP_SNAPSHOT':str(path)}),patch('live_switch.nba_table',side_effect=AssertionError('Runner network used')):
+                scores,audit=refresh_assignments(players,2027)
+        self.assertEqual(len(scores),110)
+        self.assertEqual(audit['transport'],'verified_external_snapshot')
+        self.assertEqual(audit['status'],'assignments_available')
+
     def test_complete_matchups_use_shared_positions_without_another_nba_call(self):
         players=[dict(nba_id=i,GamesPlayed=2,TeamId=1,d_Points_Per100=10+i/10,Pos2=['SG','PF','C'][i%3]) for i in range(1,111)]
         rows=[dict(SEASON_ID='22026',DEF_PLAYER_ID=i,OFF_PLAYER_ID=j,PARTIAL_POSS=10+i%5,GP=2) for i in range(1,111) for j in (i,i%110+1)]
