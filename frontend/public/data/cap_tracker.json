@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-25T19:52:00.245Z",
+  "generated_at": "2026-10-26T19:19:13.451Z",
   "cap_fallbacks": [
     {
       "team": "NOP",
@@ -42155,7 +42155,7 @@
       "team": "PHI",
       "row_type": "draft_pick",
       "display_order": 8009,
-      "position": "SG",
+      "position": "PG",
       "age": 21.1,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
