@@ -1,0 +1,60 @@
+{
+  "policy": "Verified news supplements only the identified older ESPN injury report. Newer feed reports take precedence. Reports expire and cannot recreate a resolved injury listing. Return windows are anchored to the report date; midpoints are planning estimates.",
+  "reports": [
+    {
+      "season": 2027,
+      "team": "UTA",
+      "name_key": "jarenjackson",
+      "observed_on": "2026-10-27",
+      "expires_on": "2026-12-22",
+      "supersedes_reports_through": "2026-10-27T02:06Z",
+      "sources": [
+        "https://www.rotowire.com/basketball/player/jaren-jackson-4384",
+        "https://sports.ksl.com/nba/utah-jazz/jaren-jackson-jr-injury-reports/578535"
+      ],
+      "outlook": {
+        "status": "Out",
+        "injury_type": "Right knee - torn MCL",
+        "report_date": "2026-10-27",
+        "source": "RotoWire / ESPN reporting",
+        "source_url": "https://www.rotowire.com/basketball/player/jaren-jackson-4384",
+        "return_earliest": "2026-12-08",
+        "return_expected": "2026-12-15",
+        "return_latest": "2026-12-22",
+        "provider_return_date": null,
+        "basis": "reported_duration",
+        "confidence": "medium",
+        "season_ending": false,
+        "stale_report": false,
+        "timeline_note": "Reported 6-8-week absence for a torn right MCL; surgery is not expected. Dates are measured from the October 27 report; December 15 is the seven-week planning midpoint."
+      }
+    },
+    {
+      "season": 2027,
+      "team": "OKC",
+      "name_key": "casonwallace",
+      "observed_on": "2026-10-27",
+      "expires_on": "2027-04-30",
+      "supersedes_reports_through": "2026-10-26T22:05Z",
+      "sources": [
+        "https://www.rotowire.com/basketball/player/cason-wallace-5898",
+        "https://www.reuters.com/sports/thunders-jalen-williams-cason-wallace-both-headed-surgery--flm-2026-10-26/"
+      ],
+      "outlook": {
+        "status": "Out",
+        "injury_type": "Left shoulder - torn labrum; surgery required",
+        "source": "RotoWire / ESPN reporting",
+        "source_url": "https://www.rotowire.com/basketball/player/cason-wallace-5898",
+        "return_earliest": null,
+        "return_expected": "2027-03-02",
+        "return_latest": null,
+        "provider_return_date": "2027-03-02",
+        "basis": "provider_estimate",
+        "confidence": "low",
+        "season_ending": false,
+        "stale_report": false,
+        "timeline_note": "Surgery is required for a torn left shoulder labrum. Reports indicate several months out, possibly the rest of the season; a firm team return timetable has not been announced. March 2 is only the RotoWire/ESPN planning estimate."
+      }
+    }
+  ]
+}

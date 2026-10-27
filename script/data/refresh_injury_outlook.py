@@ -195,7 +195,34 @@ def fetch_json(url):
             time.sleep(attempt + 1)
 
 
-def build_outlook(feed, schedules, now):
+def apply_news_report(row, reports, today):
+    """Bridge a verified news update until the injury feed catches up.
+
+    Each report explicitly names the old feed timestamp it can supersede. A
+    newer feed report, a resolved listing, or the expiry ends the supplement.
+    """
+    for report in reports:
+        if (report["season"], report["team"], report["name_key"]) != (row["season"], row["team"], row["name_key"]):
+            continue
+        if not date.fromisoformat(report["observed_on"]) <= today <= date.fromisoformat(report["expires_on"]):
+            continue
+        if iso_datetime(row["report_date"]) > iso_datetime(report["supersedes_reports_through"]):
+            continue
+        updates = report["outlook"]
+        # Identity and schedule counts must always come from the live feed.
+        allowed = {"status", "injury_type", "report_date", "source", "source_url",
+                   "return_earliest", "return_expected", "return_latest", "provider_return_date", "basis",
+                   "confidence", "season_ending", "stale_report", "timeline_note"}
+        if set(updates) - allowed:
+            raise ValueError("Unexpected injury news supplement fields")
+        row = dict(row, **updates)
+        row["stale_report"] = (today - date.fromisoformat(row["report_date"][:10])).days > 30
+        if row["stale_report"]:
+            row["confidence"] = "low"
+    return row
+
+
+def build_outlook(feed, schedules, now, news_reports=()):
     if feed.get("status") != "success" or not isinstance(feed.get("injuries"), list):
         raise ValueError("Invalid ESPN injury response; refusing to replace the last outlook")
     season = int(feed["season"]["year"])
@@ -228,7 +255,9 @@ def build_outlook(feed, schedules, now):
                        injury_type=(injury.get("details") or {}).get("type", "Undisclosed"),
                        report_date=injury["date"], source="ESPN / RotoWire", source_url=link,
                        schedule_games_remaining=len(games), schedule_games_tbd=tbd,
-                       **timeline, **calculate_absence(timeline, games, today, completed, completed_since_report))
+                       **timeline)
+            row = apply_news_report(row, news_reports, today)
+            row.update(calculate_absence(row, games, today, completed, completed_since_report))
             key = (team, row["name_key"])
             if key not in rows or row["report_date"] > rows[key]["report_date"]:
                 rows[key] = row
@@ -246,6 +275,8 @@ def main():
     parser.add_argument("--feed", type=Path, help="Read an already fetched feed for reproducible checks")
     parser.add_argument("--schedules-dir", type=Path, help="Read already fetched team schedules")
     parser.add_argument("--results-output", type=Path)
+    parser.add_argument("--news-reports", type=Path, default=ROOT / "raw/injury_news_reports.json",
+                        help="Verified dated news that supersedes an older injury-feed report")
     args = parser.parse_args()
     feed = json.loads(args.feed.read_text()) if args.feed else fetch_json(f"{API}/injuries")
     season = int(feed["season"]["year"])
@@ -256,7 +287,8 @@ def main():
         return team, fetch_json(f"{API}/teams/{ident}/schedule?season={season}&seasontype=2")
     with ThreadPoolExecutor(max_workers=6) as pool:
         schedules = dict(pool.map(get_schedule, TEAM_IDS.items()))
-    outlook = build_outlook(feed, schedules, datetime.now(timezone.utc))
+    news_reports = json.loads(args.news_reports.read_text())["reports"] if args.news_reports.exists() else []
+    outlook = build_outlook(feed, schedules, datetime.now(timezone.utc), news_reports)
     if args.results_output:
         from live_results import build_results
         results = build_results(schedules, season, datetime.now(timezone.utc))
@@ -273,3 +305,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -1,8 +1,10 @@
 """Regression cases for misleading return dates and schedule-based absences."""
 from datetime import date, datetime, timezone
+import json
+from pathlib import Path
 import unittest
 
-from refresh_injury_outlook import calculate_absence, parse_timeline, schedule_games
+from refresh_injury_outlook import apply_news_report, calculate_absence, parse_timeline, schedule_games
 
 
 class InjuryOutlookTests(unittest.TestCase):
@@ -97,6 +99,51 @@ class InjuryOutlookTests(unittest.TestCase):
         self.assertIsNone(row["return_earliest"])
         self.assertIsNone(row["return_expected"])
 
+    def test_reported_six_to_eight_week_window(self):
+        row = self.parse("He will be sidelined for 6-to-8 weeks.", reported="2026-10-27T20:00Z")
+        self.assertEqual(row["return_earliest"], "2026-12-08")
+        self.assertEqual(row["return_expected"], "2026-12-15")
+        self.assertEqual(row["return_latest"], "2026-12-22")
+
+    def news_reports(self):
+        return json.loads((Path(__file__).resolve().parents[2] / "raw/injury_news_reports.json").read_text())["reports"]
+
+    def news_row(self, name="jarenjackson", team="UTA", reported="2026-10-27T02:06Z"):
+        row = self.parse("Recovery continues.")
+        return dict(row, season=2027, team=team, name_key=name, report_date=reported,
+                    status="Day-To-Day", injury_type="Knee", schedule_games_remaining=76)
+
+    def test_latest_jaren_news_replaces_old_next_game_estimate(self):
+        row = apply_news_report(self.news_row(), self.news_reports(), date(2026, 10, 27))
+        self.assertEqual(row["status"], "Out")
+        self.assertEqual(row["basis"], "reported_duration")
+        self.assertEqual(row["return_expected"], "2026-12-15")
+        games = [dict(date=d) for d in ["2026-10-28", "2026-12-08", "2026-12-14", "2026-12-21", "2026-12-22"]]
+        absence = calculate_absence(row, games, date(2026, 10, 27))
+        self.assertEqual((absence["games_missed_min"], absence["games_missed_expected"], absence["games_missed_max"]), (1, 3, 4))
+
+    def test_cason_keeps_provider_estimate_and_season_out_uncertainty(self):
+        row = apply_news_report(self.news_row("casonwallace", "OKC", "2026-10-26T22:05Z"), self.news_reports(), date(2026, 10, 27))
+        self.assertEqual(row["return_expected"], "2027-03-02")
+        self.assertFalse(row["season_ending"])
+        self.assertEqual(row["confidence"], "low")
+        self.assertIn("possibly the rest of the season", row["timeline_note"])
+
+    def test_newer_feed_report_supersedes_news_supplement(self):
+        row = self.news_row(reported="2026-10-28T12:00Z")
+        self.assertEqual(apply_news_report(row, self.news_reports(), date(2026, 10, 28)), row)
+
+    def test_expired_supplement_does_not_freeze_the_outlook(self):
+        row = self.news_row()
+        self.assertEqual(apply_news_report(row, self.news_reports(), date(2026, 12, 23)), row)
+
+    def test_news_does_not_apply_before_observation_or_to_other_identity(self):
+        row = self.news_row()
+        self.assertEqual(apply_news_report(row, self.news_reports(), date(2026, 10, 26)), row)
+        other = self.news_row(team="MEM")
+        self.assertEqual(apply_news_report(other, self.news_reports(), date(2026, 10, 27)), other)
+
 
 if __name__ == "__main__":
     unittest.main()
+
