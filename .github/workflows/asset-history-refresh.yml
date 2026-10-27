@@ -1,0 +1,91 @@
+name: Refresh asset history
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Rebuild lineup projections
+    branches:
+      - main
+    types:
+      - completed
+
+# The source refresh and its data commits use this same group.
+concurrency:
+  group: roster-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - run: python3 script/asset_history/materialize.py --repo .
+      - name: Check valuation and publication rules
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+      - name: Produce and validate all 30 portfolios
+        id: portfolios
+        continue-on-error: true
+        run: python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/asset-history"
+      - uses: actions/setup-node@v4
+        if: steps.portfolios.outcome == 'success'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the validated explorer
+        if: steps.portfolios.outcome == 'success'
+        run: |
+          npm ci
+          npm run build
+        working-directory: frontend
+      - name: Publish validated observations or retain the last good view
+        shell: bash
+        env:
+          PORTFOLIO_OUTCOME: ${{ steps.portfolios.outcome }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "$PORTFOLIO_OUTCOME" = success ]; then
+            git add frontend/public/data/asset_history/v2 processed/asset_history
+          else
+            git add frontend/public/data/asset_history/v2/refresh_status.json
+          fi
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh validated NBA asset history"
+            git push origin HEAD:main
+          fi
+      - name: Preserve source and validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-history-validation
+          path: |
+            ${{ runner.temp }}/asset-history/players/*.log
+            ${{ runner.temp }}/asset-history/pending_pick_review.json
+            ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json
+            frontend/public/data/asset_history/v2/refresh_status.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Report a retained observation
+        if: steps.portfolios.outcome != 'success'
+        run: echo "::warning::Asset history retained its last validated observation. Source or ownership review is pending; see the validation artifact."

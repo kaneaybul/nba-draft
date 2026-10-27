@@ -1,0 +1,170 @@
+[
+  {
+    "player_name": "Labaron Philon Jr.",
+    "nba_id": 1642889,
+    "app_id_aliases": [
+      -2027010
+    ],
+    "player_name_aliases": [
+      "Labaron Philon, Jr.",
+      "Labaron Philon",
+      "Labaron Philon Jr."
+    ],
+    "known_from": "2026-07-03",
+    "source": "https://www.nba.com/sixers/2026-nba-draft",
+    "quality": "published_rookie_scale_estimate_verified_app_first_year",
+    "contract_type": "ROOKIE SCALE CONTRACT",
+    "signing_team": "PHI",
+    "expiry_season": 2030,
+    "schedule_complete": true,
+    "table_complete": true,
+    "raw_source_table_exists": false,
+    "source_known_until": 2030,
+    "stated_length": 4,
+    "short_episode": false,
+    "annual_rate_unresolved_years": [],
+    "resets_prior_schedule": true,
+    "max_salary_asof_review_required": false,
+    "max_salary_asof_formula_verified": false,
+    "max_salary_years": [],
+    "source_profile_draft_year": 2026,
+    "source_profile_draft_pick": 22,
+    "source_profile_name": "Labaron Philon Jr.",
+    "source_profile_birthdate": "Nov 24, 2005",
+    "first_cap_known_from": null,
+    "amount_terms_fixed_from": "2026-07-03",
+    "sources": [
+      "https://www.nba.com/sixers/2026-nba-draft",
+      "https://www.nba.com/sixers/76ers-players/labaron-philon-jr",
+      "https://basketball.realgm.com/nba/transactions/league/2027",
+      "https://basketball.realgm.com/nba/info/rookie_scale/2027"
+    ],
+    "note": "Official NBA source verifies2026No22pick. Datedtransaction register verifiesJuly3signedmulti-year. Current appY1salary3597120 exactlymatches120pctpublishedslot22scale. Years2\u20134arestandard120pctpublished-cohort-scaleESTIMATES,notreportedexactcontractamounts;year3/4areoriginalteamoptions. ExistingappnegativeID-2027010aliasesconfirmedNBAID1642889,notanewplayer. SalarySwishprofileisstillinactive/undraftedanddoesnotcontaintheactualcontract.",
+    "salaries": [
+      {
+        "year": 2027,
+        "amount": 3597120,
+        "kind": "salary",
+        "guaranteed_amount": 3597120,
+        "known_from": "2026-07-03",
+        "source": "https://basketball.realgm.com/nba/info/rookie_scale/2027",
+        "quality": "published_rookie_scale_estimate_verified_app_first_year",
+        "modeled_amount_estimate": false
+      },
+      {
+        "year": 2028,
+        "amount": 3776760,
+        "kind": "salary",
+        "guaranteed_amount": 3776760,
+        "known_from": "2026-07-03",
+        "source": "https://basketball.realgm.com/nba/info/rookie_scale/2027",
+        "quality": "published_rookie_scale_estimate_verified_app_first_year",
+        "modeled_amount_estimate": true
+      },
+      {
+        "year": 2029,
+        "amount": 3956760,
+        "kind": "team_option",
+        "guaranteed_amount": null,
+        "known_from": "2026-07-03",
+        "source": "https://basketball.realgm.com/nba/info/rookie_scale/2027",
+        "quality": "published_rookie_scale_estimate_verified_app_first_year",
+        "modeled_amount_estimate": true
+      },
+      {
+        "year": 2030,
+        "amount": 6508870,
+        "kind": "team_option",
+        "guaranteed_amount": null,
+        "known_from": "2026-07-03",
+        "source": "https://basketball.realgm.com/nba/info/rookie_scale/2027",
+        "quality": "published_rookie_scale_estimate_verified_app_first_year",
+        "modeled_amount_estimate": true
+      }
+    ]
+  },
+  {
+    "player_name": "Emmanuel Mudiay",
+    "nba_id": 1626144,
+    "known_from": "2021-12-22",
+    "source": "https://www.nba.com/kings/news/kings-sign-emmanuel-mudiay",
+    "quality": "dated_official_signing_published_minimum_salary_rate_estimate",
+    "contract_type": "10-DAY CONTRACT",
+    "signing_team": "SAC",
+    "expiry_season": 2022,
+    "schedule_complete": true,
+    "table_complete": true,
+    "stated_length": 1,
+    "source_known_until": 2022,
+    "short_episode": true,
+    "annual_rate_unresolved_years": [],
+    "resets_prior_schedule": true,
+    "max_salary_asof_review_required": false,
+    "max_salary_asof_formula_verified": false,
+    "max_salary_years": [],
+    "episode_scheduled_expiry": "2021-12-31",
+    "realgm_profile": "https://basketball.realgm.com/player/Emmanuel-Mudiay/Summary/24680",
+    "identity_kind": "nba_id",
+    "sources": [
+      "https://www.nba.com/kings/news/kings-sign-emmanuel-mudiay",
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf"
+    ],
+    "note": "Signing and contract type verified by dated team release/register. Exact signed cash terms not disclosed/recovered. Rate is published CBA minimum annual salary estimate: five completed NBA service seasons for Mudiay; two-way is one-half rookie minimum for Lundberg. Cash is not treated as a full-season commitment. Ledger knowledge date is used; sources report LundbergMarch11announcement/March12agreement.",
+    "salaries": [
+      {
+        "year": 2022,
+        "amount": 1939350,
+        "kind": "salary",
+        "guaranteed_amount": 1939350,
+        "known_from": "2021-12-22",
+        "source": "https://www.nba.com/kings/news/kings-sign-emmanuel-mudiay",
+        "quality": "published_cba_minimum_annual_rate_estimate",
+        "modeled_amount_estimate": true
+      }
+    ]
+  },
+  {
+    "player_name": "Iffe Lundberg",
+    "nba_id": -9000042106,
+    "known_from": "2022-03-11",
+    "source": "https://basketball.realgm.com/nba/teams/Phoenix-Suns/23/Transaction-History/2022",
+    "quality": "dated_official_signing_published_minimum_salary_rate_estimate",
+    "contract_type": "TWO-WAY CONTRACT (REST OF SEASON)",
+    "signing_team": "PHX",
+    "expiry_season": 2022,
+    "schedule_complete": true,
+    "table_complete": true,
+    "stated_length": 1,
+    "source_known_until": 2022,
+    "short_episode": true,
+    "annual_rate_unresolved_years": [],
+    "resets_prior_schedule": true,
+    "max_salary_asof_review_required": false,
+    "max_salary_asof_formula_verified": false,
+    "max_salary_years": [],
+    "episode_scheduled_expiry": "2022-04-10",
+    "realgm_profile": "https://basketball.realgm.com/player/Iffe-Lundberg/Summary/42106",
+    "identity_kind": "realgm_profile_source_id",
+    "sources": [
+      "https://basketball.realgm.com/nba/teams/Phoenix-Suns/23/Transaction-History/2022",
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf"
+    ],
+    "note": "Signing and contract type verified by dated team release/register. Exact signed cash terms not disclosed/recovered. Rate is published CBA minimum annual salary estimate: five completed NBA service seasons for Mudiay; two-way is one-half rookie minimum for Lundberg. Cash is not treated as a full-season commitment. Ledger knowledge date is used; sources report LundbergMarch11announcement/March12agreement.",
+    "salaries": [
+      {
+        "year": 2022,
+        "amount": 462629,
+        "kind": "salary",
+        "guaranteed_amount": 462629,
+        "known_from": "2022-03-11",
+        "source": "https://basketball.realgm.com/nba/teams/Phoenix-Suns/23/Transaction-History/2022",
+        "quality": "published_cba_minimum_annual_rate_estimate",
+        "modeled_amount_estimate": true
+      }
+    ],
+    "player_name_aliases": [
+      "Gabriel Lundberg",
+      "Gabriel Iffe Lundberg"
+    ]
+  }
+]

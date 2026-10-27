@@ -1,0 +1,867 @@
+[
+  {
+    "nba_id": 201939,
+    "player_name": "Stephen Curry",
+    "agreement_known_from": "2021-08-07",
+    "rule_known_from": "2021-08-07",
+    "first_year": 2023,
+    "last_year": 2026,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2022,
+    "prior_salary_amount": 45780966,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/warriors/news/stephen-curry-20210806",
+      "https://www.salaryswish.com/players/stephen-curry"
+    ],
+    "validation": "CBA101 SectionQ(3);10plusyears service. Prior2021-22 salary from original2017 contract. First salary floor48,070,014 reproduces original2021 schedule; current firstyear35pctcap is lower."
+  },
+  {
+    "nba_id": 203999,
+    "player_name": "Nikola Jokic",
+    "agreement_known_from": "2022-07-08",
+    "rule_known_from": "2022-07-08",
+    "first_year": 2024,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 32478837,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/news/nikola-jokic-signs-extension-with-nuggets",
+      "https://www.salaryswish.com/players/nikola-jokic"
+    ],
+    "validation": "CBA101 SectionK(4),Q(6). Designated veteran supermax eligibility established by MVP awards already known on agreement date. First2023-24 cap was unknown at signing. Prior salary from original2018 contract."
+  },
+  {
+    "nba_id": 203954,
+    "player_name": "Joel Embiid",
+    "agreement_known_from": "2021-08-17",
+    "rule_known_from": "2021-08-17",
+    "first_year": 2024,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 33616770,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/news/reports-joel-embiid-76ers-agree-to-4-year-extension",
+      "https://www.salaryswish.com/players/joel-embiid"
+    ],
+    "validation": "Designated veteran supermax eligibility already established at signing. Prior salary from original2017 contract. Original2026-27 player option remains until dated2024 replacement."
+  },
+  {
+    "nba_id": 203954,
+    "player_name": "Joel Embiid",
+    "agreement_known_from": "2024-09-19",
+    "rule_known_from": "2024-09-20",
+    "first_year": 2027,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 55224526,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/sixers/news/76ers-sign-joel-embiid-multi-year-contract-extension",
+      "https://www.salaryswish.com/players/joel-embiid"
+    ],
+    "validation": "Use public team announcementSep20 instead of earlier source signing dateSep19. Prior2025-26 salary was fixed by earlier signed contract.105pctfloor57,985,752 exceeds35pct of app164,961,000 reporting cap57,736,350."
+  },
+  {
+    "nba_id": 1626164,
+    "player_name": "Devin Booker",
+    "agreement_known_from": "2025-07-10",
+    "rule_known_from": "2025-07-10",
+    "first_year": 2029,
+    "last_year": 2030,
+    "prior_salary_year": 2028,
+    "prior_salary_amount": 61015192,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/suns/news/phoenix-suns-sign-devin-booker-to-contract-extension/",
+      "https://www.nba.com/news/devin-booker-extension-phoenix-suns",
+      "https://www.salaryswish.com/players/devin-booker"
+    ],
+    "validation": "Maximum veteran extension; ten-plus years of service by first new season,35pct maximum applies without futureawardcondition. Prior2027-28salary from original2022agreement whose firstcapwasfixedbyJuly2024, beforethis2025extension.",
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false
+  },
+  {
+    "nba_id": 1628378,
+    "player_name": "Donovan Mitchell",
+    "agreement_known_from": "2026-07-08",
+    "rule_known_from": "2026-07-09",
+    "first_year": 2028,
+    "last_year": 2031,
+    "prior_salary_year": 2027,
+    "prior_salary_amount": 50105628,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/news/donovan-mitchell-4-year-extension-cavaliers",
+      "https://www.salaryswish.com/players/donovan-mitchell"
+    ],
+    "validation": "New2026maximumextension, separate from2024agreement. Firstnewseason2027-28 withten-plusyearsofservice:35pctmaximumwithoutfutureawardcondition. UseconservativepublicteamannouncementJuly9 vs historysigningJuly8. Original2024fixed2026-27salary provides105pctfloor.",
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false
+  },
+  {
+    "nba_id": 1628983,
+    "player_name": "Shai Gilgeous-Alexander",
+    "agreement_known_from": "2025-07-07",
+    "rule_known_from": "2025-07-08",
+    "first_year": 2028,
+    "last_year": 2031,
+    "prior_salary_year": 2027,
+    "prior_salary_amount": 40806150,
+    "sources": [
+      "https://cdn.nba.com/manage/2021/03/2018-19-CBA.pdf",
+      "https://www.nba.com/thunder/news/shai-extension-250708",
+      "https://www.nba.com/news/shai-gilgeous-alexander-contract-extension-2025",
+      "https://www.salaryswish.com/players/shai-gilgeousalexander"
+    ],
+    "validation": "Designatedveteransupermax;2024-25MVPeligibilityalreadyknownat2025signing.35pctfirstcapplus105pctpriorsalaryfloor,8pctfirstsalaryraises. PublicteamannouncementJuly8usedratherthanearlierhistorysigningJuly7.",
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false
+  },
+  {
+    "nba_id": 1641705,
+    "player_name": "Victor Wembanyama",
+    "agreement_known_from": "2026-07-10",
+    "rule_known_from": "2026-07-10",
+    "first_year": 2028,
+    "last_year": 2032,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2027,
+    "prior_salary_amount": 16868246,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://www.nba.com/news/spurs-sign-victor-wembanyama-to-multi-year-contract-extension",
+      "https://www.espn.com/nba/story/_/id/49328757/sources-spurs-victor-wembanyama-reach-252-million-max-extension",
+      "https://www.salaryswish.com/players/victor-wembanyama"
+    ],
+    "validation": "SignedJuly10,2026. NBA/APdescribesdiscountfromavailable300Mplusdeal;originalESPNreportexplicitly25pctmaxwithNOescalators. Thus25pctfirstcapratherthanhindsight30pctRoseawardassumption. Source2027-28nominal43.5Misprojection,notfixedcap;8pctfirstsalaryraises."
+  },
+  {
+    "nba_id": 1630162,
+    "player_name": "Anthony Edwards",
+    "agreement_known_from": "2023-07-08",
+    "rule_known_from": "2023-07-08",
+    "first_year": 2025,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 13534817.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/anthony-edwards",
+      "https://www.nba.com/news/anthony-edwards-contract-extension-2023"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3,
+    "cap_fraction_events": [
+      {
+        "known_from": "2024-05-22",
+        "cap_fraction": 0.3,
+        "source": "https://www.nba.com/news/2023-24-all-nba-teams-announced"
+      }
+    ]
+  },
+  {
+    "nba_id": 1630595,
+    "player_name": "Cade Cunningham",
+    "agreement_known_from": "2024-07-10",
+    "rule_known_from": "2024-07-10",
+    "first_year": 2026,
+    "last_year": 2030,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 13940809.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/cade-cunningham",
+      "https://www.nba.com/news/pistons-cunningham-5-year-extension"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3,
+    "cap_fraction_events": [
+      {
+        "known_from": "2025-05-23",
+        "cap_fraction": 0.3,
+        "source": "https://www.nba.com/news/2024-25-all-nba-teams-announced"
+      }
+    ]
+  },
+  {
+    "nba_id": 1631096,
+    "player_name": "Chet Holmgren",
+    "agreement_known_from": "2025-07-13",
+    "rule_known_from": "2025-07-13",
+    "first_year": 2027,
+    "last_year": 2031,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 13731368.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/chet-holmgren",
+      "https://www.nba.com/news/chet-holmgren-contract-extension-2025"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1629636,
+    "player_name": "Darius Garland",
+    "agreement_known_from": "2022-07-08",
+    "rule_known_from": "2022-07-08",
+    "first_year": 2024,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 8920794.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/darius-garland"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1630596,
+    "player_name": "Evan Mobley",
+    "agreement_known_from": "2024-07-22",
+    "rule_known_from": "2024-07-22",
+    "first_year": 2026,
+    "last_year": 2030,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 11227657.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/evan-mobley"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3,
+    "cap_fraction_events": [
+      {
+        "known_from": "2025-05-23",
+        "cap_fraction": 0.3,
+        "source": "https://www.nba.com/news/2024-25-all-nba-teams-announced"
+      }
+    ]
+  },
+  {
+    "nba_id": 1629630,
+    "player_name": "Ja Morant",
+    "agreement_known_from": "2022-07-06",
+    "rule_known_from": "2022-07-06",
+    "first_year": 2024,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 12119440.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/ja-morant"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1631114,
+    "player_name": "Jalen Williams",
+    "agreement_known_from": "2025-07-13",
+    "rule_known_from": "2025-07-13",
+    "first_year": 2027,
+    "last_year": 2031,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 6580997.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/jalen-williams"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1630163,
+    "player_name": "LaMelo Ball",
+    "agreement_known_from": "2023-07-06",
+    "rule_known_from": "2023-07-06",
+    "first_year": 2025,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 10900635.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/lamelo-ball"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1629029,
+    "player_name": "Luka Doncic",
+    "agreement_known_from": "2021-08-10",
+    "rule_known_from": "2021-08-10",
+    "first_year": 2023,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.3,
+    "prior_salary_year": 2022,
+    "prior_salary_amount": 10174391.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/luka-doncic"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1629008,
+    "player_name": "Michael Porter Jr.",
+    "agreement_known_from": "2021-09-29",
+    "rule_known_from": "2021-09-29",
+    "first_year": 2023,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2022,
+    "prior_salary_amount": 5258735.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/michael-porterjr"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1631094,
+    "player_name": "Paolo Banchero",
+    "agreement_known_from": "2025-07-07",
+    "rule_known_from": "2025-07-07",
+    "first_year": 2027,
+    "last_year": 2031,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 15334769.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/paolo-banchero"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1630567,
+    "player_name": "Scottie Barnes",
+    "agreement_known_from": "2024-07-08",
+    "rule_known_from": "2024-07-08",
+    "first_year": 2026,
+    "last_year": 2030,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 10130980.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/scottie-barnes"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1628983,
+    "player_name": "Shai Gilgeous-Alexander",
+    "agreement_known_from": "2021-08-06",
+    "rule_known_from": "2021-08-06",
+    "first_year": 2023,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2022,
+    "prior_salary_amount": 5495532.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/shai-gilgeousalexander"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1629027,
+    "player_name": "Trae Young",
+    "agreement_known_from": "2021-08-06",
+    "rule_known_from": "2021-08-06",
+    "first_year": 2023,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2022,
+    "prior_salary_amount": 8326471.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/trae-young"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3,
+    "cap_fraction_events": [
+      {
+        "known_from": "2022-05-24",
+        "cap_fraction": 0.3,
+        "source": "https://pr.nba.com/2021-22-kia-all-nba-team/"
+      }
+    ]
+  },
+  {
+    "nba_id": 1630169,
+    "player_name": "Tyrese Haliburton",
+    "agreement_known_from": "2023-07-06",
+    "rule_known_from": "2023-07-06",
+    "first_year": 2025,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 5808435.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/tyrese-haliburton"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3,
+    "cap_fraction_events": [
+      {
+        "known_from": "2024-05-22",
+        "cap_fraction": 0.3,
+        "source": "https://www.nba.com/news/2023-24-all-nba-teams-announced"
+      }
+    ]
+  },
+  {
+    "nba_id": 1629627,
+    "player_name": "Zion Williamson",
+    "agreement_known_from": "2022-07-06",
+    "rule_known_from": "2022-07-06",
+    "first_year": 2024,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.25,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 13534817.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": true,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/zion-williamson"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward. Contingent Rose escalator is not assumed earned: signed25pctbase until dated qualifying award. Upper30pctcost scenario retained without arbitrary probability.",
+    "conditional_salary_policy": "signed_base_until_dated_qualification",
+    "conditional_cap_fraction_upper": 0.3
+  },
+  {
+    "nba_id": 1628389,
+    "player_name": "Bam Adebayo",
+    "agreement_known_from": "2024-07-06",
+    "rule_known_from": "2024-07-06",
+    "first_year": 2027,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.3,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 37096620.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/bam-adebayo"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 203081,
+    "player_name": "Damian Lillard",
+    "agreement_known_from": "2022-07-09",
+    "rule_known_from": "2022-07-09",
+    "first_year": 2026,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 48787676.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/damian-lillard"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1628368,
+    "player_name": "De'Aaron Fox",
+    "agreement_known_from": "2025-08-04",
+    "rule_known_from": "2025-08-04",
+    "first_year": 2027,
+    "last_year": 2030,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.3,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 37096620.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/deaaron-fox"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1626164,
+    "player_name": "Devin Booker",
+    "agreement_known_from": "2022-07-06",
+    "rule_known_from": "2022-07-06",
+    "first_year": 2025,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 36016200.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/devin-booker"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1628378,
+    "player_name": "Donovan Mitchell",
+    "agreement_known_from": "2024-07-07",
+    "rule_known_from": "2024-07-07",
+    "first_year": 2026,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.3,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 34848340.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/donovan-mitchell"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 203507,
+    "player_name": "Giannis Antetokounmpo",
+    "agreement_known_from": "2023-10-23",
+    "rule_known_from": "2023-10-23",
+    "first_year": 2026,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 48787676.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/giannis-antetokounmpo"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1627750,
+    "player_name": "Jamal Murray",
+    "agreement_known_from": "2024-09-11",
+    "rule_known_from": "2024-09-11",
+    "first_year": 2026,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.3,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 36016200.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/jamal-murray"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1627759,
+    "player_name": "Jaylen Brown",
+    "agreement_known_from": "2023-07-26",
+    "rule_known_from": "2023-07-26",
+    "first_year": 2025,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 28508929.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/jaylen-brown"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1628369,
+    "player_name": "Jayson Tatum",
+    "agreement_known_from": "2024-07-06",
+    "rule_known_from": "2024-07-06",
+    "first_year": 2026,
+    "last_year": 2030,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2025,
+    "prior_salary_amount": 34848340.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/jayson-tatum"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 202710,
+    "player_name": "Jimmy Butler",
+    "agreement_known_from": "2021-08-07",
+    "rule_known_from": "2021-08-07",
+    "first_year": 2024,
+    "last_year": 2026,
+    "first_year_rule": "fixed_original_schedule",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 37653300.0,
+    "prior_salary_multiplier": 1.2,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/jimmy-butler",
+      "https://www.nba.com/news/report-jimmy-butler-expected-to-ink-max-extension-with-miami-heat"
+    ],
+    "validation": "2017CBA veteran extension first salary120pct of previously fixed37,653,300;45,183,960then8pctraises. It is not35pctof a future salary cap. Original three new years plus retained prior option are often reported as four."
+  },
+  {
+    "nba_id": 1626157,
+    "player_name": "Karl-Anthony Towns",
+    "agreement_known_from": "2022-07-06",
+    "rule_known_from": "2022-07-06",
+    "first_year": 2025,
+    "last_year": 2028,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 36016200.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/karl-anthony-towns"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 202695,
+    "player_name": "Kawhi Leonard",
+    "agreement_known_from": "2024-01-10",
+    "rule_known_from": "2024-01-10",
+    "first_year": 2025,
+    "last_year": 2027,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2024,
+    "prior_salary_amount": 45640084.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/kawhi-leonard",
+      "https://www.nba.com/news/kawhi-leonard-extension-clippers"
+    ],
+    "validation": "2024signeddiscountedextension: firstyear35pctcap maximum, subsequent contract years fixed50M and50.3M, not automatic8pctraises.",
+    "annual_salary_overrides": {
+      "2026": 50000000,
+      "2027": 50300000
+    }
+  },
+  {
+    "nba_id": 201142,
+    "player_name": "Kevin Durant",
+    "agreement_known_from": "2021-08-08",
+    "rule_known_from": "2021-08-08",
+    "first_year": 2023,
+    "last_year": 2026,
+    "first_year_rule": "fixed_original_schedule",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2022,
+    "prior_salary_amount": 40918900.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/kevin-durant",
+      "https://www.nba.com/news/report-kevin-durant-to-sign-extension-with-nets"
+    ],
+    "validation": "2021signedextension starts105pctoforiginalfixed2021-22salary40,918,900=42,964,845then8pctraises; original schedule is fixed rather than recast as future35pctcap. Separate incentives are not guaranteed salary."
+  },
+  {
+    "nba_id": 2544,
+    "player_name": "LeBron James",
+    "agreement_known_from": "2022-08-18",
+    "rule_known_from": "2022-08-18",
+    "first_year": 2024,
+    "last_year": 2025,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.35,
+    "prior_salary_year": 2023,
+    "prior_salary_amount": 44474988.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/lebron-james"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  },
+  {
+    "nba_id": 1629029,
+    "player_name": "Luka Doncic",
+    "agreement_known_from": "2025-08-02",
+    "rule_known_from": "2025-08-02",
+    "first_year": 2027,
+    "last_year": 2029,
+    "first_year_rule": "max_cap_share_or_105pct_prior_salary",
+    "cap_fraction": 0.3,
+    "prior_salary_year": 2026,
+    "prior_salary_amount": 45999660.0,
+    "prior_salary_multiplier": 1.05,
+    "annual_raise_fraction_of_first_salary": 0.08,
+    "performance_condition_unresolved": false,
+    "sources": [
+      "https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf",
+      "https://www.salaryswish.com/players/luka-doncic"
+    ],
+    "validation": "Original signed maximum agreement and original prior salary. Statutory cap share projected using information at cutoff. Annual raises are eight percent of first salary; future realized cap is not copied backward."
+  }
+]

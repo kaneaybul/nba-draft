@@ -1,0 +1,922 @@
+{
+  "dated_source_facts": [
+    {
+      "name": "Cameron Christie",
+      "draft_year": 2024,
+      "slot": 46,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2024"
+    },
+    {
+      "name": "Egor Demin",
+      "draft_year": 2025,
+      "slot": 8,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2025"
+    },
+    {
+      "name": "Kingston Flemings",
+      "draft_year": 2026,
+      "slot": 8,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Zuby Ejiofor",
+      "draft_year": 2026,
+      "slot": 23,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Chris Cenac, Jr.",
+      "draft_year": 2026,
+      "slot": 27,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Mikel Brown Jr.",
+      "draft_year": 2026,
+      "slot": 6,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Christian Anderson, Jr.",
+      "draft_year": 2026,
+      "slot": 18,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Hannes Steinbach",
+      "draft_year": 2026,
+      "slot": 14,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Caleb Wilson",
+      "draft_year": 2026,
+      "slot": 4,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Dailyn Swain",
+      "draft_year": 2026,
+      "slot": 15,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Alex Karaban",
+      "draft_year": 2026,
+      "slot": 29,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Koa Peat",
+      "draft_year": 2026,
+      "slot": 30,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Morez Johnson, Jr.",
+      "draft_year": 2026,
+      "slot": 9,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Tarris Reed, Jr.",
+      "draft_year": 2026,
+      "slot": 26,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Karim Lopez",
+      "draft_year": 2026,
+      "slot": 21,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Yaxel Lendeborg",
+      "draft_year": 2026,
+      "slot": 11,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Keaton Wagler",
+      "draft_year": 2026,
+      "slot": 5,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Sergio De Larrea",
+      "draft_year": 2026,
+      "slot": 25,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Bennett Stirtz",
+      "draft_year": 2026,
+      "slot": 16,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Cameron Boozer",
+      "draft_year": 2026,
+      "slot": 3,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Nate Ament",
+      "draft_year": 2026,
+      "slot": 13,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Brayden Burries",
+      "draft_year": 2026,
+      "slot": 10,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Joshua Jefferson",
+      "draft_year": 2026,
+      "slot": 28,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Cameron Carr",
+      "draft_year": 2026,
+      "slot": 24,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Aday Mara",
+      "draft_year": 2026,
+      "slot": 12,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Ebuka Okorie",
+      "draft_year": 2026,
+      "slot": 17,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Labaron Philon, Jr.",
+      "draft_year": 2026,
+      "slot": 22,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Darius Acuff, Jr.",
+      "draft_year": 2026,
+      "slot": 7,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Jayden Quaintance",
+      "draft_year": 2026,
+      "slot": 20,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Allen Graves",
+      "draft_year": 2026,
+      "slot": 19,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Darryn Peterson",
+      "draft_year": 2026,
+      "slot": 2,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "A.J. Dybantsa",
+      "draft_year": 2026,
+      "slot": 1,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Narcisse N'Goy",
+      "draft_year": 2026,
+      "slot": 57,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Dillon Mitchell",
+      "draft_year": 2026,
+      "slot": 40,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Isaiah Evans",
+      "draft_year": 2026,
+      "slot": 33,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Tyler Bilodeau",
+      "draft_year": 2026,
+      "slot": 43,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Braden Smith",
+      "draft_year": 2026,
+      "slot": 38,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Vsevolod Ishchenko",
+      "draft_year": 2026,
+      "slot": 56,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Meleek Thomas",
+      "draft_year": 2026,
+      "slot": 34,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Tobi Lawal",
+      "draft_year": 2026,
+      "slot": 48,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Bryce Hopkins",
+      "draft_year": 2026,
+      "slot": 49,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Trevon Brazile",
+      "draft_year": 2026,
+      "slot": 35,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Lajae Jones",
+      "draft_year": 2026,
+      "slot": 54,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Jack Kayil",
+      "draft_year": 2026,
+      "slot": 39,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Ugonna Onyenso",
+      "draft_year": 2026,
+      "slot": 53,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Baba Miller",
+      "draft_year": 2026,
+      "slot": 36,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Henri Veesaar",
+      "draft_year": 2026,
+      "slot": 52,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Richie Saunders",
+      "draft_year": 2026,
+      "slot": 32,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Otega Oweh",
+      "draft_year": 2026,
+      "slot": 41,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Trey Kaufman-Renn",
+      "draft_year": 2026,
+      "slot": 59,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Jaron Pierre, Jr.",
+      "draft_year": 2026,
+      "slot": 58,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Bruce Thornton",
+      "draft_year": 2026,
+      "slot": 31,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Nick Martinelli",
+      "draft_year": 2026,
+      "slot": 55,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Tyler Nickel",
+      "draft_year": 2026,
+      "slot": 47,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Ryan Conwell",
+      "draft_year": 2026,
+      "slot": 37,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Felix Okpara",
+      "draft_year": 2026,
+      "slot": 46,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Emanuel Sharp",
+      "draft_year": 2026,
+      "slot": 45,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Ja'Kobi Gillespie",
+      "draft_year": 2026,
+      "slot": 42,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Maliq Brown",
+      "draft_year": 2026,
+      "slot": 44,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Jaden Bradley",
+      "draft_year": 2026,
+      "slot": 50,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Izaiyah Nelson",
+      "draft_year": 2026,
+      "slot": 51,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Malique Lewis",
+      "draft_year": 2026,
+      "slot": 60,
+      "source": "https://basketball.realgm.com/nba/transactions/league/2026"
+    },
+    {
+      "name": "Chinemelu Elonu",
+      "draft_year": 2009,
+      "slot": 59,
+      "source": "https://lalweb.blob.core.windows.net/public/lakers/media-relations/2025-26-Lakers-Media-Guide.pdf"
+    },
+    {
+      "name": "Latavious Williams",
+      "draft_year": 2010,
+      "slot": 48,
+      "source": "https://cdn.nba.com/teams/uploads/sites/1610612748/2023/11/2023-24-Miami-Heat-Media-Guide_39884007.pdf"
+    }
+  ],
+  "affected_quotes": [
+    {
+      "team": "LAL",
+      "date": "2026-06-30",
+      "name": "Vsevolod Ishchenko",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 56
+    },
+    {
+      "team": "LAL",
+      "date": "2026-07-31",
+      "name": "Vsevolod Ishchenko",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 56
+    },
+    {
+      "team": "LAL",
+      "date": "2026-08-31",
+      "name": "Vsevolod Ishchenko",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 56
+    },
+    {
+      "team": "LAL",
+      "date": "2026-09-30",
+      "name": "Vsevolod Ishchenko",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 56
+    },
+    {
+      "team": "LAL",
+      "date": "2026-10-25",
+      "name": "Vsevolod Ishchenko",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 56
+    },
+    {
+      "team": "LAL",
+      "date": "2026-10-26",
+      "name": "Vsevolod Ishchenko",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 56
+    },
+    {
+      "team": "LAC",
+      "date": "2026-06-30",
+      "name": "Narcisse N'Goy",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 57
+    },
+    {
+      "team": "LAC",
+      "date": "2026-07-31",
+      "name": "Narcisse N'Goy",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 57
+    },
+    {
+      "team": "LAC",
+      "date": "2026-08-31",
+      "name": "Narcisse N'Goy",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 57
+    },
+    {
+      "team": "LAC",
+      "date": "2026-09-30",
+      "name": "Narcisse N'Goy",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 57
+    },
+    {
+      "team": "LAC",
+      "date": "2026-10-25",
+      "name": "Narcisse N'Goy",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 57
+    },
+    {
+      "team": "LAC",
+      "date": "2026-10-26",
+      "name": "Narcisse N'Goy",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 57
+    },
+    {
+      "team": "NYK",
+      "date": "2026-02-28",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-03-31",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-04-30",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-05-31",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-06-30",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-06-30",
+      "name": "Jack Kayil",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 39
+    },
+    {
+      "team": "NYK",
+      "date": "2026-06-30",
+      "name": "Chinemelu Elonu",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2009,
+      "slot": 59
+    },
+    {
+      "team": "NYK",
+      "date": "2026-07-31",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-07-31",
+      "name": "Jack Kayil",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 39
+    },
+    {
+      "team": "NYK",
+      "date": "2026-07-31",
+      "name": "Chinemelu Elonu",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2009,
+      "slot": 59
+    },
+    {
+      "team": "NYK",
+      "date": "2026-08-31",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-08-31",
+      "name": "Jack Kayil",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 39
+    },
+    {
+      "team": "NYK",
+      "date": "2026-08-31",
+      "name": "Chinemelu Elonu",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2009,
+      "slot": 59
+    },
+    {
+      "team": "NYK",
+      "date": "2026-09-30",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-09-30",
+      "name": "Jack Kayil",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 39
+    },
+    {
+      "team": "NYK",
+      "date": "2026-09-30",
+      "name": "Chinemelu Elonu",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2009,
+      "slot": 59
+    },
+    {
+      "team": "NYK",
+      "date": "2026-10-25",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-10-25",
+      "name": "Jack Kayil",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 39
+    },
+    {
+      "team": "NYK",
+      "date": "2026-10-25",
+      "name": "Chinemelu Elonu",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2009,
+      "slot": 59
+    },
+    {
+      "team": "NYK",
+      "date": "2026-10-26",
+      "name": "Latavious Williams",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2010,
+      "slot": 48
+    },
+    {
+      "team": "NYK",
+      "date": "2026-10-26",
+      "name": "Jack Kayil",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 39
+    },
+    {
+      "team": "NYK",
+      "date": "2026-10-26",
+      "name": "Chinemelu Elonu",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2009,
+      "slot": 59
+    },
+    {
+      "team": "MIN",
+      "date": "2026-06-30",
+      "name": "Trey Kaufman-Renn",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 59
+    },
+    {
+      "team": "MIN",
+      "date": "2026-07-31",
+      "name": "Trey Kaufman-Renn",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 59
+    },
+    {
+      "team": "MIN",
+      "date": "2026-08-31",
+      "name": "Trey Kaufman-Renn",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 59
+    },
+    {
+      "team": "MIN",
+      "date": "2026-09-30",
+      "name": "Trey Kaufman-Renn",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 59
+    },
+    {
+      "team": "MIN",
+      "date": "2026-10-25",
+      "name": "Trey Kaufman-Renn",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 59
+    },
+    {
+      "team": "MIN",
+      "date": "2026-10-26",
+      "name": "Trey Kaufman-Renn",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 59
+    },
+    {
+      "team": "MIL",
+      "date": "2026-06-30",
+      "name": "Malique Lewis",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 60
+    },
+    {
+      "team": "MIL",
+      "date": "2026-07-31",
+      "name": "Malique Lewis",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 60
+    },
+    {
+      "team": "MIL",
+      "date": "2026-08-31",
+      "name": "Malique Lewis",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 60
+    },
+    {
+      "team": "MIL",
+      "date": "2026-09-30",
+      "name": "Malique Lewis",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 60
+    },
+    {
+      "team": "MIL",
+      "date": "2026-10-25",
+      "name": "Malique Lewis",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 60
+    },
+    {
+      "team": "MIL",
+      "date": "2026-10-26",
+      "name": "Malique Lewis",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 60
+    },
+    {
+      "team": "GSW",
+      "date": "2026-06-30",
+      "name": "Lajae Jones",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 54
+    },
+    {
+      "team": "GSW",
+      "date": "2026-07-31",
+      "name": "Lajae Jones",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 54
+    },
+    {
+      "team": "GSW",
+      "date": "2026-08-31",
+      "name": "Lajae Jones",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 54
+    },
+    {
+      "team": "GSW",
+      "date": "2026-09-30",
+      "name": "Lajae Jones",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 54
+    },
+    {
+      "team": "GSW",
+      "date": "2026-10-25",
+      "name": "Lajae Jones",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 54
+    },
+    {
+      "team": "GSW",
+      "date": "2026-10-26",
+      "name": "Lajae Jones",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 54
+    },
+    {
+      "team": "MEM",
+      "date": "2026-06-30",
+      "name": "Richie Saunders",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 32
+    },
+    {
+      "team": "MEM",
+      "date": "2026-07-31",
+      "name": "Richie Saunders",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 32
+    },
+    {
+      "team": "MEM",
+      "date": "2026-08-31",
+      "name": "Richie Saunders",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 32
+    },
+    {
+      "team": "MEM",
+      "date": "2026-09-30",
+      "name": "Richie Saunders",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 32
+    },
+    {
+      "team": "MEM",
+      "date": "2026-10-25",
+      "name": "Richie Saunders",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 32
+    },
+    {
+      "team": "MEM",
+      "date": "2026-10-26",
+      "name": "Richie Saunders",
+      "old_draft_year": "",
+      "old_slot": "",
+      "draft_year": 2026,
+      "slot": 32
+    }
+  ],
+  "affected_teams": [
+    "GSW",
+    "LAC",
+    "LAL",
+    "MEM",
+    "MIL",
+    "MIN",
+    "NYK"
+  ],
+  "formula_changed": false
+}

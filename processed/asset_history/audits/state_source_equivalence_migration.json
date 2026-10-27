@@ -1,0 +1,187 @@
+{
+  "scope": "Reviewed no-effect source-equivalence migration; Minnesota recomputed separately",
+  "old_adapter_sha256": "73415e12a3251db0af047e3ddf365f5d34c437523cee8cf0bf40f077d99c1297",
+  "new_adapter_sha256": "b55084e6193342761dcb9bdbf7a0a3f93bd91b1d3115b164e12f1533be06d5a6",
+  "all_other_source_digests_identical": true,
+  "rotation_selection_proof": [
+    {
+      "team": "ATL",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "BKN",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "BOS",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "CHA",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "CHI",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "CLE",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "DAL",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "DEN",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "DET",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "GSW",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "HOU",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "IND",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "LAC",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "LAL",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "MEM",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "MIA",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "MIL",
+      "equal": true,
+      "selection": "public_rotation"
+    },
+    {
+      "team": "NOP",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "NYK",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "OKC",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "ORL",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "PHI",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "PHX",
+      "equal": true,
+      "selection": "public_rotation"
+    },
+    {
+      "team": "POR",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "SAC",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "SAS",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "TOR",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    },
+    {
+      "team": "UTA",
+      "equal": true,
+      "selection": "public_rotation"
+    },
+    {
+      "team": "WAS",
+      "equal": true,
+      "selection": "career_and_provider_fallback"
+    }
+  ],
+  "migrated_teams": [
+    "ATL",
+    "BKN",
+    "BOS",
+    "CHA",
+    "CHI",
+    "CLE",
+    "DAL",
+    "DEN",
+    "DET",
+    "GSW",
+    "HOU",
+    "IND",
+    "LAC",
+    "LAL",
+    "MEM",
+    "MIA",
+    "MIL",
+    "NOP",
+    "NYK",
+    "OKC",
+    "ORL",
+    "PHI"
+  ],
+  "already_current_teams": [
+    "MIN",
+    "PHX",
+    "POR",
+    "SAC",
+    "SAS",
+    "TOR",
+    "UTA",
+    "WAS"
+  ]
+}

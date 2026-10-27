@@ -14,6 +14,7 @@ on:
     workflows:
       - Refresh current NBA rosters
       - Rebuild lineup projections
+      - Refresh asset history
     types:
       - completed
 
@@ -45,7 +46,11 @@ jobs:
         working-directory: frontend
 
       - name: Validate frontend data contract
-        run: npm run validate:data
+        run: |
+          if [ -f ../script/asset_history/materialize.py ]; then
+            python3 ../script/asset_history/materialize.py --repo ..
+          fi
+          npm run validate:data
         working-directory: frontend
 
       - name: Build frontend
@@ -59,3 +64,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy frontend/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}
+

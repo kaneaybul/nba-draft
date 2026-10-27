@@ -1,13 +1,15 @@
 import copy, json, tempfile, unittest
 from pathlib import Path
+from datetime import date
+from unittest.mock import patch
 from publish import METHOD,merge,publish,validate
 from quote_window import quote_window
 
 def sample(d='2026-09-30'):
- return {'team':'UTA','date':d,'source_cutoff':d,'method':METHOD,'reporting_cap':164961000,'vintage':'published','coverage':dict.fromkeys(('ownership','contracts','skill','pick_rights','injury_review'),True),'assets':[{'id':'1','kind':'player','name':'Test','value':100,'exposure':4,'source':'test'}],'total':100,'moves':[]}
+ return {'team':'UTA','date':d,'source_cutoff':d,'method':METHOD,'reporting_cap':164961000,'vintage':'published','finalized_through':d,'source_dates':dict.fromkeys(('ownership','contracts','epm','darko','skill'),d),'coverage':dict.fromkeys(('ownership','contracts','skill','pick_rights','injury_review'),True),'assets':[{'id':'1','kind':'player','name':'Test','value':100,'exposure':4,'source':'test'}],'total':100,'moves':[]}
 class Checks(unittest.TestCase):
  def test_checked_in_inventory(self):
-  root=Path(__file__).resolve().parents[2]/'frontend/public/data/asset_history/v1'
+  root=Path(__file__).resolve().parents[2]/'frontend/public/data/asset_history/v2'
   if not root.exists():self.skipTest('No checked-in inventories')
   for path in (root/'teams').glob('*.json'):
    for row in json.loads(path.read_text())['snapshots']:validate(row)
@@ -19,7 +21,7 @@ class Checks(unittest.TestCase):
  def test_daily_replaces_provisional(self):
   x=merge({'snapshots':[]},sample('2026-10-20'));x=merge(x,sample('2026-10-21'));self.assertEqual([p['date'] for p in x['snapshots']],['2026-10-21'])
  def test_month_not_fabricated(self):
-  x=merge({'snapshots':[]},sample('2026-09-29'));x=merge(x,sample('2026-10-01'));self.assertFalse(any(p['closed'] for p in x['snapshots']))
+  x=merge({'snapshots':[]},sample('2026-09-29'));x=merge(x,sample('2026-10-01'));self.assertEqual(x['snapshots'][0]['date'],'2026-09-29');self.assertTrue(x['snapshots'][0]['closed'])
  def test_incomplete_rejected(self):
   x=sample();x['coverage']['contracts']=False
   with self.assertRaises(AssertionError):validate(x)
@@ -47,6 +49,21 @@ class Checks(unittest.TestCase):
   p=[20]*4;e=[1]*4
   def q(c):return quote_window(p,[v+.8*(v-c)for v in p],e)['quote']
   self.assertAlmostEqual(q(30),48);self.assertAlmostEqual(q(10),112)
+ def test_source_lag_is_disclosed_not_future(self):
+  x=sample();x['source_dates']['skill']='2026-09-29';validate(x)
+  x['source_dates']['skill']='2026-10-01'
+  with self.assertRaisesRegex(AssertionError,'Future source'):validate(x)
+ def test_month_end_morning_not_sealed(self):
+  with patch('publish.datetime') as clock:
+   clock.now.return_value.date.return_value=date(2026,9,30)
+   x=merge({'snapshots':[]},sample())
+   self.assertFalse(x['snapshots'][0]['closed'])
+ def test_past_month_observation_sealed_with_actual_date(self):
+  s=sample();del s['finalized_through']
+  self.assertTrue(merge({'snapshots':[]},s)['snapshots'][0]['closed'])
+ def test_missing_source_dates_rejected(self):
+  x=sample();del x['source_dates']
+  with self.assertRaisesRegex(AssertionError,'dated source'):validate(x)
  def test_partial_league_rejected(self):
   with tempfile.TemporaryDirectory() as t:
    with self.assertRaisesRegex(AssertionError,'all 30'):publish([sample()],Path(t),require_league=True)

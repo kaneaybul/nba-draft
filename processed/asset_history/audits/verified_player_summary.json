@@ -1,0 +1,70 @@
+{
+  "teams": 30,
+  "dates": 60,
+  "snapshots": 1800,
+  "active_player_quotes": 32533,
+  "all_player_coverage_passed": true,
+  "all_quotes_finite_four_years": true,
+  "duplicate_assets": 0,
+  "cross_team_duplicates": 0,
+  "minimum_date": "2021-12-31",
+  "maximum_date": "2026-10-26",
+  "unsigned_draft_conversion_reconciliation": [
+    {
+      "team": "GSW",
+      "name": "Lajae Jones",
+      "slot": 54,
+      "draft_conversion_quote": 10725541.13582352,
+      "trained_expected_quote": 10725541.13582352,
+      "difference": 0.0
+    },
+    {
+      "team": "LAC",
+      "name": "Narcisse N'Goy",
+      "slot": 57,
+      "draft_conversion_quote": 8306419.865703672,
+      "trained_expected_quote": 8306419.865703671,
+      "difference": 9.313225746154785e-10
+    },
+    {
+      "team": "LAL",
+      "name": "Vsevolod Ishchenko",
+      "slot": 56,
+      "draft_conversion_quote": 9098349.290359082,
+      "trained_expected_quote": 9098349.29035908,
+      "difference": 1.862645149230957e-09
+    },
+    {
+      "team": "MEM",
+      "name": "Richie Saunders",
+      "slot": 32,
+      "draft_conversion_quote": 34137151.4311623,
+      "trained_expected_quote": 34137151.4311623,
+      "difference": 0.0
+    },
+    {
+      "team": "MIL",
+      "name": "Malique Lewis",
+      "slot": 60,
+      "draft_conversion_quote": 6011411.974560963,
+      "trained_expected_quote": 6011411.974560962,
+      "difference": 9.313225746154785e-10
+    },
+    {
+      "team": "MIN",
+      "name": "Trey Kaufman-Renn",
+      "slot": 59,
+      "draft_conversion_quote": 6763410.254726511,
+      "trained_expected_quote": 6763410.254726511,
+      "difference": 0.0
+    },
+    {
+      "team": "NYK",
+      "name": "Jack Kayil",
+      "slot": 39,
+      "draft_conversion_quote": 25285864.97287751,
+      "trained_expected_quote": 25285864.97287751,
+      "difference": 0.0
+    }
+  ]
+}

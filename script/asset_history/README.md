@@ -1,42 +1,70 @@
 # Asset history
 
-The app explorer reads a lazy-loaded team file, displays one full-inventory line,
-marks major moves and exposes player/pick accounting for every dated point.
+The explorer covers all 30 NBA teams from 2021-12-31 through 2026-10-26: 59 displayed
+monthly observations per team. The 60-date player reconstruction contains 32,533
+finite four-season quotes with no duplicate ownership. Pick portfolios use 10,000
+joint outcomes per date; all team totals conserve the league portfolio.
 
-The model is `peak4-payroll-0.8-v1`. Seasonal asset value is production plus
-0.8 times production less salary. Quote production uses the best two
-season-equivalents over exactly four rolling season-equivalents; all salary
-adjustments over the four years remain additive. Inputs must be normalized to
-the same reporting cap. The Python quote selector is shared with the Utah model.
+## Valuation
 
-## Snapshot publication
+`peak4-payroll-0.8-v2` preserves the agreed mathematics: annual production plus
+0.8 times production less salary, normalized to a fixed$164,961,000 reporting cap.
+Production uses twice the best two season-equivalents; contract adjustments span
+exactly four rolling season-equivalents. Completed games determine the fractional
+current/final seasons. Tonight’s unplayed games remain in the forward window.
+Drafted players use the trained pick prior and evidence weights; an unobserved
+new draft conversion reconciles to the pick’s expected value.
 
-`python3 script/asset_history/publish.py --input <candidate.json> --require-league`
+Version 2 reconstructs every team using the same dated contract/ownership sources.
+The original Utah v1 files are preserved. Historical reconstructions and future
+observations recorded at publication have separate vintage labels. Full inventory
+includes automatic own-pick horizon additions and hypothetical unsigned service;
+it excludes cash, cap room, trade exceptions and dormant overseas service.
+Inventory changes are not a causal front-office performance grade.
 
-Candidates use the contract enforced by `validate` in `publish.py`. Daily
-production requires all 30 teams at one common source cutoff, unique asset
-ownership, complete four-season quotes, reviewed source coverage and totals that
-reconcile. It does not reuse the app's old trade-value numbers or infer known
-contract terms from eventual salary history.
+## Updates
 
-Each month retains its newest provisional point. A candidate dated on the actual
-last day of the month is sealed. A subsequent run can re-submit identical closed
-content but cannot rewrite it. A missing final-day input is never relabeled as
-month end; an older candidate cannot overwrite a newer provisional point.
-Corrections or method changes belong in a separate version, preserving v1.
+`Refresh asset history` runs after the existing successful daily lineup refresh,
+or manually. It collects current player inputs and dated transactions, refreshes
+original contracts, updates the shared player model, prices joint pick claims,
+and publishes only a complete same-date league portfolio. New uncomplicated
+fixed-pick transfers are guarded automatically; new conditional terms require
+review rather than being assigned zero. Source failures retain the last validated
+view and record a visible update status.
 
-Published-at-the-time snapshots and fixed-model historical reconstructions carry
-separate vintage labels. No raw-inventory increase is called causal FO value added.
-Unsigned projected service is hypothetical continuation, rather than legal control.
+The current month retains its newest validated observation. After the month ends,
+that observation is sealed with its actual date and source cutoffs. Missing days
+are never invented. Closed financial content cannot be overwritten; substantive
+corrections require a versioned reconstruction. Forecast/role state is committed
+only after portfolio validation succeeds. Same-day retries restore the prior-day
+checkpoint before updating evidence.
 
-## Current coverage
+Historical injuries use a reviewed major-absence corpus, not an exhaustive
+short-term medical archive. Disclosed pick assumptions cover unpublished fallback
+or priority details, first-forfeiture interactions, and continuing current lottery
+rules beyond the NBA’s announced term. Daily team-strength projections carry a
+fixed source calibration to avoid a forecast-provider handoff jump.
 
-The checked-in Utah import contains the completed reconstruction through
-2026-10-25. Other teams stay `pending_backfill` until their dated inventory passes
-validation. A missing team is not assigned zero or ranked against complete teams.
-The explorer's download includes exact asset-level inputs and provenance.
+Annual model inputs and officially announced draft calendars must remain current.
+The updater explicitly stops with the last good snapshot if a completed-season
+SKILL/calibration/position refresh or new draft-completion date is unavailable.
+It does not silently carry stale annual models into a new season.
 
-The daily publisher must be wired after the league candidate producer is verified;
-a scheduled job that merely re-stamps the Utah file is not an update.
+## Running
 
-Run `python3 -m unittest discover -s script/asset_history -p 'test_*.py'`.
+Install `script/asset_history/requirements.txt`, then:
+
+```sh
+python3 script/asset_history/materialize.py --repo .
+python3 script/asset_history/refresh.py --repo . --work-dir /tmp/asset-history
+```
+
+The runtime seed is stored as verified 1 MiB parts to keep transfers bounded. Large
+contract and browser-history JSON are committed as gzip sources; materialization
+restores ordinary JSON before the daily job and static deployment. No browser
+changes or decompression support are required to view the chart.
+
+```sh
+python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+```

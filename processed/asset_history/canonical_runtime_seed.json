@@ -1,0 +1,8 @@
+{
+  "archive": "nba-app/processed/asset_history/canonical_runtime_seed.zip",
+  "archive_sha256": "ec2b4bf62f9ca60f6aa68c115d3ee5a59d454996d188ddf7c88b5b256e052e5e",
+  "files": 133,
+  "uncompressed_bytes": 162299394,
+  "compressed_bytes": 32848765,
+  "scope": "Canonical engine and seed inputs only; excludes bulk matchup/source HTML/PDF corpus; current sources still require refresh"
+}

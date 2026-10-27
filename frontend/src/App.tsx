@@ -133,9 +133,9 @@ type FilterRule = {
 };
 
 const viewLabels: Record<View, string> = {
-  assetHistory: "Asset History",
   impact: "Player Impact",
   teams: "Team Projections",
+  assetHistory: "Asset History",
   injuries: "Injury Outlook",
   startingLineups: "Starting Lineups",
   tradeRecs: "Trade Recs",
