@@ -56,7 +56,7 @@ function validateInjuryOutlook(manifest) {
     assert(!keys.has(key), `Duplicate injury: ${key}`);
     keys.add(key);
     assert(row.season === outlook.season && row.player_name && row.team, `Invalid injury identity: ${key}`);
-    assert(row.source_url?.startsWith("https://www.espn.com/"), `Invalid injury source: ${key}`);
+    assert(["https://www.espn.com/", "https://www.rotowire.com/"].some((prefix) => row.source_url?.startsWith(prefix)), `Invalid injury source: ${key}`);
     for (const field of ["games_missed_min", "games_missed_expected", "games_missed_max", "days_remaining_min", "days_remaining_expected", "days_remaining_max"]) {
       assert(row[field] === null || (Number.isFinite(row[field]) && row[field] >= 0), `Invalid injury duration ${field}: ${key}`);
     }
