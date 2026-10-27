@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-26T19:19:13.451Z",
+  "generated_at": "2026-10-27T19:09:18.470Z",
   "cap_fallbacks": [
     {
       "team": "NOP",
@@ -16456,7 +16456,7 @@
       "team": "CLE",
       "row_type": "draft_pick",
       "display_order": 8032,
-      "position": "PG",
+      "position": "SG",
       "age": 20.4,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
