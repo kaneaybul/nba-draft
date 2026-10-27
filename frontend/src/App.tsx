@@ -1,3 +1,4 @@
+import { AssetHistoryWorkspace } from "./AssetHistory";
 import { ProjectionHistory } from "./PreseasonArchive";
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadNewerAppData, loadPlayerCareerHistory, manifestSeasons } from "./data";
@@ -57,7 +58,7 @@ import { clamp, cls, formatMoney, formatNumber, formatSignedMoney } from "./util
 const CapTrackerWorkspace = lazy(() => import("./CapTracker").then((module) => ({ default: module.CapTrackerWorkspace })));
 const OffseasonSimulatorWorkspace = lazy(() => import("./OffseasonSimulator").then((module) => ({ default: module.OffseasonSimulatorWorkspace })));
 
-type View = "impact" | "teams" | "startingLineups" | "tradeRecs" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker" | "injuries";
+type View = "assetHistory" | "impact" | "teams" | "startingLineups" | "tradeRecs" | "trade" | "offseason" | "capTracker" | "draft" | "draftElo" | "lineups" | "tracker" | "injuries";
 type SkillKey = "FTD" | "OREB" | "PASS" | "RIM" | "SHOOT" | "DPM" | "DREB" | "RIMPRO" | "SWITCH";
 type SkillAggregateSortKey = "skill_total" | "skill_off" | "skill_def";
 type ImpactSkillSortKey = SkillKey | SkillAggregateSortKey;
@@ -132,6 +133,7 @@ type FilterRule = {
 };
 
 const viewLabels: Record<View, string> = {
+  assetHistory: "Asset History",
   impact: "Player Impact",
   teams: "Team Projections",
   injuries: "Injury Outlook",
@@ -842,6 +844,7 @@ function App() {
           <WorkspaceErrorPanel title={`${viewLabels[view]} data did not load`} detail={viewError} onReset={() => setView("impact")} />
         ) : (
           <Suspense fallback={<main className="loading"><p>Loading workspace</p></main>}>
+            {view === "assetHistory" && <AssetHistoryWorkspace />}
             {view === "impact" && <ImpactWorkspace data={data} season={season} />}
             {view === "teams" && <TeamWorkspace data={data} season={season} />}
             {view === "injuries" && <InjuryOutlookWorkspace outlook={data.injuryOutlook} />}
@@ -9006,3 +9009,4 @@ function draftTierRank(tier: string): number {
 }
 
 export default App;
+
