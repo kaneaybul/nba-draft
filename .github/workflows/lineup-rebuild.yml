@@ -8,7 +8,9 @@ on:
     branches:
       - main
     paths:
-      # Deliberate refresh only; model code edits are tested before requesting a run.
+      # Rebuild when the authorized morning collector publishes new matchup inputs.
+      # Keep explicit refresh requests; unrelated model edits do not trigger a rebuild.
+      - raw/live/matchup_snapshot.json
       - raw/live_refresh_request.json
 
 # Serialize data commits with a deliberate roster refresh.
