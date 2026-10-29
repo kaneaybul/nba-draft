@@ -1,6 +1,6 @@
 {
-  "requested_at": "2026-10-27T19:56:38.356Z",
-  "reason": "Rebuild minutes and team forecasts with Jaren Jackson Jr.'s reported 6-8-week MCL absence and Cason Wallace's shoulder surgery/uncertain timetable. Accept the verified RotoWire source links in the existing data validation.",
+  "requested_at": "2026-10-29T15:34:22.647Z",
+  "reason": "Refresh current NBA ratings, injuries, results and matchup-based skills after connecting the authorized morning input collector to the app rebuild.",
   "compare_minutes": false,
   "diagnose_switch": false
 }
