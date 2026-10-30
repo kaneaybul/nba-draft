@@ -1177,7 +1177,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Jimmy Butler",
+    "player_name": "Jimmy Butler III",
     "nba_id": 202710,
     "known_from": "2021-08-07",
     "remove_years": [],
@@ -7334,6 +7334,17 @@
     ],
     "exercise_years": [],
     "source": "https://www.salaryswish.com/players/sandro-mamukelashvili",
+    "quality": "dated_option_resolution_from_contract_history"
+  },
+  {
+    "player_name": "Nique Clifford",
+    "nba_id": 1642363,
+    "known_from": "2026-10-27",
+    "remove_years": [],
+    "exercise_years": [
+      2028
+    ],
+    "source": "https://www.salaryswish.com/players/nique-clifford",
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
