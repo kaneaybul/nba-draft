@@ -95,7 +95,8 @@ def parse(rows,pool,after,asof):
             if verb=='retired':action='remove'
             else:action='remove'if verb in ('waived','released')else'add'
             rendered=clause.replace(token,player['player_name'])if token else clause
-            out.append(event(day,rendered+'.',player,team,action,'two-way'in clause.lower()))
+            two_way=bool(re.search(r'\bto (?:a )?two-way\b',clause,re.I))
+            out.append(event(day,rendered+'.',player,team,action,two_way))
     return out
 
 def refresh(runtime,repo,asof,primary_error):

@@ -17,6 +17,10 @@ class EspnOwnership(unittest.TestCase):
  def test_trades_cannot_drop_pick_claims(self):
   rows=[{'date':'2026-10-29','description':'Acquired Blake Wesley and a first-round pick.','team':{'abbreviation':'LAC'}}]
   with self.assertRaisesRegex(ValueError,'pick direction review'):parse(rows,self.pool(),'2026-10-26','2026-10-30')
+ def test_conversion_to_standard_contract_does_not_keep_two_way_role(self):
+  rows=[{'date':'2026-10-29','description':'Converted C Lawson Lovering from a two-way contract to a standard contract.','team':{'abbreviation':'LAL'}}]
+  result=parse(rows,self.pool(),'2026-10-26','2026-10-30')
+  self.assertFalse(result[0]['parsed_actions'][0]['two_way'])
  def test_unidentified_and_multiple_players_stop_publication(self):
   for text in ['Signed C Unknown Player.','Waived F AK Okereke and C Lawson Lovering.','Waived F AK Okereke and Unknown Player.']:
    with self.assertRaisesRegex(ValueError,'identities'):
