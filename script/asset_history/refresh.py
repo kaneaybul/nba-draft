@@ -21,7 +21,13 @@ def main(args):
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
     if args.reseed:command.append('--reseed')
-    subprocess.run(command,check=True)
+    log_path=work/'player_refresh.log'
+    with log_path.open('w')as log:
+        process=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT)
+    diagnostics=log_path.read_text();print(diagnostics,flush=True)
+    if process.returncode:
+        detail=next((line for line in reversed(diagnostics.splitlines())if line.strip()),'Player refresh failed')
+        raise ValueError(detail)
     sys.path.insert(0,str(base/'backfill'))
     from run_pick_refresh import run as refresh_picks
     picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws)

@@ -142,10 +142,16 @@ def run(args):
     if reseed:
         for team in TEAMS:(state/f'{team}.json').unlink(missing_ok=True)
     from ownership_runtime import refresh_events,replay
-    refresh_events(runtime,args.as_of,args.roster_html)
+    ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
     rosterfile=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
     dates={s['cutoff_date']for s in json.loads(rosterfile.read_text())}|{args.as_of}
     _,ownership_audit=replay(runtime,dates)
+    if ownership_source.get('mode')=='espn_dated_fallback':
+        from espn_ownership import capture_additions
+        additions=capture_additions(runtime,json.loads((repo/'raw/live/player_pool.json').read_text()),args.as_of)
+        if additions:_,ownership_audit=replay(runtime,dates)
+        ownership_source['current_roster_signing_captures']=len(additions)
+        (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source,indent=2))
     if ownership_audit.get('unresolved_events'):
         raise ValueError('Unresolved dated player destinations; retain the last validated team inventories')
     from extend_daily_inputs import extend
@@ -155,8 +161,12 @@ def run(args):
     contracts=repo/'processed/asset_history/contracts'
     if not args.skip_contract_refresh:
         from refresh_contracts import refresh
-        report=refresh(contracts,repo/'raw/live/player_pool.json',runtime/'monthly_reconstruction/league_ownership/league_events.json',args.as_of,roster_path=rosterfile)
+        prior_dates=[json.loads(p.read_text())['as_of']for p in previous_state.glob('*.json')if p.stem in TEAMS]
+        report=refresh(contracts,repo/'raw/live/player_pool.json',runtime/'monthly_reconstruction/league_ownership/league_events.json',args.as_of,roster_path=rosterfile,since=min(prior_dates,default=args.as_of))
         if report['failed_mandatory_player_ids']or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
+        if ownership_source.get('mode')=='espn_dated_fallback':
+            from espn_ownership import validate_captures
+            validate_captures(runtime,contracts,args.as_of)
     calibration=output/f'calibration_{args.as_of}.json'
     script=Path(__file__).with_name('league_player_values.py')
     def compute(team):

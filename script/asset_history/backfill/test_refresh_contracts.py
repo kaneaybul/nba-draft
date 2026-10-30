@@ -4,6 +4,14 @@ from unittest.mock import patch
 from refresh_contracts import refresh
 
 class RefreshContracts(unittest.TestCase):
+ def test_first_daily_refresh_checks_transactions_since_saved_player_state(self):
+  with tempfile.TemporaryDirectory()as folder:
+   root=Path(folder);pp,ep,seed=self.setup_files(root)
+   (root/'refresh_state.json').unlink()
+   ep.write_text(json.dumps([dict(date='2026-10-27',type='Signing',players=[dict(name='One',nba_id=1)])]))
+   with patch('refresh_contracts.fetch_one',return_value=dict(nba_id=1,player_name='One',status='available',agreements=seed[:1]))as fetch:
+    report=refresh(root,pp,ep,'2026-10-30',rotation_limit=0,since='2026-10-26')
+   self.assertEqual(report['mandatory_player_ids'],[1]);self.assertEqual(fetch.call_count,1)
  def setup_files(self,root):
   seed=[dict(nba_id=1,player_name='One',known_from='2025-07-01',salaries=[dict(year=2027,amount=10)]),dict(nba_id=2,player_name='Two',known_from='2025-07-01',salaries=[dict(year=2027,amount=20)])]
   (root/'contract_agreements.json').write_text(json.dumps(seed));(root/'refresh_state.json').write_text(json.dumps(dict(ledger_asof='2026-10-25',last_checked={'1':'2026-10-25','2':'2026-10-25'})))
