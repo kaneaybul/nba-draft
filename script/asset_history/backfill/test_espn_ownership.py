@@ -18,9 +18,13 @@ class EspnOwnership(unittest.TestCase):
   rows=[{'date':'2026-10-29','description':'Acquired Blake Wesley and a first-round pick.','team':{'abbreviation':'LAC'}}]
   with self.assertRaisesRegex(ValueError,'pick direction review'):parse(rows,self.pool(),'2026-10-26','2026-10-30')
  def test_unidentified_and_multiple_players_stop_publication(self):
-  for text in ['Signed C Unknown Player.','Waived F AK Okereke and C Lawson Lovering.']:
+  for text in ['Signed C Unknown Player.','Waived F AK Okereke and C Lawson Lovering.','Waived F AK Okereke and Unknown Player.']:
    with self.assertRaisesRegex(ValueError,'identities'):
     parse([{'date':'2026-10-29','description':text,'team':{'abbreviation':'LAL'}}],self.pool(),'2026-10-26','2026-10-30')
+ def test_same_name_different_ids_require_review(self):
+  pool=self.pool();pool['players'].append({**pool['players'][0],'nba_id':999})
+  with self.assertRaisesRegex(ValueError,'Ambiguous'):
+   parse([{'date':'2026-10-29','description':'Waived F AK Okereke.','team':{'abbreviation':'LAL'}}],pool,'2026-10-26','2026-10-30')
  def test_previous_and_future_transactions_are_not_inserted(self):
   rows=[{'date':d,'description':'Signed F Enrique Freeman.','team':{'abbreviation':'MIN'}}for d in ['2026-10-26','2026-10-31']]
   self.assertEqual(parse(rows,self.pool(),'2026-10-26','2026-10-30'),[])
@@ -37,9 +41,12 @@ class EspnOwnership(unittest.TestCase):
    added=capture_additions(runtime,pool,'2026-10-30');self.assertEqual(added[0]['date'],'2026-10-30')
    contracts=runtime/'contracts';contracts.mkdir();path=contracts/'contract_agreements.json'
    path.write_text(json.dumps([{'nba_id':4,'known_from':'2026-10-01','signing_team':'LAC','schedule_complete':True}]))
-   with self.assertRaisesRegex(ValueError,'post-waiver contract'):validate_captures(runtime,contracts,'2026-10-30')
+   ignored=validate_captures(runtime,contracts,'2026-10-30')
+   self.assertEqual(ignored[0]['nba_id'],4)
+   self.assertEqual(json.loads((root/'league_events.json').read_text()),[removed])
+   capture_additions(runtime,pool,'2026-10-30')
    path.write_text(json.dumps([{'nba_id':4,'known_from':'2026-10-29','signing_team':'LAC','schedule_complete':True}]))
-   validate_captures(runtime,contracts,'2026-10-30')
+   self.assertEqual(validate_captures(runtime,contracts,'2026-10-30'),[])
  def test_truncated_pagination_is_rejected(self):
   payload={'pageCount':1,'status':'success','season':{'year':2027},'timestamp':'2026-10-30T10:00:00Z','count':2,'transactions':[{}]}
   with patch('espn_ownership.fetch_json',return_value=payload):

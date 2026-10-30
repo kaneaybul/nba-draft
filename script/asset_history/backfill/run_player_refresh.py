@@ -154,19 +154,25 @@ def run(args):
         (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source,indent=2))
     if ownership_audit.get('unresolved_events'):
         raise ValueError('Unresolved dated player destinations; retain the last validated team inventories')
-    from extend_daily_inputs import extend
-    extend(runtime,repo,args.as_of)
-    injuries=output/'combined_injury_episodes.json'
-    injury_history(runtime,state,repo/'processed/asset_history/injuries/major_injury_additions.json',injuries)
     contracts=repo/'processed/asset_history/contracts'
     if not args.skip_contract_refresh:
         from refresh_contracts import refresh
         prior_dates=[json.loads(p.read_text())['as_of']for p in previous_state.glob('*.json')if p.stem in TEAMS]
         report=refresh(contracts,repo/'raw/live/player_pool.json',runtime/'monthly_reconstruction/league_ownership/league_events.json',args.as_of,roster_path=rosterfile,since=min(prior_dates,default=args.as_of))
-        if report['failed_mandatory_player_ids']or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
+        ignored=[]
         if ownership_source.get('mode')=='espn_dated_fallback':
             from espn_ownership import validate_captures
-            validate_captures(runtime,contracts,args.as_of)
+            ignored=validate_captures(runtime,contracts,args.as_of)
+            if ignored:
+                _,ownership_audit=replay(runtime,dates)
+                ownership_source['ignored_stale_roster_captures']=ignored
+                (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source,indent=2))
+        failed=set(report['failed_mandatory_player_ids'])-{r['nba_id']for r in ignored}
+        if failed or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
+    from extend_daily_inputs import extend
+    extend(runtime,repo,args.as_of)
+    injuries=output/'combined_injury_episodes.json'
+    injury_history(runtime,state,repo/'processed/asset_history/injuries/major_injury_additions.json',injuries)
     calibration=output/f'calibration_{args.as_of}.json'
     script=Path(__file__).with_name('league_player_values.py')
     def compute(team):

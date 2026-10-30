@@ -64,6 +64,8 @@ def parse(rows,pool,after,asof):
         # Protect punctuation inside known player names before sentence splitting.
         tokens={}
         for name,players in sorted(identities.items(),key=lambda pair:len(pair[0]),reverse=True):
+            if len({p['nba_id']for p in players})>1 and any(p['player_name']in text for p in players):
+                raise ValueError('Ambiguous ESPN transaction identities: '+players[0]['player_name'])
             for player in players:
                 literal=player['player_name']
                 if literal in text:
@@ -84,6 +86,10 @@ def parse(rows,pool,after,asof):
                     candidates=[(t,p)for t,p in candidates if len(key(p['player_name']))==longest]
             if len(candidates)!=1:raise ValueError('Unresolved or multiple ESPN transaction identities: '+clause)
             token,player=candidates[0]
+            if token:
+                remainder=body.removeprefix(token).strip()
+                if not body.startswith(token)or(remainder and not re.match(r'^(to|on|for|from|off)\b',remainder,re.I)):
+                    raise ValueError('Unresolved additional ESPN transaction identities: '+clause)
             if verb in ('exercised','declined')or 'extension'in clause.lower():
                 raise ValueError('ESPN contract option or extension requires dated terms review: '+clause)
             if verb=='retired':action='remove'
@@ -137,11 +143,22 @@ def capture_additions(runtime,pool,asof):
     return additions
 
 def validate_captures(runtime,contracts,asof):
-    events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
+    path=runtime/'monthly_reconstruction/league_ownership/league_events.json'
+    events=json.loads(path.read_text());ignored=[]
     agreements=json.loads((contracts/'contract_agreements.json').read_text())
     for capture in (e for e in events if e.get('roster_capture')and e['date']==asof):
         player=capture['players'][0];pid=player['nba_id'];team=capture['parsed_actions'][0]['to_team']
         removals=[e['date']for e in events if not e.get('roster_capture')and any(a.get('action')=='remove'and a.get('nba_id')==pid for a in e.get('parsed_actions',[]))]
         last_remove=max(removals,default='0000-00-00')
         confirmed=[a for a in agreements if a['nba_id']==pid and last_remove<a['known_from']<=asof and a.get('signing_team')==team and a.get('schedule_complete')]
-        if not confirmed:raise ValueError('Fresh roster signing lacks independently verified post-waiver contract: '+player['name'])
+        if not confirmed:
+            if not removals:raise ValueError('Fresh roster signing lacks independently verified contract: '+player['name'])
+            # A roster API can keep returning a waived player even with a fresh
+            # HTTP timestamp. The dated removal remains authoritative unless a
+            # separately verified later signing establishes a new asset.
+            ignored.append({'event_id':capture['event_id'],'nba_id':pid,'name':player['name'],
+              'reason':'Dated removal retained; no independently verified later signing','last_remove':last_remove})
+    if ignored:
+        rejected={r['event_id']for r in ignored}
+        path.write_text(json.dumps([e for e in events if e['event_id']not in rejected],indent=2))
+    return ignored
