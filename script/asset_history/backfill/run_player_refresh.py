@@ -141,7 +141,8 @@ def run(args):
     if not reseed:latest_inputs(runtime,state)
     if reseed:
         for team in TEAMS:(state/f'{team}.json').unlink(missing_ok=True)
-    from ownership_runtime import refresh_events,replay
+    from ownership_runtime import refresh_events,replay,restore_events,save_events
+    ownership_seed_ids=restore_events(runtime,state)
     ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
     rosterfile=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
     dates={s['cutoff_date']for s in json.loads(rosterfile.read_text())}|{args.as_of}
@@ -189,6 +190,7 @@ def run(args):
     with ThreadPoolExecutor(max_workers=args.workers)as pool:list(pool.map(compute,TEAMS[1:]))
     result=export(output,None if reseed else args.as_of)
     latest_inputs(runtime,state,save=True,asof=args.as_of)
+    save_events(runtime,state,ownership_seed_ids)
     return {'date':args.as_of,'teams':len({s['team']for s in result['snapshots']}),'snapshots':len(result['snapshots']),'path':str(output/'player_candidates.json'),
       'staged_state':str(state),'state_commit_policy':'Copy staged_state to the persistent state directory only after portfolio validation and publication succeed.'}
 

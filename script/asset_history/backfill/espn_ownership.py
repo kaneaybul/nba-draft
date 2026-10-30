@@ -104,7 +104,8 @@ def refresh(runtime,repo,asof,primary_error):
     if pool['generated_at'][:10]!=asof or pool.get('teams_checked')!=30:
         raise ValueError('Fallback requires a fresh, complete 30-team roster capture')
     path=root/'league_events.json';events=json.loads(path.read_text())
-    after=max(e['date']for e in events if e['date']<=asof)
+    anchor=root/'ownership_seed_cutoff.json'
+    after=json.loads(anchor.read_text())['date']if anchor.exists()else max(e['date']for e in events if e['date']<=asof)
     rows,timestamp=collect(asof)
     if not rows or min(row['date'][:10]for row in rows)>after:
         raise ValueError('ESPN transaction history does not cover the ledger gap')
