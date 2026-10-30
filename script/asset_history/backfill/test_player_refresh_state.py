@@ -1,8 +1,22 @@
 import json,tempfile,unittest
 from pathlib import Path
 from run_player_refresh import stage_state
+from ownership_runtime import restore_events,save_events
 
 class DailyState(unittest.TestCase):
+ def test_verified_signing_keeps_its_first_capture_date_on_next_refresh(self):
+  with tempfile.TemporaryDirectory()as directory:
+   root=Path(directory);runtime=root/'runtime';ledger=runtime/'monthly_reconstruction/league_ownership';ledger.mkdir(parents=True)
+   state=root/'state';state.mkdir()
+   seed={'event_id':'SEED','date':'2026-10-26','text':'Seed event'}
+   capture={'event_id':'CAPTURE','date':'2026-10-30','text':'Confirmed signing first observed on October 30'}
+   path=ledger/'league_events.json';path.write_text(json.dumps([seed]))
+   (state/'ownership_events.json').write_text(json.dumps([capture]))
+   seed_ids=restore_events(runtime,state)
+   self.assertEqual(json.loads(path.read_text()),[seed,capture])
+   self.assertEqual(json.loads((ledger/'ownership_seed_cutoff.json').read_text())['date'],'2026-10-26')
+   save_events(runtime,state,seed_ids)
+   self.assertEqual(json.loads((state/'ownership_events.json').read_text()),[capture])
  def test_same_day_retry_starts_before_todays_update(self):
   with tempfile.TemporaryDirectory()as directory:
    root=Path(directory);saved=root/'saved';prior=saved/'prior_day';prior.mkdir(parents=True)

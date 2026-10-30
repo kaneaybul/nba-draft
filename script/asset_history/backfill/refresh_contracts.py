@@ -78,7 +78,7 @@ def current_players(pool,events,cutoff,last,roster_path=None):
     return players,dict(ownership_source=origin,owned_source_identities=len(players),unidentified_owned_players=sorted(set(unidentified)))
 
 
-def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, workers=2,roster_path=None):
+def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, workers=2,roster_path=None,since=None):
     contracts_dir.mkdir(parents=True, exist_ok=True)
     raw=contracts_dir/'raw';raw.mkdir(exist_ok=True)
     agreement_path=contracts_dir/'contract_agreements.json'
@@ -89,7 +89,7 @@ def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, wo
     if isinstance(events,dict):events=events.get('events',[])
     state_path=contracts_dir/'refresh_state.json'
     state=json.loads(state_path.read_text())if state_path.exists()else{}
-    last=state.get('ledger_asof',cutoff)
+    last=state.get('ledger_asof',since or cutoff)
     last_checked=state.get('last_checked',{})
     players,discovery=current_players(pool,events,cutoff,last,roster_path)
     # The previous parsed seed records canonical aliases and disambiguated URLs.

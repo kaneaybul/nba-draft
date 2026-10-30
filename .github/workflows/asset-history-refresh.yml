@@ -1,6 +1,13 @@
 name: Refresh asset history
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - script/asset_history/**
+      - .github/workflows/asset-history-refresh.yml
+      - raw/asset_history_refresh_request.json
   workflow_dispatch:
   workflow_run:
     workflows:
@@ -80,9 +87,12 @@ jobs:
         with:
           name: asset-history-validation
           path: |
+            ${{ runner.temp }}/asset-history/player_refresh.log
             ${{ runner.temp }}/asset-history/players/*.log
             ${{ runner.temp }}/asset-history/pending_pick_review.json
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json
+            ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/league_ownership/roster_refresh_source.json
+            processed/asset_history/contracts/refresh_audit.json
             frontend/public/data/asset_history/v2/refresh_status.json
           if-no-files-found: ignore
           retention-days: 14

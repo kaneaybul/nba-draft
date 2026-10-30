@@ -141,22 +141,39 @@ def run(args):
     if not reseed:latest_inputs(runtime,state)
     if reseed:
         for team in TEAMS:(state/f'{team}.json').unlink(missing_ok=True)
-    from ownership_runtime import refresh_events,replay
-    refresh_events(runtime,args.as_of,args.roster_html)
+    from ownership_runtime import refresh_events,replay,restore_events,save_events
+    ownership_seed_ids=restore_events(runtime,state)
+    ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
     rosterfile=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
     dates={s['cutoff_date']for s in json.loads(rosterfile.read_text())}|{args.as_of}
     _,ownership_audit=replay(runtime,dates)
+    if ownership_source.get('mode')=='espn_dated_fallback':
+        from espn_ownership import capture_additions
+        additions=capture_additions(runtime,json.loads((repo/'raw/live/player_pool.json').read_text()),args.as_of)
+        if additions:_,ownership_audit=replay(runtime,dates)
+        ownership_source['current_roster_signing_captures']=len(additions)
+        (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source,indent=2))
     if ownership_audit.get('unresolved_events'):
         raise ValueError('Unresolved dated player destinations; retain the last validated team inventories')
+    contracts=repo/'processed/asset_history/contracts'
+    if not args.skip_contract_refresh:
+        from refresh_contracts import refresh
+        prior_dates=[json.loads(p.read_text())['as_of']for p in previous_state.glob('*.json')if p.stem in TEAMS]
+        report=refresh(contracts,repo/'raw/live/player_pool.json',runtime/'monthly_reconstruction/league_ownership/league_events.json',args.as_of,roster_path=rosterfile,since=min(prior_dates,default=args.as_of))
+        ignored=[]
+        if ownership_source.get('mode')=='espn_dated_fallback':
+            from espn_ownership import validate_captures
+            ignored=validate_captures(runtime,contracts,args.as_of)
+            if ignored:
+                _,ownership_audit=replay(runtime,dates)
+                ownership_source['ignored_stale_roster_captures']=ignored
+                (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source,indent=2))
+        failed=set(report['failed_mandatory_player_ids'])-{r['nba_id']for r in ignored}
+        if failed or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
     from extend_daily_inputs import extend
     extend(runtime,repo,args.as_of)
     injuries=output/'combined_injury_episodes.json'
     injury_history(runtime,state,repo/'processed/asset_history/injuries/major_injury_additions.json',injuries)
-    contracts=repo/'processed/asset_history/contracts'
-    if not args.skip_contract_refresh:
-        from refresh_contracts import refresh
-        report=refresh(contracts,repo/'raw/live/player_pool.json',runtime/'monthly_reconstruction/league_ownership/league_events.json',args.as_of,roster_path=rosterfile)
-        if report['failed_mandatory_player_ids']or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
     calibration=output/f'calibration_{args.as_of}.json'
     script=Path(__file__).with_name('league_player_values.py')
     def compute(team):
@@ -173,6 +190,7 @@ def run(args):
     with ThreadPoolExecutor(max_workers=args.workers)as pool:list(pool.map(compute,TEAMS[1:]))
     result=export(output,None if reseed else args.as_of)
     latest_inputs(runtime,state,save=True,asof=args.as_of)
+    save_events(runtime,state,ownership_seed_ids)
     return {'date':args.as_of,'teams':len({s['team']for s in result['snapshots']}),'snapshots':len(result['snapshots']),'path':str(output/'player_candidates.json'),
       'staged_state':str(state),'state_commit_policy':'Copy staged_state to the persistent state directory only after portfolio validation and publication succeed.'}
 

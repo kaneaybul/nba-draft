@@ -32,6 +32,14 @@ fixed-pick transfers are guarded automatically; new conditional terms require
 review rather than being assigned zero. Source failures retain the last validated
 view and record a visible update status.
 
+If RealGM rejects the runner, the updater uses the complete, fresh ESPN dated
+transaction feed. Unknown identities, complex trades and conditional pick terms
+still stop publication for review. Fresh ESPN roster additions are dated to the
+capture, and a separate original contract must confirm the destination and a
+signing after any prior waiver. A retained run is not a successful data update;
+`refresh_status.json` records the underlying error and the last good view stays
+visible. Source-code fixes also trigger the asset refresh immediately.
+
 The current month retains its newest validated observation. After the month ends,
 that observation is sealed with its actual date and source cutoffs. Missing days
 are never invented. Closed financial content cannot be overwritten; substantive

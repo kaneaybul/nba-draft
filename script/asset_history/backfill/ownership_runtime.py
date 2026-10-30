@@ -29,6 +29,23 @@ SUPPLEMENTAL_EVENTS=[
   'teams':[],'parsed_status':'waiver','parsed_actions':[{'player_name':'Brandon Clarke','nba_id':1629634,'action':'remove'}],
   'source':'https://pr.nba.com/adam-silver-statement-brandon-clarke/'}]
 
+def restore_events(runtime,state):
+    """Carry accepted dated facts forward, separately from the frozen seed."""
+    root=runtime/'monthly_reconstruction/league_ownership'
+    path=root/'league_events.json';events=json.loads(path.read_text())
+    seed_ids={e['event_id']for e in events}
+    (root/'ownership_seed_cutoff.json').write_text(json.dumps({'date':max(e['date']for e in events)}))
+    saved=state/'ownership_events.json'
+    if saved.exists():
+        events.extend(e for e in json.loads(saved.read_text())if e['event_id']not in seed_ids)
+        events.sort(key=lambda e:(e['date'],e['text']))
+        path.write_text(json.dumps(events,indent=2))
+    return seed_ids
+
+def save_events(runtime,state,seed_ids):
+    events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
+    (state/'ownership_events.json').write_text(json.dumps([e for e in events if e['event_id']not in seed_ids],separators=(',',':')))
+
 def replay(runtime,dates):
     root=runtime/'monthly_reconstruction/league_ownership'
     sys.path.insert(0,str(root))
@@ -36,6 +53,14 @@ def replay(runtime,dates):
     original=source.id_map
     ids=original();ids.update(ALIASES)
     events=json.loads((root/'league_events.json').read_text())
+    # The fallback's verified NBA identities may be newer than the runtime seed.
+    # Do not infer identity from a same-name player or overwrite a known conflict.
+    for event in events:
+        if event.get('identity_source')!='verified_live_player_pool':continue
+        for player in event['players']:
+            name=source.key(player['name']);pid=int(player['nba_id'])
+            if name in ids and ids[name]!=pid:raise ValueError('Conflicting fallback player identity: '+player['name'])
+            ids[name]=pid
     present={r['event_id']for r in events}
     events += [r for r in SUPPLEMENTAL_EVENTS if r['event_id']not in present]
     (root/'league_events.json').write_text(json.dumps(events,indent=2))
@@ -76,7 +101,7 @@ def replay(runtime,dates):
     audit['actual_draft_identity']=update_actual_drafts(runtime,events)
     return snapshots,audit
 
-def refresh_events(runtime,asof,html_path=None):
+def refresh_events(runtime,asof,html_path=None,repo=None):
     """Merge fresh current-season source transactions into the dated register."""
     root=runtime/'monthly_reconstruction/league_ownership'
     sys.path.insert(0,str(root));import source_inventory as source
@@ -86,7 +111,13 @@ def refresh_events(runtime,asof,html_path=None):
     if html_path:cache.write_bytes(Path(html_path).read_bytes())
     else:
         from urllib.request import Request,urlopen
-        cache.write_bytes(urlopen(Request(f'https://basketball.realgm.com/nba/transactions/league/{year}',headers={'User-Agent':'Mozilla/5.0'}),timeout=45).read())
+        from urllib.error import URLError
+        try:
+            cache.write_bytes(urlopen(Request(f'https://basketball.realgm.com/nba/transactions/league/{year}',headers={'User-Agent':'Mozilla/5.0'}),timeout=45).read())
+        except (URLError,TimeoutError)as exc:
+            if repo is None:raise
+            from espn_ownership import refresh
+            return refresh(runtime,repo,asof,exc)
     page=source.fetch(year)
     events=json.loads((root/'league_events.json').read_text());known={(e['date'],e['text'])for e in events}
     added=[]
