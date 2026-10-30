@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-29T19:00:20.039Z",
+  "generated_at": "2026-10-30T11:48:22.060Z",
   "cap_fallbacks": [
     {
       "team": "NOP",
@@ -31652,7 +31652,7 @@
       "team": "MEM",
       "row_type": "draft_pick",
       "display_order": 8028,
-      "position": "SF",
+      "position": "SG",
       "age": 19.7,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
