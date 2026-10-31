@@ -1,6 +1,6 @@
 {
-  "requested_at": "2026-10-29T15:34:22.647Z",
-  "reason": "Refresh current NBA ratings, injuries, results and matchup-based skills after connecting the authorized morning input collector to the app rebuild.",
+  "requested_at": "2026-10-31T17:08:59.841Z",
+  "reason": "Restore the trained GP participation rate and apply current injury availability only to remaining games. Preserve actual appearances and remove the unvalidated attendance adjustment.",
   "compare_minutes": false,
   "diagnose_switch": false
 }

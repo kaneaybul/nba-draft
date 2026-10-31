@@ -20,7 +20,8 @@ stopifnot(all(a$minutes_source=='Expected EPM'),all(a$minutes_input_mpg==30),abs
 other <- p;other$total <- rev(seq(-10,10,length.out=8))
 b <- model$apply_live_minute_inputs(other,root)
 stopifnot(identical(a$Minutes,b$Minutes)) # Our talent ranking cannot choose the coach's rotation.
-# The unadjusted GP model is a 20-game prior; actual attendance updates it daily.
+# Historical GP is the participation rate. Actual appearances, including zero
+# appearances during an injury, must not become a second future-availability update.
 gp_inputs <- p;gp_inputs$games <- c(rep(40.1,3),rep(82,5))
 gp_feed <- feed;gp_feed$season <- 2027L
 gp_stats <- stats;gp_stats$season <- 2027L;gp_stats$completed_games_at_fetch <- 5L
@@ -33,28 +34,23 @@ jsonlite::write_json(gp_feed,file.path(root,'raw/live/ratings.json'),auto_unbox=
 jsonlite::write_json(gp_stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
 jsonlite::write_json(results,file.path(root,'raw/live/results.json'),auto_unbox=TRUE)
 gp <- model$apply_live_minute_inputs(gp_inputs,root)
-expected <- (20*(40.1/82)+4)/25
-stopifnot(abs(gp$minutes_play_probability[1]-expected)<1e-12,
- abs(4+77*expected-46.44390243902439)<1e-10,
- gp$minutes_play_probability[2]<40.1/82,
- gp$minutes_play_probability[3]>gp$minutes_play_probability[1],
- identical(gp$minutes_gp_prior,gp_inputs$games),all(gp$minutes_gp_prior_weight==20),
- all(gp$minutes_team_games_played==5),abs(sum(gp$Minutes)-19680)<1e-6)
+stopifnot(all(abs(gp$minutes_play_probability-gp_inputs$games/82)<1e-12),
+ identical(gp$minutes_gp_prior,gp_inputs$games),abs(sum(gp$Minutes)-19680)<1e-6,
+ all(gp$minutes_actual_games==gp_stats$players$games))
 again <- model$apply_live_minute_inputs(gp,root)
-stopifnot(identical(gp$minutes_play_probability,again$minutes_play_probability))
-# A player whose season-total statistics refer to a different team retains the prior.
-gp_stats$players$team[1] <- 'BOS'
+stopifnot(identical(gp$minutes_play_probability,again$minutes_play_probability),
+ identical(gp$minutes_gp_prior,again$minutes_gp_prior))
+# Missing current observations retain the same trained baseline and zero actuals.
+gp_stats$players <- gp_stats$players[-2,]
 jsonlite::write_json(gp_stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
-traded <- model$apply_live_minute_inputs(gp_inputs,root)
-stopifnot(abs(traded$minutes_play_probability[1]-40.1/82)<1e-12,
- is.na(traded$minutes_team_games_played[1]))
-gp_stats$players$team[1] <- 'UTA'
-# A lagging statistics source must not turn newly completed games into absences.
-gp_stats$completed_games_at_fetch <- 4L
+absent <- model$apply_live_minute_inputs(gp_inputs,root)
+stopifnot(abs(absent$minutes_play_probability[2]-40.1/82)<1e-12,
+ absent$minutes_actual_games[2]==0,absent$minutes_actual[2]==0)
+# Team changes and asynchronous result coverage do not alter the GP baseline.
+gp_stats$players$team[1] <- 'BOS';gp_stats$completed_games_at_fetch <- 4L
 jsonlite::write_json(gp_stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
 lagging <- model$apply_live_minute_inputs(gp_inputs,root)
-stopifnot(all(abs(lagging$minutes_play_probability-gp_inputs$games/82)<1e-12),
- all(is.na(lagging$minutes_team_games_played)))
+stopifnot(identical(gp$minutes_play_probability,lagging$minutes_play_probability))
 jsonlite::write_json(feed,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE)
 jsonlite::write_json(stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
 unlink(file.path(root,'raw/live/results.json'))
@@ -84,14 +80,48 @@ stopifnot(identical(finished$total,fixture$total))
 overtime <- fixture;overtime$minutes_actual_games[1] <- 1
 ot <- model$apply_injury_projections(overtime,schedule,outlook)$players
 stopifnot(ot$Minutes[1]==60,ot$games[1]==1,ot$p_mpg[1]==60,ot$minutes_remaining[1]==0)
+# A past injury absence stays in actual GP. Only the remaining injury dates
+# affect future GP: actual appearances + trained rate * dated availability.
+ratio_fixture <- fixture
+ratio_fixture$minutes_play_probability <- .9
+ratio_fixture$minutes_gp_prior <- 73.8
+ratio_fixture$minutes_actual_games <- 2
+ratio_fixture$minutes_actual <- 60
+ratio_fixture$minutes_actual_games[2] <- 0
+ratio_fixture$minutes_actual[2] <- 0
+healthy <- model$apply_injury_projections(ratio_fixture,schedule,
+ list(season=2027L,generated_at='2026-10-25T12:00:00Z',players=list()))$players
+stopifnot(abs(healthy$games[1]-(2+2*.9))<1e-10,
+ abs(healthy$games[2]-2*.9)<1e-10)
+injury <- list(player_name='Player 2',name_key='player2',team='UTA',
+ status='Out',basis='reported_window',season_ending=FALSE,games_missed_min=1,
+ return_earliest='2026-10-28',return_latest='2026-10-28',source_url='https://www.espn.com/nba/injuries')
+ratio_outlook <- list(season=2027L,generated_at='2026-10-25T12:00:00Z',players=list(injury))
+recovering <- model$apply_injury_projections(ratio_fixture,schedule,ratio_outlook)$players
+stopifnot(abs(recovering$games[2]-.9)<1e-10,
+ identical(recovering$minutes_play_probability,ratio_fixture$minutes_play_probability))
+# Advancing past a missed injury game consumes that calendar date without
+# lowering the post-recovery rate or subtracting the missed game again.
+advanced_schedule <- schedule;advanced_schedule$is_completed[3] <- TRUE
+advanced_outlook <- ratio_outlook;advanced_outlook$generated_at <- '2026-10-27T12:00:00Z'
+advanced_outlook$players[[1]]$games_missed_min <- 0L
+advanced <- model$apply_injury_projections(ratio_fixture,advanced_schedule,advanced_outlook)$players
+stopifnot(abs(advanced$games[2]-recovering$games[2])<1e-10,
+ abs(advanced$minutes_play_probability[2]-.9)<1e-12)
+# An uncertain return weights individual future games instead of rounding
+# the expected injury absence into a hard number of games.
+partial_outlook <- ratio_outlook;partial_outlook$players[[1]]$games_missed_min <- 0L
+partial_outlook$players[[1]]$return_earliest <- '2026-10-25'
+partial_outlook$players[[1]]$return_latest <- '2026-10-27'
+partial <- model$apply_injury_projections(ratio_fixture,schedule,partial_outlook)$players
+stopifnot(abs(partial$games[2]-1.5*.9)<1e-10,
+ identical(partial$total,ratio_fixture$total))
 if('--require-export' %in% commandArgs(TRUE)) {
   pub <- jsonlite::fromJSON('frontend/public/data/v2/impact_players/2027.json')
-  stopifnot(all(c('minutes_gp_prior','minutes_gp_prior_weight','minutes_team_games_played') %in% names(pub)),
-    all(is.finite(pub$minutes_gp_prior)),all(pub$minutes_gp_prior_weight==20))
-  comparable <- pub$pool_status=='roster' & is.finite(pub$minutes_team_games_played)
-  stopifnot(sum(comparable)>sum(pub$pool_status=='roster')/2)
-  expected <- (20*pub$minutes_gp_prior[comparable]/82+pub$minutes_actual_games[comparable])/(20+pub$minutes_team_games_played[comparable])
-  stopifnot(all(abs(pub$minutes_play_probability[comparable]-expected)<1e-10))
+  stopifnot('minutes_gp_prior' %in% names(pub),all(is.finite(pub$minutes_gp_prior)))
+  roster <- pub$pool_status=='roster'
+  expected <- ifelse(roster & pub$minutes_input_mpg>0,pub$minutes_gp_prior/82,0)
+  stopifnot(all(abs(pub$minutes_play_probability-expected)<1e-10))
   stopifnot(all(!is.na(pub$minutes_source)),all(abs(pub$Minutes-pub$minutes_actual-pub$minutes_remaining)<.11),
     all(abs(pub$games-pub$minutes_actual_games-pub$minutes_remaining_games)<1e-6),
     all(pub$minutes_remaining[pub$pool_status!='roster']==0),all(pub$minutes_remaining_mpg<=48.0001),
@@ -102,5 +132,5 @@ if('--require-export' %in% commandArgs(TRUE)) {
   }
 }
 unlink(root,recursive=TRUE)
-cat('Provider MPG hierarchy, attendance update, repeatability, snapshot alignment, injury redistribution, completed minutes and team budgets passed\n')
+cat('Provider MPG hierarchy, trained GP participation, repeatability, dated injury recovery, completed minutes and team budgets passed\n')
 

@@ -43,8 +43,6 @@ export type PlayerImpact = {
   minutes_remaining_games?: number | null;
   minutes_remaining_mpg?: number | null;
   minutes_gp_prior?: number | null;
-  minutes_gp_prior_weight?: number | null;
-  minutes_team_games_played?: number | null;
   minutes_note?: string | null;
   pool_status?: "roster" | "free_agent" | "inactive" | "draft" | null;
   pool_note?: string | null;
