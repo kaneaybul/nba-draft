@@ -20,6 +20,44 @@ stopifnot(all(a$minutes_source=='Expected EPM'),all(a$minutes_input_mpg==30),abs
 other <- p;other$total <- rev(seq(-10,10,length.out=8))
 b <- model$apply_live_minute_inputs(other,root)
 stopifnot(identical(a$Minutes,b$Minutes)) # Our talent ranking cannot choose the coach's rotation.
+# The unadjusted GP model is a 20-game prior; actual attendance updates it daily.
+gp_inputs <- p;gp_inputs$games <- c(rep(40.1,3),rep(82,5))
+gp_feed <- feed;gp_feed$season <- 2027L
+gp_stats <- stats;gp_stats$season <- 2027L;gp_stats$completed_games_at_fetch <- 5L
+gp_stats$players$team <- 'UTA'
+gp_stats$players$games <- c(4,0,5,2,2,2,2,2)
+gp_stats$players$minutes <- gp_stats$players$games*30
+results <- list(season=2027L,games=data.frame(game_id=as.character(1:5),
+ home_team='UTA',away_team='BOS',is_completed=TRUE))
+jsonlite::write_json(gp_feed,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE)
+jsonlite::write_json(gp_stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
+jsonlite::write_json(results,file.path(root,'raw/live/results.json'),auto_unbox=TRUE)
+gp <- model$apply_live_minute_inputs(gp_inputs,root)
+expected <- (20*(40.1/82)+4)/25
+stopifnot(abs(gp$minutes_play_probability[1]-expected)<1e-12,
+ abs(4+77*expected-46.44390243902439)<1e-10,
+ gp$minutes_play_probability[2]<40.1/82,
+ gp$minutes_play_probability[3]>gp$minutes_play_probability[1],
+ identical(gp$minutes_gp_prior,gp_inputs$games),all(gp$minutes_gp_prior_weight==20),
+ all(gp$minutes_team_games_played==5),abs(sum(gp$Minutes)-19680)<1e-6)
+again <- model$apply_live_minute_inputs(gp,root)
+stopifnot(identical(gp$minutes_play_probability,again$minutes_play_probability))
+# A player whose season-total statistics refer to a different team retains the prior.
+gp_stats$players$team[1] <- 'BOS'
+jsonlite::write_json(gp_stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
+traded <- model$apply_live_minute_inputs(gp_inputs,root)
+stopifnot(abs(traded$minutes_play_probability[1]-40.1/82)<1e-12,
+ is.na(traded$minutes_team_games_played[1]))
+gp_stats$players$team[1] <- 'UTA'
+# A lagging statistics source must not turn newly completed games into absences.
+gp_stats$completed_games_at_fetch <- 4L
+jsonlite::write_json(gp_stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
+lagging <- model$apply_live_minute_inputs(gp_inputs,root)
+stopifnot(all(abs(lagging$minutes_play_probability-gp_inputs$games/82)<1e-12),
+ all(is.na(lagging$minutes_team_games_played)))
+jsonlite::write_json(feed,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE)
+jsonlite::write_json(stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
+unlink(file.path(root,'raw/live/results.json'))
 feed$players$epm_mpg[1:3] <- NA;feed$players$darko_mpg[2:3] <- NA
 stats$players$games[3] <- 0;stats$players$minutes[3] <- 0
 jsonlite::write_json(feed,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE,na='null')
@@ -48,6 +86,12 @@ ot <- model$apply_injury_projections(overtime,schedule,outlook)$players
 stopifnot(ot$Minutes[1]==60,ot$games[1]==1,ot$p_mpg[1]==60,ot$minutes_remaining[1]==0)
 if('--require-export' %in% commandArgs(TRUE)) {
   pub <- jsonlite::fromJSON('frontend/public/data/v2/impact_players/2027.json')
+  stopifnot(all(c('minutes_gp_prior','minutes_gp_prior_weight','minutes_team_games_played') %in% names(pub)),
+    all(is.finite(pub$minutes_gp_prior)),all(pub$minutes_gp_prior_weight==20))
+  comparable <- pub$pool_status=='roster' & is.finite(pub$minutes_team_games_played)
+  stopifnot(sum(comparable)>sum(pub$pool_status=='roster')/2)
+  expected <- (20*pub$minutes_gp_prior[comparable]/82+pub$minutes_actual_games[comparable])/(20+pub$minutes_team_games_played[comparable])
+  stopifnot(all(abs(pub$minutes_play_probability[comparable]-expected)<1e-10))
   stopifnot(all(!is.na(pub$minutes_source)),all(abs(pub$Minutes-pub$minutes_actual-pub$minutes_remaining)<.11),
     all(abs(pub$games-pub$minutes_actual_games-pub$minutes_remaining_games)<1e-6),
     all(pub$minutes_remaining[pub$pool_status!='roster']==0),all(pub$minutes_remaining_mpg<=48.0001),
@@ -58,4 +102,5 @@ if('--require-export' %in% commandArgs(TRUE)) {
   }
 }
 unlink(root,recursive=TRUE)
-cat('Provider MPG hierarchy, impact-independent roles, injury redistribution, completed minutes and team budgets passed\n')
+cat('Provider MPG hierarchy, attendance update, repeatability, snapshot alignment, injury redistribution, completed minutes and team budgets passed\n')
+
