@@ -46,11 +46,11 @@ for(k in seq_along(fixture$players)) {
  fixture$players[[k]]$skill_evidence_minutes <- NULL
  fixture$players[[k]]$switch_sample <- NULL
 }
-jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
+jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null',digits=NA)
 held <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(identical(held$SWITCH,p$SWITCH))
 fixture$players[[j]]$raw_skills$SWITCH <- p$SWITCH[i]+1
-jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
+jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null',digits=NA)
 updated <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(abs(updated$skill_model_def[i]-held$skill_model_def[i]-held$live_current_weight[i])<1e-8,
           updated$SWITCH[i]>held$SWITCH[i],identical(updated$SWITCH[-i],held$SWITCH[-i]))
