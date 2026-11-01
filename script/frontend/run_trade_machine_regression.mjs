@@ -13,7 +13,10 @@ const tempDir = path.join(os.tmpdir(), `trade-machine-regression-${Date.now()}`)
 await fs.mkdir(tempDir, { recursive: true });
 
 try {
-  await transpileToMjs(path.join(sourceDir, "tradeMachine.ts"), path.join(tempDir, "tradeMachine.mjs"));
+  await transpileToMjs(path.join(sourceDir, "assetValue.ts"), path.join(tempDir, "assetValue.mjs"));
+  await transpileToMjs(path.join(sourceDir, "tradeMachine.ts"), path.join(tempDir, "tradeMachine.mjs"), {
+    "./assetValue": "./assetValue.mjs"
+  });
   await transpileToMjs(path.join(sourceDir, "tradeMachine.regression.ts"), path.join(tempDir, "tradeMachine.regression.mjs"), {
     "./tradeMachine": "./tradeMachine.mjs"
   });

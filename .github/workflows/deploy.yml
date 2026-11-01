@@ -9,6 +9,7 @@ on:
       - .github/workflows/deploy.yml
       - script/frontend/validate_frontend_data.mjs
       - script/frontend/test_data_refresh.mjs
+      - script/frontend/build_asset_value_data.py
   workflow_dispatch:
   workflow_run:
     workflows:
@@ -50,11 +51,17 @@ jobs:
           if [ -f ../script/asset_history/materialize.py ]; then
             python3 ../script/asset_history/materialize.py --repo ..
           fi
+          python3 ../script/frontend/test_asset_value_data.py
+          python3 ../script/frontend/build_asset_value_data.py --repo ..
           npm run validate:data
         working-directory: frontend
 
       - name: Build frontend
-        run: npm run build
+        run: |
+          npm run test:asset-value
+          npm run test:trade-machine
+          npm run test:trade-suggestions
+          npm run build
         working-directory: frontend
 
       - name: Deploy to Cloudflare Pages
@@ -64,4 +71,3 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy frontend/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}
-

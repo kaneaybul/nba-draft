@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { playerFourYearAssetValue } from "./assetValue";
 import { simulateFreeAgencyMarket } from "./offseasonMarket";
 import {
   buildOffseasonViewModels,
@@ -2293,7 +2294,7 @@ function buildSimPlayers(rows: PlayerImpact[], overrides: SimulatorOverrides, tr
       total: finiteNumber(player.total, 0),
       score: planningScore,
       tier: planningTier,
-      tradeValue: finiteNumber(player.trade_value, player.value, marketValue),
+      tradeValue: playerFourYearAssetValue(player) ?? 0,
       upside: upsideScore(player),
       declineRisk: declineRisk(player),
       replaceability: replaceabilityScore(player),

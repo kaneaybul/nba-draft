@@ -17,7 +17,8 @@
     "test:cap-sandbox": "node ../script/frontend/run_cap_sandbox_regression.mjs",
     "test:trade-scenarios": "node ../script/frontend/run_trade_scenarios_regression.mjs",
     "test:trade-suggestions": "node ../script/frontend/run_trade_suggestions_regression.mjs",
-    "test:trade-machine": "node ../script/frontend/run_trade_machine_regression.mjs"
+    "test:trade-machine": "node ../script/frontend/run_trade_machine_regression.mjs",
+    "test:asset-value": "node ../script/frontend/run_asset_value_regression.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

@@ -115,7 +115,21 @@ def export(output,asof=None):
         folder=output/team
         if not(folder/'league_player_coverage.json').exists():continue
         coverage=json.loads((folder/'league_player_coverage.json').read_text())
-        rows=list(csv.DictReader((folder/'monthly_player_values.csv').open()))
+        with (folder/'monthly_player_values.csv').open() as player_file:
+            rows=list(csv.DictReader(player_file))
+        annual_by_player={}
+        with (folder/'monthly_annual_values.csv').open() as annual_file:
+            for annual in csv.DictReader(annual_file):
+                dt=annual['cutoff_date']
+                if asof and dt!=asof:continue
+                pid=annual.get('source_nba_id')or annual.get('ledger_nba_id')
+                identity=str(int(float(pid)))if pid else annual['player_name']
+                production=annual.get('app_annual_quote_production_reporting_rate')
+                asset=annual.get('app_annual_stock_reporting_rate')
+                if production in(None,'')or asset in(None,''):continue
+                annual_by_player.setdefault((dt,identity),[]).append({
+                    'season':int(annual['season']),'production':float(production),
+                    'asset':float(asset),'exposure':float(annual['exposure'])})
         for c in coverage['coverage']:
             dt=c['date']
             if asof and dt!=asof:continue
@@ -127,6 +141,7 @@ def export(output,asof=None):
                 pid=int(float(raw_id))if raw_id else None
                 ident='player:nba:'+str(pid)if pid is not None else'player:name:'+''.join(x for x in row['player_name'].lower()if x.isalpha())
                 details={k:row.get(k)for k in ['asset_type','profile_method','skill_method','role_method','role_MPG_sample_weight','role_games_sample_weight','draft_year','draft_slot','draft_maturity_weight','app_style_four_year_peak_production_quote','app_style_four_year_contract_adjustment_sum','healthy_current_total','healthy_forecast_annual_games','healthy_forecast_conditional_MPG','injury_availability_factor','injury_model_method','flags']}
+                details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 assets.append({'id':ident,'kind':'player','name':row['player_name'],'value':float(row['app_style_four_year_asset_quote_with_draft_prior']),'exposure':float(row['app_priced_season_equivalents']),
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
