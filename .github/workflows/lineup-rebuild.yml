@@ -8,10 +8,24 @@ on:
     branches:
       - main
     paths:
-      # Rebuild when the authorized morning collector publishes new matchup inputs.
-      # Keep explicit refresh requests; unrelated model edits do not trigger a rebuild.
+      # Rebuild for collector inputs and changes to the live pipeline itself.
+      # Generated outputs are excluded, so bot data commits cannot loop.
       - raw/live/matchup_snapshot.json
       - raw/live_refresh_request.json
+      - script/data/live_positions.py
+      - script/data/live_switch.py
+      - script/data/refresh_live_skill_stats.py
+      - script/data/refresh_live_ratings.mjs
+      - script/data/refresh_injury_outlook.py
+      - script/data/refresh_player_pool.py
+      - script/frontend/export_frontend_data.R
+      - script/frontend/live_ratings.R
+      - script/frontend/live_minutes.R
+      - script/frontend/injury_projections.R
+      - script/frontend/player_pool.R
+      - script/frontend/refresh_live_switch.R
+      - script/frontend/publish_refresh.sh
+      - .github/workflows/lineup-rebuild.yml
 
 # Serialize data commits with a deliberate roster refresh.
 concurrency:
