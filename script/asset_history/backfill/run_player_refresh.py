@@ -36,6 +36,11 @@ def stage_state(previous,state,asof,reseed=False):
         for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):
             file=previous/name
             if file.exists():shutil.copyfile(file,state/name)
+        # Keep the earlier captured panel for deterministic same-day reseeds.
+        earlier=previous/'prior_day/latest_inputs.json.gz'
+        if earlier.exists():
+            (state/'prior_day').mkdir(exist_ok=True)
+            shutil.copyfile(earlier,state/'prior_day/latest_inputs.json.gz')
     # Retry keeps the same before-update checkpoint; a new day stores current
     # persistent inputs as the next before-update checkpoint.
     if latest and not reseed:

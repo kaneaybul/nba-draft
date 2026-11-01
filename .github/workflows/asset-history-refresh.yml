@@ -78,8 +78,22 @@ jobs:
             git add frontend/public/data/asset_history/v3/refresh_status.json
           fi
           if ! git diff --cached --quiet; then
+            # Preserve expensive validated results even if a later push fails.
+            git diff --cached --binary > "$RUNNER_TEMP/asset-history-release.patch"
             git commit -m "Refresh validated NBA asset history"
-            git push origin HEAD:main
+            published=false
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                published=true
+                break
+              fi
+            done
+            if [ "$published" != true ]; then
+              echo "::error::Publication changed concurrently after three retries; validated results are preserved in the release artifact."
+              exit 1
+            fi
           fi
       - name: Preserve source and validation diagnostics
         if: always()
@@ -88,6 +102,7 @@ jobs:
           name: asset-history-validation
           path: |
             ${{ runner.temp }}/asset-history/player_refresh.log
+            ${{ runner.temp }}/asset-history-release.patch
             ${{ runner.temp }}/asset-history/players/*.log
             ${{ runner.temp }}/asset-history/pending_pick_review.json
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json

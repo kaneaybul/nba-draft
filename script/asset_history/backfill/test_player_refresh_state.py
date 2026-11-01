@@ -9,9 +9,11 @@ class DailyState(unittest.TestCase):
    root=Path(directory);saved=root/'saved';saved.mkdir()
    (saved/'BOS.json').write_text(json.dumps({'as_of':'2026-11-01','posterior':2}))
    for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):(saved/name).write_bytes(b'source-evidence')
+   (saved/'prior_day').mkdir();(saved/'prior_day/latest_inputs.json.gz').write_bytes(b'earlier-source-panel')
    staged=root/'staged';self.assertTrue(stage_state(saved,staged,'2026-11-01',reseed=True))
    self.assertFalse((staged/'BOS.json').exists())
    for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):self.assertEqual((staged/name).read_bytes(),b'source-evidence')
+   self.assertEqual((staged/'prior_day/latest_inputs.json.gz').read_bytes(),b'earlier-source-panel')
  def test_verified_signing_keeps_its_first_capture_date_on_next_refresh(self):
   with tempfile.TemporaryDirectory()as directory:
    root=Path(directory);runtime=root/'runtime';ledger=runtime/'monthly_reconstruction/league_ownership';ledger.mkdir(parents=True)
