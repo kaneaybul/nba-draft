@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 from .historical import HistoricalPanel,name_key
 from .path_model import ResidualPool,slot_weights,regularize_paths,summarize,evidence_weight,fit_reliability
+from backfill.league_player_values import agreements_at
 
 REPORTING_CAP=164961000.
 POLICY='young-career-paths-v1'
@@ -150,7 +151,6 @@ class PathCalibrator:
         # draft prior intact; update established young players as minutes accrue.
         observed=self.observations.get((dt,pid),0.)if stage>=1 else 0.
         weight=0. if stage==0 else evidence_weight(minutes+observed,fitted['scale'])
-        from league_player_values import agreements_at
         cap_by_year={int(r['season']):float(r['salary_cap_scenario'])for r in annual}
         def cap(year,_):
             if year in cap_by_year:return cap_by_year[year]

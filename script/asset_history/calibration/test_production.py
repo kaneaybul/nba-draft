@@ -59,7 +59,7 @@ class ProductionQuotes(unittest.TestCase):
     def test_release_uses_guarantee_but_good_scenarios_pay_full_salary(self):
         c,p,a=fixture();a[0]['app_effective_contract']='10'
         cells=[dict(year=2025,amount=10,waiver_option_verified=True,waiver_guaranteed_amount_asof=2.)]
-        with patch('league_player_values.agreements_at',return_value=(cells,True,None)),patch('calibration.production.evidence_weight',return_value=1.):
+        with patch('calibration.production.agreements_at',return_value=(cells,True,None)),patch('calibration.production.evidence_weight',return_value=1.):
             result=c.quote(p,a)
         self.assertAlmostEqual(result['annual_mean_cost'][0],6.)
         self.assertAlmostEqual(result['annual_mean_production'][0],10.)
