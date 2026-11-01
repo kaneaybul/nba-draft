@@ -9,7 +9,7 @@ from calibration.path_model import ResidualPool
 
 def fixture():
     c=PathCalibrator.__new__(PathCalibrator)
-    c.data={'signature':'fixture'};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths')}
+    c.data={'signature':'fixture','training_through':2024};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths')}
     c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
     c.stats={(2024,7):1000.};c.ages={(2024,7):22.};c.experience={(2024,7):1.}
     c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={}
@@ -55,6 +55,14 @@ class ProductionQuotes(unittest.TestCase):
         result=c.quote(p,a)
         self.assertEqual(result['annual_values'][0]['production'],0.)
         self.assertAlmostEqual(result['annual_values'][0]['asset'],-8.)
+
+    def test_historical_prior_center_does_not_use_a_later_generic_pick_fit(self):
+        c,p,a=fixture();p['draft_year']='2024';c.data['training_through']=2026
+        for row in c.careers:row['stage']=0
+        c.pick_curve[1]=dict(peak_production_quote=1e9,cumulative_production_quote=1e9)
+        first=c.quote(p,a)['mean']
+        c.pick_curve[1]=dict(peak_production_quote=1e6,cumulative_production_quote=1e6)
+        self.assertEqual(c.quote(p,a)['mean'],first)
 
     def test_release_uses_guarantee_but_good_scenarios_pay_full_salary(self):
         c,p,a=fixture();a[0]['app_effective_contract']='10'

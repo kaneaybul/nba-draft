@@ -141,7 +141,7 @@ class PathCalibrator:
         nba*=available
         prior=np.array([r['production'][:h]for r in pool]);pw=slot_weights([r['slot']for r in pool],int(slot))
         target=None
-        if stage==0 and h==4:
+        if stage==0 and h==4 and cutoff==self.data['training_through']:
             curve=self.pick_curve[int(slot)]
             target=curve['peak_production_quote']+.8*curve['cumulative_production_quote']
         prior,prior_scale=regularize_paths(prior,[r['slot']for r in pool],int(slot),pw,e,target)
