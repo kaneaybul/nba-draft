@@ -76,6 +76,22 @@ def parse(rows,pool,after,asof):
             match=re.match(r'^(Re-signed|Signed|Waived|Released|Retired|Claimed|Converted|Exercised|Declined)\b\s*(.*)',clause,re.I)
             if not match:raise ValueError('Unreviewed ESPN transaction clause: '+clause)
             verb=match[1].lower();body=re.sub(r'^(?:[GFC](?:[/-][GFC])?\s+)+','',match[2])
+            if verb in ('exercised','declined'):
+                option=re.fullmatch(r'the (third|fourth)[- ]year (team|player) options? on (.+)',body,re.I)
+                if not option:raise ValueError('Unreviewed ESPN contract option syntax: '+clause)
+                tail=option[3];people=[(t,p)for t,p in tokens.items()if t in tail]
+                remainder=tail
+                for token,_ in people:remainder=remainder.replace(token,'')
+                remainder=re.sub(r'\b(?:[GFC](?:[/-][GFC])?s?|and)\b|[,\s&]','',remainder,flags=re.I)
+                if not people or remainder:raise ValueError('Unresolved ESPN contract option identities: '+clause)
+                rendered=clause
+                for token,person in tokens.items():rendered=rendered.replace(token,person['player_name'])
+                contract=event(day,rendered+'.',people[0][1],team,'add')
+                contract.update(parsed_status='administrative',parsed_actions=[],
+                    players=[{'name':p['player_name'],'nba_id':int(p['nba_id']),'realgm_url':None}for _,p in people],
+                    contract_option=dict(decision=verb,kind=option[2].lower()+'_option',ordinal=3 if option[1].lower()=='third'else 4))
+                out.append(contract)
+                continue
             candidates=[(token,p)for token,p in tokens.items()if token in body]
             if not candidates:
                 body_key=key(body)
@@ -164,3 +180,4 @@ def validate_captures(runtime,contracts,asof):
         rejected={r['event_id']for r in ignored}
         path.write_text(json.dumps([e for e in events if e['event_id']not in rejected],indent=2))
     return ignored
+

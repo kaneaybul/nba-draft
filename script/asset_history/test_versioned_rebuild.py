@@ -2,6 +2,7 @@ import copy,json,tempfile,unittest
 from pathlib import Path
 from publish import METHOD,TEAMS,publish
 from versioned_rebuild import reconstruct
+from model_version import DATA_VERSION
 
 def player(team,day,value=200):
     return {'team':team,'date':day,'source_cutoff':day,'method':METHOD,'reporting_cap':164961000,
@@ -31,7 +32,7 @@ class Reconstruction(unittest.TestCase):
         with tempfile.TemporaryDirectory()as folder:
             manifest=publish(rows,Path(folder))
             self.assertTrue(all(t['count']==3 for t in manifest['teams']))
-            self.assertTrue(all('/v3/'in t['path']for t in manifest['teams']))
+            self.assertTrue(all('/'+DATA_VERSION+'/'in t['path']for t in manifest['teams']))
             saved=json.loads((Path(folder)/'teams/UTA.json').read_text())
             self.assertEqual([s['date']for s in saved['snapshots']],['2026-09-30','2026-10-31','2026-11-01'])
             self.assertEqual([s['closed']for s in saved['snapshots']],[True,True,False])
@@ -43,3 +44,4 @@ class Reconstruction(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'common legacy'):reconstruct(players,picks,legacy,[],'2026-11-01',sources)
 
 if __name__=='__main__':unittest.main()
+

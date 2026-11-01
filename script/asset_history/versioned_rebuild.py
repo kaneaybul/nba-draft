@@ -10,7 +10,7 @@ def legacy_snapshots(repo):
         path=data_root(repo,LEGACY_VERSION)/'teams'/f'{team}.json'
         if not path.exists():raise ValueError('Missing legacy inventory for '+team)
         content=json.loads(path.read_text())
-        if content.get('method')!='peak4-payroll-0.8-v2':raise ValueError('Unexpected legacy valuation method')
+        if content.get('method')!='peak4-payroll-0.8-'+LEGACY_VERSION:raise ValueError('Unexpected legacy valuation method')
         result[team]={s['date']:s for s in content['snapshots']}
     return result
 
@@ -32,8 +32,10 @@ def reconstruct(players,current_picks,legacy,events,asof,current_sources):
             sources=first.get('source_dates');vintage='reconstructed'
         batch=assemble(rows,{day:picks},events,vintage,sources,previous)
         for snapshot in batch:
-            snapshot['valuation_revision']={'method':METHOD,'prior_method':'peak4-payroll-0.8-v2',
-                'nba_forecast_weight':'completed NBA seasons / 3, bounded from zero to one'}
+            snapshot['valuation_revision']={'method':METHOD,'prior_method':'peak4-payroll-0.8-'+LEGACY_VERSION,
+                'nba_forecast_weight':'Young players: completed and current observed NBA minutes; first-season draft prior retained',
+                'path_valuation':'Expected payoff of complete linked career paths; veteran and generic pick policies retained'}
             previous[snapshot['team']]=snapshot
         out.extend(batch)
     return out
+

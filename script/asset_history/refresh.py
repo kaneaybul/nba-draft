@@ -8,6 +8,7 @@ from assemble import assemble
 from materialize import materialize,compact
 from model_version import data_root
 from versioned_rebuild import legacy_snapshots,reconstruct
+from source_signature import source_signature
 
 def source_dates(repo,asof):
     ratings=json.loads((repo/'raw/live/ratings.json').read_text());skill=json.loads((repo/'raw/live/skill_stats.json').read_text())
@@ -21,6 +22,13 @@ def main(args):
     pool=json.loads((repo/'raw/live/player_pool.json').read_text());asof=pool['generated_at'][:10]
     if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
         raise ValueError('The source refresh is not from today; retaining the last validated history')
+    status=out/'refresh_status.json'
+    if not args.reseed and not new_version and status.exists():
+        saved=json.loads(status.read_text())
+        if saved.get('status')=='success'and saved.get('method')==METHOD and saved.get('observation_date')==asof and saved.get('source_signature')==source_signature(repo):
+            manifest=json.loads((out/'manifest.json').read_text())
+            if len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
+                return {**saved,'reused_identical_published_inputs':True}
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
     if args.reseed or new_version:command.append('--reseed')
@@ -60,7 +68,7 @@ def main(args):
     shutil.copytree(staged,replacement)
     if state.exists():shutil.rmtree(state)
     replacement.rename(state)
-    audit={'status':'success','method':METHOD,'observation_date':asof,'recorded_at':datetime.now(timezone.utc).isoformat(),'teams':len({s['team']for s in candidates}),'observations':len(candidates),'version_reconstruction':new_version,'source_dates':source_dates(repo,asof)}
+    audit={'status':'success','method':METHOD,'observation_date':asof,'recorded_at':datetime.now(timezone.utc).isoformat(),'teams':len({s['team']for s in candidates}),'observations':len(candidates),'version_reconstruction':new_version,'source_dates':source_dates(repo,asof),'source_signature':source_signature(repo)}
     atomic(out/'refresh_status.json',audit)
     return audit
 
@@ -71,3 +79,4 @@ if __name__=='__main__':
         out=data_root(a.repo.resolve())
         atomic(out/'refresh_status.json',{'status':'retained_last_good','recorded_at':datetime.now(timezone.utc).isoformat(),'reason':str(exc)[:600]})
         raise
+

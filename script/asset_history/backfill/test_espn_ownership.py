@@ -22,6 +22,15 @@ class EspnOwnership(unittest.TestCase):
   rows=[{'date':'2026-10-29','description':'Converted C Lawson Lovering from a two-way contract to a standard contract.','team':{'abbreviation':'LAL'}}]
   result=parse(rows,self.pool(),'2026-10-26','2026-10-30')
   self.assertFalse(result[0]['parsed_actions'][0]['two_way'])
+ def test_multiple_team_options_are_contract_events_without_roster_changes(self):
+  rows=[{'date':'2026-10-29','description':'Exercised the third-year team options on Fs AK Okereke and Lawson Lovering.','team':{'abbreviation':'LAL'}}]
+  result=parse(rows,self.pool(),'2026-10-26','2026-10-30')
+  self.assertEqual(len(result),1);self.assertEqual(result[0]['parsed_actions'],[])
+  self.assertEqual({p['nba_id']for p in result[0]['players']},{1,2})
+  self.assertEqual(result[0]['contract_option'],dict(decision='exercised',kind='team_option',ordinal=3))
+ def test_contract_option_with_an_unknown_additional_person_is_rejected(self):
+  rows=[{'date':'2026-10-29','description':'Exercised the third-year team options on Fs AK Okereke and Unknown Player.','team':{'abbreviation':'LAL'}}]
+  with self.assertRaisesRegex(ValueError,'identities'):parse(rows,self.pool(),'2026-10-26','2026-10-30')
  def test_unidentified_and_multiple_players_stop_publication(self):
   for text in ['Signed C Unknown Player.','Waived F AK Okereke and C Lawson Lovering.','Waived F AK Okereke and Unknown Player.']:
    with self.assertRaisesRegex(ValueError,'identities'):
@@ -68,3 +77,4 @@ class EspnOwnership(unittest.TestCase):
       with self.assertRaisesRegex(ValueError,'Stale or future'):collect('2026-10-30')
 
 if __name__=='__main__':unittest.main()
+
