@@ -134,7 +134,10 @@ class PathCalibrator:
         final_a=np.array([float(r['app_annual_stock_reporting_rate'])for r in annual])
         final_c=(1.8*final_p-final_a)/.8
         total=float(player['healthy_current_total'])
-        games=float(player['healthy_forecast_annual_games']);mpg=float(player['healthy_forecast_conditional_MPG'])
+        games=float(player['healthy_forecast_annual_games']);mpg=number(player.get('healthy_forecast_conditional_MPG'))
+        if mpg is None:
+            if games!=0:raise ValueError('Positive projected games require conditional MPG')
+            mpg=0.
         # Age is knowable at the cutoff; full annual state rows supply the
         # current impact/role and reference-year history supplies reliability.
         age=self.ages.get((cutoff,pid),22.)

@@ -83,6 +83,13 @@ class ProductionQuotes(unittest.TestCase):
         self.assertEqual(result['annual_values'][-1]['production'],10.)
         self.assertEqual(result['annual_values'][-1]['asset'],14.)
 
+    def test_zero_game_role_can_have_undefined_conditional_mpg(self):
+        c,p,a=fixture();p['healthy_forecast_annual_games']='0';p['healthy_forecast_conditional_MPG']=''
+        a[0]['annual_production']='0'
+        self.assertEqual(c.quote(p,a)['status'],'priced')
+        p['healthy_forecast_annual_games']='70'
+        with self.assertRaisesRegex(ValueError,'require conditional MPG'):c.quote(p,a)
+
     def test_aging_out_has_no_discrete_uncertainty_premium_drop(self):
         c,p,a=fixture();c.data['training_through']=2026
         for row in a:row['league_reference_year']='2026'
