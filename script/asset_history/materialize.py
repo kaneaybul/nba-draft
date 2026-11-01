@@ -1,9 +1,10 @@
 """Store bulky JSON compactly in git; serve ordinary JSON to the browser."""
 import argparse,gzip
 from pathlib import Path
+from model_version import data_root
 
 def sources(repo):
-    return [*(repo/'frontend/public/data/asset_history/v2/teams').glob('*.json.gz'),repo/'processed/asset_history/contracts/contract_agreements.json.gz']
+    return [*(repo/'frontend/public/data/asset_history').glob('v*/teams/*.json.gz'),repo/'processed/asset_history/contracts/contract_agreements.json.gz']
 
 def materialize(repo):
     count=0
@@ -15,7 +16,7 @@ def materialize(repo):
     return count
 
 def compact(repo):
-    paths=[*(repo/'frontend/public/data/asset_history/v2/teams').glob('*.json'),repo/'processed/asset_history/contracts/contract_agreements.json']
+    paths=[*(data_root(repo)/'teams').glob('*.json'),repo/'processed/asset_history/contracts/contract_agreements.json']
     for target in paths:
         if target.exists():target.with_suffix(target.suffix+'.gz').write_bytes(gzip.compress(target.read_bytes(),compresslevel=6,mtime=0))
 

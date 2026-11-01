@@ -4,6 +4,14 @@ from run_player_refresh import stage_state
 from ownership_runtime import restore_events,save_events
 
 class DailyState(unittest.TestCase):
+ def test_method_reseed_keeps_dated_sources_but_resets_model_states(self):
+  with tempfile.TemporaryDirectory()as directory:
+   root=Path(directory);saved=root/'saved';saved.mkdir()
+   (saved/'BOS.json').write_text(json.dumps({'as_of':'2026-11-01','posterior':2}))
+   for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):(saved/name).write_bytes(b'source-evidence')
+   staged=root/'staged';self.assertTrue(stage_state(saved,staged,'2026-11-01',reseed=True))
+   self.assertFalse((staged/'BOS.json').exists())
+   for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):self.assertEqual((staged/name).read_bytes(),b'source-evidence')
  def test_verified_signing_keeps_its_first_capture_date_on_next_refresh(self):
   with tempfile.TemporaryDirectory()as directory:
    root=Path(directory);runtime=root/'runtime';ledger=runtime/'monthly_reconstruction/league_ownership';ledger.mkdir(parents=True)

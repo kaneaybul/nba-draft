@@ -8,6 +8,8 @@ from __future__ import annotations
 import argparse, csv, hashlib, importlib, json, sys
 from datetime import date,timedelta
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from model_version import METHOD
 
 TEAMS='ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split()
 
@@ -346,7 +348,7 @@ def run(args):
                  injury_review_known_gaps=injury_reviews.get((args.team,dt),{}).get('known_gaps',[]),
                  priced_players=int(((rows.cutoff_date==dt)&rows.all_four_year_app_quote_priced).sum()))
         c['publishable_player_inventory']=all(c[k]for k in ('contracts_complete','skill_complete','injury_review_complete'))
-    status={'team':args.team,'method':'peak4-payroll-0.8-v2'if getattr(args,'uniform_contracts',False)else'peak4-payroll-0.8-v1','canonical_engine_sha256':hashlib.sha256((canonical/'monthly_reconstruction/projections/integrate_monthly.py').read_bytes()).hexdigest(),
+    status={'team':args.team,'method':METHOD if getattr(args,'uniform_contracts',False)else'peak4-payroll-0.8-v1','canonical_engine_sha256':hashlib.sha256((canonical/'monthly_reconstruction/projections/integrate_monthly.py').read_bytes()).hexdigest(),
             'scope':'Player inventory only; joint pick ownership/EV must be joined separately',
             'coverage':coverage,'canonical_files_modified':False}
     status['ownership_expiry_audit']=src.ownership_expiry_audit

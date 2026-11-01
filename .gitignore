@@ -20,3 +20,4 @@ frontend/dist/
 frontend/public/data/asset_history/v2/teams/*.json
 processed/asset_history/contracts/contract_agreements.json
 processed/asset_history/canonical_runtime_seed.zip
+frontend/public/data/asset_history/v3/teams/*.json

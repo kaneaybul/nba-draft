@@ -7,16 +7,23 @@ joint outcomes per date; all team totals conserve the league portfolio.
 
 ## Valuation
 
-`peak4-payroll-0.8-v2` preserves the agreed mathematics: annual production plus
+`peak4-payroll-0.8-v3` preserves the agreed mathematics: annual production plus
 0.8 times production less salary, normalized to a fixed$164,961,000 reporting cap.
 Production uses twice the best two season-equivalents; contract adjustments span
 exactly four rolling season-equivalents. Completed games determine the fractional
 current/final seasons. Tonight’s unplayed games remain in the forward window.
-Drafted players use the trained pick prior and evidence weights; an unobserved
-new draft conversion reconciles to the pick’s expected value.
+Drafted players use the trained pick prior, with NBA-forecast weight equal to
+completed NBA seasons divided by three, bounded from zero to one. The weight is
+zero before a completed NBA season, one-third after one, two-thirds after two,
+and fully NBA-based after three. The blend applies inside the original four-year
+draft window. An unobserved new draft conversion reconciles to the pick's expected
+value. Injury and signed salary adjustments remain in both blend components.
 
-Version 2 reconstructs every team using the same dated contract/ownership sources.
-The original Utah v1 files are preserved. Historical reconstructions and future
+Version 3 reconstructs every team's historical player values under this weighting,
+reusing the validated dated draft-right portfolios. The v1 and v2 inventories are
+preserved. The first v3 refresh restores saved source panels, observed game clocks,
+transactions and injury evidence before rebuilding model states. Later daily
+updates continue normally. Historical reconstructions and future
 observations recorded at publication have separate vintage labels. Full inventory
 includes automatic own-pick horizon additions and hypothetical unsigned service;
 it excludes cash, cap room, trade exceptions and dormant overseas service.

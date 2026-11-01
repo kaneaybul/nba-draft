@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from datetime import date
 from unittest.mock import patch
-from publish import METHOD,merge,publish,validate
+from publish import METHOD,OUT,merge,publish,validate
 from quote_window import quote_window
 
 @contextmanager
@@ -17,7 +17,7 @@ def sample(d='2026-09-30'):
  return {'team':'UTA','date':d,'source_cutoff':d,'method':METHOD,'reporting_cap':164961000,'vintage':'published','finalized_through':d,'source_dates':dict.fromkeys(('ownership','contracts','epm','darko','skill'),d),'coverage':dict.fromkeys(('ownership','contracts','skill','pick_rights','injury_review'),True),'assets':[{'id':'1','kind':'player','name':'Test','value':100,'exposure':4,'source':'test'}],'total':100,'moves':[]}
 class Checks(unittest.TestCase):
  def test_checked_in_inventory(self):
-  root=Path(__file__).resolve().parents[2]/'frontend/public/data/asset_history/v2'
+  root=OUT
   if not root.exists():self.skipTest('No checked-in inventories')
   for path in (root/'teams').glob('*.json'):
    for row in json.loads(path.read_text())['snapshots']:validate(row)

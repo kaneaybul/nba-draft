@@ -6,11 +6,11 @@ must have dated ownership, contract terms, SKILL and joint pick EV coverage.
 import argparse, calendar, copy, hashlib, json, math, os
 from datetime import date, datetime, timezone
 from pathlib import Path
+from model_version import METHOD,DATA_VERSION,data_root
 
 ROOT=Path(__file__).resolve().parents[2]
-OUT=ROOT/'frontend/public/data/asset_history/v2'
+OUT=data_root(ROOT)
 TEAMS='ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split()
-METHOD='peak4-payroll-0.8-v2'
 REQUIRED=('ownership','contracts','skill','pick_rights','injury_review')
 
 def digest(x):return hashlib.sha256(json.dumps(x,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
@@ -85,7 +85,7 @@ def publish(candidates,out=OUT,require_league=False):
     for team in TEAMS:
         f=out/'teams'/f'{team}.json';x=json.loads(f.read_text()) if f.exists() else None
         snapshots=x['snapshots'] if x else []
-        manifest['teams'].append({'team':team,'status':'available' if snapshots else 'pending_backfill','count':len(snapshots),'latest':snapshots[-1]['date'] if snapshots else None,'path':f'/data/asset_history/v2/teams/{team}.json' if snapshots else None,'points':[{'date':s['date'],'total':s['total'],'players':sum(a['value'] for a in s['assets'] if a['kind']=='player'),'picks':sum(a['value'] for a in s['assets'] if a['kind']=='pick'),'reporting_cap':s['reporting_cap'],'vintage':s['vintage']} for s in snapshots]})
+        manifest['teams'].append({'team':team,'status':'available' if snapshots else 'pending_backfill','count':len(snapshots),'latest':snapshots[-1]['date'] if snapshots else None,'path':f'/data/asset_history/{DATA_VERSION}/teams/{team}.json' if snapshots else None,'points':[{'date':s['date'],'total':s['total'],'players':sum(a['value'] for a in s['assets'] if a['kind']=='player'),'picks':sum(a['value'] for a in s['assets'] if a['kind']=='pick'),'reporting_cap':s['reporting_cap'],'vintage':s['vintage']} for s in snapshots]})
     atomic(out/'manifest.json',manifest)
     return manifest
 

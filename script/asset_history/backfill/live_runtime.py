@@ -9,6 +9,7 @@ import inspect,json,hashlib
 from datetime import date
 from pathlib import Path
 import numpy as np
+from draft_prior import nba_forecast_weight,rewrite_rule
 
 def annual_waiver_choice(asset_value,production,cell):
     """Verified release option limits liability to the as-of cash guarantee."""
@@ -33,7 +34,7 @@ def encode(x):
 def fingerprint(canonical):
     p=canonical/'monthly_reconstruction/projections'
     files=[p/n for n in ('valuation_engine.py','role_smoothing.py','adaptive_calibration.py','integrate_monthly.py','quote_window.py','expected_contracts.py')]
-    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),p/'app_sources/career_projection_selected_terms.csv']
+    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv']
     return {f.name:hashlib.sha256(f.read_bytes()).hexdigest()for f in files}
 
 def load_state(path,canonical):
@@ -70,27 +71,34 @@ def save_state(path,canonical,team,cutoff,roles,calibration):
 
 def install_clocks(model,role_module,src,canonical,team):
     original_run=model.run;original_prepare=role_module.RoleSmoother.prepare
+    text=rewrite_rule(inspect.getsource(original_run))
+    model.__dict__['_draft_nba_weight']=nba_forecast_weight
     datafile=canonical/'monthly_reconstruction/daily_input_audit.json'
-    if not datafile.exists():return lambda:None
-    data=json.loads(datafile.read_text());knowledge=data['date'];year=int(knowledge[:4])+(int(knowledge[5:7])>=7)
-    dates=[date.fromisoformat(x)for x in data['completed_team_dates'][team]]
+    if not datafile.exists():
+        exec(compile(text,'<asset-history-draft-prior>','exec'),model.__dict__)
+        def restore_run():model.run=original_run
+        return restore_run
+    data=json.loads(datafile.read_text());history_path=datafile.with_name('daily_input_history.json')
+    panels=json.loads(history_path.read_text())if history_path.exists()else[]
+    panels={r['date']:r for r in panels};panels[data['date']]=data
+    clocks={day:[date.fromisoformat(x)for x in panel['completed_team_dates'][team]]for day,panel in panels.items()}
+    def captured(cutoff,season):return cutoff in clocks and season==int(cutoff[:4])+(int(cutoff[5:7])>=7)
     def completed(cutoff,season):
-        if cutoff==knowledge and season==year:return len(dates)
+        if captured(cutoff,season):return len(clocks[cutoff])
         return sum(d<=date.fromisoformat(cutoff)for d in src.schedule[season])
     def future(cutoff,season):
-        if cutoff==knowledge and season==year:
-            used=list(dates);out=[]
+        if captured(cutoff,season):
+            used=list(clocks[cutoff]);out=[]
             for d in src.schedule[season]:
                 if d in used:used.remove(d)
                 else:out.append(d)
             return out
         return [d for d in src.schedule[season]if d>date.fromisoformat(cutoff)]
     def role_schedule(cutoff,season):
-        if cutoff==knowledge and season==year:
-            return dates+[d for d in src.schedule[season]if d>date.fromisoformat(cutoff)]
+        if captured(cutoff,season):
+            return clocks[cutoff]+[d for d in src.schedule[season]if d>date.fromisoformat(cutoff)]
         return src.schedule[season]
     src.completed_game_count=completed;src.forward_game_dates=future;src.role_schedule_at=role_schedule
-    text=inspect.getsource(original_run)
     if getattr(src,'use_verified_waiver_options',False):
         needle='app_quote_adjustment=app_stock-app_quote_production if app_stock is not None and app_quote_production is not None else None'
         if needle not in text:raise ValueError('Canonical waiver-choice hook no longer matches reviewed source')

@@ -7,9 +7,10 @@ from __future__ import annotations
 import argparse,csv,gzip,hashlib,json,subprocess,sys,zipfile,shutil,math
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from model_version import METHOD
 
 TEAMS='ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split()
-METHOD='peak4-payroll-0.8-v2'
 
 def stage_state(previous,state,asof,reseed=False):
     """Keep a prior-day checkpoint so intraday retries replace one update."""
@@ -28,6 +29,13 @@ def stage_state(previous,state,asof,reseed=False):
     if not reseed:
         for file in source.iterdir():
             if file.is_file():shutil.copyfile(file,state/file.name)
+    else:
+        # A quote-method rebuild resets model states, while retaining the
+        # actual dated panels and transaction/injury evidence collected since
+        # the portable seed. They are source evidence, not old model state.
+        for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):
+            file=previous/name
+            if file.exists():shutil.copyfile(file,state/name)
     # Retry keeps the same before-update checkpoint; a new day stores current
     # persistent inputs as the next before-update checkpoint.
     if latest and not reseed:
@@ -48,11 +56,12 @@ def unpack(seed,runtime):
     for name,expected in manifest.items():
         if hashlib.sha256((runtime/name).read_bytes()).hexdigest()!=expected:raise ValueError('Runtime seed digest mismatch: '+name)
 
-def latest_inputs(runtime,state,save=False,asof=None):
+def latest_inputs(runtime,state,save=False,asof=None,results_path=None):
     """Persist one previous panel, not an unbounded daily raw-data archive."""
     path=state/'latest_inputs.json.gz';monthly=runtime/'monthly_reconstruction'
     tables={'epm':(monthly/'epm/epm_monthly.csv','cutoff_date'),
-      'darko':(monthly/'darko/end_of_month/darko_monthly.csv','cutoff')}
+      'darko':(monthly/'darko/end_of_month/darko_monthly.csv','cutoff'),
+      'standings':(monthly/'pick_forecasts/standings_monthly.csv','cutoff')}
     lists={'skill':(monthly/'skill/monthly_skill_observations.json','date'),
       'roster':(monthly/'league_ownership/monthly_league_rosters.json','cutoff_date')}
     if save:
@@ -62,12 +71,14 @@ def latest_inputs(runtime,state,save=False,asof=None):
         for name,(p,field)in lists.items():payload[name]=[r for r in json.loads(p.read_text())if r[field]==asof]
         payload['coverage']=[r for r in json.loads((monthly/'skill/coverage_summary.json').read_text())['rows']if r['date']==asof]
         payload['injury_availability']=json.loads((monthly/'injuries/current_availability.json').read_text())
+        payload['daily_input_audit']=json.loads((monthly/'daily_input_audit.json').read_text())
         with gzip.open(path,'wt')as f:json.dump(payload,f,separators=(',',':'),allow_nan=False)
         return
     if not path.exists():return
     with gzip.open(path,'rt')as f:payload=json.load(f)
     from extend_daily_inputs import writecsv
     for name,(p,field)in tables.items():
+        if name not in payload:continue
         with p.open()as f:rows=[r for r in csv.DictReader(f)if r[field]!=payload['date']]
         writecsv(p,rows+payload[name])
     for name,(p,field)in lists.items():
@@ -77,6 +88,9 @@ def latest_inputs(runtime,state,save=False,asof=None):
     if payload.get('injury_availability'):
         p=monthly/'injuries/daily_availability_history.json';history=json.loads(p.read_text())if p.exists()else[]
         history=[r for r in history if r['date']!=payload['date']]+[payload['injury_availability']];p.write_text(json.dumps(history,separators=(',',':')))
+    if results_path is not None:
+        from captured_clock import restore_panel_clock
+        restore_panel_clock(runtime,payload,results_path)
 
 def injury_history(runtime,state,base_file,output):
     """Keep resolved episodes long enough to prove a later observed return."""
@@ -138,7 +152,9 @@ def run(args):
     reseed=stage_state(previous_state,state,args.as_of,args.reseed)
     seed=repo/'processed/asset_history/canonical_runtime_seed.zip'
     if not args.prepared_runtime:unpack(seed,runtime)
-    if not reseed:latest_inputs(runtime,state)
+    results_path=repo/'raw/live/results.json'
+    if reseed:latest_inputs(runtime,previous_state/'prior_day',results_path=results_path)
+    latest_inputs(runtime,state,results_path=results_path)
     if reseed:
         for team in TEAMS:(state/f'{team}.json').unlink(missing_ok=True)
     from ownership_runtime import refresh_events,replay,restore_events,save_events
