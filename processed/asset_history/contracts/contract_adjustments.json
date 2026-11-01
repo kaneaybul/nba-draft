@@ -2046,7 +2046,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Jae'Sean Tate",
+    "player_name": "Jae'sean Tate",
     "nba_id": 1630256,
     "known_from": "2022-06-29",
     "remove_years": [
@@ -3630,7 +3630,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Herbert Jones",
+    "player_name": "Herb Jones",
     "nba_id": 1630529,
     "known_from": "2023-06-29",
     "remove_years": [
@@ -4477,7 +4477,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Jae'Sean Tate",
+    "player_name": "Jae'sean Tate",
     "nba_id": 1630256,
     "known_from": "2024-06-29",
     "remove_years": [],
@@ -7359,6 +7359,17 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
+    "player_name": "Kon Knueppel",
+    "nba_id": 1642851,
+    "known_from": "2026-11-01",
+    "remove_years": [],
+    "exercise_years": [
+      2028
+    ],
+    "source": "https://www.salaryswish.com/players/kon-knueppel",
+    "quality": "dated_option_resolution_from_contract_history"
+  },
+  {
     "player_name": "Jase Richardson",
     "nba_id": 1642859,
     "known_from": "2026-10-21",
@@ -7367,6 +7378,17 @@
       2028
     ],
     "source": "https://www.salaryswish.com/players/jase-richardson",
+    "quality": "dated_option_resolution_from_contract_history"
+  },
+  {
+    "player_name": "Liam McNeeley",
+    "nba_id": 1642862,
+    "known_from": "2026-11-01",
+    "remove_years": [],
+    "exercise_years": [
+      2028
+    ],
+    "source": "https://www.salaryswish.com/players/liam-mcneeley",
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
