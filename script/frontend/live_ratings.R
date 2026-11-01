@@ -57,6 +57,9 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   observed <- match(canonical,evidence_ids)
   rows$live_evidence_minutes <- 0; rows$live_current_weight <- 0; rows$live_prior_minutes <- 0
   rows$live_skill_components_updated <- 0
+  rows$live_switch_evidence_minutes <- 0; rows$live_switch_current_weight <- 0
+  rows$live_switch_coverage_games <- 0; rows$live_switch_stats_games <- 0
+  rows$live_switch_status <- 'unavailable'; rows$live_switch_observed_at <- NA_character_
   rows$skill_model_off <- prior$skill_model_off; rows$skill_model_def <- prior$skill_model_def
   for(k in names(evidence$calibration)) rows[[k]] <- prior[[k]]
   for(i in seq_len(nrow(rows))) {
@@ -70,7 +73,20 @@ apply_live_expected_ratings <- function(rows, base_dir) {
     rows$live_current_weight[i] <- w
     rows$live_prior_minutes[i] <- weight$prior
     if(is.null(ev)||w==0) next
-    deltas <- c(); observed_raw <- c()
+    sample <- ev$switch_sample
+    switch_minutes <- ev$skill_evidence_minutes$SWITCH
+    if(is.null(switch_minutes)) switch_minutes <- minutes
+    if(!is.finite(switch_minutes)) switch_minutes <- 0
+    switch_minutes <- max(0,min(minutes,switch_minutes))
+    has_switch <- !is.null(ev$raw_skills$SWITCH) && is.finite(ev$raw_skills$SWITCH)
+    switch_weight <- if(has_switch) live_evidence_weight(switch_minutes,h,feed$season)$weight else 0
+    rows$live_switch_evidence_minutes[i] <- if(has_switch) switch_minutes else 0
+    rows$live_switch_current_weight[i] <- switch_weight
+    rows$live_switch_stats_games[i] <- if(is.null(ev$games)) 0 else ev$games
+    rows$live_switch_coverage_games[i] <- if(!has_switch) 0 else if(is.null(sample$covered_games)) rows$live_switch_stats_games[i] else sample$covered_games
+    rows$live_switch_status[i] <- if(!has_switch) 'unavailable' else if(is.null(sample$status)) 'current' else sample$status
+    if(!is.null(sample$observed_at)) rows$live_switch_observed_at[i] <- sample$observed_at
+    deltas <- c(); weighted_deltas <- c(); observed_raw <- c()
     for(k in names(evidence$calibration)) {
       value <- ev$raw_skills[[k]]; cal <- evidence$calibration[[k]]
       if(is.null(value)||!is.finite(value)||!is.finite(prior[[k]][i])) next
@@ -79,7 +95,9 @@ apply_live_expected_ratings <- function(rows, base_dir) {
       z <- max(-5,min(5,(value-cal$mean)/cal$sd))
       observed_raw[k] <- cal$mean+z*cal$sd
       deltas[k] <- (z-prior[[k]][i])*cal$sd
-      rows[[k]][i] <- round((1-w)*prior[[k]][i]+w*z,3)
+      component_weight <- if(k=='SWITCH') switch_weight else w
+      weighted_deltas[k] <- component_weight*deltas[k]
+      rows[[k]][i] <- round((1-component_weight)*prior[[k]][i]+component_weight*z,3)
     }
     offensive <- c('FTD','SHOOT','PASS','RIM','OREB')
     defensive <- c('DPM','DREB','RIMPRO','SWITCH')
@@ -87,9 +105,9 @@ apply_live_expected_ratings <- function(rows, base_dir) {
       current_off <- evidence$intercepts$off+sum(observed_raw[offensive])
       rows$skill_model_off[i] <- (1-w)*prior$skill_model_off[i]+w*current_off
     } else rows$skill_model_off[i] <- prior$skill_model_off[i]+w*sum(deltas[intersect(offensive,names(deltas))])
-    # Update SWITCH only when both current assignment and perimeter inputs exist.
-    # Missing components retain their preseason contribution.
-    rows$skill_model_def[i] <- prior$skill_model_def[i]+w*sum(deltas[intersect(defensive,names(deltas))])
+    # SWITCH uses its own covered sample, including a retained valid sample.
+    # New box-score minutes must not increase the weight of older matchups.
+    rows$skill_model_def[i] <- prior$skill_model_def[i]+sum(weighted_deltas[intersect(defensive,names(weighted_deltas))])
     rows$live_skill_components_updated[i] <- length(deltas)
   }
   # Expected EPM and DARKO already handle history and small samples internally.
@@ -121,9 +139,10 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   for(pair in list(c('FINAL_OFF','offense'),c('FINAL_DEF','defense'),c('FINAL_TOTAL','total'))) if(pair[1] %in% names(rows)) rows[[pair[1]]] <- rows[[pair[2]]]
   rows$skill_source[good] <- 'live_expected_epm_darko'
   rows$availability_reason <- paste0('SKILL: ',rows$live_evidence_minutes,' actual minutes; ',round(100*rows$live_current_weight,1),'% current statistics / ',round(100*(1-rows$live_current_weight),1),'% preseason SKILL prior. Overall: 80% external forecast + 20% SKILL. Expected EPM ',feed$epm_as_of,'; DARKO through ',feed$darko_through,'. Available external forecasts apply immediately. Injuries affect minutes separately.')
+  rows$availability_reason <- paste0(rows$availability_reason,' SWITCH: ',rows$live_switch_coverage_games,' of ',rows$live_switch_stats_games,' games covered; ',round(100*rows$live_switch_current_weight,1),'% observed / ',round(100*(1-rows$live_switch_current_weight),1),'% preseason; ',rows$live_switch_status,'. Covered SWITCH minutes are estimated by game coverage.')
   rows$availability_reason[!good] <- paste0(rows$availability_reason[!good],' No complete current EPM/DARKO pair; external forecast prior retained.')
   audit <- list(schema_version=2,season=feed$season,generated_at=feed$generated_at,epm_type='expected',epm_as_of=feed$epm_as_of,darko_through=feed$darko_through,epm_url=feed$epm_url,darko_url=feed$darko_url,matched_players=sum(good),total_players=nrow(rows),unmatched_players=rows$player_name[!good],skill_stats_fetched_at=evidence$generated_at,skill_updated_players=sum(rows$live_skill_components_updated>0),max_current_weight=max(rows$live_current_weight),held_skill_components=evidence$held_components,switch_status=evidence$switch_status,
-    method='Overall impact is 80% latest expected EPM/DARKO blend plus 20% SKILL. Expected EPM and DARKO already incorporate historical evidence and uncertainty, so no additional current-minute shrinkage is applied to their forecasts. Gradual weighting applies only inside SKILL: up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one; rookies fully replace this SKILL prior at 1,500 minutes. Actual historical evidence remains in veteran SKILL weighting. SWITCH updates when current matchup and perimeter inputs pass validation; missing components retain priors. The 80/20 mix is a modeling choice, not a backtested optimal weighting. Injuries and actual game results apply immediately.')
+    method='Overall impact is 80% latest expected EPM/DARKO blend plus 20% SKILL. Expected EPM and DARKO already incorporate historical evidence and uncertainty, so no additional current-minute shrinkage is applied to their forecasts. Gradual weighting applies only inside SKILL: up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one; rookies fully replace this SKILL prior at 1,500 minutes. Actual historical evidence remains in veteran SKILL weighting. SWITCH uses its own matchup-covered evidence minutes, estimated by game coverage. A smaller valid matchup sample updates at a smaller weight; outages retain the last valid same-season sample without increasing its evidence weight. Missing components retain priors. The 80/20 mix is a modeling choice, not a backtested optimal weighting. Injuries and actual game results apply immediately.')
   audit$future_rating_method <- 'Future-year impact and SKILL paths retain their preseason aging shape, shifted by the current estimate minus preseason. Future values are recalculated from these updated ratings.'
   jsonlite::write_json(audit,file.path(base_dir,'frontend/public/data/live_status.json'),auto_unbox=TRUE,pretty=TRUE)
   message('Live ratings matched: ',sum(good),' / ',nrow(rows),'; SKILL updated: ',audit$skill_updated_players,'; max current weight: ',round(100*audit$max_current_weight,2),'%')

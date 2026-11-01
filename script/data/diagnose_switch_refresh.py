@@ -41,6 +41,7 @@ def main():
         by_id={p['nba_id']:p for p in stats}
         for p in feed['players']:
             if p['nba_id'] in by_id:p['perimeter_inputs']['Pos2']=by_id[p['nba_id']]['Pos2']
+        feed['switch_assignment_coverage']=audit.pop('player_coverage',{})
         feed['switch_assignments']=scores;feed['switch_status']=audit
         feed['switch_status']['diagnostic_offense_source']='Public NBA Per100Possessions; saved perimeter inputs and matched game counts'
         path.write_text(json.dumps(feed)+'\n')

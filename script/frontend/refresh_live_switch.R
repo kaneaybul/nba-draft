@@ -56,14 +56,32 @@ if(length(assignment)>0) {
     residual <- (x$points_saved_100-x$rim_points_saved_100)*perimeter/total-as.numeric(predict(fit,newdata=row))
     value <- beta[['switch']]*a+beta[['perimeter_alloc_ps_resid_role']]*residual
     if(!is.finite(value)) next
+    sample <- feed$switch_assignment_coverage[[as.character(p$nba_id)]]
+    if(is.null(sample)) sample <- list(status='current',covered_games=p$games,stats_games=p$games,
+      evidence_minutes=if(is.null(p$minutes)) 0 else p$minutes,observed_at=feed$generated_at,
+      evidence_basis='Complete current matchup sample.')
+    # A less complete response cannot replace a larger previously valid sample.
+    old_minutes <- p$skill_evidence_minutes$SWITCH
+    if(!is.null(p$raw_skills$SWITCH) && !is.null(old_minutes) &&
+       is.finite(old_minutes) && sample$evidence_minutes<old_minutes) next
     feed$players[[i]]$raw_skills$SWITCH <- value
+    feed$players[[i]]$skill_evidence_minutes <- list(SWITCH=sample$evidence_minutes)
+    feed$players[[i]]$switch_sample <- sample
     updated <- updated+1L
   }
-  feed$switch_status$reason <- paste(updated,'players have complete current assignment and perimeter inputs; other players retain their preseason SWITCH.')
-  feed$switch_status$status <- if(updated>0) 'available' else 'perimeter_unavailable'
 }
-feed$switch_status$updated_players <- updated
-feed$held_components <- if(updated==0) list('SWITCH') else list()
+available <- vapply(feed$players,function(p) !is.null(p$raw_skills$SWITCH) && is.finite(p$raw_skills$SWITCH),logical(1))
+state <- vapply(feed$players,function(p) if(is.null(p$switch_sample$status)) 'unavailable' else p$switch_sample$status,character(1))
+retained <- sum(available & state=='retained');partial <- sum(available & state=='partial');held <- sum(!available)
+feed$switch_status$refreshed_players <- updated
+feed$switch_status$updated_players <- sum(available)
+feed$switch_status$retained_players <- retained
+feed$switch_status$partial_players <- partial
+feed$switch_status$held_players <- held
+feed$switch_status$status <- if(!any(available)) 'unavailable' else if(retained+partial+held>0) 'partial' else 'available'
+feed$switch_status$reason <- paste(updated,'fresh SWITCH samples;',partial,'with partial game coverage;',retained,
+  'last valid samples retained;',held,'without observations. Sample-specific evidence weights apply; unavailable observations retain preseason.')
+feed$held_components <- if(held>0) list('SWITCH') else list()
 feed$note <- feed$switch_status$reason
 # Keep only evidence needed for reproducibility; the inputs contain no credentials.
 jsonlite::write_json(feed,path,auto_unbox=TRUE,null='null',digits=NA)

@@ -10,6 +10,8 @@ on:
       - script/frontend/player_pool.R
       - script/frontend/*positions.R
       - script/frontend/refresh_live_switch.R
+      - script/frontend/live_ratings.R
+      - script/frontend/test_live_ratings.R
       - .github/workflows/switch-position-checks.yml
   workflow_dispatch:
 
@@ -44,7 +46,9 @@ jobs:
           python3 -m unittest discover -s script/data -p 'test_matchup_snapshot.py'
           Rscript script/frontend/test_live_positions.R
           Rscript script/frontend/test_live_switch.R
+          Rscript script/frontend/test_live_ratings.R
       - name: Check daily positions without credentials or deployment
+        if: github.event_name == 'workflow_dispatch'
         run: |
           BREF_POSITION_YEARS=2027 BREF_POSITION_REFRESH=true Rscript script/data/pull_bref_position_estimates.R
           python3 -c "import json; from pathlib import Path; import sys; sys.path.insert(0,'script/data'); from live_positions import build_positions; f=json.load(open('raw/live/skill_stats.json')); rows=[dict(nba_id=p['nba_id'],player_name=p['player_name'],**p.get('perimeter_inputs',{})) for p in f['players']]; out=build_positions(rows,f['season'],Path('.')); Path('raw/live/positions.json').write_text(json.dumps(out)); print('POSITION SOURCES',out['sources']); print('BREF STATUS',out['bref_status']); print('PETERSON POSITION',next(p for p in out['players'] if p['player_name']=='Darryn Peterson'))"

@@ -1514,6 +1514,11 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
         {player.live_current_weight != null && <p className="availability-note" title={player.availability_reason ?? undefined}>
           SKILL evidence: {formatNumber(player.live_evidence_minutes ?? 0, 0)} actual minutes · {(100 * player.live_current_weight).toFixed(1)}% current statistics / {(100 * (1 - player.live_current_weight)).toFixed(1)}% preseason SKILL prior. Overall impact: 80% latest EPM/DARKO forecast + 20% SKILL; missing forecasts retain their prior. Injuries apply separately.
         </p>}
+        {player.live_switch_status && <p className="availability-note">
+          SWITCH: {player.live_switch_status === "unavailable"
+            ? "No valid matchup sample yet; preseason estimate retained."
+            : `${player.live_switch_coverage_games ?? 0} of ${player.live_switch_stats_games ?? 0} games covered${player.live_switch_status === "retained" ? "; last valid sample retained" : ""} · ${(100 * (player.live_switch_current_weight ?? 0)).toFixed(1)}% observed / ${(100 * (1 - (player.live_switch_current_weight ?? 0))).toFixed(1)}% preseason. Evidence minutes are prorated by matchup game coverage.`}
+        </p>}
         {player.availability_status === "DNQ" && (
           <p className="availability-note">
             {player.availability_reason || "DNQ"} / skills from {player.skill_source_year ?? "-"}

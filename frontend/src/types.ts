@@ -62,6 +62,12 @@ export type PlayerImpact = {
   live_current_weight?: number | null;
   live_prior_minutes?: number | null;
   live_skill_components_updated?: number | null;
+  live_switch_evidence_minutes?: number | null;
+  live_switch_current_weight?: number | null;
+  live_switch_coverage_games?: number | null;
+  live_switch_stats_games?: number | null;
+  live_switch_status?: "current" | "partial" | "retained" | "unavailable" | null;
+  live_switch_observed_at?: string | null;
   nba_id: number;
   player_name: string;
   year: number;

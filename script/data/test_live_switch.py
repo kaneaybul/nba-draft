@@ -1,4 +1,5 @@
 import unittest,json,tempfile
+from datetime import datetime,timezone,timedelta
 from pathlib import Path
 from unittest.mock import patch
 from live_switch import refresh_assignments,score_assignments
@@ -62,14 +63,42 @@ class SwitchTests(unittest.TestCase):
         scores=score_assignments(rows,players,positions)
         self.assertEqual(len(scores),110)
         self.assertAlmostEqual(sum(scores.values()),0,places=8)
-        # Repeated pulls are deterministic; duplicate pairs and missing coverage fail.
+        # Repeated pulls are deterministic; duplicate pairs still fail validation.
         self.assertEqual(scores,score_assignments(rows,players,positions))
         # Two games against different teams have GP=1 per opponent pair.
         teams=[dict(p,TeamId=p['nba_id']%2) for p in players]
         two_opponents=[dict(r,GP=1) for r in rows]
         self.assertEqual(len(score_assignments(two_opponents,teams,positions)),110)
         with self.assertRaises(ValueError):score_assignments(rows+[rows[0]],players,positions)
-        with self.assertRaises(ValueError):score_assignments([dict(r,GP=1) for r in rows],players,positions)
+        partial,coverage=score_assignments([dict(r,GP=1) for r in rows],players,positions,include_coverage=True)
+        self.assertEqual(len(partial),110)
+        self.assertEqual(coverage['1']['covered_games'],1)
+        self.assertEqual(coverage['1']['stats_games'],2)
+        self.assertEqual(coverage['1']['evidence_minutes'],20)
+        self.assertEqual(coverage['1']['status'],'partial')
+
+    def test_five_of_six_games_updates_at_reduced_evidence(self):
+        players=[dict(nba_id=i,GamesPlayed=6,Minutes=179,TeamId=1,d_Points_Per100=10+i/10,Pos2=['SG','PF','C'][i%3]) for i in range(1,111)]
+        rows=[dict(SEASON_ID='22026',DEF_PLAYER_ID=i,OFF_PLAYER_ID=j,PARTIAL_POSS=10+i%5,GP=5) for i in range(1,111) for j in (i,i%110+1)]
+        with patch('live_switch.nba_table',return_value=(rows,{'SeasonYear':'2026-27','SeasonType':'Regular Season'})):
+            scores,audit=refresh_assignments(players,2027)
+        self.assertEqual(len(scores),110)
+        self.assertEqual(audit['partial_players'],110)
+        sample=audit['player_coverage']['1']
+        self.assertEqual(sample['covered_games'],5)
+        self.assertAlmostEqual(sample['evidence_minutes'],179*5/6)
+        self.assertLess(sample['evidence_minutes'],179)
+
+    def test_delayed_runner_can_use_verified_same_season_sample(self):
+        players=[dict(nba_id=i,GamesPlayed=2,Minutes=40,TeamId=1,d_Points_Per100=10+i/10,Pos2=['SG','PF','C'][i%3]) for i in range(1,111)]
+        rows=[dict(SEASON_ID='22026',DEF_PLAYER_ID=i,OFF_PLAYER_ID=j,PARTIAL_POSS=10+i%5,GP=2) for i in range(1,111) for j in (i,i%110+1)]
+        data=make_snapshot(rows,dict(SeasonYear='2026-27',SeasonType='Regular Season'),2027,now=datetime.now(timezone.utc)-timedelta(hours=8))
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'snapshot.json';path.write_text(json.dumps(data))
+            with patch.dict('os.environ',{'NBA_MATCHUP_SNAPSHOT':str(path)}),patch('live_switch.nba_table',side_effect=AssertionError('Runner network used')):
+                scores,audit=refresh_assignments(players,2027)
+        self.assertEqual(len(scores),110)
+        self.assertEqual(audit['transport'],'verified_external_snapshot')
 
 if __name__=='__main__':unittest.main()
 
