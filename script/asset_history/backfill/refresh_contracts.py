@@ -11,6 +11,19 @@ from pathlib import Path
 from contracts import fetch_one, option_adjustments
 from fetch_name_contract_gaps import PROFILE_SOURCE_SLUGS
 
+def option_verified(event,pid,agreements,cutoff):
+    rule=event['contract_option'];field='exercise_years'if rule['decision']=='exercised'else'remove_years'
+    for agreement in agreements:
+        if int(agreement['nba_id'])!=pid or agreement['known_from']>cutoff:continue
+        cells=agreement.get('salaries',[])
+        if not cells:continue
+        year=min(int(r['year'])for r in cells)+int(rule['ordinal'])-1
+        if not any(int(r['year'])==year and r.get('kind')==rule['kind']for r in cells):continue
+        for adjustment in option_adjustments([agreement]):
+            if year in adjustment[field]and adjustment['known_from']<=cutoff and abs((date.fromisoformat(adjustment['known_from'])-date.fromisoformat(event['date'])).days)<=1:
+                return True
+    return False
+
 
 def key(name):
     return re.sub('[^a-z0-9]', '', unicodedata.normalize('NFKD', name).encode('ascii','ignore').decode().lower())
@@ -109,8 +122,11 @@ def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, wo
             player=source_identity(row)
             if player and player['nba_id']in players:changed_ids.add(player['nba_id'])
     sourced={int(a['nba_id'])for a in agreements if a['known_from']<=cutoff}
+    option_events=[e for e in events if e.get('contract_option')and e['date']<=cutoff]
+    option_pending={int(p['nba_id'])for e in option_events for p in e['players']
+                    if int(p['nba_id'])in players and not option_verified(e,int(p['nba_id']),agreements,cutoff)}
     unique_changed={next(iter(byname[n]))for n in changed if n in byname and len(byname[n])==1}
-    mandatory={pid for pid in players if pid not in sourced}|unique_changed|changed_ids|set(map(int,state.get('pending_player_ids',[])))
+    mandatory={pid for pid in players if pid not in sourced}|unique_changed|changed_ids|option_pending|set(map(int,state.get('pending_player_ids',[])))
     mandatory&=set(players)
     optional=sorted(set(players)-mandatory,key=lambda pid:(last_checked.get(str(pid),''),pid))[:rotation_limit]
     selected=sorted(mandatory)+optional
@@ -143,13 +159,16 @@ def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, wo
     merged.extend(a for a in supplements if a['known_from']<=cutoff and int(a['nba_id'])in included_ids and(a['nba_id'],a['known_from'])not in existing)
     merged.sort(key=lambda a:(a['known_from'],a['nba_id']))
     failed=[int(r['nba_id'])for r in results if r['status']!='available']
-    pending=sorted(mandatory-set(successful))
+    unresolved_options={int(p['nba_id'])for e in option_events for p in e['players']
+                        if int(p['nba_id'])in players and not option_verified(e,int(p['nba_id']),merged,cutoff)}
+    pending=sorted((mandatory-set(successful))|unresolved_options)
     for pid in successful:last_checked[str(pid)]=cutoff
     audit=dict(cutoff=cutoff,generated_at=datetime.now(timezone.utc).isoformat(),
         mandatory_player_ids=sorted(mandatory),rotation_players=len(optional),
         available_players=len(successful),pending_player_ids=pending,
         optional_source_failures=sorted(set(failed)-mandatory),
-        failed_mandatory_player_ids=sorted(mandatory-set(successful)),
+        failed_mandatory_player_ids=pending,
+        unverified_option_player_ids=sorted(unresolved_options),
         all_original_agreements=len(merged),
         discovery=discovery,
         results=[{k:v for k,v in r.items()if k!='agreements'}for r in results],
