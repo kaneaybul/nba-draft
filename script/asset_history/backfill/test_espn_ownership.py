@@ -1,4 +1,5 @@
 import json,tempfile,unittest
+from datetime import datetime,timezone
 from pathlib import Path
 from unittest.mock import patch
 from espn_ownership import API,parse,capture_additions,validate_captures,collect,event
@@ -53,7 +54,17 @@ class EspnOwnership(unittest.TestCase):
    self.assertEqual(validate_captures(runtime,contracts,'2026-10-30'),[])
  def test_truncated_pagination_is_rejected(self):
   payload={'pageCount':1,'status':'success','season':{'year':2027},'timestamp':'2026-10-30T10:00:00Z','count':2,'transactions':[{}]}
-  with patch('espn_ownership.fetch_json',return_value=payload):
+  with patch('espn_ownership.fetch_json',return_value=payload),patch('espn_ownership.datetime',wraps=datetime)as clock:
+   clock.now.return_value=datetime(2026,10,30,12,tzinfo=timezone.utc)
    with self.assertRaisesRegex(ValueError,'Truncated'):collect('2026-10-30')
+ def test_capture_freshness_boundaries(self):
+  for stamp,accepted in [('2026-10-28T12:00:00Z',True),('2026-10-28T11:59:59Z',False),('2026-10-30T12:00:00Z',True),('2026-10-30T13:00:01Z',False)]:
+   with self.subTest(timestamp=stamp):
+    payload={'pageCount':1,'status':'success','season':{'year':2027},'timestamp':stamp,'count':0,'transactions':[]}
+    with patch('espn_ownership.fetch_json',return_value=payload),patch('espn_ownership.datetime',wraps=datetime)as clock:
+     clock.now.return_value=datetime(2026,10,30,12,tzinfo=timezone.utc)
+     if accepted:self.assertEqual(collect('2026-10-30'),([],stamp))
+     else:
+      with self.assertRaisesRegex(ValueError,'Stale or future'):collect('2026-10-30')
 
 if __name__=='__main__':unittest.main()

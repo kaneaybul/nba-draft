@@ -18,13 +18,13 @@ on:
     types:
       - completed
 
-concurrency:
-  group: pages-deploy-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   deploy:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    # Skipped jobs must not cancel a valid deployment after an upstream failure.
+    concurrency:
+      group: pages-deploy-${{ github.ref }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     permissions:
       contents: read
