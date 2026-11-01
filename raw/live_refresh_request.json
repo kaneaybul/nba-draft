@@ -1,6 +1,6 @@
 {
-  "requested_at": "2026-10-31T17:08:59.841Z",
-  "reason": "Restore the trained GP participation rate and apply current injury availability only to remaining games. Preserve actual appearances and remove the unvalidated attendance adjustment.",
+  "requested_at": "2026-11-01T19:33:26.202Z",
+  "reason": "Refresh coverage-weighted SWITCH samples, retain last valid same-season observations during tracking outages, and publish per-player matchup coverage and evidence weights.",
   "compare_minutes": false,
   "diagnose_switch": false
 }

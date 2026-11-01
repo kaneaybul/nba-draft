@@ -27,6 +27,16 @@ jsonlite::write_json(feed,path,auto_unbox=TRUE,null='null',digits=NA)
 source(file.path(original,'script/frontend/refresh_live_switch.R'),local=new.env())
 out <- jsonlite::fromJSON(path,simplifyVector=FALSE)
 stopifnot(out$switch_status$updated_players==0,is.null(out$players[[1]]$raw_skills$SWITCH),'SWITCH' %in% unlist(out$held_components))
+# During an outage retain the last valid observation and its original sample.
+feed$players[[1]]$raw_skills$SWITCH <- 1.4
+feed$players[[1]]$skill_evidence_minutes <- list(SWITCH=50)
+feed$players[[1]]$switch_sample <- list(status='retained',covered_games=2,stats_games=3,evidence_minutes=50)
+jsonlite::write_json(feed,path,auto_unbox=TRUE,null='null',digits=NA)
+source(file.path(original,'script/frontend/refresh_live_switch.R'),local=new.env())
+out <- jsonlite::fromJSON(path,simplifyVector=FALSE)
+stopifnot(out$switch_status$updated_players==1,out$switch_status$retained_players==1,
+ out$switch_status$held_players==2,out$switch_status$status=='partial',
+ out$players[[1]]$raw_skills$SWITCH==1.4,out$players[[1]]$skill_evidence_minutes$SWITCH==50)
 setwd(original);unlink(root,recursive=TRUE)
 cat('SWITCH perimeter calibration, missing-exposure and unavailable-source tests passed\n')
 

@@ -35,7 +35,7 @@ def zscores(values):
     mean=statistics.mean(values);sd=statistics.stdev(values)
     return [(v-mean)/sd for v in values]
 
-def score_assignments(matchups, players, positions):
+def score_assignments(matchups, players, positions, include_coverage=False):
     lookup={int(r['nba_id']):r for r in players}
     groups={};seen=set()
     for r in matchups:
@@ -54,16 +54,29 @@ def score_assignments(matchups, players, positions):
         team=lookup[offender].get('TeamId')
         if team is not None:
             team=str(team);g['games'][team]=max(g['games'].get(team,0),int(r['GP']))
-    # Require enough distinct defenders for the original season z-score.
-    # Partial game coverage retains the prior rather than using all season minutes.
-    groups={pid:g for pid,g in groups.items() if sum(g['games'].values())>=int(lookup[pid]['GamesPlayed']) and g['poss']>0}
-    if len(groups)<100: raise ValueError('Insufficient complete matchup coverage')
+    # Matchup tracking can trail box scores by a game. A valid smaller sample is
+    # still evidence; its own coverage controls its weight in live_ratings.R.
+    # Team/pair GP gives a conservative game count, not exact covered minutes.
+    groups={pid:g for pid,g in groups.items() if sum(g['games'].values())>0 and int(lookup[pid]['GamesPlayed'])>0 and g['poss']>0}
+    if len(groups)<100: raise ValueError('Insufficient matchup defender coverage')
     ids=list(groups);difficulty=[];versatility=[]
     for pid in ids:
         g=groups[pid];p=g['poss'];difficulty.append(g['pts']/p)
         versatility.append(-math.sqrt(2*(g['C']/p)**2+(g['F']/p)**2+(g['G']/p)**2))
     score=zscores([.5*a+.5*b for a,b in zip(zscores(difficulty),zscores(versatility))])
-    return {str(pid):v for pid,v in zip(ids,score)}
+    scores={str(pid):v for pid,v in zip(ids,score)}
+    coverage={}
+    for pid in ids:
+        p=lookup[pid];g=groups[pid];games=int(p['GamesPlayed'])
+        covered=min(games,sum(g['games'].values()));fraction=covered/games
+        minutes=float(p.get('Minutes') or 0)
+        if not math.isfinite(minutes) or minutes<0: raise ValueError('Invalid matchup evidence minutes')
+        coverage[str(pid)]=dict(covered_games=covered,stats_games=games,
+            coverage_fraction=fraction,matchup_possessions=g['poss'],
+            evidence_minutes=minutes*fraction,
+            evidence_basis='Actual season minutes prorated by covered matchup games; covered minutes are estimated.',
+            status='current' if covered==games else 'partial')
+    return (scores,coverage) if include_coverage else scores
 
 def refresh_assignments(players,season):
     label=f'{season-1}-{str(season)[-2:]}'
@@ -74,7 +87,9 @@ def refresh_assignments(players,season):
         rows = None
         if snapshot.exists():
             try:
-                rows,metadata = read_snapshot(snapshot,season)
+                # A delayed runner must not discard a valid same-season sample
+                # simply because the collector ran more than six hours earlier.
+                rows,metadata = read_snapshot(snapshot,season,max_age_hours=48)
                 params = metadata['parameters']
                 audit.update(transport='verified_external_snapshot',snapshot_generated_at=metadata['generated_at'],snapshot_sha256=metadata['sha256'])
             except Exception as error:
@@ -95,8 +110,11 @@ def refresh_assignments(players,season):
         if any(str(r.get('SEASON_ID'))!=expected for r in rows): raise ValueError('Matchup row season mismatch')
         # Reuse daily positions instead of making another NBA API request.
         positions={int(r['nba_id']):matchup_position(r.get('Pos2')) for r in players}
-        scores=score_assignments(rows,players,positions)
-        audit.update(status='assignments_available',reason='Assignment data available; perimeter inputs must also pass validation.')
+        scores,coverage=score_assignments(rows,players,positions,include_coverage=True)
+        for sample in coverage.values():
+            sample['observed_at']=audit.get('snapshot_generated_at',audit['checked_at'])
+        audit.update(status='assignments_available',reason='Assignment samples available; each sample uses its own coverage weight.',
+                     player_coverage=coverage,partial_players=sum(c['status']=='partial' for c in coverage.values()))
         return scores,audit
     except Exception as error:
         audit['error_type']=type(error).__name__

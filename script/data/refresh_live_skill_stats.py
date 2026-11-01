@@ -42,6 +42,31 @@ def read_historical_minutes(path, season):
             out.setdefault(str(int(float(row['nba_id']))),{})[str(year)]=max(0,minutes)
     return out
 
+def retain_previous_switch(feed, previous):
+    """Keep the last valid same-season observation if tracking is unavailable.
+
+    Reuse its original evidence, never today's larger minutes total. The R
+    scorer replaces it when it can form a valid new assignment/perimeter score.
+    """
+    if previous.get('season')!=feed['season']: return
+    old={int(p['nba_id']):p for p in previous.get('players',[])}
+    for p in feed['players']:
+        prior=old.get(p['nba_id'],{});value=number(prior.get('raw_skills',{}).get('SWITCH'))
+        if value is None: continue
+        minutes=number(prior.get('skill_evidence_minutes',{}).get('SWITCH',prior.get('minutes')))
+        if minutes is None or minutes<=0: continue
+        minutes=min(minutes,p['minutes'])
+        if minutes<=0: continue
+        sample=dict(prior.get('switch_sample') or {})
+        sample.update(status='retained',stats_games=p['games'],
+            covered_games=min(number(sample.get('covered_games')) or prior.get('games',0),p['games']),
+            observed_at=sample.get('observed_at') or previous.get('generated_at'),
+            evidence_minutes=minutes)
+        sample.setdefault('evidence_basis','Last valid same-season SWITCH observation; original evidence minutes retained.')
+        p['raw_skills']['SWITCH']=value
+        p['skill_evidence_minutes']={'SWITCH':minutes}
+        p['switch_sample']=sample
+
 def build_feed(data, season, root=ROOT):
     if len(data)<100 or len(data)>=2000: raise ValueError('Incomplete or truncated current-season stats')
     coefficients={}
@@ -89,6 +114,8 @@ def build_feed(data, season, root=ROOT):
 
 def main():
     season=json.loads((ROOT/'raw/live/ratings.json').read_text())['season']
+    dest=ROOT/'raw/live/skill_stats.json'
+    previous=json.loads(dest.read_text()) if dest.exists() else {}
     # Reuse existing connection material without logging it or copying it to outputs.
     source=(ROOT/'script/data/pulldataballrstats.txt').read_text()
     key=re.search(r'DATABALLR_API_KEY <- "([^"]+)"',source)[1]
@@ -111,7 +138,9 @@ def main():
     (ROOT/'raw/live/positions.json').write_text(json.dumps(positions,allow_nan=False,separators=(',',':'))+'\n')
     print('Daily position coverage:',positions['sources'],flush=True)
     feed=build_feed(data,season)
+    retain_previous_switch(feed,previous)
     assignment,audit=refresh_assignments(data,season)
+    feed['switch_assignment_coverage']=audit.pop('player_coverage',{})
     feed['switch_assignments']=assignment;feed['switch_status']=audit
     print('SWITCH assignment refresh:',json.dumps(audit),flush=True)
     request_path=ROOT/'raw/live_refresh_request.json'
@@ -126,7 +155,7 @@ def main():
     fields=['Pos2','position_source','points_saved_100','rim_points_saved_100','rimdfga/100','dfga/100','d_FG3A_Per100','d_LongMidRangeFGA_Per100','d_ShortMidRangeFGA_Per100','d_Blocks_Per100','d_DefRebounds_Per100']
     for p in feed['players']:
         p['perimeter_inputs']={k:source[p['nba_id']].get(k) for k in fields}
-    dest=ROOT/'raw/live/skill_stats.json';tmp=dest.with_suffix('.tmp')
+    tmp=dest.with_suffix('.tmp')
     tmp.write_text(json.dumps(feed,allow_nan=False,separators=(',',':'))+'\n');tmp.replace(dest)
     print(f"Current skill evidence: {len(feed['players'])} players, {feed['total_actual_minutes']:.0f} actual minutes, {feed['completed_games_at_fetch']} completed games")
 if __name__=='__main__': main()

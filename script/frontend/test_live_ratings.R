@@ -41,7 +41,11 @@ i <- which(r$live_current_weight>0 & is.finite(p$SWITCH) & abs(p$SWITCH)<3 & p$n
 j <- which(vapply(fixture$players,function(x) x$nba_id==p$nba_id[i],logical(1)))[1]
 stopifnot(!is.na(j))
 fixture$calibration$SWITCH <- list(mean=0,sd=1)
-for(k in seq_along(fixture$players)) fixture$players[[k]]$raw_skills$SWITCH <- NULL
+for(k in seq_along(fixture$players)) {
+ fixture$players[[k]]$raw_skills$SWITCH <- NULL
+ fixture$players[[k]]$skill_evidence_minutes <- NULL
+ fixture$players[[k]]$switch_sample <- NULL
+}
 jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null')
 held <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(identical(held$SWITCH,p$SWITCH))
@@ -50,6 +54,28 @@ jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),au
 updated <- model$apply_live_expected_ratings(p,test_root)
 stopifnot(abs(updated$skill_model_def[i]-held$skill_model_def[i]-held$live_current_weight[i])<1e-8,
           updated$SWITCH[i]>held$SWITCH[i],identical(updated$SWITCH[-i],held$SWITCH[-i]))
+# A delayed matchup sample updates SWITCH at its own smaller evidence weight.
+sample_minutes <- fixture$players[[j]]$minutes/2
+fixture$players[[j]]$skill_evidence_minutes <- list(SWITCH=sample_minutes)
+fixture$players[[j]]$switch_sample <- list(status='partial',covered_games=1,stats_games=2,observed_at='2026-11-01T12:00:00Z')
+jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null',digits=NA)
+partial <- model$apply_live_expected_ratings(p,test_root)
+history <- fixture$historical_minutes[[as.character(p$nba_id[i])]]
+if(is.null(history)) history <- list()
+expected_weight <- model$live_evidence_weight(sample_minutes,history,fixture$season)$weight
+stopifnot(abs(partial$skill_model_def[i]-held$skill_model_def[i]-expected_weight)<1e-8,
+ partial$live_switch_current_weight[i]<partial$live_current_weight[i],
+ partial$live_switch_status[i]=='partial',partial$live_switch_coverage_games[i]==1,
+ identical(partial$FTD,updated$FTD),identical(partial$skill_model_off,updated$skill_model_off))
+# Fresh box scores cannot give a retained matchup sample more weight.
+fixture$players[[j]]$minutes <- fixture$players[[j]]$minutes+100
+fixture$players[[j]]$switch_sample$status <- 'retained'
+jsonlite::write_json(fixture,file.path(test_root,'raw/live/skill_stats.json'),auto_unbox=TRUE,null='null',digits=NA)
+retained <- model$apply_live_expected_ratings(p,test_root)
+stopifnot(identical(retained$SWITCH,partial$SWITCH),
+ retained$live_switch_current_weight[i]==partial$live_switch_current_weight[i],retained$live_switch_status[i]=='retained')
+retained2 <- model$apply_live_expected_ratings(retained,test_root)
+stopifnot(identical(retained$SWITCH,retained2$SWITCH),identical(retained$skill_model_def,retained2$skill_model_def))
 file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/skill_stats.json'),overwrite=TRUE)
 # Zero actual minutes retain SKILL, but do not suppress predictive EPM/DARKO.
 ev <- jsonlite::fromJSON(file.path(test_root,'raw/live/skill_stats.json'),simplifyVector=FALSE)
