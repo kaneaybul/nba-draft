@@ -33,7 +33,7 @@ def stage_state(previous,state,asof,reseed=False):
         # A quote-method rebuild resets model states, while retaining the
         # actual dated panels and transaction/injury evidence collected since
         # the portable seed. They are source evidence, not old model state.
-        for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json'):
+        for name in ('latest_inputs.json.gz','ownership_events.json','injury_episodes.json','path_calibration.json.gz'):
             file=previous/name
             if file.exists():shutil.copyfile(file,state/name)
         # Keep the earlier captured panel for deterministic same-day reseeds.
@@ -114,7 +114,7 @@ def injury_history(runtime,state,base_file,output):
     if isinstance(base,dict):base=base.get('records',[])
     output.write_text(json.dumps(base+saved['records'],separators=(',',':')))
 
-def export(output,asof=None):
+def export(output,asof=None,calibrator=None):
     snapshots=[]
     for team in TEAMS:
         folder=output/team
@@ -122,7 +122,7 @@ def export(output,asof=None):
         coverage=json.loads((folder/'league_player_coverage.json').read_text())
         with (folder/'monthly_player_values.csv').open() as player_file:
             rows=list(csv.DictReader(player_file))
-        annual_by_player={}
+        annual_by_player={};raw_annual_by_player={}
         with (folder/'monthly_annual_values.csv').open() as annual_file:
             for annual in csv.DictReader(annual_file):
                 dt=annual['cutoff_date']
@@ -132,6 +132,7 @@ def export(output,asof=None):
                 production=annual.get('app_annual_quote_production_reporting_rate')
                 asset=annual.get('app_annual_stock_reporting_rate')
                 if production in(None,'')or asset in(None,''):continue
+                raw_annual_by_player.setdefault((dt,identity),[]).append(annual)
                 annual_by_player.setdefault((dt,identity),[]).append({
                     'season':int(annual['season']),'production':float(production),
                     'asset':float(asset),'exposure':float(annual['exposure'])})
@@ -147,9 +148,23 @@ def export(output,asof=None):
                 ident='player:nba:'+str(pid)if pid is not None else'player:name:'+''.join(x for x in row['player_name'].lower()if x.isalpha())
                 details={k:row.get(k)for k in ['asset_type','profile_method','skill_method','role_method','role_MPG_sample_weight','role_games_sample_weight','draft_year','draft_slot','draft_maturity_weight','app_style_four_year_peak_production_quote','app_style_four_year_contract_adjustment_sum','healthy_current_total','healthy_forecast_annual_games','healthy_forecast_conditional_MPG','injury_availability_factor','injury_model_method','flags']}
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                value=float(row['app_style_four_year_asset_quote_with_draft_prior'])
+                if calibrator is not None:
+                    path=calibrator.quote(row,raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[]))
+                    if path:
+                        details['path_calibration']={k:v for k,v in path.items()if k!='annual_values'}
+                        if path['status']=='priced':
+                            details['baseline_quote']=value
+                            details['baseline_draft_maturity_weight']=details['draft_maturity_weight']
+                            value=path['mean']
+                            details['draft_maturity_weight']=str(path['nba_weight'])
+                            details['annual_values']=path['annual_values']
+                            details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
+                            details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
                 assets.append({'id':ident,'kind':'player','name':row['player_name'],'value':float(row['app_style_four_year_asset_quote_with_draft_prior']),'exposure':float(row['app_priced_season_equivalents']),
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
+                assets[-1]['value']=value
             snapshots.append({'team':team,'date':dt,'method':METHOD,'reporting_cap':164961000.,'source_cutoff':dt,
               'assets':assets,'player_subtotal':sum(a['value']for a in assets),'unpriced_players':unpriced,
               'coverage':{'ownership':True,'contracts':c['contracts_complete'],'skill':c['skill_complete'],'injury_review':c['injury_review_complete']},
@@ -224,7 +239,10 @@ def run(args):
     # First team establishes one shared source-hashed league calibration.
     compute(TEAMS[0])
     with ThreadPoolExecutor(max_workers=args.workers)as pool:list(pool.map(compute,TEAMS[1:]))
-    result=export(output,None if reseed else args.as_of)
+    from calibration.production import prepare
+    calibrator=prepare(runtime,repo,state,output)
+    result=export(output,None if reseed else args.as_of,calibrator)
+    (output/'path_pricing_coverage.json').write_text(json.dumps(dict(calibrator.events),indent=2))
     latest_inputs(runtime,state,save=True,asof=args.as_of)
     save_events(runtime,state,ownership_seed_ids)
     return {'date':args.as_of,'teams':len({s['team']for s in result['snapshots']}),'snapshots':len(result['snapshots']),'path':str(output/'player_candidates.json'),
@@ -234,3 +252,4 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
     p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
+

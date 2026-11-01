@@ -36,6 +36,18 @@ class PublishedAppValues(unittest.TestCase):
             data['snapshots'][0]['assets'][0]['value']=111.;path.write_text(json.dumps(data))
             with self.assertRaisesRegex(ValueError,'disagrees'):build(root)
 
+    def test_scenario_peak_reconciles_separately_from_the_mean_annual_path(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);public=self.seed(root);path=public/'teams/ATL.json';data=json.loads(path.read_text())
+            asset=data['snapshots'][0]['assets'][0]
+            asset['value']=132.
+            asset['details']['path_calibration']=dict(status='priced',mean=132.,mean_path_quote=112.,
+                production_quote=100.,contract_adjustment_sum=32.,p10=20.,p50=100.,p90=200.,nba_weight=.95)
+            path.write_text(json.dumps(data))
+            quote=build(root)['players']['1']
+            self.assertEqual(quote['value'],132.)
+            self.assertEqual(quote['distribution']['production_quote'],100.)
+
     def test_exported_player_path_keeps_the_production_and_contract_legs(self):
         import csv,sys
         sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'asset_history/backfill'))
@@ -59,3 +71,4 @@ class PublishedAppValues(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+

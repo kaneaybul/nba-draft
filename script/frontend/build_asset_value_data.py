@@ -33,13 +33,27 @@ def build(repo):
                 if annual:
                     if abs(sum(r['exposure']for r in annual)-4)>1e-8:raise ValueError('Incomplete annual value path')
                     if any(not math.isfinite(r[k])for r in annual for k in ['production','asset','exposure']):raise ValueError('Nonfinite annual path')
-                    # Reconcile the complete exported path to its published quote.
+                    # Scenario-valued quotes select the peak within each path
+                    # before averaging. Their annual means alone cannot recover
+                    # that expected peak; reconcile the exported components.
                     remaining=2.;peak=0.
                     for row in sorted(annual,key=lambda r:-r['production']):
                         take=min(remaining,row['exposure']);peak+=take*row['production'];remaining-=take
                     quote=2*peak+sum((r['asset']-r['production'])*r['exposure']for r in annual)
+                    calibration=asset.get('details',{}).get('path_calibration',{})
+                    if calibration.get('status')=='priced':
+                        if abs(quote-calibration['mean_path_quote'])>.01:
+                            raise ValueError('Scenario mean annual path does not reconcile')
+                        quote=calibration['production_quote']+calibration['contract_adjustment_sum']
+                        annual_adjustment=sum((r['asset']-r['production'])*r['exposure']for r in annual)
+                        if abs(annual_adjustment-calibration['contract_adjustment_sum'])>.01:
+                            raise ValueError('Expected annual contract costs do not reconcile')
+                        if abs(calibration['mean']-value)>.01:raise ValueError('Expected scenario quote does not reconcile')
                     if abs(quote-value)>.01:raise ValueError('Annual path disagrees with the published player quote')
                 players[pid]={'date':day,'value':value,'annual':annual}
+                if asset.get('details',{}).get('path_calibration',{}).get('status')=='priced':
+                    c=asset['details']['path_calibration']
+                    players[pid]['distribution']={k:c[k]for k in ('p10','p50','p90','production_quote','contract_adjustment_sum','nba_weight')}
             elif asset['kind']=='pick':
                 picks.append({'team':team,'origin':asset['physical_origin'],'year':asset['draft_year'],
                               'round':asset['round'],'value':value})
@@ -58,3 +72,4 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--repo',type=Path,default=Path.cwd());args=parser.parse_args()
     result=build(args.repo.resolve())
     print(json.dumps({'date':result['observation_date'],'players':len(result['players']),'pick_claims':len(result['picks']),'slots':len(result['slots'])}))
+

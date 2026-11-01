@@ -73,9 +73,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "$PORTFOLIO_OUTCOME" = success ]; then
-            git add frontend/public/data/asset_history/v3 processed/asset_history
+            git add frontend/public/data/asset_history/v4 processed/asset_history
           else
-            git add frontend/public/data/asset_history/v3/refresh_status.json
+            git add frontend/public/data/asset_history/v4/refresh_status.json
           fi
           if ! git diff --cached --quiet; then
             # Preserve expensive validated results even if a later push fails.
@@ -108,9 +108,10 @@ jobs:
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/league_ownership/roster_refresh_source.json
             processed/asset_history/contracts/refresh_audit.json
-            frontend/public/data/asset_history/v3/refresh_status.json
+            frontend/public/data/asset_history/v4/refresh_status.json
           if-no-files-found: ignore
           retention-days: 14
       - name: Report a retained observation
         if: steps.portfolios.outcome != 'success'
         run: echo "::warning::Asset history retained its last validated observation. Source or ownership review is pending; see the validation artifact."
+

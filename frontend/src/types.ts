@@ -39,6 +39,7 @@ export type PlayerImpact = {
     date: string;
     value: number;
     annual: Array<{ season: number; production: number; asset: number; exposure: number }>;
+    distribution?: { p10: number; p50: number; p90: number; production_quote: number; contract_adjustment_sum: number; nba_weight: number };
   };
   valuation_salary_caps?: number[];
   minutes_remaining_team_games?: number | null;
@@ -1062,3 +1063,4 @@ export type AppData = {
   capTracker?: CapTrackerData;
   capReview?: CapReviewData;
 };
+

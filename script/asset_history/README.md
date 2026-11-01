@@ -7,21 +7,21 @@ joint outcomes per date; all team totals conserve the league portfolio.
 
 ## Valuation
 
-`peak4-payroll-0.8-v3` preserves the agreed mathematics: annual production plus
+`peak4-payroll-0.8-v4` preserves the agreed mathematics: annual production plus
 0.8 times production less salary, normalized to a fixed$164,961,000 reporting cap.
 Production uses twice the best two season-equivalents; contract adjustments span
 exactly four rolling season-equivalents. Completed games determine the fractional
 current/final seasons. Tonight’s unplayed games remain in the forward window.
-Drafted players use the trained pick prior, with NBA-forecast weight equal to
-completed NBA seasons divided by three, bounded from zero to one. The weight is
-zero before a completed NBA season, one-third after one, two-thirds after two,
-and fully NBA-based after three. The blend applies inside the original four-year
-draft window. An unobserved new draft conversion reconciles to the pick's expected
-value. Injury and signed salary adjustments remain in both blend components.
+Young players use linked career paths, pricing each path before taking its
+expectation. After one completed NBA season, an empirically fitted NBA-minutes
+reliability replaces the calendar weighting; current observed minutes update
+that evidence. First-season players retain their draft prior. The policy covers
+the first four draft years. Veteran and generic pick pricing retain their
+existing methods. Injury and signed salary adjustments remain in every path.
 
-Version 3 reconstructs every team's historical player values under this weighting,
-reusing the validated dated draft-right portfolios. The v1 and v2 inventories are
-preserved. The first v3 refresh restores saved source panels, observed game clocks,
+Version 4 reconstructs every team's historical player values under this policy,
+reusing the validated dated draft-right portfolios. The earlier inventories are
+preserved. The first v4 refresh restores saved source panels, observed game clocks,
 transactions and injury evidence before rebuilding model states. Later daily
 updates continue normally. Historical reconstructions and future
 observations recorded at publication have separate vintage labels. Full inventory
@@ -83,3 +83,4 @@ changes or decompression support are required to view the chart.
 python3 -m unittest discover -s script/asset_history -p 'test_*.py'
 python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
 ```
+
