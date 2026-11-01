@@ -6,7 +6,7 @@ Young players use linked career paths, pricing each path before averaging. Full 
 
 Uncertainty and prior blending apply only to the remaining original four-year draft window, matching the validated payoff target. Later forecast years retain the canonical veteran production and contract choices. The adjustment therefore vanishes continuously as the remaining rookie-window exposure reaches zero, rather than dropping when a player crosses a calendar-year boundary.
 
-Historical labels must finish by the observation's completed reference year. Entire career and error vectors remain linked. Observations without sufficient mature paths retain the deterministic quote and record the reason. The v3 archive is preserved; v4 rebuilds history under this policy.
+Historical labels must finish by the observation's completed reference year. Entire career and error vectors remain linked. Observations without sufficient mature paths retain the deterministic quote and record the reason. Dormant unsigned draft rights retain their existing slot-prior quote; they do not acquire an NBA service history or a fabricated NBA identity. The v3 archive is preserved; v4 rebuilds history under this policy.
 
 Training data and model source are hashed. The staged cache is reused while those inputs remain identical and rebuilt when completed annual inputs or model code change. Publication commits the cache and player state only after all 30 portfolios validate. Identical same-day source inputs reuse the published result; new evidence invalidates that shortcut.
 

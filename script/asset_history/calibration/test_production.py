@@ -9,7 +9,7 @@ from calibration.path_model import ResidualPool
 
 def fixture():
     c=PathCalibrator.__new__(PathCalibrator)
-    c.data={'signature':'fixture','training_through':2024};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths')}
+    c.data={'signature':'fixture','training_through':2024};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths','unsigned_draft_right_existing_policy')}
     c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
     c.stats={(2024,7):1000.};c.ages={(2024,7):22.};c.experience={(2024,7):1.}
     c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
@@ -89,6 +89,13 @@ class ProductionQuotes(unittest.TestCase):
         self.assertEqual(c.quote(p,a)['status'],'priced')
         p['healthy_forecast_annual_games']='70'
         with self.assertRaisesRegex(ValueError,'require conditional MPG'):c.quote(p,a)
+
+    def test_dormant_draft_right_keeps_its_existing_quote_without_an_nba_identity(self):
+        c,p,a=fixture();p['asset_type']='unsigned_draft_right';p['source_nba_id']=''
+        self.assertEqual(c.quote(p,a)['status'],'unsigned_draft_right_existing_policy')
+        self.assertEqual(c.events['unsigned_draft_right_existing_policy'],1)
+        p['asset_type']='signed_player'
+        with self.assertRaisesRegex(ValueError,'stable identity'):c.quote(p,a)
 
     def test_aging_out_has_no_discrete_uncertainty_premium_drop(self):
         c,p,a=fixture();c.data['training_through']=2026
