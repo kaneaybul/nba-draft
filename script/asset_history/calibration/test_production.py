@@ -12,8 +12,8 @@ def fixture():
     c.data={'signature':'fixture','training_through':2024};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths')}
     c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
     c.stats={(2024,7):1000.};c.ages={(2024,7):22.};c.experience={(2024,7):1.}
-    c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={}
-    c.careers=[dict(key=str(i),slot=1,cohort=2016,stage=1,horizon=4,
+    c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
+    c.careers=[dict(key=str(i),slot=1,cohort=2016,stage=0,horizon=4,
                    production=p)for i,p in enumerate(([20,20,0,0],[0,0,20,20]))]
     c.residuals=ResidualPool([dict(key=str(i),origin=2020,horizon=4,feature=[22,0,2.7,1],residual=r)
         for i,r in enumerate(([10,10,-10,-10],[-10,-10,10,10]))])
@@ -22,17 +22,18 @@ def fixture():
            healthy_current_total='0',healthy_forecast_annual_games='70',healthy_forecast_conditional_MPG='20')
     a=[dict(season=str(2025+i),league_reference_year='2024',exposure='1',annual_production='10',
         availability_overlay='1',app_effective_contract='5',salary_cap_scenario=str(REPORTING_CAP),
-        scale_budget_scenario=str(REPORTING_CAP),is_unsigned_market_year='False')for i in range(4)]
+        scale_budget_scenario=str(REPORTING_CAP),is_unsigned_market_year='False',
+        app_annual_quote_production_reporting_rate='10',app_annual_stock_reporting_rate='14')for i in range(4)]
     return c,p,a
 
 
 class ProductionQuotes(unittest.TestCase):
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
-        self.assertAlmostEqual(result['mean'],96.)
+        self.assertAlmostEqual(result['mean'],86.)
         self.assertAlmostEqual(result['mean_path_quote'],56.)
-        self.assertAlmostEqual(result['path_selection_premium'],40.)
-        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],96.)
+        self.assertAlmostEqual(result['path_selection_premium'],30.)
+        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],86.)
         self.assertAlmostEqual(sum((r['asset']-r['production'])*r['exposure']for r in result['annual_values']),result['contract_adjustment_sum'])
 
     def test_observed_minutes_update_reliability_and_veterans_keep_the_old_policy(self):
@@ -76,6 +77,21 @@ class ProductionQuotes(unittest.TestCase):
         c,p,a=fixture()
         for row in c.residuals.rows:row['origin']=2022
         self.assertEqual(c.quote(p,a)['status'],'insufficient_completed_residual_paths')
+
+    def test_post_rookie_years_keep_the_canonical_means_and_contract_choices(self):
+        c,p,a=fixture();result=c.quote(p,a)
+        self.assertEqual(result['annual_values'][-1]['production'],10.)
+        self.assertEqual(result['annual_values'][-1]['asset'],14.)
+
+    def test_aging_out_has_no_discrete_uncertainty_premium_drop(self):
+        c,p,a=fixture();c.data['training_through']=2026
+        for row in a:row['league_reference_year']='2026'
+        a[0].update(season='2027',exposure='0.000001')
+        for i,row in enumerate(a[1:],1):row['season']=str(2027+i)
+        a.append({**a[-1],'season':'2031','exposure':'0.999999'})
+        for r in c.residuals.rows:r['horizon']=5;r['residual'].append(r['residual'][0])
+        result=c.quote(p,a)
+        self.assertAlmostEqual(result['mean'],56.,places=3)
 
 
 if __name__=='__main__':unittest.main()

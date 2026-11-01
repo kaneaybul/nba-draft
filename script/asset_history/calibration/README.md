@@ -4,6 +4,8 @@ Version 4 runs this layer after every canonical player refresh and before portfo
 
 Young players use linked career paths, pricing each path before averaging. Full unfloored annual inputs retain signed salary, known absences, unsigned continuation pricing and verified release guarantees in every scenario. After one completed NBA season, reliability is observed NBA minutes divided by minutes plus an empirically fitted scale. Completed and currently observed minutes update that evidence. First-season rookies retain the draft prior because the reliability fit has no first-season cases. Veteran and generic pick policies retain their existing specification.
 
+Uncertainty and prior blending apply only to the remaining original four-year draft window, matching the validated payoff target. Later forecast years retain the canonical veteran production and contract choices. The adjustment therefore vanishes continuously as the remaining rookie-window exposure reaches zero, rather than dropping when a player crosses a calendar-year boundary.
+
 Historical labels must finish by the observation's completed reference year. Entire career and error vectors remain linked. Observations without sufficient mature paths retain the deterministic quote and record the reason. The v3 archive is preserved; v4 rebuilds history under this policy.
 
 Training data and model source are hashed. The staged cache is reused while those inputs remain identical and rebuilt when completed annual inputs or model code change. Publication commits the cache and player state only after all 30 portfolios validate. Identical same-day source inputs reuse the published result; new evidence invalidates that shortcut.

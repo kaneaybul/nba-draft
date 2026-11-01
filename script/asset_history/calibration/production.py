@@ -9,12 +9,12 @@ import csv,gzip,hashlib,json,math,sys
 from collections import defaultdict
 from pathlib import Path
 import numpy as np
-from .historical import HistoricalPanel,name_key
+from .historical import HistoricalPanel,name_key,eligible_careers
 from .path_model import ResidualPool,slot_weights,regularize_paths,summarize,evidence_weight,fit_reliability
 from backfill.league_player_values import agreements_at
 
 REPORTING_CAP=164961000.
-POLICY='young-career-paths-v1'
+POLICY='rookie-window-career-paths-v1'
 
 
 def number(value):
@@ -117,16 +117,22 @@ class PathCalibrator:
         if fitted['n']<30:
             self.events['insufficient_mature_learning_labels']+=1
             return dict(status='insufficient_mature_learning_labels',cutoff=cutoff)
-        pool=[r for r in self.careers if r['stage']==stage and r['horizon']>=h and
-              r['cohort']+stage+h<=cutoff and r['key']!=key]
+        pool=[r for r in eligible_careers(self.careers,cutoff,stage=0,horizon=4)if r['key']!=key]
         if not pool:
             self.events['insufficient_mature_career_paths']+=1
             return dict(status='insufficient_mature_career_paths',cutoff=cutoff)
         # Raw production is before both continuation and release choices.
         mean=np.array([float(r['annual_production'])*REPORTING_CAP/float(r['salary_cap_scenario'])for r in annual])
+        window=np.array([int(draft)<int(r['season'])<=int(draft)+4 for r in annual])
+        if not window.any():return None
         available=np.array([float(r['availability_overlay'])for r in annual])
         healthy=np.divide(mean,available,out=np.zeros(h),where=available>0)
         costs=np.array([float(r['app_effective_contract'])*REPORTING_CAP/float(r['salary_cap_scenario'])for r in annual])
+        # Outside the validated rookie window, preserve the canonical final
+        # production and effective costs, including its continuation choices.
+        final_p=np.array([float(r['app_annual_quote_production_reporting_rate'])for r in annual])
+        final_a=np.array([float(r['app_annual_stock_reporting_rate'])for r in annual])
+        final_c=(1.8*final_p-final_a)/.8
         total=float(player['healthy_current_total'])
         games=float(player['healthy_forecast_annual_games']);mpg=float(player['healthy_forecast_conditional_MPG'])
         # Age is knowable at the cutoff; full annual state rows supply the
@@ -134,18 +140,22 @@ class PathCalibrator:
         age=self.ages.get((cutoff,pid),22.)
         from .path_model import feature_vector
         feature=feature_vector(age,total,games*mpg,self.experience.get((cutoff,pid),max(1,stage)))
-        try:nba,nw,residual_meta=self.residuals.scenarios(healthy,feature,cutoff,True,key)
+        needed=int(np.flatnonzero(window)[-1])+1
+        try:variable,nw,residual_meta=self.residuals.scenarios(healthy[:needed],feature,cutoff,True,key)
         except ValueError:
             self.events['insufficient_completed_residual_paths']+=1
             return dict(status='insufficient_completed_residual_paths',cutoff=cutoff)
-        nba*=available
-        prior=np.array([r['production'][:h]for r in pool]);pw=slot_weights([r['slot']for r in pool],int(slot))
+        nba=np.broadcast_to(final_p,(len(variable),h)).copy()
+        nba[:,:needed]=variable*available[:needed]
+        original_prior=np.array([r['production']for r in pool]);pw=slot_weights([r['slot']for r in pool],int(slot))
         target=None
-        if stage==0 and h==4 and cutoff==self.data['training_through']:
+        if cutoff==self.data['training_through']:
             curve=self.pick_curve[int(slot)]
             target=curve['peak_production_quote']+.8*curve['cumulative_production_quote']
-        prior,prior_scale=regularize_paths(prior,[r['slot']for r in pool],int(slot),pw,e,target)
-        prior*=available
+        original_prior,prior_scale=regularize_paths(original_prior,[r['slot']for r in pool],int(slot),pw,None,target)
+        prior=np.broadcast_to(final_p,(len(pool),h)).copy()
+        for j,row in enumerate(annual):
+            if window[j]:prior[:,j]=original_prior[:,int(row['season'])-int(draft)-1]*available[j]
         minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(int(draft)+1,cutoff+1))
         # The reliability fit has no first-season training cases. Keep that
         # draft prior intact; update established young players as minutes accrue.
@@ -160,6 +170,9 @@ class PathCalibrator:
         def price(p):
             p=p.copy();c=np.broadcast_to(costs,p.shape).copy()
             for j,row in enumerate(annual):
+                if not window[j]:
+                    c[:,j]=final_c[j]
+                    continue
                 year=int(row['season']);nominal_cap=float(row['salary_cap_scenario'])
                 if row['is_unsigned_market_year']=='True':
                     yos=max(0,stage+year-int(annual[0]['season']))
@@ -183,7 +196,8 @@ class PathCalibrator:
             nba_weight=weight,completed_minutes=minutes,current_observed_minutes=observed,
             learning_scale=fitted['scale'],learning_training_n=fitted['n'],
             latest_learning_label=fitted['latest_label'],latest_residual_label=residual_meta['latest_label'],
-            latest_prior_label=max(r['cohort']+stage+h for r in pool),prior_scale=prior_scale)
+            latest_prior_label=max(r['label_end']for r in pool),prior_scale=prior_scale,
+            uncertainty_scope='remaining original four-year draft-window seasons')
         result['annual_values']=[dict(season=int(row['season']),exposure=float(row['exposure']),
             production=p,asset=1.8*p-.8*c)for row,p,c in zip(annual,result['annual_mean_production'],result['annual_mean_cost'])]
         self.events['priced']+=1
