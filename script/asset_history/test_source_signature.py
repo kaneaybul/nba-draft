@@ -15,6 +15,12 @@ class InputFingerprint(unittest.TestCase):
             raw.write_text('{"total":2}');self.assertNotEqual(original,source_signature(root))
             raw.write_text('{"total":1}');code.write_text('METHOD="v5"')
             self.assertNotEqual(original,source_signature(root))
+    def test_new_team_projections_invalidate_pick_portfolio_reuse(self):
+        with tempfile.TemporaryDirectory()as folder:
+            root=Path(folder);p=root/'frontend/public/data/v2/team_projections/2027.json'
+            p.parent.mkdir(parents=True);p.write_text('[{"team":"UTA","total":0}]')
+            old=source_signature(root);p.write_text('[{"team":"UTA","total":1}]')
+            self.assertNotEqual(old,source_signature(root))
 
 
 if __name__=='__main__':unittest.main()
