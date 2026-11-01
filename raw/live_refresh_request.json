@@ -1,6 +1,6 @@
 {
-  "requested_at": "2026-11-01T19:33:26.202Z",
-  "reason": "Refresh coverage-weighted SWITCH samples, retain last valid same-season observations during tracking outages, and publish per-player matchup coverage and evidence weights.",
+  "requested_at": "2026-11-01T19:44:42.097Z",
+  "reason": "Complete the coverage-weighted SWITCH refresh after repairing the frontend refresh regression loader and verifying independent valuation updates.",
   "compare_minutes": false,
   "diagnose_switch": false
 }
