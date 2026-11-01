@@ -6,7 +6,9 @@ export function runTradeMachineRegressionTests(): string[] {
   return [
     capRoomAbsorptionClearsWithoutMatchingSalary(),
     balancedTradeValueIsModelAccepted(),
-    scaleAdjustedValueCanDeclineTrade(),
+    scaleIsNotAppliedTwice(),
+    signedContractLiabilitiesRemainNegative(),
+    unpricedAssetsCannotBeAccepted(),
     threeTeamTradeRoutesSalaryAndValueByDestination(),
     multiTeamTradeRequiresExplicitAssetDestinations(),
     modeledAssetOwnerMustMatchSendingSide(),
@@ -142,7 +144,7 @@ function balancedTradeValueIsModelAccepted(): string {
   return "balanced trade value is model accepted";
 }
 
-function scaleAdjustedValueCanDeclineTrade(): string {
+function scaleIsNotAppliedTwice(): string {
   const result = evaluateTradeMachine({
     season,
     sides: [
@@ -152,12 +154,32 @@ function scaleAdjustedValueCanDeclineTrade(): string {
   });
   expect(result.legal, "scale value test trade should be CBA legal");
   expect(result.valueBalance.valueDiff === 0, "raw trade value should be balanced");
-  expect(result.valueBalance.scaleAdjustedDiff > result.valueBalance.maybeThreshold, "scale-adjusted imbalance should exceed maybe threshold");
-  expect(result.valueBalance.imbalanceBasis === "scale_adjusted_value", "scale-adjusted value should drive the imbalance");
-  expect(result.valueBalance.verdict === "declined", "scale-adjusted imbalance should decline the trade");
-  expect(!result.modelViable, "modelViable should be false when value balance is declined");
-  expect(result.valueBalance.teamSaysNo === "SCALEB", "side sending more scale-adjusted value should say no");
-  return "scale-adjusted value can decline a CBA-legal trade";
+  expect(result.valueBalance.scaleAdjustedDiff === 0, "Scale cannot reweight an already priced asset");
+  expect(result.valueBalance.imbalanceBasis === "trade_value", "asset value alone should drive the balance");
+  expect(result.modelAccepted, "equal asset values should be accepted even when diagnostic Scale differs");
+  expect(result.valueBalance.teamSaysNo === null, "diagnostic Scale cannot make a side say no");
+  return "Scale is not applied a second time to asset values";
+}
+
+function signedContractLiabilitiesRemainNegative(): string {
+  const result = evaluateTradeMachine({ season, sides: [
+    side(team("BAD", 170_000_000, 14), [player("bad", 5_000_000, { tradeValue: -30_000_000 })]),
+    side(team("GOOD", 170_000_000, 14), [player("good", 5_000_000, { tradeValue: 5_000_000 })])
+  ] });
+  expect(result.valueBalance.leftOutgoingValue === -30_000_000, "negative signed contracts cannot be floored to zero");
+  expect(result.valueBalance.valueDiff === 35_000_000, "a liability must increase the receiving team's value deficit");
+  expect(result.valueBalance.teamSaysNo === "GOOD", "the team receiving the liability should say no");
+  return "signed contract liabilities remain negative in trade totals";
+}
+
+function unpricedAssetsCannotBeAccepted(): string {
+  const result = evaluateTradeMachine({ season, sides: [
+    side(team("UNK", 170_000_000, 14), [player("missing", 5_000_000, { tradeValue: null, valuePriced: false })]),
+    side(team("KNOWN", 170_000_000, 14), [player("known", 5_000_000, { tradeValue: 0 })])
+  ] });
+  expect(result.legal && !result.modelViable, "missing valuation must not make an otherwise legal trade model-accepted");
+  expect(!result.valueBalance.valuationComplete, "the missing four-year path must be explicit");
+  return "incomplete player valuations cannot be accepted as zero-value assets";
 }
 
 function threeTeamTradeRoutesSalaryAndValueByDestination(): string {

@@ -1,5 +1,6 @@
 export type Manifest = {
   generated_at: string;
+  valuation_generated_at?: string;
   note: string;
   datasets: Array<{ dataset: string; rows: number; file: string }>;
   static_data?: StaticDataManifest;
@@ -34,6 +35,13 @@ export type StaticDataManifest = {
 };
 
 export type PlayerImpact = {
+  asset_valuation?: {
+    date: string;
+    value: number;
+    annual: Array<{ season: number; production: number; asset: number; exposure: number }>;
+  };
+  valuation_salary_caps?: number[];
+  minutes_remaining_team_games?: number | null;
   minutes_source?: string | null;
   minutes_input_mpg?: number | null;
   minutes_healthy_mpg?: number | null;
@@ -1048,5 +1056,3 @@ export type AppData = {
   capTracker?: CapTrackerData;
   capReview?: CapReviewData;
 };
-
-

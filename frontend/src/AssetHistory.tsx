@@ -10,10 +10,11 @@ async function read<T,>(url:string,signal:AbortSignal):Promise<T>{const r=await 
 export function AssetHistoryWorkspace(){
  const [manifest,setManifest]=useState<Manifest|null>(null),[file,setFile]=useState<TeamFile|null>(null),[team,setTeam]=useState('UTA'),[selected,setSelected]=useState(''),[error,setError]=useState(''),[query,setQuery]=useState(''),[kind,setKind]=useState('all');
  const [revision,setRevision]=useState(0);
+ const [historyVersion,setHistoryVersion]=useState('v2');
  const [refreshStatus,setRefreshStatus]=useState<RefreshStatus|null>(null);
  useEffect(()=>{const f=()=>setRevision(x=>x+1);const timer=window.setInterval(f,60000);window.addEventListener('focus',f);return()=>{clearInterval(timer);window.removeEventListener('focus',f);};},[]);
- useEffect(()=>{const c=new AbortController();read<Manifest>('/data/asset_history/v2/manifest.json',c.signal).then(m=>{setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
- useEffect(()=>{const c=new AbortController();read<RefreshStatus>('/data/asset_history/v2/refresh_status.json',c.signal).then(setRefreshStatus).catch(()=>{});return()=>c.abort();},[revision]);
+ useEffect(()=>{const c=new AbortController();read<{history_version?:string}>('/data/asset_valuation.json',c.signal).catch(()=>({history_version:'v2'})).then(async metadata=>{const version=metadata.history_version??'v2';const m=await read<Manifest>(`/data/asset_history/${version}/manifest.json`,c.signal);setHistoryVersion(version);setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
+ useEffect(()=>{const c=new AbortController();read<RefreshStatus>(`/data/asset_history/${historyVersion}/refresh_status.json`,c.signal).then(setRefreshStatus).catch(()=>{});return()=>c.abort();},[revision,historyVersion]);
  const path=manifest?.teams.find(t=>t.team===team)?.path;
  useEffect(()=>{setFile(null);setQuery('');setError('');},[team]);
  useEffect(()=>{if(!path)return;const c=new AbortController();read<TeamFile>(path,c.signal).then(x=>{setFile(x);setSelected(d=>x.snapshots.some(s=>s.date===d)?d:x.snapshots[x.snapshots.length-1]?.date??'');setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[path,manifest?.generated_at]);

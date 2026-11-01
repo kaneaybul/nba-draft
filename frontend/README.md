@@ -144,3 +144,32 @@ The live baseline is independent of our impact ranking and lineup optimizer. All
 Full-season minutes = actual NBA minutes already logged + projected minutes in remaining games. Expected appearances use the same actual-plus-remaining accounting, and completed overtime is retained. Players without an NBA roster spot receive no future team minutes; their separate future free-agent opportunity estimates remain available. The player detail displays the forecast source, baseline MPG, actual minutes, and remaining workload. The frozen preseason data is unchanged.
 
 Set `compare_minutes: true` in an explicit `raw/live_refresh_request.json` push to rebuild once with `LIVE_MINUTES_METHOD=legacy` and once with the live minutes model on identical inputs. `raw/live/minutes_impact.json` records the player/team differences and input hashes, and refuses a comparison if inputs, inclusion, or per-minute ratings changed. Ordinary daily refreshes use only the live model. This validates accounting and consistency; comparative forecast accuracy still requires collecting historical forecast-versus-actual observations.
+
+### Shared player and trade asset values
+
+The board's season Value, 4Y Value, player detail panel, trade machine and trade
+suggestions use `src/assetValue.ts`. Annual asset value is production plus
+`0.8 * (production - salary)`. Four-year value is twice the best two
+season-equivalents of production plus every contract adjustment across exactly
+four forward season-equivalents, in the fixed $164,961,000 reporting-cap dollars.
+Negative signed contracts remain negative; hypothetical unsigned service may be
+declined, zeroing both its production and asset legs. Missing annual paths are
+unpriced, rather than silently dropping years or falling back to old trade values.
+
+Deployment builds `public/data/asset_valuation.json` from the validated Asset
+History snapshots and trained pick curve. Matched players use the published
+canonical quote directly, including its draft evidence and injury assumptions.
+The daily player export includes its complete annual path, allowing the board's
+single-season values to use the same canonical inputs. Players outside that
+inventory use the same arithmetic with the app's existing forecasts and expected
+contracts. The raw JSON `value` / `projection_value_yN` fields remain production
+inputs; free-agent salary estimates retain their market-price meaning.
+
+Pick slots use the same production/rookie-cost curve. Uniquely matched legal
+rights use the exact joint portfolio quote; unmatched or ambiguous legacy rights
+retain their legal identity and use expected selection and conveyance probability
+on the shared curve. Generic pick quotes have no cap-inflation multiplier. Scale
+remains a diagnostic and never multiplies a player or pick quote again. The
+preseason archive preserves its original production numbers under explicit
+Production labels. Both model regressions and published-path reconciliation run
+before deployment.

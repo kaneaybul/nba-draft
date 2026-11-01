@@ -1,3 +1,4 @@
+import { withAssetPickValues, withAssetValueContext, type AssetValuationData } from "./assetValue";
 import type {
   AppData,
   InjuryOutlookData,
@@ -48,7 +49,8 @@ export async function loadAppData(cacheBust?: string): Promise<AppData> {
 
 export async function loadNewerAppData(current: Manifest): Promise<AppData | null> {
   const manifest = await loadJson<Manifest>("/data/manifest.json", String(Date.now()));
-  if (manifest.generated_at === current.generated_at) return null;
+  const valuations = await loadAssetValuations(String(Date.now()));
+  if (manifest.generated_at === current.generated_at && (!valuations || valuations.generated_at === current.valuation_generated_at)) return null;
   return isStaticManifest(manifest) ? loadStaticInitialData(manifest) : loadLegacyAppData(manifest);
 }
 
@@ -58,7 +60,13 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
 
   const loadPlayers = async () => {
     if (hasSeasonRows(next.players, "year", season)) return;
-    const rows = await loadSeasonDataset<PlayerImpact>(next.manifest, "impact_players", season, cacheBust);
+    const [rawRows, capTracker, valuations] = await Promise.all([
+      loadSeasonDataset<PlayerImpact>(next.manifest, "impact_players", season, cacheBust),
+      next.capTracker ? Promise.resolve(next.capTracker) : loadOptionalSingleton<CapTrackerData>(next.manifest, "cap_tracker", cacheBust),
+      loadAssetValuations(cacheBust)
+    ]);
+    const rows = withAssetValueContext(rawRows, capTracker, valuations);
+    if (capTracker) next = { ...next, capTracker };
     if (rows.length > 0) next = { ...next, players: replaceSeasonRows(next.players, rows, "year", season) };
   };
   const loadTeams = async () => {
@@ -78,7 +86,11 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
   };
   const loadPicks = async () => {
     if (next.picks.length > 0) return;
-    const rows = await loadSingletonDataset<PickAsset>(next.manifest, "pick_assets", cacheBust);
+    const [rawRows, valuations] = await Promise.all([
+      loadSingletonDataset<PickAsset>(next.manifest, "pick_assets", cacheBust),
+      loadAssetValuations(cacheBust)
+    ]);
+    const rows = withAssetPickValues(rawRows, valuations);
     if (rows.length > 0) next = { ...next, picks: rows };
   };
   const loadProspects = async () => {
@@ -158,11 +170,15 @@ function isStaticManifest(manifest: Manifest): manifest is Manifest & { static_d
 
 async function loadStaticInitialData(manifest: Manifest & { static_data: NonNullable<Manifest["static_data"]> }, cacheBust?: string): Promise<AppData> {
   const season = latestManifestSeason(manifest) ?? new Date().getFullYear();
-  const [players, injuryOutlook] = await Promise.all([
+  const [players, injuryOutlook, capTracker, valuations] = await Promise.all([
     loadSeasonDataset<PlayerImpact>(manifest, "impact_players", season, cacheBust),
-    loadOptionalSingleton<InjuryOutlookData>(manifest, "injury_outlook", cacheBust)
+    loadOptionalSingleton<InjuryOutlookData>(manifest, "injury_outlook", cacheBust),
+    loadOptionalSingleton<CapTrackerData>(manifest, "cap_tracker", cacheBust),
+    loadAssetValuations(cacheBust)
   ]);
-  return emptyAppData(manifest, { players, injuryOutlook });
+  return emptyAppData({ ...manifest, valuation_generated_at: valuations?.generated_at }, {
+    players: withAssetValueContext(players, capTracker, valuations), injuryOutlook, capTracker
+  });
 }
 
 async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promise<AppData> {
@@ -184,7 +200,12 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
 
   const normalized = applyOffseasonTruth(players, lineups, offseasonTruth);
   const injuryOutlook = await loadOptionalSingleton<InjuryOutlookData>(manifest, "injury_outlook", cacheBust);
-  return { manifest, players: normalized.players, teams, lineups: normalized.lineups, schedules, picks, prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview, injuryOutlook };
+  const valuations = await loadAssetValuations(cacheBust);
+  return { manifest: { ...manifest, valuation_generated_at: valuations?.generated_at }, players: withAssetValueContext(normalized.players, capTracker, valuations), teams, lineups: normalized.lineups, schedules, picks: withAssetPickValues(picks, valuations), prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview, injuryOutlook };
+}
+
+async function loadAssetValuations(cacheBust?: string): Promise<AssetValuationData | undefined> {
+  return loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current").catch(() => undefined);
 }
 
 function emptyAppData(manifest: Manifest, values: Partial<AppData> = {}): AppData {
@@ -336,4 +357,3 @@ function numberValue(value: string | number | null | undefined): number | null {
   const parsed = Number(String(value).replace(/[$,%]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
-

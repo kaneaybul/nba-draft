@@ -3,12 +3,12 @@ import type { AppData, PickAsset, PlayerImpact, TeamProjection } from "./types";
 
 export function runTradeSuggestionRegressionTests(): string[] {
   return [
-    fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(),
+    fourYearTradeValueUsesCommonAssetMethod(),
     targetPlayerAcquisitionBuildsPickPackage()
   ];
 }
 
-function fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(): string {
+function fourYearTradeValueUsesCommonAssetMethod(): string {
   const row = player(99, "Four Year Value", "VAL", 50_000_000, [40_000_000, 30_000_000, 20_000_000, 10_000_000], 1);
   Object.assign(row, {
     scalability: 0.8,
@@ -26,9 +26,9 @@ function fourYearTradeValueUsesScaleAdjustedContractOpportunityCost(): string {
     projection_effective_contract_y3: 5_000_000
   });
 
-  const expected = 30_000_000 + 34_000_000 + 15_000_000 + 10_000_000;
-  expect(playerTradeValue(row) === expected, "four-year trade value should apply Option 2 to each season and use imputed effective contracts");
-  return "four-year trade value uses scale-adjusted contract opportunity cost";
+  const expected = 2 * (40_000_000 + 30_000_000) + 0.8 * (100_000_000 - 85_000_000);
+  expect(playerTradeValue(row) === expected, "four-year trade value should use peak production plus every payroll adjustment");
+  return "four-year trade value uses the common peak-production and payroll method";
 }
 
 function targetPlayerAcquisitionBuildsPickPackage(): string {
@@ -173,6 +173,10 @@ function player(nbaId: number, name: string, teamName: string, salary: number, v
     projection_scalability_y2: 1,
     projection_scalability_y3: 1,
     projection_scalability_y4: 1,
+    projection_effective_contract_y1: salary,
+    projection_effective_contract_y2: salary,
+    projection_effective_contract_y3: salary,
+    projection_effective_contract_y4: salary,
     contract: salary,
     contract_status: "Signed"
   } as PlayerImpact;

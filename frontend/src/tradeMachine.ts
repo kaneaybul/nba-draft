@@ -1,3 +1,4 @@
+import { playerFourYearAssetValue } from "./assetValue";
 import type { CapTrackerContractRow, CapTrackerData, CapTrackerException, CapTrackerHardCap, CapTrackerPick, CapTrackerSeason, CapTrackerTeamSeason, PickAsset, PlayerImpact } from "./types";
 
 export type TradeMachineRuleStatus = "pass" | "fail" | "warn";
@@ -59,6 +60,7 @@ export type TradeMachineAsset = {
   nextSeasonGuaranteedSalary?: number | null;
   contractSeasonsRemaining?: number | null;
   tradeValue?: number | null;
+  valuePriced?: boolean;
   scaleValue?: number | null;
   cashAmount?: number | null;
   isMinimumSalary?: boolean;
@@ -190,6 +192,7 @@ export type TradeMachineValueBalance = {
   rightOutgoingValue: number;
   leftOutgoingScaleAdjustedValue: number;
   rightOutgoingScaleAdjustedValue: number;
+  valuationComplete: boolean;
   valueDiff: number;
   scaleAdjustedDiff: number;
   balanceDiff: number;
@@ -206,6 +209,7 @@ export type TradeMachineTeamValueBalance = {
   outgoingValue: number;
   incomingScaleAdjustedValue: number;
   outgoingScaleAdjustedValue: number;
+  valuationComplete: boolean;
   valueDeficit: number;
   scaleAdjustedDeficit: number;
   balanceDeficit: number;
@@ -374,7 +378,8 @@ export function playerTradeMachineAsset(player: PlayerImpact, team: string, scal
     team,
     salary,
     outgoingSalary: salary,
-    tradeValue: finiteNumber(player.trade_value) ?? finiteNumber(player.value) ?? 0,
+    tradeValue: playerFourYearAssetValue(player),
+    valuePriced: playerFourYearAssetValue(player) !== null,
     scaleValue: scaleValue ?? finiteNumber(player.scalability) ?? null,
     aggregationEligible: true
   };
@@ -416,16 +421,16 @@ export function tradeSalaryForPlayer(player: PlayerImpact): number {
 }
 
 function tradeMachineValueBalance(left: TradeMachineSide, right: TradeMachineSide): TradeMachineValueBalance {
+  const valuationComplete = [...left.sends, ...right.sends].every((asset) => asset.valuePriced !== false);
   const leftOutgoingValue = assetValueTotal(left.sends);
   const rightOutgoingValue = assetValueTotal(right.sends);
-  const leftOutgoingScaleAdjustedValue = assetScaleAdjustedValueTotal(left.sends);
-  const rightOutgoingScaleAdjustedValue = assetScaleAdjustedValueTotal(right.sends);
+  // Retain aliases for persisted scenario readers, with no second valuation.
+  const leftOutgoingScaleAdjustedValue = leftOutgoingValue;
+  const rightOutgoingScaleAdjustedValue = rightOutgoingValue;
   const valueDiff = Math.abs(leftOutgoingValue - rightOutgoingValue);
-  const scaleAdjustedDiff = Math.abs(leftOutgoingScaleAdjustedValue - rightOutgoingScaleAdjustedValue);
-  const balanceDiff = Math.max(valueDiff, scaleAdjustedDiff);
-  const imbalanceBasis = scaleAdjustedDiff > valueDiff ? "scale_adjusted_value" : "trade_value";
-  const leftTotalForNo = imbalanceBasis === "scale_adjusted_value" ? leftOutgoingScaleAdjustedValue : leftOutgoingValue;
-  const rightTotalForNo = imbalanceBasis === "scale_adjusted_value" ? rightOutgoingScaleAdjustedValue : rightOutgoingValue;
+  const scaleAdjustedDiff = valueDiff;
+  const balanceDiff = valueDiff;
+  const imbalanceBasis = "trade_value";
   return {
     leftTeam: left.team.team,
     rightTeam: right.team.team,
@@ -433,12 +438,13 @@ function tradeMachineValueBalance(left: TradeMachineSide, right: TradeMachineSid
     rightOutgoingValue,
     leftOutgoingScaleAdjustedValue,
     rightOutgoingScaleAdjustedValue,
+    valuationComplete,
     valueDiff,
     scaleAdjustedDiff,
     balanceDiff,
     imbalanceBasis,
-    verdict: valueVerdict(balanceDiff),
-    teamSaysNo: balanceDiff <= TRADE_MACHINE_VALUE_ACCEPTED_DIFF ? null : leftTotalForNo > rightTotalForNo ? left.team.team : right.team.team,
+    verdict: valuationComplete ? valueVerdict(balanceDiff) : "declined",
+    teamSaysNo: balanceDiff <= TRADE_MACHINE_VALUE_ACCEPTED_DIFF ? null : leftOutgoingValue > rightOutgoingValue ? left.team.team : right.team.team,
     acceptedThreshold: TRADE_MACHINE_VALUE_ACCEPTED_DIFF,
     maybeThreshold: TRADE_MACHINE_VALUE_MAYBE_DIFF
   };
@@ -448,19 +454,9 @@ function assetValueTotal(assets: TradeMachineAsset[]): number {
   return sum(assets.map(assetValue));
 }
 
-function assetScaleAdjustedValueTotal(assets: TradeMachineAsset[]): number {
-  return sum(assets.map(assetScaleAdjustedValue));
-}
-
 function assetValue(asset: TradeMachineAsset): number {
-  return money(asset.tradeValue);
-}
-
-function assetScaleAdjustedValue(asset: TradeMachineAsset): number {
-  const value = assetValue(asset);
-  const scale = finiteNumber(asset.scaleValue);
-  if (scale === null) return value;
-  return value * Math.max(0, scale);
+  // A bad signed contract is a liability, not a zero-value asset.
+  return asset.kind === "cash" ? money(asset.tradeValue) : finiteNumber(asset.tradeValue) ?? 0;
 }
 
 function valueVerdict(diff: number): TradeMachineValueVerdict {
@@ -472,25 +468,27 @@ function valueVerdict(diff: number): TradeMachineValueVerdict {
 function tradeMachineTeamValueBalances(sides: TradeMachineSides): TradeMachineTeamValueBalances {
   return sides.map((side) => {
     const incoming = incomingAssetsForSide(side, sides);
+    const valuationComplete = [...incoming, ...side.sends].every((asset) => asset.valuePriced !== false);
     const outgoingValue = assetValueTotal(side.sends);
     const incomingValue = assetValueTotal(incoming);
-    const outgoingScaleAdjustedValue = assetScaleAdjustedValueTotal(side.sends);
-    const incomingScaleAdjustedValue = assetScaleAdjustedValueTotal(incoming);
+    const outgoingScaleAdjustedValue = outgoingValue;
+    const incomingScaleAdjustedValue = incomingValue;
     const valueDeficit = Math.max(0, outgoingValue - incomingValue);
-    const scaleAdjustedDeficit = Math.max(0, outgoingScaleAdjustedValue - incomingScaleAdjustedValue);
-    const balanceDeficit = Math.max(valueDeficit, scaleAdjustedDeficit);
-    const imbalanceBasis = scaleAdjustedDeficit > valueDeficit ? "scale_adjusted_value" : "trade_value";
+    const scaleAdjustedDeficit = valueDeficit;
+    const balanceDeficit = valueDeficit;
+    const imbalanceBasis = "trade_value";
     return {
       team: side.team.team,
       incomingValue,
       outgoingValue,
       incomingScaleAdjustedValue,
       outgoingScaleAdjustedValue,
+      valuationComplete,
       valueDeficit,
       scaleAdjustedDeficit,
       balanceDeficit,
       imbalanceBasis,
-      verdict: valueVerdict(balanceDeficit),
+      verdict: valuationComplete ? valueVerdict(balanceDeficit) : "declined",
       teamSaysNo: balanceDeficit > TRADE_MACHINE_VALUE_ACCEPTED_DIFF,
       acceptedThreshold: TRADE_MACHINE_VALUE_ACCEPTED_DIFF,
       maybeThreshold: TRADE_MACHINE_VALUE_MAYBE_DIFF

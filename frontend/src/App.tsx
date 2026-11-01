@@ -1,4 +1,5 @@
 import { AssetHistoryWorkspace } from "./AssetHistory";
+import { playerFourYearAssetValue, playerSeasonAssetValue, playerValueExposures } from "./assetValue";
 import { ProjectionHistory } from "./PreseasonArchive";
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadNewerAppData, loadPlayerCareerHistory, manifestSeasons } from "./data";
@@ -402,11 +403,11 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "total", label: "Total", type: "number" },
   { key: "score", label: "Score", type: "number" },
   { key: "score_delta", label: "Delta", type: "number" },
-  { key: "value", label: "Raw Value", type: "number" },
+  { key: "value", label: "Season Value", type: "number" },
   { key: "contract", label: "Salary", type: "number" },
   { key: "contract_status", label: "FA Status", type: "text" },
   { key: "value_add", label: "Szn VA", type: "number" },
-  { key: "fa_value", label: "FA Value", type: "number" },
+  { key: "fa_value", label: "FA Salary", type: "number" },
   { key: "scalability", label: "Scale", type: "number" },
   { key: "future_value_4y", label: "4Y Value", type: "number" },
   { key: "future_scale_4y", label: "4Y Scale", type: "number" },
@@ -1289,7 +1290,7 @@ function PlayerTable({
             <th colSpan={3}>Identity</th>
             <th colSpan={6}>Impact</th>
             <th colSpan={4}>Current Season</th>
-            <th colSpan={3}>This + 3Y</th>
+            <th colSpan={3}>Next 4Y</th>
             <th>Skills</th>
           </tr>
           <tr>
@@ -1305,12 +1306,12 @@ function PlayerTable({
             <th className="col-score c-score align-center">{sortableHeader("score", "Score")}</th>
 <th className="col-rate c-delta align-center" title={players[0]?.year === 2027 ? "Score change versus frozen preseason" : "Score change versus last season"}>{sortableHeader("score_delta", players[0]?.year === 2027 ? "Δ Pre" : "Δ Year")}</th>
             <th className="col-tier c-tier align-center group-end">{sortableHeader("tier", "Tier")}</th>
-            <th className="col-money c-money c-current-money align-right">{sortableHeader("value", "Value")}</th>
+            <th className="col-money c-money c-current-money align-right" title="Production + 0.8 × (production − salary), in common salary-cap dollars">{sortableHeader("value", "Value")}</th>
             <th className="col-money c-money c-current-money align-right">{sortableHeader("contract", "Contract")}</th>
             <th className="col-money c-va c-current-va align-right">{sortableHeader("value_add", "Szn VA")}</th>
             <th className="col-scale c-scale c-current-scale align-center group-end">{sortableHeader("scalability", "Scale")}</th>
-            <th className="col-money c-money c-future-money align-right">{sortableHeader("future_value_4y", "4Y Value")}</th>
-            <th className="col-money c-money c-fa align-right">{sortableHeader("fa_value", "FA")}</th>
+            <th className="col-money c-money c-future-money align-right" title="Twice the best two season-equivalents of production, plus every contract adjustment across four rolling seasons; same value used in trades">{sortableHeader("future_value_4y", "4Y Value")}</th>
+            <th className="col-money c-money c-fa align-right" title="Estimated free-agent salary">{sortableHeader("fa_value", "FA $")}</th>
             <th className="col-scale c-scale c-future-scale align-center group-end">{sortableHeader("future_scale_4y", "4Y Scale")}</th>
             <th className="col-skills c-skills align-center">
               <div className="skills-head">
@@ -1377,7 +1378,7 @@ function PlayerTable({
               <td className="align-center group-end-cell">
                 <span className="tier-text">{player.tier}</span>
               </td>
-              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.value)}</div></td>
+              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(playerSeasonAssetValue(player))}</div></td>
               <td className="money-text muted-num"><div className="cell-stage money-stage">{formatContractValue(player)}</div></td>
               <td className="va-cell" style={netMoneyStyle(currentValueAdd(player))}><div className="cell-stage money-stage">{formatSeasonValueAdd(player)}</div></td>
               <td className="align-center group-end-cell">
@@ -1554,8 +1555,8 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
               <strong>{formatNumber(player.timin, 0)}</strong>
             </div>
             <div className="mc">
-              <span>Raw Value</span>
-              <strong>{formatMoney(player.value)}</strong>
+              <span>Season Value</span>
+              <strong>{formatMoney(playerSeasonAssetValue(player))}</strong>
             </div>
             <div className="mc">
               <span>Salary</span>
@@ -1566,18 +1567,22 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
               <strong style={netMoneyStyle(currentValueAdd(player))}>{formatSeasonValueAdd(player)}</strong>
             </div>
             <div className="mc">
-              <span>FA Value</span>
+              <span>FA Salary</span>
               <strong>{formatMoney(player.fa_value)}</strong>
             </div>
             <div className="mc">
-              <span>Trade Val</span>
-              <strong>{formatMoney(player.trade_value)}</strong>
+              <span>4Y / Trade Value</span>
+              <strong>{formatMoney(futureValue4y(player))}</strong>
             </div>
             <div className="mc">
               <span>Scalability</span>
               <strong style={scaleStyle(currentScale(player))}>{formatNumber(currentScale(player), 1)}</strong>
             </div>
           </div>
+          <p className="note note-text">
+            Value includes production + 0.8 × (production − salary). Four-year and trade values use the same rolling asset quote in common-cap dollars.
+            {player.asset_valuation && ` Asset model as of ${player.asset_valuation.date}.`}
+          </p>
           <p className="note note-text">
             {formatNumber(player.Minutes, 0)} min / {formatNumber(player.yoe, 0)} yrs experience
           </p>
@@ -2450,7 +2455,6 @@ function TradeRecommendationCard({
         <MetricPill label="Team interest" value={formatNumber(recommendation.focusInterest, 1)} tone={recommendation.focusInterest >= 60 ? "green" : "teal"} />
         <MetricPill label="Other interest" value={formatNumber(recommendation.opponentInterest, 1)} tone={recommendation.opponentInterest >= 60 ? "green" : "teal"} />
         <MetricPill label="Value diff" value={formatMoney(recommendation.valueDiff)} tone={recommendation.valueDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
-        <MetricPill label="Scale diff" value={formatMoney(recommendation.scaleDiff)} tone={recommendation.scaleDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
         <MetricPill label="Net impact" value={formatSigned(recommendation.netImpact, 2)} tone={recommendation.netImpact >= 0 ? "green" : "teal"} />
         <MetricPill label="CBA" value={tradeMachineStatusLabel(recommendation.cbaStatus === "missing" ? undefined : recommendation.cbaStatus)} tone={tradeMachineTone(recommendation.cbaStatus === "missing" ? undefined : recommendation.cbaStatus)} />
       </div>
@@ -3108,7 +3112,6 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
             <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} sends`} value={formatMoney(leftTotal)} tone="gold" />
             <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} sends`} value={formatMoney(rightTotal)} tone="gold" />
             {thirdSide && <MetricPill label={`${teamLabel(thirdSide.team, teamMeta)} sends`} value={formatMoney(thirdTotal)} tone="gold" />}
-            <MetricPill label="Scale diff" value={formatMoney(scaleDiff)} tone={scaleDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
             <MetricPill label="CBA status" value={tradeMachineStatusLabel(tradeMachineResult?.status)} tone={tradeMachineTone(tradeMachineResult?.status)} />
             <MetricPill label={`${teamLabel(leftSide.team, teamMeta)} net`} value={formatSigned(leftDelta.total, 2)} tone={leftDelta.total >= 0 ? "green" : "teal"} />
             <MetricPill label={`${teamLabel(rightSide.team, teamMeta)} net`} value={formatSigned(rightDelta.total, 2)} tone={rightDelta.total >= 0 ? "green" : "teal"} />
@@ -3260,7 +3263,6 @@ function TradeSuggestionsPanel({
               <div className="trade-suggestion-metrics">
                 <MetricPill label="Score" value={formatNumber(suggestion.score, 1)} tone="gold" />
                 <MetricPill label="Value diff" value={formatMoney(suggestion.valueDiff)} tone={suggestion.valueDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
-                <MetricPill label="Scale diff" value={formatMoney(suggestion.scaleDiff)} tone={suggestion.scaleDiff <= TRADE_ACCEPTED_DIFF ? "green" : "teal"} />
                 <MetricPill label="Fit lift" value={formatSigned(suggestion.fitLift, 1)} tone={suggestion.fitLift >= 0 ? "green" : "teal"} />
               </div>
               <button onClick={() => onLoad(suggestion)}>Load</button>
@@ -6475,22 +6477,17 @@ function impactNumber(player: PlayerImpact, key: keyof PlayerImpact): number | n
 }
 
 function futureValue4y(player: PlayerImpact): number | null {
-  const values = [
-    impactNumber(player, "value"),
-    ...[1, 2, 3].map((index) => impactNumber(player, `projection_value_y${index}` as keyof PlayerImpact))
-  ]
-    .filter((value): value is number => value !== null);
-  if (values.length === 0) return null;
-  return values.reduce((sum, value) => sum + value, 0);
+  return playerFourYearAssetValue(player);
 }
 
 function futureScale4y(player: PlayerImpact): number | null {
-  const scales = [
-    currentScale(player),
-    ...[1, 2, 3].map((index) => impactNumber(player, `projection_scalability_y${index}` as keyof PlayerImpact))
-  ]
-    .filter((value): value is number => value !== null);
-  return scales.length > 0 ? scales.reduce((sum, value) => sum + value, 0) / scales.length : null;
+  let total = 0;
+  for (const { horizon, exposure } of playerValueExposures(player)) {
+    const scale = horizon === 0 ? currentScale(player) : impactNumber(player, `projection_scalability_y${horizon}` as keyof PlayerImpact);
+    if (scale === null) return null;
+    total += scale * exposure;
+  }
+  return total / 4;
 }
 
 function playerTradeScale(player: PlayerImpact): number {
@@ -8001,8 +7998,9 @@ function tradeMachineValueVerdictLabel(verdict: TradeMachineValueVerdict | undef
 
 function tradeMachineValueSaysNoLabel(balance: TradeMachineResult["valueBalance"] | undefined): string | null {
   if (!balance) return null;
+  if (!balance.valuationComplete) return "Incomplete four-year valuation";
   if (!balance.teamSaysNo) return "Toss-up";
-  const basis = balance.imbalanceBasis === "scale_adjusted_value" ? "scale-adjusted value" : "trade value";
+  const basis = "asset value";
   return `${balance.teamSaysNo} says no (${basis})`;
 }
 
@@ -8020,9 +8018,10 @@ function tradeMachineMultiTeamVerdictLabel(result: TradeMachineResult | null | u
 
 function tradeMachineMultiTeamSaysNoLabel(result: TradeMachineResult | null | undefined, teamMeta: Map<string, TeamProjection>): string | null {
   if (!result) return null;
+  if (result.teamValueBalances.some((balance) => !balance.valuationComplete)) return "Incomplete four-year valuation";
   const blockers = result.teamValueBalances.filter((balance) => balance.teamSaysNo);
   if (blockers.length === 0) return "Toss-up";
-  const basis = blockers.some((balance) => balance.imbalanceBasis === "scale_adjusted_value") ? "scale-adjusted value" : "trade value";
+  const basis = "asset value";
   return `${blockers.map((balance) => teamLabel(balance.team, teamMeta)).join(", ")} says no (${basis})`;
 }
 
@@ -8152,9 +8151,10 @@ function buildTradePickContext(slotAssets: PickAsset[], capTracker: AppData["cap
   const years = tradePickDraftYears(season);
   const baseYear = years[0];
   const baseCap = tradePickScaleCap(capTracker, baseYear);
+  const commonCapQuotes = slotAssets.some((asset) => asset.source === "asset_history_peak4_payroll_0.8");
   const yearScale = new Map(years.map((year) => {
     const cap = tradePickScaleCap(capTracker, year);
-    return [year, baseCap > 0 && cap > 0 ? cap / baseCap : 1];
+    return [year, commonCapQuotes ? 1 : baseCap > 0 && cap > 0 ? cap / baseCap : 1];
   }));
   const lotteryWeights = [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5];
   const lotteryDistributions = weightedLotteryDistributions(lotteryWeights);
@@ -8339,29 +8339,7 @@ function selectedTradePlayerIds(...assetGroups: TradeAsset[][]): Set<number> {
 }
 
 export function playerTradeValue(player: PlayerImpact): number {
-  const seasons = [
-    {
-      value: impactNumber(player, "value"),
-      scale: currentScale(player),
-      contract: impactNumber(player, "contract") ?? impactNumber(player, "fa_value")
-    },
-    ...[1, 2, 3].map((seasonIndex) => ({
-      value: impactNumber(player, `projection_value_y${seasonIndex}` as keyof PlayerImpact),
-      scale: impactNumber(player, `projection_scalability_y${seasonIndex}` as keyof PlayerImpact),
-      contract: impactNumber(player, `projection_effective_contract_y${seasonIndex}` as keyof PlayerImpact)
-        ?? impactNumber(player, `projection_contract_y${seasonIndex}` as keyof PlayerImpact)
-    }))
-  ];
-  const seasonValues = seasons
-    .filter((season) => season.value !== null)
-    .map((season) => {
-      const value = season.value ?? 0;
-      const contract = season.contract ?? 0;
-      const scale = Math.max(0, season.scale ?? 1);
-      return value - contract * (1 - scale);
-    });
-  if (seasonValues.length > 0) return seasonValues.reduce((sum, value) => sum + value, 0);
-  return Number(player.trade_value ?? 0);
+  return playerFourYearAssetValue(player) ?? 0;
 }
 
 function assetValue(asset: TradeAsset): number {
@@ -8371,13 +8349,9 @@ function assetValue(asset: TradeAsset): number {
 }
 
 function scaleAdjustedAssetValue(asset: TradeAsset): number {
-  const value = assetValue(asset);
-  if (asset.kind === "player" && asset.player) return value;
-  if (asset.kind === "pick" && asset.pick) {
-    const scale = Number(asset.pick.scale_value ?? pickScaleFromNormalized(asset.pick.normalized));
-    return value * Math.max(0, Number.isFinite(scale) ? scale : 1);
-  }
-  return value;
+  // Compatibility name for saved scenarios and recommendation callers. Both
+  // players and picks already include contract economics in their asset value.
+  return assetValue(asset);
 }
 
 function scaleAdjustedAssetTotal(assets: TradeAsset[]): number {
@@ -8646,13 +8620,13 @@ function tradeMachineShortStatusLabel(status: TradeMachineStatus | undefined): s
 
 function tradeMachineRouteDeficitLabel(balance: TradeMachineTeamValueBalance | null | undefined): string {
   if (!balance) return "Awaiting cap/value model";
-  const basis = balance.imbalanceBasis === "scale_adjusted_value" ? "scale gap" : "value gap";
+  const basis = "value gap";
   if (balance.balanceDeficit <= TRADE_ACCEPTED_DIFF) return `Within model range (${basis})`;
   return `${basis} ${formatMoney(balance.balanceDeficit)}`;
 }
 
 function tradeMachineValueRepairHint(balance: TradeMachineTeamValueBalance): string {
-  const basis = balance.imbalanceBasis === "scale_adjusted_value" ? "scale-adjusted value" : "trade value";
+  const basis = "asset value";
   return `Add about ${formatMoney(balance.balanceDeficit)} in ${basis} to ${balance.team}.`;
 }
 
@@ -8942,6 +8916,7 @@ function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, directio
 
 function getPlayerSortValue(player: PlayerImpact, key: FilterKey): string | number | null | undefined {
   if (key === "position") return displayPosition(player.position);
+  if (key === "value") return playerSeasonAssetValue(player);
   if (key === "future_value_4y") return futureValue4y(player);
   if (key === "future_scale_4y") return futureScale4y(player);
   if (key === "skill_total") return skillAggregateTotal(player);
@@ -9010,5 +8985,3 @@ function draftTierRank(tier: string): number {
 }
 
 export default App;
-
-
