@@ -132,7 +132,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Jaren Jackson Jr.",
+    "player_name": "Jaren Jackson, Jr.",
     "nba_id": 1628991,
     "known_from": "2019-10-21",
     "remove_years": [],
@@ -143,7 +143,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Jaren Jackson Jr.",
+    "player_name": "Jaren Jackson, Jr.",
     "nba_id": 1628991,
     "known_from": "2020-12-16",
     "remove_years": [],
@@ -407,7 +407,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Michael Porter Jr.",
+    "player_name": "Michael Porter, Jr.",
     "nba_id": 1629008,
     "known_from": "2019-10-07",
     "remove_years": [],
@@ -418,7 +418,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Michael Porter Jr.",
+    "player_name": "Michael Porter, Jr.",
     "nba_id": 1629008,
     "known_from": "2020-12-10",
     "remove_years": [],
@@ -3322,7 +3322,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Gary Trent Jr.",
+    "player_name": "Gary Trent, Jr.",
     "nba_id": 1629018,
     "known_from": "2023-06-20",
     "remove_years": [],
@@ -7491,7 +7491,7 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
-    "player_name": "Gary Trent Jr.",
+    "player_name": "Gary Trent, Jr.",
     "nba_id": 1629018,
     "known_from": "2026-06-25",
     "remove_years": [
