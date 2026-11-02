@@ -206,7 +206,17 @@ def run(args):
         for team in TEAMS:(state/f'{team}.json').unlink(missing_ok=True)
     from ownership_runtime import refresh_events,replay,restore_events,save_events
     ownership_seed_ids=restore_events(runtime,state)
-    ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
+    if getattr(args,'use_published_inputs',False):
+        capture=state/'latest_inputs.json.gz'
+        if not capture.exists():raise ValueError('Method-only replay needs preserved published inputs')
+        with gzip.open(capture,'rt')as f:captured=json.load(f)
+        if captured.get('date')!=args.as_of or not captured.get('roster'):
+            raise ValueError('Published input capture does not match the requested observation')
+        if not args.skip_contract_refresh:raise ValueError('Method-only replay cannot refresh historical contract sources')
+        ownership_source={'mode':'published_observation_replay','date':args.as_of,
+                          'source':'Preserved inputs and dated facts from the last validated all-team publication'}
+    else:
+        ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
     rosterfile=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
     dates={s['cutoff_date']for s in json.loads(rosterfile.read_text())}|{args.as_of}
     _,ownership_audit=replay(runtime,dates)
@@ -262,6 +272,6 @@ def run(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
-    p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true')
+    p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
 

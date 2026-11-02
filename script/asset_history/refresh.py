@@ -31,6 +31,12 @@ def main(args):
                 return {**saved,'reused_identical_published_inputs':True}
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
+    published_inputs=getattr(args,'use_published_inputs',False)
+    if published_inputs:
+        if not new_version:raise ValueError('Published-input replay is restricted to a new method version')
+        prior=legacy_snapshots(repo)
+        if any(max(points)!=asof for points in prior.values()):raise ValueError('Method-only replay must match the last validated league observation')
+        command+=['--use-published-inputs','--skip-contract-refresh']
     if args.reseed or new_version:command.append('--reseed')
     log_path=work/'player_refresh.log'
     with log_path.open('w')as log:
@@ -53,6 +59,12 @@ def main(args):
         if old_picks['source_fingerprint']!=picks['source_fingerprint']:raise ValueError('Method comparison needs identical pick sources')
         legacy_pick_totals={t:sum(a['value']for a in old_picks['teams'][t])for t in TEAMS}
     player_data=json.loads((players/'player_candidates.json').read_text())['snapshots']
+    if published_inputs:
+        latest={s['team']:s for s in player_data if s['date']==asof}
+        for t in TEAMS:
+            before={a['id']for a in prior[t][asof]['assets']if a['kind']=='player'}
+            after={a['id']for a in latest[t]['assets']}
+            if before!=after:raise ValueError('Method-only replay changed published ownership: '+t)
     # A new method gets a separate reconstructed history. Later daily updates
     # retain that version's preserved monthly observations.
     previous={}
@@ -90,7 +102,7 @@ def main(args):
     return audit
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');a=p.parse_args()
     try:print(json.dumps(main(a)))
     except Exception as exc:
         out=data_root(a.repo.resolve())

@@ -41,7 +41,7 @@ jobs:
       - name: Build the complete new valuation version
         # A release may reprice the latest verified source observation. It does
         # not advance the observation date or fabricate newer basketball data.
-        run: python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/endpoint-release" --allow-reconstructed
+        run: python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/endpoint-release" --allow-reconstructed --use-published-inputs
       - name: Reconcile old and new methods on identical inputs
         run: python3 script/asset_history/calibration/release_report.py --repo .
       - uses: actions/setup-node@v4
