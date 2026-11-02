@@ -20,8 +20,6 @@ def main(args):
     materialize(repo)
     out=data_root(repo);new_version=not(out/'manifest.json').exists()
     pool=json.loads((repo/'raw/live/player_pool.json').read_text());asof=pool['generated_at'][:10]
-    if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
-        raise ValueError('The source refresh is not from today; retaining the last validated history')
     status=out/'refresh_status.json'
     if not args.reseed and not new_version and status.exists():
         saved=json.loads(status.read_text())
@@ -29,6 +27,8 @@ def main(args):
             manifest=json.loads((out/'manifest.json').read_text())
             if len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
                 return {**saved,'reused_identical_published_inputs':True}
+    if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
+        raise ValueError('The source refresh is not from today; retaining the last validated history')
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
     published_inputs=getattr(args,'use_published_inputs',False)
