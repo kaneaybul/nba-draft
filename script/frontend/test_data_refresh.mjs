@@ -12,14 +12,17 @@ const compiled = await esbuild.build({
   bundle: true, write: false, platform: 'node', format: 'esm', target: 'es2022', logLevel: 'silent'
 });
 const { loadNewerAppData } = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`);
-const current = { generated_at: 'old' };
+const current = { generated_at: 'old', valuation_generated_at: 'initial-values' };
 const updated = { generated_at: 'new', datasets: [], static_data: { schema_version: 2, seasons: [2027], datasets: {
   impact_players: { shards: [{ year: 2027, file: 'players.json', sha256: 'new-players' }] }
 } } };
 const player = { nba_id: 1, year: 2027, player_name: 'Fresh player' };
 const originalFetch = globalThis.fetch;
 let calls = [];
-function serve(manifest, valuations) {
+const initialValuations = { method: 'peak4-payroll-0.8-v5', history_version: 'v5',
+  generated_at: 'initial-values', season: 2027, reporting_cap: 164961000,
+  players: {}, slots: {}, picks: [] };
+function serve(manifest, valuations = initialValuations) {
   calls = [];
   globalThis.fetch = async (url, options) => {
     calls.push([url, options]);
@@ -32,7 +35,9 @@ function serve(manifest, valuations) {
 }
 
 try {
-  // An optional valuation feed can be absent without preventing refresh checks.
+  // A missing live feed must not switch the app to a different valuation model.
+  serve(current, null);
+  await assert.rejects(loadNewerAppData(current), /404/);
   serve(current);
   assert.equal(await loadNewerAppData(current), null);
   assert.equal(calls.length, 2);
@@ -46,7 +51,7 @@ try {
   assert.deepEqual(loaded.teams, []);
 
   // Asset-history updates are independent of the projection manifest timestamp.
-  const valuations = { generated_at: 'new-values', season: 2027, reporting_cap: 164961000,
+  const valuations = { ...initialValuations, generated_at: 'new-values', season: 2027, reporting_cap: 164961000,
     players: { '1': { value: 12345, annual: [] } }, slots: {}, picks: [] };
   serve(updated, valuations);
   const revalued = await loadNewerAppData({ ...updated, valuation_generated_at: 'old-values' });
@@ -59,7 +64,9 @@ try {
   await assert.rejects(loadNewerAppData(current), /503/);
   serve(current);
   assert.equal(await loadNewerAppData(current), null);
-  console.log('Projection and valuation refresh, versioned loading, optional-feed outage, and connection recovery passed.');
+  serve(current, { ...initialValuations, history_version: 'v4' });
+  await assert.rejects(loadNewerAppData(current), /current asset valuation release/);
+  console.log('Projection and valuation refresh, versioned loading, required-feed outage, method consistency, and connection recovery passed.');
 } finally {
   globalThis.fetch = originalFetch;
 }

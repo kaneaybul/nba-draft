@@ -213,8 +213,11 @@ def run(args):
         if captured.get('date')!=args.as_of or not captured.get('roster'):
             raise ValueError('Published input capture does not match the requested observation')
         if not args.skip_contract_refresh:raise ValueError('Method-only replay cannot refresh historical contract sources')
-        ownership_source={'mode':'published_observation_replay','date':args.as_of,
+        ownership_source={'mode':'published_observation_replay','date':args.as_of,'knowledge_date':args.as_of,
                           'source':'Preserved inputs and dated facts from the last validated all-team publication'}
+        # Extend revalidates the original raw exports without any network call.
+        # Record the provenance of the restored ledger, not a fresh scrape.
+        (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source))
     else:
         ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
     rosterfile=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
