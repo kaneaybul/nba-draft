@@ -132,6 +132,9 @@ class ProductionQuotes(unittest.TestCase):
         c,p,a=fixture();p['asset_type']='unsigned_draft_right';p['source_nba_id']=''
         self.assertEqual(c.quote(p,a)['status'],'unsigned_draft_right_existing_policy')
         self.assertEqual(c.events['unsigned_draft_right_existing_policy'],1)
+        p['draft_year']='2010'
+        self.assertIsNone(c.quote(p,a))
+        p['draft_year']='2023'
         p['asset_type']='signed_player'
         with self.assertRaisesRegex(ValueError,'stable identity'):c.quote(p,a)
 

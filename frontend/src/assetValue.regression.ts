@@ -68,6 +68,8 @@ export function runAssetValueRegressionTests(): string[] {
   expect(picks[0].value === 200 && picks[1].value === 75, "trade picks use the asset curve and exact uniquely matched rights quote");
   const unavailable = withAssetValueContext([{ ...cheap, nba_id: 2 }], undefined, published)[0];
   expect(playerFourYearAssetValue(unavailable) === null, "missing live quotes never silently switch to the legacy model");
+  expect(playerFourYearAssetValue(withAssetValueContext([{ ...cheap, year: 2026 }], undefined, published)[0]) === null,
+    "historical season rows cannot silently substitute a legacy quote for a dated asset observation");
   const ambiguous = withAssetPickValues([picks[1], { ...picks[1], asset_id: "duplicate" }], published);
   expect(ambiguous.every((pick) => pick.value_priced === false), "ambiguous legal claims cannot duplicate a portfolio quote");
   return [

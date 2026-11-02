@@ -113,7 +113,7 @@ export function withAssetValueContext(players: PlayerImpact[], capTracker?: CapT
   const caps = new Map(capTracker?.seasons.map((row) => [row.year, row.salary_cap]) ?? []);
   return players.map((player) => ({
     ...player,
-    valuation_quote_required: player.year === valuations?.season,
+    valuation_quote_required: valuations !== undefined,
     asset_valuation: player.year === valuations?.season
       ? valuations.players[String(player.source_nba_id ?? player.nba_id)] ?? valuations.players[String(player.nba_id)]
       : undefined,

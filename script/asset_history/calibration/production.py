@@ -132,6 +132,7 @@ class PathCalibrator:
         annual=sorted([r for r in annual if number(r['exposure'])>0],key=lambda r:int(r['season']))
         if not annual:raise ValueError('Missing full annual path')
         cutoff=int(annual[0]['league_reference_year']);stage=cutoff-int(draft)
+        if stage<0 or stage>=4:return None  # Preserve older dormant rights and veteran policies.
         if player.get('asset_type')=='unsigned_draft_right':
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
@@ -140,7 +141,6 @@ class PathCalibrator:
             return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
                         value=curve['quote'],production_quote=curve['peak_production_quote'],
                         contract_adjustment_sum=curve['quote']-curve['peak_production_quote'])
-        if stage<0 or stage>=4:return None  # Veteran production policy is retained.
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None
         if pid is None:raise ValueError('A selected active player needs a stable identity')
