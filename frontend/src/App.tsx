@@ -1,5 +1,5 @@
 import { AssetHistoryWorkspace } from "./AssetHistory";
-import { playerFourYearAssetValue, playerSeasonAssetValue, playerValueExposures } from "./assetValue";
+import { playerFourYearAssetValue, playerValueExposures } from "./assetValue";
 import { ProjectionHistory } from "./PreseasonArchive";
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadNewerAppData, loadPlayerCareerHistory, manifestSeasons } from "./data";
@@ -83,6 +83,7 @@ type SortKey =
   | "fa_value"
   | "scalability"
   | "future_value_4y"
+  | "asset_value"
   | "future_scale_4y"
   | "skill_total"
   | "skill_off"
@@ -403,13 +404,14 @@ const filterFields: Array<{ key: FilterKey; label: string; type: FilterFieldType
   { key: "total", label: "Total", type: "number" },
   { key: "score", label: "Score", type: "number" },
   { key: "score_delta", label: "Delta", type: "number" },
-  { key: "value", label: "Season Value", type: "number" },
+  { key: "value", label: "Raw Value", type: "number" },
   { key: "contract", label: "Salary", type: "number" },
   { key: "contract_status", label: "FA Status", type: "text" },
   { key: "value_add", label: "Szn VA", type: "number" },
   { key: "fa_value", label: "FA Salary", type: "number" },
   { key: "scalability", label: "Scale", type: "number" },
   { key: "future_value_4y", label: "4Y Value", type: "number" },
+  { key: "asset_value", label: "Asset Value", type: "number" },
   { key: "future_scale_4y", label: "4Y Scale", type: "number" },
   { key: "skill_total", label: "Skill Total", type: "number" },
   { key: "skill_off", label: "Skill Off", type: "number" },
@@ -1282,6 +1284,7 @@ function PlayerTable({
           <col className="cg-money cg-future-money" />
           <col className="cg-money cg-fa" />
           <col className="cg-scale cg-future-scale" />
+          <col className="cg-money cg-asset-value" />
           <col className="cg-skills" />
         </colgroup>
         <thead>
@@ -1290,7 +1293,8 @@ function PlayerTable({
             <th colSpan={3}>Identity</th>
             <th colSpan={6}>Impact</th>
             <th colSpan={4}>Current Season</th>
-            <th colSpan={3}>Next 4Y</th>
+            <th colSpan={3}>This + 3Y</th>
+            <th>Assets</th>
             <th>Skills</th>
           </tr>
           <tr>
@@ -1306,13 +1310,14 @@ function PlayerTable({
             <th className="col-score c-score align-center">{sortableHeader("score", "Score")}</th>
 <th className="col-rate c-delta align-center" title={players[0]?.year === 2027 ? "Score change versus frozen preseason" : "Score change versus last season"}>{sortableHeader("score_delta", players[0]?.year === 2027 ? "Δ Pre" : "Δ Year")}</th>
             <th className="col-tier c-tier align-center group-end">{sortableHeader("tier", "Tier")}</th>
-            <th className="col-money c-money c-current-money align-right" title="Production + 0.8 × (production − salary), in common salary-cap dollars">{sortableHeader("value", "Value")}</th>
+            <th className="col-money c-money c-current-money align-right" title="Current-season production value before contract adjustments">{sortableHeader("value", "Value")}</th>
             <th className="col-money c-money c-current-money align-right">{sortableHeader("contract", "Contract")}</th>
             <th className="col-money c-va c-current-va align-right">{sortableHeader("value_add", "Szn VA")}</th>
             <th className="col-scale c-scale c-current-scale align-center group-end">{sortableHeader("scalability", "Scale")}</th>
-            <th className="col-money c-money c-future-money align-right" title="Twice the best two season-equivalents of production, plus every contract adjustment across four rolling seasons; same value used in trades">{sortableHeader("future_value_4y", "4Y Value")}</th>
+            <th className="col-money c-money c-future-money align-right" title="Sum of current-season and next three seasons' production values before contract adjustments">{sortableHeader("future_value_4y", "4Y Value")}</th>
             <th className="col-money c-money c-fa align-right" title="Estimated free-agent salary">{sortableHeader("fa_value", "FA $")}</th>
             <th className="col-scale c-scale c-future-scale align-center group-end">{sortableHeader("future_scale_4y", "4Y Scale")}</th>
+            <th className="col-money c-money c-asset-value align-right group-end" title="Four-year asset value including contract economics; same methodology and canonical quote used in the trade machine and Asset History">{sortableHeader("asset_value", "Asset Value")}</th>
             <th className="col-skills c-skills align-center">
               <div className="skills-head">
                 <button className={cls("skills-main-sort", activeSkill && "active")} onClick={() => onSort(activeSkill ?? "SHOOT")}>
@@ -1378,7 +1383,7 @@ function PlayerTable({
               <td className="align-center group-end-cell">
                 <span className="tier-text">{player.tier}</span>
               </td>
-              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(playerSeasonAssetValue(player))}</div></td>
+              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.value)}</div></td>
               <td className="money-text muted-num"><div className="cell-stage money-stage">{formatContractValue(player)}</div></td>
               <td className="va-cell" style={netMoneyStyle(currentValueAdd(player))}><div className="cell-stage money-stage">{formatSeasonValueAdd(player)}</div></td>
               <td className="align-center group-end-cell">
@@ -1397,6 +1402,7 @@ function PlayerTable({
                   </span>
                 </div>
               </td>
+              <td className="money-text group-end-cell"><div className="cell-stage money-stage">{formatMoney(playerFourYearAssetValue(player))}</div></td>
               <td className="skill-fingerprint-cell">
                 <SkillLedger
                   aggregates={playerSkillAggregates(player)}
@@ -1560,8 +1566,8 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
               <strong>{formatNumber(player.timin, 0)}</strong>
             </div>
             <div className="mc">
-              <span>Season Value</span>
-              <strong>{formatMoney(playerSeasonAssetValue(player))}</strong>
+              <span>Raw Value</span>
+              <strong>{formatMoney(player.value)}</strong>
             </div>
             <div className="mc">
               <span>Salary</span>
@@ -1576,8 +1582,12 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
               <strong>{formatMoney(player.fa_value)}</strong>
             </div>
             <div className="mc">
-              <span>4Y / Trade Value</span>
+              <span>4Y Value</span>
               <strong>{formatMoney(futureValue4y(player))}</strong>
+            </div>
+            <div className="mc">
+              <span>Asset Value</span>
+              <strong>{formatMoney(playerFourYearAssetValue(player))}</strong>
             </div>
             <div className="mc">
               <span>Scalability</span>
@@ -1585,7 +1595,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
             </div>
           </div>
           <p className="note note-text">
-            Value includes production + 0.8 × (production − salary). Four-year and trade values use the same rolling asset quote in common-cap dollars.
+            Value and 4Y Value measure production before contract adjustments. Asset Value is the four-year quote used in trades and Asset History, including contract economics in common-cap dollars.
             {player.asset_valuation && ` Asset model as of ${player.asset_valuation.date}.`}
           </p>
           <p className="note note-text">
@@ -6481,11 +6491,19 @@ function impactNumber(player: PlayerImpact, key: keyof PlayerImpact): number | n
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function futureValue4y(player: PlayerImpact): number | null {
-  return playerFourYearAssetValue(player);
+export function futureValue4y(player: PlayerImpact): number | null {
+  const values = [impactNumber(player, "value"), ...[1, 2, 3].map((horizon) => impactNumber(player, `projection_value_y${horizon}` as keyof PlayerImpact))]
+    .filter((value): value is number => value !== null);
+  return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
 }
 
-function futureScale4y(player: PlayerImpact): number | null {
+export function futureScale4y(player: PlayerImpact): number | null {
+  const scales = [currentScale(player), ...[1, 2, 3].map((horizon) => impactNumber(player, `projection_scalability_y${horizon}` as keyof PlayerImpact))]
+    .filter((value): value is number => value !== null);
+  return scales.length > 0 ? scales.reduce((sum, value) => sum + value, 0) / scales.length : null;
+}
+
+function rollingTradeScale4y(player: PlayerImpact): number | null {
   let total = 0;
   for (const { horizon, exposure } of playerValueExposures(player)) {
     const scale = horizon === 0 ? currentScale(player) : impactNumber(player, `projection_scalability_y${horizon}` as keyof PlayerImpact);
@@ -6496,7 +6514,7 @@ function futureScale4y(player: PlayerImpact): number | null {
 }
 
 function playerTradeScale(player: PlayerImpact): number {
-  return futureScale4y(player) ?? currentScale(player) ?? 1;
+  return rollingTradeScale4y(player) ?? currentScale(player) ?? 1;
 }
 
 function projectedValueAdd(player: PlayerImpact, seasonIndex: number): number | null {
@@ -8919,9 +8937,9 @@ function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, directio
   return direction === "asc" ? result : -result;
 }
 
-function getPlayerSortValue(player: PlayerImpact, key: FilterKey): string | number | null | undefined {
+export function getPlayerSortValue(player: PlayerImpact, key: FilterKey): string | number | null | undefined {
   if (key === "position") return displayPosition(player.position);
-  if (key === "value") return playerSeasonAssetValue(player);
+  if (key === "asset_value") return playerFourYearAssetValue(player);
   if (key === "future_value_4y") return futureValue4y(player);
   if (key === "future_scale_4y") return futureScale4y(player);
   if (key === "skill_total") return skillAggregateTotal(player);

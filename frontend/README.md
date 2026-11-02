@@ -147,8 +147,14 @@ Set `compare_minutes: true` in an explicit `raw/live_refresh_request.json` push 
 
 ### Shared player and trade asset values
 
-The board's season Value, 4Y Value, player detail panel, trade machine and trade
-suggestions use `src/assetValue.ts`. Annual asset value is production plus
+The Player Impact board preserves its production-only Value and 4Y Value: the
+current-season production value, and its sum with the next three annual
+production forecasts. Its 4Y Scale is the arithmetic average across those same
+four seasons. Sorting and filters use these production-based definitions.
+
+A separate sortable/filterable Asset Value column and matching player-detail
+field use the four-year quote from `src/assetValue.ts`, exactly as the trade
+machine and trade suggestions do. Annual asset value is production plus
 `0.8 * (production - salary)`. Four-year value is twice the best two
 season-equivalents of production plus every contract adjustment across exactly
 four forward season-equivalents, in the fixed $164,961,000 reporting-cap dollars.
@@ -159,9 +165,9 @@ unpriced, rather than silently dropping years or falling back to old trade value
 Deployment builds `public/data/asset_valuation.json` from the validated Asset
 History snapshots and trained pick curve. Matched players use the published
 canonical quote directly, including its draft evidence and injury assumptions.
-The daily player export includes its complete annual path, allowing the board's
-single-season values to use the same canonical inputs. Players outside that
-inventory use the same arithmetic with the app's existing forecasts and expected
+The daily player export includes its complete annual path for asset calculations.
+Players outside that inventory use the same asset arithmetic with the app's
+existing forecasts and expected
 contracts. The raw JSON `value` / `projection_value_yN` fields remain production
 inputs; free-agent salary estimates retain their market-price meaning.
 

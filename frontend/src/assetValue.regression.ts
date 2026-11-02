@@ -1,5 +1,5 @@
 import { annualAssetValue, ASSET_REPORTING_CAP, fourYearAssetQuote, playerFourYearAssetValue, playerSeasonAssetValue, playerValueExposures, withAssetPickValues, withAssetValueContext, type AssetValuationData } from "./assetValue";
-import { playerTradeValue } from "./App";
+import { futureScale4y, futureValue4y, getPlayerSortValue, playerTradeValue } from "./App";
 import { playerTradeMachineAsset } from "./tradeMachine";
 import type { PickAsset, PlayerImpact } from "./types";
 
@@ -18,8 +18,13 @@ export function runAssetValueRegressionTests(): string[] {
   const expensive = player(20, 30);
   expect(playerFourYearAssetValue(cheap) === 112, "four flat cheap seasons match the asset methodology");
   expect(playerFourYearAssetValue(expensive) === 48, "four flat expensive seasons match the asset methodology");
-  expect(playerSeasonAssetValue(cheap) === 28, "the main single-season value uses the same annual method");
-  expect(playerTradeValue(cheap) === playerFourYearAssetValue(cheap), "the board and trade suggestions use one four-year quote");
+  expect(playerSeasonAssetValue(cheap) === 28, "annual asset value retains the current asset methodology");
+  expect(futureValue4y(cheap) === 80 && futureValue4y(expensive) === 80, "the Player Impact 4Y Value sums production independently of salary");
+  expect(getPlayerSortValue(cheap, "value") === 20 && getPlayerSortValue(expensive, "value") === 20, "Value sorting and filters use original single-season production");
+  expect(getPlayerSortValue(cheap, "asset_value") === 112 && getPlayerSortValue(expensive, "asset_value") === 48, "the separate Asset Value column keeps contract economics");
+  const scales = { ...cheap, minutes_remaining_team_games: 41, scalability: 0.8, projection_scalability_y1: 1.2, projection_scalability_y2: 0.6, projection_scalability_y3: 1.4, projection_scalability_y4: 4 };
+  expect(futureScale4y(scales) === 1, "4Y Scale restores the current-plus-three-year arithmetic average");
+  expect(playerTradeValue(cheap) === playerFourYearAssetValue(cheap), "the Asset Value column and trade suggestions use one four-year quote");
   expect(playerTradeMachineAsset(cheap, "UTA").tradeValue === playerFourYearAssetValue(cheap), "direct trade-engine assets use the same quote");
   expect(playerFourYearAssetValue({ ...cheap, scalability: 99, projection_scalability_y1: 0 }) === 112, "diagnostic Scale cannot alter asset value");
   const missing = { ...cheap, projection_value_y2: null };
@@ -51,7 +56,11 @@ export function runAssetValueRegressionTests(): string[] {
   expect(playerSeasonAssetValue(canonical) === 35 && playerFourYearAssetValue(canonical) === 123,
     "published canonical quotes override separate forecast inputs on every live surface");
   expect(playerTradeValue(canonical) === 123 && playerTradeMachineAsset(canonical, "UTA").tradeValue === 123,
-    "the board and both trade entry points exactly match the published inventory");
+    "Asset Value and both trade entry points exactly match the published inventory");
+  expect(futureValue4y(canonical) === 80 && getPlayerSortValue(canonical, "value") === 20,
+    "canonical asset quotes must not replace the Player Impact production columns");
+  expect(getPlayerSortValue(canonical, "asset_value") === 123 && getPlayerSortValue(canonical, "future_value_4y") === 80,
+    "Asset Value and 4Y Value sorting and filtering stay distinct");
   const picks = withAssetPickValues([
     { asset_id: "slot1", asset_type: "slot_value", pick: 1, value: 1 },
     { asset_id: "right", asset_type: "team_pick", pick: 2, expected_pick: 2, team: "UTA", origin_team: "CLE", draft_year: 2028, round: 1, value: 10 }
@@ -60,7 +69,7 @@ export function runAssetValueRegressionTests(): string[] {
   return [
     "annual value rewards cheap production and preserves signed liabilities",
     "best-two production includes every four-year contract adjustment",
-    "board, recommendation and direct trade-engine player quotes agree",
+    "Player Impact production columns remain separate from asset and trade values",
     "rolling horizons handle partial seasons and unavailable years",
     "unsigned continuation and constant-cap reporting match the asset method"
   ];
