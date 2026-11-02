@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T19:50:18Z",
+  "generated_at": "2026-11-02T12:50:44Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -24,7 +24,7 @@
     },
     {
       "dataset": "injury_outlook",
-      "rows": 88,
+      "rows": 95,
       "file": "injury_outlook.json"
     },
     {
@@ -85,7 +85,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-11-01T19:50:19.002Z",
+    "generated_at": "2026-11-02T12:50:44.344Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -205,16 +205,16 @@
             "year": 2026,
             "rows": 535,
             "file": "v2/impact_players/2026.json",
-            "bytes": 3204774,
-            "sha256": "877d727757871d39ba3b093124c11bfb373eb68399b841fde876d1139d649d4a"
+            "bytes": 3204815,
+            "sha256": "87acd62315c67c8393fecbf17330d7f291be30b5cf607577dc2554dfbaf736e4"
           },
           {
             "key": "2027",
             "year": 2027,
             "rows": 633,
             "file": "v2/impact_players/2027.json",
-            "bytes": 4205765,
-            "sha256": "f8fc60da50042b05f9f4bb8cb37f915a0c5d40f02f3f4c5306864b7b4db37a11"
+            "bytes": 4205880,
+            "sha256": "f0f2a911e524bd900d776f0bfe1110a3c861ff0aab9f99b1405ee2bf3eaae5a7"
           }
         ]
       },
@@ -228,7 +228,7 @@
             "rows": 90,
             "file": "v2/team_projections/2016.json",
             "bytes": 87941,
-            "sha256": "66c563926bfca17e13c237e50ce5644dbaac949c8db442d6998221e0651ac016"
+            "sha256": "5d28f31a30b78a5070abba258bff96b8fcf9bf59cba45eda5bdaaa8f36baefea"
           },
           {
             "key": "2017",
@@ -236,7 +236,7 @@
             "rows": 90,
             "file": "v2/team_projections/2017.json",
             "bytes": 87827,
-            "sha256": "0554c3cb758ed059d11ef34f81cab41e38b6f4fbaebeb89897aeaf4a3f026b44"
+            "sha256": "b99d8ae8a61e57070c98a8af212ec40511f60c3bd9d146026f3e657d2c52cf2b"
           },
           {
             "key": "2018",
@@ -244,7 +244,7 @@
             "rows": 90,
             "file": "v2/team_projections/2018.json",
             "bytes": 87923,
-            "sha256": "1313dea109c599f4ff6c4c1062a9aa760f439dde62dd5db4ba925806ca5eacba"
+            "sha256": "7e003ce8514ad68ab49ddb824b27c28d087c7129aaad55478bfe30a4937438e7"
           },
           {
             "key": "2019",
@@ -252,7 +252,7 @@
             "rows": 90,
             "file": "v2/team_projections/2019.json",
             "bytes": 87974,
-            "sha256": "062aae9d8ac001732327b299613a57df0e0bd20af9a9d0d6e7ae5225679cbf1c"
+            "sha256": "3c24a14dc26dee4b2b5b02dcdb2a726b7e8267fc6beca3523752c268f98e3bf0"
           },
           {
             "key": "2020",
@@ -260,7 +260,7 @@
             "rows": 90,
             "file": "v2/team_projections/2020.json",
             "bytes": 87956,
-            "sha256": "515f05bf557d80c01b175a53e66fa15c1b372198ed223bd926a74d83563700d8"
+            "sha256": "acb3af27779f2e21a0c0cbc8ae03e61d3ea2a69e27945da296774bee93008559"
           },
           {
             "key": "2021",
@@ -268,7 +268,7 @@
             "rows": 90,
             "file": "v2/team_projections/2021.json",
             "bytes": 87854,
-            "sha256": "eaba456ac278082be4ec4fa6b8f7a709ed81dd9531717edb54d0183921a2e86c"
+            "sha256": "1670ed611dd55019b23a34a63d1488652a9b3efc102cb0d0462c7d24b1842ad4"
           },
           {
             "key": "2022",
@@ -276,7 +276,7 @@
             "rows": 90,
             "file": "v2/team_projections/2022.json",
             "bytes": 88013,
-            "sha256": "6dc7877efedb5c672c7578c56529336b6e38b5e7d43122ef1b8fdc510ad49603"
+            "sha256": "9965db7937ff080782b35ed3562ec55e66775a565598823c19a2459dd472c8df"
           },
           {
             "key": "2023",
@@ -284,7 +284,7 @@
             "rows": 90,
             "file": "v2/team_projections/2023.json",
             "bytes": 87926,
-            "sha256": "a7303dda90783afa8247ba8a5a79d66876ff57c2fcce7a981513fc2b0ff3eb28"
+            "sha256": "f83f57ddf5fa78a27316ee9b8691a872d4d13890cffeb181cb273342fbb76420"
           },
           {
             "key": "2024",
@@ -292,7 +292,7 @@
             "rows": 90,
             "file": "v2/team_projections/2024.json",
             "bytes": 87845,
-            "sha256": "2bc8883aed762d8d212a61845e233ca69360e1681994d2d750e3a2fc8a1d4818"
+            "sha256": "0b10811cd780fdb3b1eb1321be931361833e5d82936ca147dc1e6430ce0abe45"
           },
           {
             "key": "2025",
@@ -300,7 +300,7 @@
             "rows": 90,
             "file": "v2/team_projections/2025.json",
             "bytes": 87836,
-            "sha256": "c7085155e7737ee3208a9ad4cb1ed411d616f1b1a884fec79170f23b572abd60"
+            "sha256": "fcd8778c847c504bd5fa58fd03311158568ca2914d0ca6115bd4da5b42349f3d"
           },
           {
             "key": "2026",
@@ -308,15 +308,15 @@
             "rows": 90,
             "file": "v2/team_projections/2026.json",
             "bytes": 87980,
-            "sha256": "5d13e2e2fe9f120ccaa61840788a2217caf5c8cecdd49321498adb46e2ef3e04"
+            "sha256": "c2851babbbc75c62b2a8180faf9486eeec30eae733e376da74e24ab9581c1322"
           },
           {
             "key": "2027",
             "year": 2027,
             "rows": 90,
             "file": "v2/team_projections/2027.json",
-            "bytes": 88581,
-            "sha256": "0d123286006d1e84f2f98d5c40bab32c6e3a78ed9ff576efba5fa837df8eadcb"
+            "bytes": 88679,
+            "sha256": "3b6b82ec225d526d806fe2a5d300179d100f7c1ad113b0f748b4fc3e3825f0dd"
           }
         ]
       },
@@ -417,8 +417,8 @@
             "year": 2027,
             "rows": 900,
             "file": "v2/team_lineups/2027.json",
-            "bytes": 679560,
-            "sha256": "a5b1f2145ab4a95e8fdba330b4a0b9876824d808f7e3ab060aee0809dbd9c4ab"
+            "bytes": 679618,
+            "sha256": "14d7dcec78b80a15b151c95afe5de04e6dc6eaa4656f96090e7de9c922822cc8"
           }
         ]
       },
@@ -519,24 +519,24 @@
             "year": 2027,
             "rows": 1260,
             "file": "v2/team_schedules/2027.json",
-            "bytes": 855927,
-            "sha256": "48e7869790e9434804f154933d3ee48d421113b25a335eae2695cd3192d4da59"
+            "bytes": 855820,
+            "sha256": "f7f6f9b10f650027c412f57be399b727226befd7e3700aeb29f42821a434620c"
           }
         ]
       },
       "injury_outlook": {
         "strategy": "singleton",
-        "rows": 88,
+        "rows": 95,
         "file": "injury_outlook.json",
-        "bytes": 76495,
-        "sha256": "122274b6b7775a93ee10f6990f0c4b26e77d58b7a3f919c4b85342ab20e986e7"
+        "bytes": 82595,
+        "sha256": "3ae566af180eda2e776b5ec5ff2a1af3e1cd88c06f9d865ebe4dfb7dd66f0c4c"
       },
       "impact_player_history": {
         "strategy": "singleton",
         "rows": 6103,
         "file": "impact_player_history.json",
-        "bytes": 646744,
-        "sha256": "8fbde3bc67f511643e4998159f8d5816ff8170bd26f5367e2d0323399959869b"
+        "bytes": 646752,
+        "sha256": "567833e1934bd3311b6e63738a52b7f825df3e8149ae7a925a0496f351c620c5"
       },
       "pick_assets": {
         "strategy": "singleton",
@@ -592,14 +592,14 @@
         "rows": 535,
         "file": "offseason_truth.json",
         "bytes": 349179,
-        "sha256": "73110f7602b8408fba12159b6a30e3634fc6bcb7d2c3438f12d3ae397b80c8b6"
+        "sha256": "bd4ef557cc207d1362578ece4f55eaed463bf8e34f0b6c0fda0748c85eab9d9f"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
-        "bytes": 1839618,
-        "sha256": "20c7cdd8061ebf70b3707dbf6f4cd94748f0a2580bf79e7e70064ec4c144999f"
+        "bytes": 1839617,
+        "sha256": "24327be7c0612643e34011c691763ada2ffaf6bfff215e4965b6898f0d7bdb22"
       },
       "cap_transaction_review": {
         "strategy": "singleton",
