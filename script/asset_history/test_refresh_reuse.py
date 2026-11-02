@@ -9,6 +9,15 @@ from source_signature import source_signature
 
 
 class PublishedInputReuse(unittest.TestCase):
+    def test_unchanged_validated_inputs_can_be_reused_across_midnight_without_redating(self):
+        with tempfile.TemporaryDirectory()as folder:
+            args=self.fixture(Path(folder));args.allow_reconstructed=False
+            with patch('refresh.subprocess.run')as compute:
+                result=main(args)
+            self.assertTrue(result['reused_identical_published_inputs'])
+            self.assertEqual(result['observation_date'],'2026-11-01')
+            compute.assert_not_called()
+
     def fixture(self,root):
         day='2026-11-01';raw=root/'raw/live';raw.mkdir(parents=True)
         (raw/'player_pool.json').write_text(json.dumps({'generated_at':day+'T12:00:00Z'}))

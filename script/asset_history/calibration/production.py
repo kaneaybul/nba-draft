@@ -12,9 +12,11 @@ import numpy as np
 from .historical import HistoricalPanel,name_key,eligible_careers
 from .path_model import ResidualPool,slot_weights,regularize_paths,summarize,evidence_weight,fit_reliability
 from backfill.league_player_values import agreements_at
+from .endpoint_model import (EndpointModel, build_records, learning_cases, build_pick_model,
+                            own_endpoint_path, production_quotes)
 
 REPORTING_CAP=164961000.
-POLICY='rookie-window-career-paths-v1'
+POLICY='year-four-production-endpoint-v1'
 
 
 def number(value):
@@ -36,8 +38,12 @@ def prepare(runtime,repo,state,output):
            runtime/'monthly_reconstruction/projections/app_sources/career_projection_selected_terms.csv',
            runtime/'monthly_reconstruction/projections/valuation_engine.py',
            *[runtime/f'app_model/impact_{y}.json'for y in range(2016,last+1)],
-           *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py')]]
+           *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','legacy_v4.py')]]
     hashes=[(p.name,hashlib.sha256(p.read_bytes()).hexdigest())for p in files]
+    pick=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
+    cost_inputs={'rows':[{k:r.get(k)for k in ('pick','annual_full_rookie_scale_reporting_dollars','annual_paid_cost_fraction')}for r in pick['pick_curve']],
+                 'second_round':pick['pick_fit']['second_round_salary_OLS_coefficients']}
+    hashes.append(('rookie_cost_inputs',hashlib.sha256(json.dumps(cost_inputs,sort_keys=True).encode()).hexdigest()))
     signature=hashlib.sha256(json.dumps(hashes,sort_keys=True).encode()).hexdigest()
     cache=state/'path_calibration.json.gz'
     data=None
@@ -46,18 +52,27 @@ def prepare(runtime,repo,state,output):
         if saved.get('signature')==signature:data=saved
     sys.path.insert(0,str(runtime/'monthly_reconstruction/projections'))
     if data is None:
-        from .run_backtest import evaluate
+        from dataclasses import asdict
         panel=HistoricalPanel(runtime,source,last_year=last)
         errors=panel.residual_rows();careers=panel.career_rows()
-        training=output/'path_calibration_training';training.mkdir(exist_ok=True)
-        report=evaluate(panel,errors,careers,training)
-        cases=json.loads((training/'young_holdouts.json').read_text())
+        records,excluded=build_records(panel)
+        cases,report=learning_cases(panel,records)
+        from .run_backtest import evaluate
+        legacy_training=output/'legacy_training';legacy_training.mkdir(exist_ok=True)
+        evaluate(panel,errors,careers,legacy_training)
+        legacy_cases=json.loads((legacy_training/'young_holdouts.json').read_text())
         data=dict(policy=POLICY,signature=signature,training_through=last,errors=errors,careers=careers,cases=cases,
+                  legacy_cases=legacy_cases,
+                  endpoint_records=records,endpoint_excluded=excluded,
+                  endpoint_states=[dict(pid=pid,**asdict(s))for (year,pid),s in panel.states.items()],
                   report=report,source_hashes=hashes,audit=dict(panel.audit))
         with gzip.open(cache,'wt',compresslevel=6)as f:json.dump(data,f,separators=(',',':'),allow_nan=False)
-    panel=None  # Production evidence uses actual annual stats, not imputed production.
+    pick_model=build_pick_model(json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text()),
+                               data['endpoint_records'],last)
+    (state/'endpoint_pick_model.json').write_text(json.dumps(pick_model,separators=(',',':'),allow_nan=False))
     (output/'path_calibration_status.json').write_text(json.dumps({k:v for k,v in data.items()
-        if k not in ('errors','careers','cases')},indent=2,allow_nan=False))
+        if k not in ('errors','careers','cases','legacy_cases','endpoint_states','endpoint_records')},indent=2,allow_nan=False))
+    data['pick_model']=pick_model
     return PathCalibrator(runtime,repo,data)
 
 
@@ -65,6 +80,9 @@ class PathCalibrator:
     def __init__(self,runtime,repo,data):
         self.runtime=runtime;self.repo=repo;self.data=data
         self.residuals=ResidualPool(data['errors']);self.careers=data['careers'];self.cases=data['cases']
+        self.endpoint=EndpointModel(data['endpoint_records'])
+        from valuation_engine import AnnualState
+        self.endpoint_states={(r['season'],r['pid']):AnnualState(**{k:v for k,v in r.items()if k!='pid'})for r in data['endpoint_states']}
         self.stats={};self.ages={};self.experience={}
         for r in csv.DictReader((runtime/'monthly_reconstruction/projections/annual_history.csv').open()):
             self.stats[int(r['season']),int(r['nba_id'])]=float(r['minutes'])
@@ -87,7 +105,7 @@ class PathCalibrator:
         self.caps[2027]=(REPORTING_CAP,self.caps[2027][1])
         from expected_contracts import ExpectedContracts
         self.contracts=ExpectedContracts(self.caps)
-        self.pick_curve={int(r['pick']):r for r in json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())['pick_curve']}
+        self.pick_curve={int(r['pick']):r for r in data['pick_model']['pick_curve']}
         agreements=json.loads((repo/'processed/asset_history/contracts/contract_agreements.json').read_text())
         adjustments=json.loads((repo/'processed/asset_history/contracts/contract_adjustments.json').read_text())
         agreements += [dict(r,adjustment_only=True,salaries=[])for r in adjustments]
@@ -96,6 +114,13 @@ class PathCalibrator:
             for pid in [r.get('nba_id'),*r.get('app_id_aliases',[])]:
                 if pid is not None:self.agreements[int(pid)].append(r)
         self.rates={};self.events=defaultdict(int)
+        if 'legacy_cases'in data:
+            from .legacy_v4 import PathCalibrator as V4Calibrator
+            self.legacy=V4Calibrator(runtime,repo,{**data,'cases':data['legacy_cases']})
+            fit=data['pick_model']['pick_fit']
+            self.legacy.pick_curve={slot:dict(
+                peak_production_quote=fit['peak_production_intercept']+fit['peak_production_slope']*math.log(slot),
+                cumulative_production_quote=fit['cumulative_production_intercept']+fit['cumulative_production_slope']*math.log(slot))for slot in range(1,61)}
 
     def rate(self,cutoff):
         if cutoff not in self.rates:self.rates[cutoff]=fit_reliability(self.cases,cutoff)
@@ -107,12 +132,15 @@ class PathCalibrator:
         annual=sorted([r for r in annual if number(r['exposure'])>0],key=lambda r:int(r['season']))
         if not annual:raise ValueError('Missing full annual path')
         cutoff=int(annual[0]['league_reference_year']);stage=cutoff-int(draft)
-        if stage<0 or stage>=4:return None  # Veteran and generic pick policies are retained.
+        if stage<0 or stage>=4:return None  # Preserve older dormant rights and veteran policies.
         if player.get('asset_type')=='unsigned_draft_right':
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
             self.events['unsigned_draft_right_existing_policy']+=1
-            return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff)
+            curve=self.pick_curve[int(slot)]
+            return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
+                        value=curve['quote'],production_quote=curve['peak_production_quote'],
+                        contract_adjustment_sum=curve['quote']-curve['peak_production_quote'])
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None
         if pid is None:raise ValueError('A selected active player needs a stable identity')
@@ -122,8 +150,9 @@ class PathCalibrator:
         if fitted['n']<30:
             self.events['insufficient_mature_learning_labels']+=1
             return dict(status='insufficient_mature_learning_labels',cutoff=cutoff)
-        pool=[r for r in eligible_careers(self.careers,cutoff,stage=0,horizon=4)if r['key']!=key]
-        if not pool:
+        try:
+            endpoint_prior=self.endpoint.prior(int(slot),cutoff,key)
+        except ValueError:
             self.events['insufficient_mature_career_paths']+=1
             return dict(status='insufficient_mature_career_paths',cutoff=cutoff)
         # Raw production is before both continuation and release choices.
@@ -155,13 +184,8 @@ class PathCalibrator:
             return dict(status='insufficient_completed_residual_paths',cutoff=cutoff)
         nba=np.broadcast_to(final_p,(len(variable),h)).copy()
         nba[:,:needed]=variable*available[:needed]
-        original_prior=np.array([r['production']for r in pool]);pw=slot_weights([r['slot']for r in pool],int(slot))
-        target=None
-        if cutoff==self.data['training_through']:
-            curve=self.pick_curve[int(slot)]
-            target=curve['peak_production_quote']+.8*curve['cumulative_production_quote']
-        original_prior,prior_scale=regularize_paths(original_prior,[r['slot']for r in pool],int(slot),pw,None,target)
-        prior=np.broadcast_to(final_p,(len(pool),h)).copy()
+        original_prior=endpoint_prior['paths'][:,:4];pw=endpoint_prior['weights'];prior_scale=endpoint_prior['scale']
+        prior=np.broadcast_to(final_p,(len(pw),h)).copy()
         for j,row in enumerate(annual):
             if window[j]:prior[:,j]=original_prior[:,int(row['season'])-int(draft)-1]*available[j]
         minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(int(draft)+1,cutoff+1))
@@ -204,9 +228,40 @@ class PathCalibrator:
             nba_weight=weight,completed_minutes=minutes,current_observed_minutes=observed,
             learning_scale=fitted['scale'],learning_training_n=fitted['n'],
             latest_learning_label=fitted['latest_label'],latest_residual_label=residual_meta['latest_label'],
-            latest_prior_label=max(r['label_end']for r in pool),prior_scale=prior_scale,
+            latest_prior_label=endpoint_prior['latest_label'],prior_scale=prior_scale,
+            learning_target=POLICY,
             uncertainty_scope='remaining original four-year draft-window seasons')
         result['annual_values']=[dict(season=int(row['season']),exposure=float(row['exposure']),
             production=p,asset=1.8*p-.8*c)for row,p,c in zip(annual,result['annual_mean_production'],result['annual_mean_cost'])]
         self.events['priced']+=1
         return result
+
+    def draft_evaluation(self,player,annual):
+        draft=number(player.get('draft_year'));slot=number(player.get('draft_slot'))
+        if draft is None or slot is None or not annual:return None
+        draft=int(draft);slot=int(slot);key=name_key(player['player_name'])
+        cutoff=int(annual[0]['league_reference_year'])
+        # Reporting-window draft classes; inherited players are not re-graded.
+        if draft<2022:return None
+        baseline=self.endpoint.prior(slot,draft-1,key)
+        original=baseline['value'];extension={}
+        if cutoff>=draft+4:
+            record=next((r for r in self.data['endpoint_records']if r['key']==key and r['cohort']==draft),None)
+            if record is None:return dict(status='unavailable',reason='Missing completed endpoint rating')
+            value=record['value'];own=value;weight=1.;path=record['endpoint']
+        else:
+            fit=self.rate(cutoff)
+            if fit['n']<30:return dict(status='unavailable',reason='Insufficient completed learning labels')
+            pid=int(float(player.get('source_nba_id')or player['ledger_nba_id']))
+            minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(draft+1,cutoff+1))
+            observed=self.observations.get((player['cutoff_date'],pid),0.)if cutoff>draft else 0.
+            weight=0. if cutoff==draft else evidence_weight(minutes+observed,fit['scale'])
+            path=own_endpoint_path(player,annual,draft,self.endpoint_states,self.runtime,extension)if weight else None
+            own=float(production_quotes(path)[0])if path is not None else None
+            value=original+weight*((own or 0)-original)
+        return dict(status='priced',method=POLICY,endpoint=f'{draft+4}-07-31',
+                    original_expectation=original,value=value,gain=value-original,
+                    nba_weight=weight,own_production_value=own,annual_production=path,
+                    projection_extension=extension,
+                    baseline_latest_label=baseline['latest_label'],
+                    completed=cutoff>=draft+4,contract_effect=0.)

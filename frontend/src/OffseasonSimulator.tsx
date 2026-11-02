@@ -1224,7 +1224,7 @@ function simulateDraft(
 ): DraftSelection[] {
   const selections: DraftSelection[] = [];
   const available = [...prospects].sort((a, b) => a.consensusRank - b.consensusRank || a.modelRank - b.modelRank).slice(0, 75);
-  const pickValues = new Map(picks.map((pick) => [pick.pick, pick.value]));
+  const pickValues = new Map(picks.filter((pick) => pick.asset_type === "slot_value").map((pick) => [pick.pick, pick.value]));
   const order = draftOrder(Array.from(teams.values()), prospects[0]?.draftYear, rng);
   for (const officialPick of order.slice(0, Math.min(60, available.length))) {
     const pick = officialPick.pick;
@@ -1479,8 +1479,8 @@ function initializeTeams(
   capIndex: CapTrackerIndex
 ): Map<string, TeamState> {
   const teams = new Map<string, TeamState>();
-  const slotPickValue = picks.reduce((sum, pick) => sum + (pick.round === 1 ? pick.value : pick.value * 0.35), 0) / 30;
-  const slotValues = new Map(picks.map((pick) => [pick.pick, pick.value]));
+  const slotPickValue = picks.filter((pick) => pick.asset_type === "slot_value").reduce((sum, pick) => sum + (pick.round === 1 ? pick.value : pick.value * 0.35), 0) / 30;
+  const slotValues = new Map(picks.filter((pick) => pick.asset_type === "slot_value").map((pick) => [pick.pick, pick.value]));
   const officialPickCache = OFFICIAL_2026_DRAFT_ORDER.reduce<Record<string, { count: number; premium: number; value: number }>>((cache, pick) => {
     const row = cache[pick.team] ?? { count: 0, premium: 0, value: 0 };
     row.count += 1;

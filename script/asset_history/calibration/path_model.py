@@ -153,7 +153,7 @@ def evidence_weight(minutes, scale):
 
 
 def fit_reliability(cases, cutoff, scales=(25., 50., 100., 250., 500., 1000., 2000., 4000., 8000., 16000.)):
-    """Use original four-year labels, never a residual rolling-window quote."""
+    """Fit reliability to the shared completed endpoint labels at this cutoff."""
     train = [r for r in cases if r['label_end'] <= cutoff]
     if not train:
         return dict(scale=None, n=0, cutoff=cutoff)

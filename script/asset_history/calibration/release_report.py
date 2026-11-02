@@ -12,20 +12,24 @@ def report(repo):
         series=json.loads((data_root(repo)/'teams'/f'{team}.json').read_text())['snapshots']
         current=series[-1]
         old=json.loads((data_root(repo,LEGACY_VERSION)/'teams'/f'{team}.json').read_text())['snapshots'][-1]
-        baseline=0.;priced=0
+        baseline=0.;priced=0;player_difference=0.
+        pick_baseline=current['method_comparison']['v4_same_source_pick_total']
+        pick_current=sum(a['value']for a in current['assets']if a['kind']=='pick')
         for a in current['assets']:
-            d=a.get('details',{});before=float(d.get('baseline_quote',a['value']))
-            baseline+=before
             if a['kind']!='player':continue
+            d=a.get('details',{});before=float(d['v4_same_source_quote'])
+            baseline+=before;player_difference+=a['value']-before
             c=d.get('path_calibration',{})
             if c.get('status')=='priced':priced+=1
             players.append(dict(team=team,player=a['name'],baseline=before,value=a['value'],difference=a['value']-before,
                 draft_year=d.get('draft_year'),calibration_status=c.get('status','existing_policy'),
                 nba_weight=c.get('nba_weight'),p10=c.get('p10'),p90=c.get('p90')))
+        baseline+=pick_baseline
         delta=current['total']-baseline
-        if not math.isclose(delta,sum(p['difference']for p in players if p['team']==team),abs_tol=.01):raise ValueError('Method impact does not reconcile')
+        if not math.isclose(delta,player_difference+pick_current-pick_baseline,abs_tol=.01):raise ValueError('Method impact does not reconcile')
         teams.append(dict(team=team,date=current['date'],baseline_same_source=baseline,value=current['total'],
-            difference=delta,priced_young_players=priced,previously_published_date=old['date'],previously_published_total=old['total']))
+            difference=delta,player_difference=player_difference,pick_difference=pick_current-pick_baseline,
+            priced_young_players=priced,previously_published_date=old['date'],previously_published_total=old['total']))
         historical[team]={}
         for s in series:
             for a in s['assets']:

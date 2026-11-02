@@ -7,7 +7,7 @@ from publish import publish,TEAMS,OUT,METHOD,atomic
 from assemble import assemble
 from materialize import materialize,compact
 from model_version import data_root
-from versioned_rebuild import legacy_snapshots,reconstruct
+from versioned_rebuild import legacy_snapshots,reconstruct,reprice_historical_picks
 from source_signature import source_signature
 
 def source_dates(repo,asof):
@@ -20,8 +20,6 @@ def main(args):
     materialize(repo)
     out=data_root(repo);new_version=not(out/'manifest.json').exists()
     pool=json.loads((repo/'raw/live/player_pool.json').read_text());asof=pool['generated_at'][:10]
-    if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
-        raise ValueError('The source refresh is not from today; retaining the last validated history')
     status=out/'refresh_status.json'
     if not args.reseed and not new_version and status.exists():
         saved=json.loads(status.read_text())
@@ -29,8 +27,16 @@ def main(args):
             manifest=json.loads((out/'manifest.json').read_text())
             if len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
                 return {**saved,'reused_identical_published_inputs':True}
+    if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
+        raise ValueError('The source refresh is not from today; retaining the last validated history')
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
+    published_inputs=getattr(args,'use_published_inputs',False)
+    if published_inputs:
+        if not new_version:raise ValueError('Published-input replay is restricted to a new method version')
+        prior=legacy_snapshots(repo)
+        if any(max(points)!=asof for points in prior.values()):raise ValueError('Method-only replay must match the last validated league observation')
+        command+=['--use-published-inputs','--skip-contract-refresh']
     if args.reseed or new_version:command.append('--reseed')
     log_path=work/'player_refresh.log'
     with log_path.open('w')as log:
@@ -41,8 +47,24 @@ def main(args):
         raise ValueError(detail)
     sys.path.insert(0,str(base/'backfill'))
     from run_pick_refresh import run as refresh_picks
-    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws)
+    staged_model=players/'player_state_staged/endpoint_pick_model.json'
+    if not staged_model.exists():raise ValueError('Missing endpoint-trained shared pick model')
+    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,staged_model)
+    legacy_pick_totals=None
+    if new_version:
+        old_model=json.loads(staged_model.read_text())
+        for k in ('production_policy','endpoint_records','endpoint_training_through'):old_model.pop(k,None)
+        old_path=work/'legacy_pick_model.json';old_path.write_text(json.dumps(old_model))
+        old_picks=refresh_picks(repo,runtime,asof,work/'legacy_pick_candidates.json',args.draws,old_path)
+        if old_picks['source_fingerprint']!=picks['source_fingerprint']:raise ValueError('Method comparison needs identical pick sources')
+        legacy_pick_totals={t:sum(a['value']for a in old_picks['teams'][t])for t in TEAMS}
     player_data=json.loads((players/'player_candidates.json').read_text())['snapshots']
+    if published_inputs:
+        latest={s['team']:s for s in player_data if s['date']==asof}
+        for t in TEAMS:
+            before={a['id']for a in prior[t][asof]['assets']if a['kind']=='player'}
+            after={a['id']for a in latest[t]['assets']}
+            if before!=after:raise ValueError('Method-only replay changed published ownership: '+t)
     # A new method gets a separate reconstructed history. Later daily updates
     # retain that version's preserved monthly observations.
     previous={}
@@ -53,13 +75,20 @@ def main(args):
             if old:previous[team]=old[-1]
     events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
     if new_version:
-        candidates=reconstruct(player_data,picks,legacy_snapshots(repo),events,asof,source_dates(repo,asof))
+        legacy=legacy_snapshots(repo)
+        dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
+        repriced=reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
+        candidates=reconstruct(player_data,picks,legacy,events,asof,source_dates(repo,asof),repriced)
     else:
         player_data=[s for s in player_data if s['date']==asof]
         candidates=assemble(player_data,{asof:picks},events,'reconstructed'if args.allow_reconstructed else'published',source_dates(repo,asof),previous)
     (work/'portfolio_candidates.json').write_text(json.dumps({'snapshots':candidates},separators=(',',':'),allow_nan=False))
+    if legacy_pick_totals is not None:
+        for s in candidates:
+            if s['date']==asof:s['method_comparison']={'v4_same_source_pick_total':legacy_pick_totals[s['team']]}
     # publish validates the entire batch before it touches the public inventory.
     manifest=publish(candidates,out,require_league=not new_version)
+    atomic(repo/'processed/asset_history/picks/trained_pick_model.json',json.loads(staged_model.read_text()))
     compact(repo)
     staged=players/'player_state_staged'
     if not staged.is_dir():raise ValueError('Missing staged model state')
@@ -73,7 +102,7 @@ def main(args):
     return audit
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');a=p.parse_args()
     try:print(json.dumps(main(a)))
     except Exception as exc:
         out=data_root(a.repo.resolve())

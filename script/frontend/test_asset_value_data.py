@@ -4,11 +4,17 @@ from build_asset_value_data import build,TEAMS
 
 
 class PublishedAppValues(unittest.TestCase):
+    def test_a_missing_current_version_cannot_silently_export_the_old_method(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);public=self.seed(root)
+            public.rename(public.with_name('v4'))
+            with self.assertRaises(FileNotFoundError):build(root)
+
     def seed(self,root):
         version=root/'script/asset_history/model_version.py';version.parent.mkdir(parents=True)
-        version.write_text("DATA_VERSION='v3'\nLEGACY_VERSION='v2'\nMETHOD='peak4-payroll-0.8-v3'\n")
-        public=root/'frontend/public/data/asset_history/v2';(public/'teams').mkdir(parents=True)
-        manifest={'method':'peak4-payroll-0.8-v2','generated_at':'2026-11-01T14:00:00Z',
+        version.write_text("DATA_VERSION='v5'\nLEGACY_VERSION='v4'\nMETHOD='peak4-payroll-0.8-v5'\n")
+        public=root/'frontend/public/data/asset_history/v5';(public/'teams').mkdir(parents=True)
+        manifest={'method':'peak4-payroll-0.8-v5','generated_at':'2026-11-01T14:00:00Z',
                   'teams':[{'team':team,'status':'available','latest':'2026-11-01'}for team in TEAMS]}
         (public/'manifest.json').write_text(json.dumps(manifest))
         for i,team in enumerate(TEAMS):
@@ -17,7 +23,7 @@ class PublishedAppValues(unittest.TestCase):
                     {'id':f'pick:{team}:2028:1','kind':'pick','physical_origin':team,'draft_year':2028,'round':1,'value':30.}]
             (public/'teams'/f'{team}.json').write_text(json.dumps({'snapshots':[{'date':'2026-11-01','assets':assets}]}))
         model=root/'processed/asset_history/picks/trained_pick_model.json';model.parent.mkdir(parents=True)
-        model.write_text(json.dumps({'pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
+        model.write_text(json.dumps({'production_policy':'year-four-production-endpoint-v1','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
         return public
 
     def test_preserves_published_quotes_and_the_complete_annual_path(self):

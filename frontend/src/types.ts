@@ -39,9 +39,12 @@ export type PlayerImpact = {
     date: string;
     value: number;
     annual: Array<{ season: number; production: number; asset: number; exposure: number }>;
+    draft_development?: { status: string; endpoint?: string; original_expectation?: number; value?: number; gain?: number; nba_weight?: number; contract_effect?: number };
+    raw_annual_production?: Array<{ season: number; production: number }>;
     distribution?: { p10: number; p50: number; p90: number; production_quote: number; contract_adjustment_sum: number; nba_weight: number };
   };
   valuation_salary_caps?: number[];
+  valuation_quote_required?: boolean;
   minutes_remaining_team_games?: number | null;
   minutes_source?: string | null;
   minutes_input_mpg?: number | null;
@@ -372,6 +375,7 @@ export type TeamLineupRow = {
 };
 
 export type PickAsset = {
+  value_priced?: boolean;
   asset_id: string;
   label: string;
   team?: string | null;

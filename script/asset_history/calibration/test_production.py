@@ -2,9 +2,11 @@ import copy,sys,unittest
 from pathlib import Path
 from unittest.mock import patch
 import numpy as np
+from types import SimpleNamespace
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from calibration.production import PathCalibrator,REPORTING_CAP
 from calibration.path_model import ResidualPool
+from calibration.endpoint_model import own_endpoint_path
 
 
 def fixture():
@@ -15,6 +17,9 @@ def fixture():
     c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
     c.careers=[dict(key=str(i),slot=1,cohort=2016,stage=0,horizon=4,
                    production=p)for i,p in enumerate(([20,20,0,0],[0,0,20,20]))]
+    c.endpoint=SimpleNamespace(prior=lambda *args:dict(paths=np.array([[20,20,0,0,10,10,10,10],[0,0,20,20,10,10,10,10]]),
+        weights=np.array([.5,.5]),scale=1.,latest_label=2020))
+    c.pick_curve[1]['quote']=112.
     c.residuals=ResidualPool([dict(key=str(i),origin=2020,horizon=4,feature=[22,0,2.7,1],residual=r)
         for i,r in enumerate(([10,10,-10,-10],[-10,-10,10,10]))])
     c.contracts=None
@@ -28,6 +33,39 @@ def fixture():
 
 
 class ProductionQuotes(unittest.TestCase):
+    def test_zero_growth_anchor_cannot_erase_positive_published_production(self):
+        c,p,a=fixture()
+        annual=[dict(season=2027+i,annual_production=10.,salary_cap_scenario=REPORTING_CAP,
+                     scale_budget_scenario=REPORTING_CAP,league_timin=1e6,replacement=0.)for i in range(5)]
+        engine=SimpleNamespace(AnnualState=lambda *args:SimpleNamespace(season=args[0]),
+            project_path=lambda s,h,n:[SimpleNamespace(season=s.season+j,total=0.,minutes=0.)for j in range(n+1)])
+        audit={}
+        with patch.dict(sys.modules,{'valuation_engine':engine}):
+            self.assertEqual(own_endpoint_path(p,annual,2024,{},None,audit),[10,10,10,10])
+        self.assertEqual(audit['method'],'flat_last_positive_raw_rate')
+        self.assertEqual(audit['extended_seasons'],[2032])
+
+    def test_endpoint_uses_raw_own_production_even_if_contract_choices_zero_asset_rates(self):
+        annual=[dict(season=2028+i,annual_production=10*(i+1),salary_cap_scenario=REPORTING_CAP,
+                     app_annual_quote_production_reporting_rate=0,app_effective_contract=1e9)for i in range(4)]
+        engine=SimpleNamespace(AnnualState=None,project_path=None)
+        with patch.dict(sys.modules,{'valuation_engine':engine}):
+            self.assertEqual(own_endpoint_path({},annual,2023,{},None),[10,20,30,40])
+            for r in annual:r['app_effective_contract']=1
+            self.assertEqual(own_endpoint_path({},annual,2023,{},None),[10,20,30,40])
+
+    def test_completed_draft_endpoint_does_not_roll_with_new_forecasts(self):
+        c,p,a=fixture();p['draft_year']='2022'
+        for row in a:row['league_reference_year']='2026'
+        c.endpoint=SimpleNamespace(prior=lambda slot,cutoff,key:dict(value=100.,latest_label=2021))
+        c.data['endpoint_records']=[dict(key='fixture',cohort=2022,value=170.,endpoint=[40,40,45,35])]
+        before=c.draft_evaluation(p,a)
+        for row in a:row['annual_production']='999999999'
+        after=c.draft_evaluation(p,a)
+        self.assertEqual(before,after)
+        self.assertEqual(after['gain'],70.)
+        self.assertEqual(after['contract_effect'],0.)
+
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
         self.assertAlmostEqual(result['mean'],86.)
@@ -94,6 +132,9 @@ class ProductionQuotes(unittest.TestCase):
         c,p,a=fixture();p['asset_type']='unsigned_draft_right';p['source_nba_id']=''
         self.assertEqual(c.quote(p,a)['status'],'unsigned_draft_right_existing_policy')
         self.assertEqual(c.events['unsigned_draft_right_existing_policy'],1)
+        p['draft_year']='2010'
+        self.assertIsNone(c.quote(p,a))
+        p['draft_year']='2023'
         p['asset_type']='signed_player'
         with self.assertRaisesRegex(ValueError,'stable identity'):c.quote(p,a)
 

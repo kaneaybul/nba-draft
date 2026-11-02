@@ -148,11 +148,23 @@ def export(output,asof=None,calibrator=None):
                 ident='player:nba:'+str(pid)if pid is not None else'player:name:'+''.join(x for x in row['player_name'].lower()if x.isalpha())
                 details={k:row.get(k)for k in ['asset_type','profile_method','skill_method','role_method','role_MPG_sample_weight','role_games_sample_weight','draft_year','draft_slot','draft_maturity_weight','app_style_four_year_peak_production_quote','app_style_four_year_contract_adjustment_sum','healthy_current_total','healthy_forecast_annual_games','healthy_forecast_conditional_MPG','injury_availability_factor','injury_model_method','flags']}
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                raw_path=raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                details['raw_annual_production']=[dict(season=int(r['season']),
+                    production=max(0.,float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])))for r in raw_path
+                    if r.get('annual_production')not in(None,'')and r.get('salary_cap_scenario')not in(None,'')]
                 value=float(row['app_style_four_year_asset_quote_with_draft_prior'])
                 if calibrator is not None:
+                    if hasattr(calibrator,'legacy'):
+                        before=calibrator.legacy.quote(row,raw_path)
+                        details['v4_same_source_quote']=before['mean']if before and before.get('status')=='priced'else value
                     path=calibrator.quote(row,raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[]))
                     if path:
                         details['path_calibration']={k:v for k,v in path.items()if k!='annual_values'}
+                        if path['status']=='unsigned_draft_right_existing_policy':
+                            value=path['value'];details['annual_values']=[]
+                            details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
+                            details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
+                            details['draft_right_policy']='Generic endpoint-trained pick quote; dormant right has no NBA service path'
                         if path['status']=='priced':
                             details['baseline_quote']=value
                             details['baseline_draft_maturity_weight']=details['draft_maturity_weight']
@@ -161,6 +173,8 @@ def export(output,asof=None,calibrator=None):
                             details['annual_values']=path['annual_values']
                             details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
                             details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
+                    if row.get('asset_type')!='unsigned_draft_right' and pid is not None:
+                        details['draft_development']=calibrator.draft_evaluation(row,raw_path)
                 assets.append({'id':ident,'kind':'player','name':row['player_name'],'value':float(row['app_style_four_year_asset_quote_with_draft_prior']),'exposure':float(row['app_priced_season_equivalents']),
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
@@ -194,7 +208,20 @@ def run(args):
         for team in TEAMS:(state/f'{team}.json').unlink(missing_ok=True)
     from ownership_runtime import refresh_events,replay,restore_events,save_events
     ownership_seed_ids=restore_events(runtime,state)
-    ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
+    if getattr(args,'use_published_inputs',False):
+        capture=state/'latest_inputs.json.gz'
+        if not capture.exists():raise ValueError('Method-only replay needs preserved published inputs')
+        with gzip.open(capture,'rt')as f:captured=json.load(f)
+        if captured.get('date')!=args.as_of or not captured.get('roster'):
+            raise ValueError('Published input capture does not match the requested observation')
+        if not args.skip_contract_refresh:raise ValueError('Method-only replay cannot refresh historical contract sources')
+        ownership_source={'mode':'published_observation_replay','date':args.as_of,'knowledge_date':args.as_of,
+                          'source':'Preserved inputs and dated facts from the last validated all-team publication'}
+        # Extend revalidates the original raw exports without any network call.
+        # Record the provenance of the restored ledger, not a fresh scrape.
+        (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source))
+    else:
+        ownership_source=refresh_events(runtime,args.as_of,args.roster_html,repo=repo)
     rosterfile=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
     dates={s['cutoff_date']for s in json.loads(rosterfile.read_text())}|{args.as_of}
     _,ownership_audit=replay(runtime,dates)
@@ -250,6 +277,6 @@ def run(args):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
-    p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true')
+    p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
 

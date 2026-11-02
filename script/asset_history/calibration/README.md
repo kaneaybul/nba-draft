@@ -1,5 +1,10 @@
 # Young-player path valuation
 
+The current release is v5: [endpoint-aligned asset valuation](endpoint-release.md).
+Its shared production prior and reliability weights are trained on the year-four
+production endpoint. The v4 implementation described below is retained as the
+comparison policy; its first-four-year training target is superseded in v5.
+
 Version 4 runs this layer after every canonical player refresh and before portfolio publication. The player board, annual values, four-year quotes, asset history and trade machine read the same published results.
 
 Young players use linked career paths, pricing each path before averaging. Full unfloored annual inputs retain signed salary, known absences, unsigned continuation pricing and verified release guarantees in every scenario. After one completed NBA season, reliability is observed NBA minutes divided by minutes plus an empirically fitted scale. Completed and currently observed minutes update that evidence. First-season rookies retain the draft prior because the reliability fit has no first-season cases. Veteran and generic pick policies retain their existing specification.

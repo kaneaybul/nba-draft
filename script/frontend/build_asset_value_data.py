@@ -12,10 +12,11 @@ TEAMS='ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN N
 def build(repo):
     public=repo/'frontend/public/data'
     sys.path.insert(0,str(repo/'script/asset_history'))
-    from model_version import DATA_VERSION,LEGACY_VERSION
-    version=DATA_VERSION if(public/'asset_history'/DATA_VERSION/'manifest.json').exists()else LEGACY_VERSION
+    from model_version import DATA_VERSION,METHOD
+    version=DATA_VERSION
     root=public/'asset_history'/version
     manifest=json.loads((root/'manifest.json').read_text())
+    if manifest['method']!=METHOD:raise ValueError('Published asset method differs from application method')
     latest={row['latest']for row in manifest['teams']if row['status']=='available'}
     if len(latest)!=1 or len(manifest['teams'])!=30:raise ValueError('Asset quotes need a complete same-date league')
     day=latest.pop();players={};picks=[];seen=set()
@@ -51,6 +52,9 @@ def build(repo):
                         if abs(calibration['mean']-value)>.01:raise ValueError('Expected scenario quote does not reconcile')
                     if abs(quote-value)>.01:raise ValueError('Annual path disagrees with the published player quote')
                 players[pid]={'date':day,'value':value,'annual':annual}
+                d=asset.get('details',{})
+                for k in ('draft_development','raw_annual_production'):
+                    if d.get(k)is not None:players[pid][k]=d[k]
                 if asset.get('details',{}).get('path_calibration',{}).get('status')=='priced':
                     c=asset['details']['path_calibration']
                     players[pid]['distribution']={k:c[k]for k in ('p10','p50','p90','production_quote','contract_adjustment_sum','nba_weight')}
@@ -58,6 +62,8 @@ def build(repo):
                 picks.append({'team':team,'origin':asset['physical_origin'],'year':asset['draft_year'],
                               'round':asset['round'],'value':value})
     model=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
+    if DATA_VERSION=='v5'and model.get('production_policy')!='year-four-production-endpoint-v1':
+        raise ValueError('Published v5 inventories need the shared endpoint-trained pick model')
     slots={str(row['pick']):row['quote']for row in model['pick_curve']}
     if len(slots)!=60 or any(not math.isfinite(v)for v in slots.values()):raise ValueError('Incomplete asset pick curve')
     season=int(day[:4])+(int(day[5:7])>=7)
