@@ -6297,9 +6297,14 @@ input:focus {
 
 /* Sample-faithful player board and popout */
 .editorial-player-table {
-  width: max(100%, 1360px);
-  min-width: 1360px;
+  width: max(100%, 1464px);
+  min-width: 1464px;
   table-layout: fixed;
+}
+
+.editorial-player-table col.cg-asset-value,
+.editorial-player-table th.c-asset-value {
+  width: 104px;
 }
 
 .editorial-player-table .cg-rank {
@@ -10527,8 +10532,8 @@ body,
   }
 
   .editorial-player-table {
-    width: max(100%, 1360px);
-    min-width: 1360px;
+    width: max(100%, 1464px);
+    min-width: 1464px;
   }
 
   .editorial-player-table .cg-player,
