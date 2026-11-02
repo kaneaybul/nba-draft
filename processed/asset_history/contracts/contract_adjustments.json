@@ -6897,6 +6897,17 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
+    "player_name": "Terrence Shannon, Jr.",
+    "nba_id": 1630545,
+    "known_from": "2026-10-30",
+    "remove_years": [],
+    "exercise_years": [
+      2028
+    ],
+    "source": "https://www.salaryswish.com/players/terrence-shannon-jr",
+    "quality": "dated_option_resolution_from_contract_history"
+  },
+  {
     "player_name": "DaRon Holmes II",
     "nba_id": 1641747,
     "known_from": "2025-10-22",
