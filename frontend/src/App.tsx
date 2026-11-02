@@ -3605,7 +3605,7 @@ function TradeSide({
         </div>
         <div className="trade-pick-preview">
           <span>{actualPickPreview ? assetLabel({ kind: "pick", id: actualPickPreview.asset_id, pick: actualPickPreview }) : "No team pick"}</span>
-          <strong>{actualPickPreview ? formatMoney(pickAssetTradeValue(actualPickPreview)) : "-"}</strong>
+          <strong>{actualPickPreview && actualPickPreview.value_priced !== false ? formatMoney(pickAssetTradeValue(actualPickPreview)) : "Unpriced"}</strong>
           <small>{actualPickPreview ? assetMeta({ kind: "pick", id: actualPickPreview.asset_id, pick: actualPickPreview }) : "No pick inventory"}</small>
         </div>
         <button disabled={!actualPickPreview} onClick={onAddActualPick}>Add actual</button>
@@ -3649,7 +3649,7 @@ function TradeSide({
         </div>
         <div className="trade-pick-preview">
           <span>{pickPreview ? assetLabel({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "No pick value"}</span>
-          <strong>{pickPreview ? formatMoney(pickAssetTradeValue(pickPreview)) : "-"}</strong>
+          <strong>{pickPreview && pickPreview.value_priced !== false ? formatMoney(pickAssetTradeValue(pickPreview)) : "Unpriced"}</strong>
           <small>{pickPreview ? assetMeta({ kind: "pick", id: pickPreview.asset_id, pick: pickPreview }) : "Pick curve unavailable"}</small>
         </div>
         <button disabled={!pickPreview} onClick={onAddPick}>Add pick</button>
@@ -7222,6 +7222,7 @@ function tradeSuggestionPickForGap(
   teamOptions: TeamProjection[]
 ): TradeAsset | null {
   const actual = tradeTeamPickAssets(picks, fromTeam, season)
+    .filter((pick) => pick.value_priced !== false)
     .filter((pick) => pick.round === 2 || pickAssetTradeValue(pick) <= gap * 1.55)
     .sort((a, b) => Math.abs(pickAssetTradeValue(a) - gap) - Math.abs(pickAssetTradeValue(b) - gap))[0];
   if (actual) return suggestionPickAsset(actual, toTeam);
@@ -7555,7 +7556,7 @@ function tradeMachineAsset(asset: TradeAsset, team: string, season: number, cont
     return {
       ...pickTradeMachineAsset(asset.pick, team),
       toTeam: asset.toTeam ?? null,
-      tradeValue: pickAssetTradeValue(asset.pick)
+      tradeValue: asset.pick.value_priced === false ? null : pickAssetTradeValue(asset.pick)
     };
   }
   if (asset.kind === "cash") {

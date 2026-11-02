@@ -7,7 +7,10 @@ must affect the lottery BEFORE the draw. Compression is not a lottery simulator.
 from __future__ import annotations
 import argparse,concurrent.futures,hashlib,json,math,urllib.request
 from pathlib import Path
-from pick_allocator import ref,TEAMS
+try:
+    from .pick_allocator import ref,TEAMS
+except ImportError:
+    from pick_allocator import ref,TEAMS
 
 FORFEITED='FORFEITED'
 BASE='https://pr.nba.com/'
@@ -92,6 +95,11 @@ def rookie_scale_slot(actual_first_slot,first_forfeitures):
 class RoundAwarePickQuotes:
     """Same trained production OLS, with round-correct and CBA-adjusted costs."""
     def __init__(self,model,reporting_cap=None):
+        self.model=model
+        self.endpoint=None
+        if model.get('production_policy'):
+            from calibration.endpoint_model import EndpointModel
+            self.endpoint=EndpointModel(model['endpoint_records'])
         self.fit=model['pick_fit'];self.rows={int(r['pick']):r for r in model['pick_curve']}
         self.factor=float(reporting_cap or self.fit['reporting_cap'])/float(self.fit['reporting_cap'])
     def components(self,rnd,actual_slot,first_forfeitures=0):
@@ -115,6 +123,14 @@ class RoundAwarePickQuotes:
             method='Second-round annual salary OLS on actual overall selection'
         adjustment=float(f['payroll_opportunity_scale'])*(cumulative-sum(cost))
         raw=peak+adjustment;quote=max(0.,raw)
+        if self.endpoint is not None:
+            from calibration.endpoint_model import pick_components
+            result=pick_components(self.model,slot,cost,self.endpoint)
+            return {**{k:v*self.factor for k,v in result.items()},
+                    'round':rnd,'actual_slot':slot,'rookie_scale_slot':scale_slot,
+                    'expected_salary':sum(cost)*self.factor,
+                    'annual_expected_salary':[v*self.factor for v in cost],
+                    'salary_method':method}
         return {'round':rnd,'actual_slot':slot,'rookie_scale_slot':scale_slot,
                 'production_quote':peak*self.factor,'cumulative_production':cumulative*self.factor,
                 'expected_salary':sum(cost)*self.factor,'annual_expected_salary':[v*self.factor for v in cost],

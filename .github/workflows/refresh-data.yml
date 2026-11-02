@@ -59,6 +59,16 @@ jobs:
         shell: bash
         run: Rscript script/frontend/refresh_frontend_app.R
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Refresh the shared asset valuation release
+        run: |
+          python3 -m pip install -r script/asset_history/requirements.txt
+          python3 script/asset_history/materialize.py --repo .
+          python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/asset-values"
+          python3 script/frontend/build_asset_value_data.py --repo .
+
       - name: Validate frontend data contract
         run: npm run validate:data
         working-directory: frontend
@@ -83,3 +93,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy frontend/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.ref_name }}
+

@@ -7,6 +7,7 @@ export const ASSET_REPORTING_CAP = 164_961_000;
 
 export type AnnualAssetValue = { production: number; asset: number; exposure: number };
 export type AssetValuationData = {
+  method?: string;
   history_version?: string;
   generated_at: string;
   observation_date: string;
@@ -83,11 +84,13 @@ function playerAnnualValue(player: PlayerImpact, horizon: number, forward = fals
 export function playerSeasonAssetValue(player: PlayerImpact, horizon = 0): number | null {
   const canonical = player.asset_valuation?.annual.find((row) => row.season === player.year + horizon);
   if (canonical && Number.isFinite(canonical.asset)) return canonical.asset;
+  if (player.valuation_quote_required) return null;
   return playerAnnualValue(player, horizon)?.asset ?? null;
 }
 
 export function playerFourYearAssetValue(player: PlayerImpact): number | null {
   if (player.asset_valuation && Number.isFinite(player.asset_valuation.value)) return player.asset_valuation.value;
+  if (player.valuation_quote_required) return null;
   const rows: AnnualAssetValue[] = [];
   for (const { horizon, exposure } of playerValueExposures(player)) {
     const annual = playerAnnualValue(player, horizon, true);
@@ -110,6 +113,8 @@ export function withAssetValueContext(players: PlayerImpact[], capTracker?: CapT
   const caps = new Map(capTracker?.seasons.map((row) => [row.year, row.salary_cap]) ?? []);
   return players.map((player) => ({
     ...player,
+    valuation_quote_required: player.year === valuations?.season && player.pool_status !== "free_agent"
+      && Boolean(player.team && "ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS".split(" ").includes(player.team)),
     asset_valuation: player.year === valuations?.season
       ? valuations.players[String(player.source_nba_id ?? player.nba_id)] ?? valuations.players[String(player.nba_id)]
       : undefined,
@@ -155,10 +160,14 @@ export function withAssetPickValues(picks: PickAsset[], valuations?: AssetValuat
     // unique right can receive an exact portfolio quote; do not duplicate a
     // physical pick's EV across distinct swap/rollover claims.
     const exact = groups.get(id)?.length === 1 ? matched : undefined;
+    if (exact === undefined && pick.team && pick.origin_team && pick.draft_year) {
+      return { ...pick, value_priced: false, source: "asset_history_unresolved_legal_claim",
+        description: "This legal claim could not be matched uniquely to the published portfolio; its trade value is unavailable." };
+    }
     const expected = curveAt(pick.expected_pick ?? pick.pick);
     const probability = pick.convey_probability ?? (pick.asset_type === "pick_swap" ? 0.5 : 1);
     const value = exact ?? (expected === null ? pick.value : expected * probability);
-    return { ...pick, value, source: exact !== undefined ? "asset_history_joint_rights_quote" : "asset_history_peak4_payroll_0.8_curve" };
+    return { ...pick, value, value_priced: true, source: exact !== undefined ? "asset_history_joint_rights_quote" : "asset_history_peak4_payroll_0.8_curve" };
   });
 }
 

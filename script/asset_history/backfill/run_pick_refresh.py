@@ -52,9 +52,10 @@ def new_pick_actions(events,catalog,asof,first_display_year):
             extra.append(dict(event_id=event['event_id'],known_from=event['date'],reviewed=True,source=event['source'],kind='add_rule',rule=rule))
     return extra,new_catalog,unknown
 
-def run(repo,runtime,asof,output,draws=10000):
+def run(repo,runtime,asof,output,draws=10000,model_path=None):
     inputs=repo/'processed/asset_history/picks'
     baseline=json.loads((inputs/'opening_baseline.json').read_text());catalog=json.loads((inputs/'dated_events.json').read_text());orders=json.loads((inputs/'dated_orders.json').read_text());model=json.loads((inputs/'trained_pick_model.json').read_text());historical=json.loads((inputs/'forecast_inputs.json').read_text())
+    if model_path is not None:model=json.loads(model_path.read_text())
     completion={int(y):d for y,d in orders['draft_completion_dates'].items()}
     years=display_years(asof,completion,announced_draft_months=orders.get('announced_draft_months'))
     actions,missing=load_actions()

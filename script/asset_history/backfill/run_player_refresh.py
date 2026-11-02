@@ -148,11 +148,21 @@ def export(output,asof=None,calibrator=None):
                 ident='player:nba:'+str(pid)if pid is not None else'player:name:'+''.join(x for x in row['player_name'].lower()if x.isalpha())
                 details={k:row.get(k)for k in ['asset_type','profile_method','skill_method','role_method','role_MPG_sample_weight','role_games_sample_weight','draft_year','draft_slot','draft_maturity_weight','app_style_four_year_peak_production_quote','app_style_four_year_contract_adjustment_sum','healthy_current_total','healthy_forecast_annual_games','healthy_forecast_conditional_MPG','injury_availability_factor','injury_model_method','flags']}
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                raw_path=raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                details['raw_annual_production']=[dict(season=int(r['season']),
+                    production=max(0.,float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])))for r in raw_path
+                    if r.get('annual_production')not in(None,'')and r.get('salary_cap_scenario')not in(None,'')]
                 value=float(row['app_style_four_year_asset_quote_with_draft_prior'])
                 if calibrator is not None:
+                    if hasattr(calibrator,'legacy'):
+                        before=calibrator.legacy.quote(row,raw_path)
+                        details['v4_same_source_quote']=before['mean']if before and before.get('status')=='priced'else value
                     path=calibrator.quote(row,raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[]))
                     if path:
                         details['path_calibration']={k:v for k,v in path.items()if k!='annual_values'}
+                        if path['status']=='unsigned_draft_right_existing_policy':
+                            value=path['value'];details['annual_values']=[]
+                            details['draft_right_policy']='Generic endpoint-trained pick quote; dormant right has no NBA service path'
                         if path['status']=='priced':
                             details['baseline_quote']=value
                             details['baseline_draft_maturity_weight']=details['draft_maturity_weight']
@@ -161,6 +171,8 @@ def export(output,asof=None,calibrator=None):
                             details['annual_values']=path['annual_values']
                             details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
                             details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
+                    if row.get('asset_type')!='unsigned_draft_right' and pid is not None:
+                        details['draft_development']=calibrator.draft_evaluation(row,raw_path)
                 assets.append({'id':ident,'kind':'player','name':row['player_name'],'value':float(row['app_style_four_year_asset_quote_with_draft_prior']),'exposure':float(row['app_priced_season_equivalents']),
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})

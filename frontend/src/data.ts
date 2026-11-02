@@ -205,7 +205,11 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
 }
 
 async function loadAssetValuations(cacheBust?: string): Promise<AssetValuationData | undefined> {
-  return loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current").catch(() => undefined);
+  const data = await loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current");
+  if (data.method !== "peak4-payroll-0.8-v5" || data.history_version !== "v5") {
+    throw new Error("The current asset valuation release is unavailable. Reload after the update finishes.");
+  }
+  return data;
 }
 
 function emptyAppData(manifest: Manifest, values: Partial<AppData> = {}): AppData {

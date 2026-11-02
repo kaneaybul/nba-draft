@@ -1,0 +1,84 @@
+name: Validate endpoint valuation release
+on:
+  push:
+    branches: [codex/draft-endpoint-production]
+    paths:
+      - script/asset_history/**
+      - script/frontend/*asset*.py
+      - frontend/src/**
+      - .github/workflows/endpoint-valuation-release.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: endpoint-valuation-release
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - run: python3 script/asset_history/materialize.py --repo .
+      - name: Verify endpoint calibration and publication rules
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+          python3 script/frontend/test_asset_value_data.py
+      - name: Build the complete new valuation version
+        # A release may reprice the latest verified source observation. It does
+        # not advance the observation date or fabricate newer basketball data.
+        run: python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/endpoint-release" --allow-reconstructed
+      - name: Reconcile old and new methods on identical inputs
+        run: python3 script/asset_history/calibration/release_report.py --repo .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Verify every asset-value entry point and build
+        working-directory: frontend
+        run: |
+          npm ci
+          python3 ../script/frontend/build_asset_value_data.py --repo ..
+          npm run test:asset-value
+          npm run test:trade-machine
+          npm run test:trade-suggestions
+          npm run validate:data
+          npm run build
+      - name: Commit the validated data to the release branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data/asset_history/v5 processed/asset_history
+          if ! git diff --cached --quiet; then
+            git commit -m "Build validated endpoint-trained asset valuation release"
+            git push origin HEAD:codex/draft-endpoint-production
+          fi
+      - name: Preserve release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: endpoint-valuation-validation
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            processed/asset_history/calibration_release.json
+            frontend/public/data/asset_history/v5/refresh_status.json
+            ${{ runner.temp }}/endpoint-release/player_refresh.log
+            ${{ runner.temp }}/endpoint-release/players/*.log
+            ${{ runner.temp }}/endpoint-release/players/path_calibration_status.json
+            ${{ runner.temp }}/endpoint-release/players/path_pricing_coverage.json

@@ -14,7 +14,7 @@ def legacy_snapshots(repo):
         result[team]={s['date']:s for s in content['snapshots']}
     return result
 
-def reconstruct(players,current_picks,legacy,events,asof,current_sources):
+def reconstruct(players,current_picks,legacy,events,asof,current_sources,historical_picks=None):
     if set(legacy)!=set(TEAMS):raise ValueError('Historical reconstruction needs all 30 teams')
     dates=sorted({day for points in legacy.values()for day in points if day[:7]<asof[:7]}|{asof})
     byday={}
@@ -27,15 +27,42 @@ def reconstruct(players,current_picks,legacy,events,asof,current_sources):
         else:
             if any(day not in legacy[t]for t in TEAMS):raise ValueError('Missing common legacy observation at '+day)
             first=legacy[TEAMS[0]][day]
-            picks={'complete':True,'teams':{t:copy.deepcopy([a for a in legacy[t][day]['assets']if a['kind']=='pick'])for t in TEAMS},
+            picks=historical_picks[day]if historical_picks is not None else {'complete':True,'teams':{t:copy.deepcopy([a for a in legacy[t][day]['assets']if a['kind']=='pick'])for t in TEAMS},
                 'assumptions':[a for a in first.get('assumptions',[])if a!=HISTORICAL_INJURIES]}
             sources=first.get('source_dates');vintage='reconstructed'
         batch=assemble(rows,{day:picks},events,vintage,sources,previous)
         for snapshot in batch:
             snapshot['valuation_revision']={'method':METHOD,'prior_method':'peak4-payroll-0.8-'+LEGACY_VERSION,
                 'nba_forecast_weight':'Young players: completed and current observed NBA minutes; first-season draft prior retained',
-                'path_valuation':'Expected payoff of complete linked career paths; veteran and generic pick policies retained'}
+                'path_valuation':'Endpoint-trained linked production paths for picks and young players; contracts priced afterward; veteran policy retained'}
             previous[snapshot['team']]=snapshot
         out.extend(batch)
     return out
+
+
+def reprice_historical_picks(repo,model,dates,draws=10000):
+    """Replay joint legal outcomes, never price a protection at its mean slot."""
+    from concurrent.futures import ThreadPoolExecutor
+    from backfill.pick_replay import active_rules,load_actions,display_years
+    from backfill.league_pick_values import simulate,value_portfolio
+    inputs=repo/'processed/asset_history/picks'
+    forecasts=json.loads((inputs/'forecast_inputs.json').read_text())
+    baseline=json.loads((inputs/'opening_baseline.json').read_text())
+    catalog=json.loads((inputs/'dated_events.json').read_text())
+    orders=json.loads((inputs/'dated_orders.json').read_text())
+    actions,missing=load_actions()
+    if missing:raise ValueError('Missing historical legal pick cohorts')
+    def one(day):
+        earlier=[d for d in forecasts['ratings']if d<=day]
+        if not earlier:raise ValueError('No dated pick forecast before '+day)
+        source=max(earlier)
+        view=active_rules(baseline,actions,day,catalog)
+        if not view['complete']:raise ValueError('Incomplete historical legal rights at '+day)
+        years=display_years(day,{int(y):d for y,d in orders['draft_completion_dates'].items()},announced_draft_months=orders.get('announced_draft_months'))
+        sim=simulate(day,forecasts['ratings'][source],forecasts['standings'][source],view['rules'],orders['orders'],forecasts['qualifiers'],draws,max(2033,max(years)))
+        value=value_portfolio(day,view,sim,model,years)
+        value['assumptions'].append('Reconstructed v5 pick prices use the fixed current endpoint-trained model and the last archived strength/standings forecast dated '+source+'; legal rights are dated '+day+'.')
+        print('Repriced historical picks: '+day,flush=True)
+        return day,value
+    with ThreadPoolExecutor(max_workers=3)as pool:return dict(pool.map(one,dates))
 

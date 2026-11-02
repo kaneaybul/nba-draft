@@ -2,6 +2,7 @@ import copy,sys,unittest
 from pathlib import Path
 from unittest.mock import patch
 import numpy as np
+from types import SimpleNamespace
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from calibration.production import PathCalibrator,REPORTING_CAP
 from calibration.path_model import ResidualPool
@@ -15,6 +16,9 @@ def fixture():
     c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
     c.careers=[dict(key=str(i),slot=1,cohort=2016,stage=0,horizon=4,
                    production=p)for i,p in enumerate(([20,20,0,0],[0,0,20,20]))]
+    c.endpoint=SimpleNamespace(prior=lambda *args:dict(paths=np.array([[20,20,0,0,10,10,10,10],[0,0,20,20,10,10,10,10]]),
+        weights=np.array([.5,.5]),scale=1.,latest_label=2020))
+    c.pick_curve[1]['quote']=112.
     c.residuals=ResidualPool([dict(key=str(i),origin=2020,horizon=4,feature=[22,0,2.7,1],residual=r)
         for i,r in enumerate(([10,10,-10,-10],[-10,-10,10,10]))])
     c.contracts=None

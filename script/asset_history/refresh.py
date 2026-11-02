@@ -7,7 +7,7 @@ from publish import publish,TEAMS,OUT,METHOD,atomic
 from assemble import assemble
 from materialize import materialize,compact
 from model_version import data_root
-from versioned_rebuild import legacy_snapshots,reconstruct
+from versioned_rebuild import legacy_snapshots,reconstruct,reprice_historical_picks
 from source_signature import source_signature
 
 def source_dates(repo,asof):
@@ -41,7 +41,17 @@ def main(args):
         raise ValueError(detail)
     sys.path.insert(0,str(base/'backfill'))
     from run_pick_refresh import run as refresh_picks
-    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws)
+    staged_model=players/'player_state_staged/endpoint_pick_model.json'
+    if not staged_model.exists():raise ValueError('Missing endpoint-trained shared pick model')
+    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,staged_model)
+    legacy_pick_totals=None
+    if new_version:
+        old_model=json.loads(staged_model.read_text())
+        for k in ('production_policy','endpoint_records','endpoint_training_through'):old_model.pop(k,None)
+        old_path=work/'legacy_pick_model.json';old_path.write_text(json.dumps(old_model))
+        old_picks=refresh_picks(repo,runtime,asof,work/'legacy_pick_candidates.json',args.draws,old_path)
+        if old_picks['source_fingerprint']!=picks['source_fingerprint']:raise ValueError('Method comparison needs identical pick sources')
+        legacy_pick_totals={t:sum(a['value']for a in old_picks['teams'][t])for t in TEAMS}
     player_data=json.loads((players/'player_candidates.json').read_text())['snapshots']
     # A new method gets a separate reconstructed history. Later daily updates
     # retain that version's preserved monthly observations.
@@ -53,13 +63,20 @@ def main(args):
             if old:previous[team]=old[-1]
     events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
     if new_version:
-        candidates=reconstruct(player_data,picks,legacy_snapshots(repo),events,asof,source_dates(repo,asof))
+        legacy=legacy_snapshots(repo)
+        dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
+        repriced=reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
+        candidates=reconstruct(player_data,picks,legacy,events,asof,source_dates(repo,asof),repriced)
     else:
         player_data=[s for s in player_data if s['date']==asof]
         candidates=assemble(player_data,{asof:picks},events,'reconstructed'if args.allow_reconstructed else'published',source_dates(repo,asof),previous)
     (work/'portfolio_candidates.json').write_text(json.dumps({'snapshots':candidates},separators=(',',':'),allow_nan=False))
+    if legacy_pick_totals is not None:
+        for s in candidates:
+            if s['date']==asof:s['method_comparison']={'v4_same_source_pick_total':legacy_pick_totals[s['team']]}
     # publish validates the entire batch before it touches the public inventory.
     manifest=publish(candidates,out,require_league=not new_version)
+    atomic(repo/'processed/asset_history/picks/trained_pick_model.json',json.loads(staged_model.read_text()))
     compact(repo)
     staged=players/'player_state_staged'
     if not staged.is_dir():raise ValueError('Missing staged model state')
