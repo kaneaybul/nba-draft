@@ -33,6 +33,18 @@ def fixture():
 
 
 class ProductionQuotes(unittest.TestCase):
+    def test_zero_growth_anchor_cannot_erase_positive_published_production(self):
+        c,p,a=fixture()
+        annual=[dict(season=2027+i,annual_production=10.,salary_cap_scenario=REPORTING_CAP,
+                     scale_budget_scenario=REPORTING_CAP,league_timin=1e6,replacement=0.)for i in range(5)]
+        engine=SimpleNamespace(AnnualState=lambda *args:SimpleNamespace(season=args[0]),
+            project_path=lambda s,h,n:[SimpleNamespace(season=s.season+j,total=0.,minutes=0.)for j in range(n+1)])
+        audit={}
+        with patch.dict(sys.modules,{'valuation_engine':engine}):
+            self.assertEqual(own_endpoint_path(p,annual,2024,{},None,audit),[10,10,10,10])
+        self.assertEqual(audit['method'],'flat_last_positive_raw_rate')
+        self.assertEqual(audit['extended_seasons'],[2032])
+
     def test_endpoint_uses_raw_own_production_even_if_contract_choices_zero_asset_rates(self):
         annual=[dict(season=2028+i,annual_production=10*(i+1),salary_cap_scenario=REPORTING_CAP,
                      app_annual_quote_production_reporting_rate=0,app_effective_contract=1e9)for i in range(4)]

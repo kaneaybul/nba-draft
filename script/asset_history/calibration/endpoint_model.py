@@ -163,12 +163,13 @@ def build_pick_model(previous, records, cutoff):
     return model
 
 
-def own_endpoint_path(player, annual, draft, states, runtime):
+def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
     """Read raw production before contract choices; extend own missing years."""
     from valuation_engine import AnnualState, project_path
     years = list(range(draft+5, draft+9))
     raw = {int(r['season']): max(0., float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))
            for r in annual}
+    if audit is not None:audit.update(method='published_raw_production',extended_seasons=[y for y in years if y not in raw])
     if all(y in raw for y in years):
         return [raw[y] for y in years]
     first = min(annual, key=lambda r: int(r['season']))
@@ -188,8 +189,15 @@ def own_endpoint_path(player, annual, draft, states, runtime):
     anchors = [y for y in raw if y in path and raw[y] > 0]
     level = lambda y: max(0., (path[y].total-replacement)*path[y].minutes*coefficient)
     scale = 1.
+    if audit is not None:audit['method']='own_career_model_extension'
     if anchors:
         anchor = max(anchors)
         if level(anchor) > 0:
             scale = raw[anchor]/level(anchor)
+        else:
+            # Retain the positive published level when a multiplicative career
+            # extension has a zero denominator. This bounded carry is explicit;
+            # a failed growth anchor must not silently erase known production.
+            if audit is not None:audit.update(method='flat_last_positive_raw_rate',anchor_season=anchor)
+            return [raw[y] if y in raw else raw[anchor] for y in years]
     return [raw[y] if y in raw else scale*level(y) for y in years]

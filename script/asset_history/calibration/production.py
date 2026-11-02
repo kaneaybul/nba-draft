@@ -244,7 +244,7 @@ class PathCalibrator:
         # Reporting-window draft classes; inherited players are not re-graded.
         if draft<2022:return None
         baseline=self.endpoint.prior(slot,draft-1,key)
-        original=baseline['value']
+        original=baseline['value'];extension={}
         if cutoff>=draft+4:
             record=next((r for r in self.data['endpoint_records']if r['key']==key and r['cohort']==draft),None)
             if record is None:return dict(status='unavailable',reason='Missing completed endpoint rating')
@@ -256,11 +256,12 @@ class PathCalibrator:
             minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(draft+1,cutoff+1))
             observed=self.observations.get((player['cutoff_date'],pid),0.)if cutoff>draft else 0.
             weight=0. if cutoff==draft else evidence_weight(minutes+observed,fit['scale'])
-            path=own_endpoint_path(player,annual,draft,self.endpoint_states,self.runtime)if weight else None
+            path=own_endpoint_path(player,annual,draft,self.endpoint_states,self.runtime,extension)if weight else None
             own=float(production_quotes(path)[0])if path is not None else None
             value=original+weight*((own or 0)-original)
         return dict(status='priced',method=POLICY,endpoint=f'{draft+4}-07-31',
                     original_expectation=original,value=value,gain=value-original,
                     nba_weight=weight,own_production_value=own,annual_production=path,
+                    projection_extension=extension,
                     baseline_latest_label=baseline['latest_label'],
                     completed=cutoff>=draft+4,contract_effect=0.)
