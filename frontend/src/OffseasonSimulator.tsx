@@ -1479,7 +1479,7 @@ function initializeTeams(
   capIndex: CapTrackerIndex
 ): Map<string, TeamState> {
   const teams = new Map<string, TeamState>();
-  const slotPickValue = picks.reduce((sum, pick) => sum + (pick.round === 1 ? pick.value : pick.value * 0.35), 0) / 30;
+  const slotPickValue = picks.filter((pick) => pick.asset_type === "slot_value").reduce((sum, pick) => sum + (pick.round === 1 ? pick.value : pick.value * 0.35), 0) / 30;
   const slotValues = new Map(picks.filter((pick) => pick.asset_type === "slot_value").map((pick) => [pick.pick, pick.value]));
   const officialPickCache = OFFICIAL_2026_DRAFT_ORDER.reduce<Record<string, { count: number; premium: number; value: number }>>((cache, pick) => {
     const row = cache[pick.team] ?? { count: 0, premium: 0, value: 0 };

@@ -136,8 +136,10 @@ class PathCalibrator:
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
             self.events['unsigned_draft_right_existing_policy']+=1
+            curve=self.pick_curve[int(slot)]
             return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
-                        value=self.pick_curve[int(slot)]['quote'])
+                        value=curve['quote'],production_quote=curve['peak_production_quote'],
+                        contract_adjustment_sum=curve['quote']-curve['peak_production_quote'])
         if stage<0 or stage>=4:return None  # Veteran production policy is retained.
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None

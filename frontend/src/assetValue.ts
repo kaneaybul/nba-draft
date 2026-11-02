@@ -113,8 +113,7 @@ export function withAssetValueContext(players: PlayerImpact[], capTracker?: CapT
   const caps = new Map(capTracker?.seasons.map((row) => [row.year, row.salary_cap]) ?? []);
   return players.map((player) => ({
     ...player,
-    valuation_quote_required: player.year === valuations?.season && player.pool_status !== "free_agent"
-      && Boolean(player.team && "ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS".split(" ").includes(player.team)),
+    valuation_quote_required: player.year === valuations?.season,
     asset_valuation: player.year === valuations?.season
       ? valuations.players[String(player.source_nba_id ?? player.nba_id)] ?? valuations.players[String(player.nba_id)]
       : undefined,

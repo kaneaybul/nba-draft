@@ -4,6 +4,12 @@ from build_asset_value_data import build,TEAMS
 
 
 class PublishedAppValues(unittest.TestCase):
+    def test_a_missing_current_version_cannot_silently_export_the_old_method(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);public=self.seed(root)
+            public.rename(public.with_name('v4'))
+            with self.assertRaises(FileNotFoundError):build(root)
+
     def seed(self,root):
         version=root/'script/asset_history/model_version.py';version.parent.mkdir(parents=True)
         version.write_text("DATA_VERSION='v5'\nLEGACY_VERSION='v4'\nMETHOD='peak4-payroll-0.8-v5'\n")

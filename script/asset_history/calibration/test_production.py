@@ -6,6 +6,7 @@ from types import SimpleNamespace
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from calibration.production import PathCalibrator,REPORTING_CAP
 from calibration.path_model import ResidualPool
+from calibration.endpoint_model import own_endpoint_path
 
 
 def fixture():
@@ -32,6 +33,27 @@ def fixture():
 
 
 class ProductionQuotes(unittest.TestCase):
+    def test_endpoint_uses_raw_own_production_even_if_contract_choices_zero_asset_rates(self):
+        annual=[dict(season=2028+i,annual_production=10*(i+1),salary_cap_scenario=REPORTING_CAP,
+                     app_annual_quote_production_reporting_rate=0,app_effective_contract=1e9)for i in range(4)]
+        engine=SimpleNamespace(AnnualState=None,project_path=None)
+        with patch.dict(sys.modules,{'valuation_engine':engine}):
+            self.assertEqual(own_endpoint_path({},annual,2023,{},None),[10,20,30,40])
+            for r in annual:r['app_effective_contract']=1
+            self.assertEqual(own_endpoint_path({},annual,2023,{},None),[10,20,30,40])
+
+    def test_completed_draft_endpoint_does_not_roll_with_new_forecasts(self):
+        c,p,a=fixture();p['draft_year']='2022'
+        for row in a:row['league_reference_year']='2026'
+        c.endpoint=SimpleNamespace(prior=lambda slot,cutoff,key:dict(value=100.,latest_label=2021))
+        c.data['endpoint_records']=[dict(key='fixture',cohort=2022,value=170.,endpoint=[40,40,45,35])]
+        before=c.draft_evaluation(p,a)
+        for row in a:row['annual_production']='999999999'
+        after=c.draft_evaluation(p,a)
+        self.assertEqual(before,after)
+        self.assertEqual(after['gain'],70.)
+        self.assertEqual(after['contract_effect'],0.)
+
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
         self.assertAlmostEqual(result['mean'],86.)

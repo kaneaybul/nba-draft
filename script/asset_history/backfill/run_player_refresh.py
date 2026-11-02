@@ -162,6 +162,8 @@ def export(output,asof=None,calibrator=None):
                         details['path_calibration']={k:v for k,v in path.items()if k!='annual_values'}
                         if path['status']=='unsigned_draft_right_existing_policy':
                             value=path['value'];details['annual_values']=[]
+                            details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
+                            details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
                             details['draft_right_policy']='Generic endpoint-trained pick quote; dormant right has no NBA service path'
                         if path['status']=='priced':
                             details['baseline_quote']=value
