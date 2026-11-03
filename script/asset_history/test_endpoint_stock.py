@@ -17,14 +17,14 @@ class EndpointStockTests(unittest.TestCase):
         model['endpoint_records'] += [dict(key=f'future{i}',slot=1+i%30,end=2025,value=1000.,production=[10.]*4+[250.]*4)for i in range(60)]
         self.assertAlmostEqual(pick_components(model,10,[2.]*4,draft_year=2022)['production_quote'],100.)
 
-    def test_pick_option_floor_is_applied_per_outcome(self):
+    def test_pick_floor_cannot_erase_negative_career_payoffs(self):
         records=[dict(key=f'p{i}',slot=10,end=2020,value=50.,production=[0.]*4+[12.5]*4,
                     endpoint_paths=[[0.]*4,[25.]*4],endpoint_weights=[.5,.5])for i in range(60)]
         model=dict(endpoint_records=records,endpoint_training_through=2026,stock_policy=STOCK_POLICY)
         result=pick_components(model,10,[10.]*4)
-        self.assertAlmostEqual(result['quote'],.5*(100.-32.))
-        self.assertAlmostEqual(result['floor_adjustment'],16.)
-        self.assertGreater(result['quote'],max(0.,50.-32.))
+        self.assertAlmostEqual(result['quote'],.5*(-32.)+.5*(100.-32.))
+        self.assertAlmostEqual(result['floor_adjustment'],0.)
+        self.assertLess(result['quote'],.5*(100.-32.))
 
     def player(self,name,production=100.,endpoint=True,financial=0.,draft=2023,grade_value=None):
         grade_value=production if grade_value is None else grade_value

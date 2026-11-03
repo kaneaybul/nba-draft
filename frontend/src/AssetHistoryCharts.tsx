@@ -12,7 +12,7 @@ export type AttributionAnalysis = {
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 export const signedMoney = (value: number) => `${value >= 50000 ? '+' : ''}${money(value)}`;
 export const categoryLabels = {
-  player: 'Player Development & Aging', draft: 'Draft Value Added / Destroyed', timing: 'Development Window Timing', trades: 'Trades',
+  player: 'Player Development & Aging', draft: 'Draft Value Added / Destroyed', timing: 'Rolling Window / Valuation Basis', trades: 'Trades',
   contracts: 'Contract Management', fa: 'FA Signings', own_picks: 'Own Pick Revaluation',
   acquired_picks: 'Acquired Pick Revaluation', lottery: 'Lottery Luck',
   pick_rules: 'Pick Rights / Rules', automatic: 'Automatic Pick Additions',

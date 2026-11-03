@@ -206,21 +206,11 @@ def pick_components(model, slot, costs, prior_model=None, draft_year=None):
     cumulative = float(w @ service.sum(axis=1))
     adjustment = .8 * (cumulative - sum(costs))
     raw = production + adjustment
-    if model.get('stock_policy')==PICK_POLICY:
-        # A pick is an option, not a signed negative-salary obligation. Apply
-        # its zero floor to each linked endpoint/service outcome, then average.
-        rows=[r for r in (prior_model.records if prior_model is not None else model['endpoint_records'])
-              if r['end']<=cutoff and r.get('production')is not None]
-        expected=0.
-        for row,weight,path in zip(rows,w,p['paths']):
-            endpoint_paths=row.get('endpoint_paths',[row['production'][4:8]])
-            probabilities=np.asarray(row.get('endpoint_weights',[1.]),float)
-            endpoint_values=production_quotes(endpoint_paths)*p['scale']
-            financial=.8*(float(path[:4].sum())-sum(costs))
-            expected+=float(weight)*float(probabilities@np.maximum(endpoint_values+financial,0.))
-        quote=expected
-    else:
-        quote=max(0.,raw)
+    # Each production career is already priced before the expectation above.
+    # Salary is linear, so this equals E[P_i + .8*(service_i-cost)]. Retain
+    # negative career payoffs: the right's ex-ante floor cannot erase expected
+    # rookie costs after learning which player disappointed.
+    quote=max(0.,raw)
     result=dict(production_quote=production, cumulative_production=cumulative,
                 contract_adjustment=adjustment, quote=quote,
                 floor_adjustment=quote-raw,

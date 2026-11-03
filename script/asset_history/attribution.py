@@ -15,7 +15,7 @@ from model_version import data_root,METHOD
 import attribution_picks as picks
 
 ATTRIBUTION_METHOD='rolling-endpoint-attribution-v3'
-LABELS={'player':'Player Development & Aging','draft':'Draft Value Added / Destroyed','timing':'Development Window Timing','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','pick_rules':'Pick Rights / Rules','automatic':'Automatic Pick Additions'}
+LABELS={'player':'Player Development & Aging','draft':'Draft Value Added / Destroyed','timing':'Rolling Window / Valuation Basis','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','pick_rules':'Pick Rights / Rules','automatic':'Automatic Pick Additions'}
 NAMES=dict(zip('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split(),['Atlanta Hawks','Brooklyn Nets','Boston Celtics','Charlotte Hornets','Chicago Bulls','Cleveland Cavaliers','Dallas Mavericks','Denver Nuggets','Detroit Pistons','Golden State Warriors','Houston Rockets','Indiana Pacers','Los Angeles Clippers','Los Angeles Lakers','Memphis Grizzlies','Miami Heat','Milwaukee Bucks','Minnesota Timberwolves','New Orleans Pelicans','New York Knicks','Oklahoma City Thunder','Orlando Magic','Philadelphia 76ers','Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Toronto Raptors','Utah Jazz','Washington Wizards']))
 
 def read(path):return json.loads(Path(path).read_text())

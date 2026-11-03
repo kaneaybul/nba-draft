@@ -12,9 +12,9 @@ class PublishedAppValues(unittest.TestCase):
 
     def seed(self,root):
         version=root/'script/asset_history/model_version.py';version.parent.mkdir(parents=True)
-        version.write_text("DATA_VERSION='v5'\nLEGACY_VERSION='v4'\nMETHOD='peak4-payroll-0.8-v5'\n")
-        public=root/'frontend/public/data/asset_history/v5';(public/'teams').mkdir(parents=True)
-        manifest={'method':'peak4-payroll-0.8-v5','generated_at':'2026-11-01T14:00:00Z',
+        version.write_text("DATA_VERSION='v7'\nLEGACY_VERSION='v6'\nMETHOD='peak4-payroll-0.8-v7'\n")
+        public=root/'frontend/public/data/asset_history/v7';(public/'teams').mkdir(parents=True)
+        manifest={'method':'peak4-payroll-0.8-v7','generated_at':'2026-11-01T14:00:00Z',
                   'teams':[{'team':team,'status':'available','latest':'2026-11-01'}for team in TEAMS]}
         (public/'manifest.json').write_text(json.dumps(manifest))
         for i,team in enumerate(TEAMS):
@@ -23,7 +23,7 @@ class PublishedAppValues(unittest.TestCase):
                     {'id':f'pick:{team}:2028:1','kind':'pick','physical_origin':team,'draft_year':2028,'round':1,'value':30.}]
             (public/'teams'/f'{team}.json').write_text(json.dumps({'snapshots':[{'date':'2026-11-01','assets':assets}]}))
         model=root/'processed/asset_history/picks/trained_pick_model.json';model.parent.mkdir(parents=True)
-        model.write_text(json.dumps({'production_policy':'year-four-production-endpoint-v1','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
+        model.write_text(json.dumps({'production_policy':'year-four-production-endpoint-paths-v2','stock_policy':'year-four-endpoint-picks-rolling-players-v3','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
         return public
 
     def test_preserves_published_quotes_and_the_complete_annual_path(self):
@@ -35,6 +35,28 @@ class PublishedAppValues(unittest.TestCase):
             self.assertEqual(data['picks'][0]['value'],30.)
             self.assertEqual(len(data['slots']),60)
             self.assertEqual(data['season'],2027)
+
+    def test_current_release_rejects_the_old_point_forecast_pick_model(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);self.seed(root)
+            path=root/'processed/asset_history/picks/trained_pick_model.json'
+            model=json.loads(path.read_text());model['production_policy']='year-four-production-endpoint-v1'
+            path.write_text(json.dumps(model))
+            with self.assertRaisesRegex(ValueError,'career-path'):build(root)
+
+    def test_endpoint_appraisal_cannot_replace_rolling_quote_or_its_distribution(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);public=self.seed(root);path=public/'teams/ATL.json';data=json.loads(path.read_text())
+            asset=data['snapshots'][0]['assets'][0];asset['value']=132.
+            grade=dict(status='priced',value=190.,original_expectation=160.,gain=30.,contract_effect=0.)
+            asset['details'].update(peak_production=100.,contract_adjustment=32.,draft_development=grade,
+                development_window_basis=-90.,endpoint_stock_policy='year-four-endpoint-picks-rolling-players-v3',
+                path_calibration=dict(status='priced',mean=132.,mean_path_quote=112.,production_quote=100.,
+                    contract_adjustment_sum=32.,p10=20.,p50=100.,p90=200.,nba_weight=.95))
+            path.write_text(json.dumps(data));quote=build(root)['players']['1']
+            self.assertEqual(quote['value'],132.)
+            self.assertEqual(quote['draft_development']['value'],190.)
+            self.assertEqual(quote['distribution']['p90'],200.)
 
     def test_annual_path_must_reconcile_with_the_published_quote(self):
         with tempfile.TemporaryDirectory()as directory:
@@ -77,4 +99,5 @@ class PublishedAppValues(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
 

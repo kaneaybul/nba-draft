@@ -1,0 +1,12 @@
+{
+  "captures": [
+    {
+      "date": "2026-10-31",
+      "file": "2026-10-31.json.gz.b64",
+      "sha256": "18cfb7339dee13addd029d5a20ddd090cd302cb7e45cf54135497996f847160b",
+      "source_commit": "d4c35c141bfb57838a0d4098af77abc16799b003",
+      "source_path": "processed/asset_history/player_state/latest_inputs.json.gz",
+      "source_git_blob": "69a567d17f67d38938b60d72b38b4cd4994cf86c"
+    }
+  ]
+}
