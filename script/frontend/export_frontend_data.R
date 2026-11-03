@@ -2594,7 +2594,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     rows[, intersect(position_share_columns(), names(rows)), drop = FALSE]
   )
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
-  rows <- fixed_pool_scores(rows, base_dir)
+  rows <- season_pool_scores(rows, base_dir)
   minute_rows <- assign_team_projection_scenario(rows, "base")
   if(Sys.getenv("LIVE_MINUTES_METHOD") == "legacy") {
     minute_rows <- apply_lineup_minute_adjustment(minute_rows, adjust_free_agents = TRUE)
@@ -2618,12 +2618,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
     rows[, intersect(position_share_columns(), names(rows)), drop = FALSE]
   )
   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
-  rows$score <- 100 * (0.35 * percent_rank(rows$timin) + 0.65 * percent_rank(rows$total))
-  rows$score <- round(ifelse(is.finite(rows$score), rows$score, -10), 1)
-  preseason_path <- file.path(base_dir, "frontend/public/data/archive", paste0(target_year, "-preseason"), "impact_players.json")
-  preseason <- jsonlite::fromJSON(preseason_path)
-  preseason_scores <- preseason$score[match(rows$nba_id, preseason$nba_id)]
-  rows <- fixed_pool_scores(rows, base_dir)
+  rows <- season_pool_scores(rows, base_dir)
   rows$score_label <- format(round(rows$score, 1), trim = TRUE, nsmall = 1)
   rows$tier <- tier_from_score(rows$score)
 
@@ -5182,7 +5177,7 @@ injury_projections <- with_frontend_timing(base_dir, "frontend_export", "apply_i
   apply_injury_projections(players, schedules, injury_outlook))
 players <- injury_projections$players
 active_pool <- which(players$year == 2027)
-players[active_pool,] <- fixed_pool_scores(players[active_pool,], base_dir)
+players[active_pool,] <- season_pool_scores(players[active_pool,], base_dir)
 schedules <- injury_projections$schedules
 teams <- with_frontend_timing(base_dir, "frontend_export", "build_team_projections", build_team_projections(players))
 team_lineups <- with_frontend_timing(base_dir, "frontend_export", "build_team_lineups", build_team_lineups(players))
@@ -5332,4 +5327,5 @@ message("Rows: players=", nrow(players), ", teams=", nrow(teams), ", draft=", nr
 if (!identical(tolower(Sys.getenv("FRONTEND_REFRESH_SUPPRESS_EXPORT_SUMMARY", "false")), "true")) {
   print_frontend_timing_summary(base_dir)
 }
+
 

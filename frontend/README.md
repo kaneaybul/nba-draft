@@ -119,13 +119,13 @@ The daily job checks NBA `leagueseasonmatchups` for the exact current regular se
 
 A subsequent R step reproduces the historical perimeter allocation residual, with controls fit only to the saved historical panel (excluding 2016/17 and the current season). SWITCH updates only when both terms are complete, position is known, and defended-shot exposure is positive; it then updates defensive SKILL under the same minute weighting. The archive refresh details report the check time, availability reason and updated-player count. A provider-populated perimeter field alone is not independent proof of complete tracking coverage.
 
-### Daily player registry and stable Score scale
+### Daily player registry and season-relative Score scale
 
 `raw/live/player_pool.json` maintains membership separately from rating coverage. Before ratings refresh, all 30 ESPN rosters and paginated transactions must pass season/freshness/count checks. Confirmed signings enter even without model coverage; injuries and suspensions do not remove rostered players. Trades preserve identity. Missing roster entries retain their prior team with a review flag until a confirming transaction or reviewed override. Free agents with NBA participation this season or last, and players waived this season, stay tracked. Confirmed retirements and older inactive players are hidden from the default board. Draft-only players stay in the draft view. Free-agent signing availability is explicitly unverified unless confirmed; overseas/inactive exceptions can be entered in `ref/player_pool_overrides.json` with `app_nba_id` or `nba_id`, `pool_status`, `team`, `reason`, `source_url`, and `expires_at`.
 
 NBA IDs are preferred and persisted. Legacy draft IDs remain stable for the frozen archive; `source_nba_id` joins provider evidence. A signing with no known NBA ID gets a stable provisional ESPN-based app ID and is reconciled when NBA/provider evidence appears. Missing ratings retain a career estimate or a marked conservative fallback, never exclusion. Contract amounts retain the existing dated contract source; roster membership alone does not establish salary. The roster registry is a live-season overlay; it does not rewrite the preseason snapshot or cached contract sources.
 
-The main board defaults to NBA rosters, with Free agents and All tracked filters. Roster-review notes and last-check dates appear on player details. Current Score changes use a fixed preseason roster-only percentile reference (65% impact, 35% projected TIMIN). Each existing player's archived preseason Score remains the starting point: current Score = archived Score + movement on the fixed scale, bounded 0–100. This preserves zero Delta at the preseason baseline and prevents additions/removals of unrelated players from moving Scores. New players without a frozen baseline have no preseason Delta. Scores are finalized after injury minutes are applied.
+The main board defaults to NBA rosters, with Free agents and All tracked filters. Roster-review notes and last-check dates appear on player details. Current Score uses each season's current NBA roster distribution: 65% impact percentile and 35% projected TIMIN percentile. Ties receive their average rank, keeping the roster mean near 50 after rounding. Free agents and inactive records are evaluated against the same current-season reference without changing that reference. Scores are finalized after injury minutes are applied. Preseason Delta is the recentered current Score minus the immutable archived preseason Score; new players without a frozen baseline have no preseason Delta. Changes in roster membership can change relative ranks. The archive is never rewritten.
 
 ### Refresh publication and client freshness
 
@@ -179,3 +179,4 @@ remains a diagnostic and never multiplies a player or pick quote again. The
 preseason archive preserves its original production numbers under explicit
 Production labels. Both model regressions and published-path reconciliation run
 before deployment.
+

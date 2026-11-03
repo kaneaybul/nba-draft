@@ -10,6 +10,9 @@ on:
       - script/data/refresh_live_ratings.mjs
       - script/data/live_rating_dates.mjs
       - script/data/test_live_ratings.mjs
+      - script/frontend/player_pool.R
+      - script/frontend/test_player_pool.R
+      - script/frontend/export_frontend_data.R
       - .github/workflows/data-refresh-checks.yml
   workflow_dispatch:
 
@@ -34,4 +37,21 @@ jobs:
         run: node script/frontend/test_data_refresh.mjs
       - name: Verify source parsing and forecast dates
         run: node --test script/data/test_live_ratings.mjs
+
+  score_calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+      - name: Install Score test dependency
+        shell: Rscript {0}
+        run: |
+          rspm <- Sys.getenv("RSPM", "")
+          install.packages("jsonlite", repos=c(CRAN=if(nzchar(rspm)) rspm else "https://cloud.r-project.org"))
+      - name: Verify season-relative Score calibration
+        run: Rscript script/frontend/test_player_pool.R
+
 

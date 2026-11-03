@@ -134,26 +134,38 @@ zero_inactive_pool_minutes <- function(rows) {
   rows
 }
 
-fixed_pool_scores <- function(rows,base_dir) {
+season_pool_scores <- function(rows,base_dir) {
   path <- file.path(base_dir,'frontend/public/data/archive/2027-preseason/impact_players.json')
   preseason <- jsonlite::fromJSON(path)
-  reference <- preseason[preseason$team_projection_base!='FA' & is.finite(preseason$total)&is.finite(preseason$timin),]
-  stopifnot(nrow(reference)>300)
   percentile <- function(values,ref) {
     ref <- sort(ref[is.finite(ref)])
-    knots <- unique(ref);ranks <- (match(knots,ref)-1)/(length(ref)-1)
-    approx(knots,ranks,xout=values,rule=2,ties='ordered')$y
+    if (!length(ref)) stop('Current-season Score needs a finite roster reference')
+    knots <- unique(ref)
+    if (length(knots)==1L) return(ifelse(values<knots,0,ifelse(values>knots,1,.5)))
+    ranks <- (rank(ref,ties.method='average')-1)/(length(ref)-1)
+    approx(knots,ranks[match(knots,ref)],xout=values,rule=2,ties='ordered')$y
   }
-  raw_score <- function(x) 100*(.65*percentile(x$total,reference$total)+.35*percentile(x$timin,reference$timin))
-  current <- raw_score(rows);base_scores <- raw_score(preseason)
-  idx <- match(rows$nba_id,preseason$nba_id);matched <- !is.na(idx)
-  # Anchor to the archived Score; a change of reference population cannot create Delta.
-  current[matched] <- preseason$score[idx[matched]]+current[matched]-base_scores[idx[matched]]
+  eligible <- is.finite(rows$total) & is.finite(rows$timin)
+  if ('pool_status' %in% names(rows)) {
+    eligible <- eligible & !is.na(rows$pool_status) & rows$pool_status=='roster'
+  } else {
+    eligible <- eligible & !is.na(rows$team_projection_base) & rows$team_projection_base!='FA'
+  }
+  current <- rep(NA_real_,nrow(rows))
+  for (idx in split(seq_len(nrow(rows)),rows$year)) {
+    reference <- rows[idx[eligible[idx]],,drop=FALSE]
+    current[idx] <- 100*(.65*percentile(rows$total[idx],reference$total)+
+      .35*percentile(rows$timin[idx],reference$timin))
+  }
+  # Each season uses its own roster distribution. The immutable archive is
+  # used only for comparison, never to anchor the current Score scale.
   rows$score <- round(pmax(0,pmin(100,current)),1)
+  idx <- match(paste(rows$nba_id,rows$year),paste(preseason$nba_id,preseason$year))
   rows$score_delta <- round(rows$score-preseason$score[idx],1)
   rows$score_label <- format(rows$score,trim=TRUE,nsmall=1)
-  rows$tier <- tier_from_score(rows$score)
+  rows$tier <- unlist(ave(rows$score,rows$year,FUN=tier_from_score))
   if('trade_value' %in% names(rows) && 'value' %in% names(rows)) rows$trade_value <- round(rows$value*(.45+rows$score/170),0)
   rows
 }
+
 
