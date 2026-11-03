@@ -40,11 +40,14 @@ def report(repo):
             assert set(new_players)==set(old_players),'Method-only replay changed ownership'
             for pid,a in new_players.items():
                 d=a.get('details',{});draft=int(float(d.get('draft_year')or 0))
-                if draft<2022:
+                if draft<2022 or not d.get('draft_slot'):
                     assert abs(a['value']-old_players[pid]['value'])<.01
                     counts['preserved_unsupported_player_observations']+=1
                     continue
                 grade=d.get('draft_development',{})
+                if grade.get('status')!='priced' and d.get('asset_type')in ('unsigned_draft_right','dormant_draft_right') and s['date']>f'{draft+4}-07-31':
+                    counts['post_window_unsigned_right_existing_policy']+=1
+                    continue
                 if grade.get('status')!='priced':
                     raise ValueError(('Supported draft appraisal missing',team,s['date'],a['name'],grade))
                 assert grade['method']==POLICY

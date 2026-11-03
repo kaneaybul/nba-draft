@@ -144,11 +144,12 @@ class PathCalibrator:
             from backfill.forfeiture_rules import RoundAwarePickQuotes
             curve=RoundAwarePickQuotes(self.data['pick_model']).components(1 if slot<=30 else 2,int(slot),0,int(draft))
             original=curve['draft_endpoint_expectation']
+            baseline=self.endpoint.prior(int(slot),int(draft)-1,name_key(player['player_name']),endpoint_only=True)
             return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
                         value=curve['quote'],production_quote=curve['production_quote'],
                         contract_adjustment_sum=curve['quote']-curve['production_quote'],
                         endpoint_stock_policy=PICK_POLICY,rolling_production_quote=curve['production_quote'],development_window_basis=0.,
-                        draft_development=dict(status='priced',method=POLICY,endpoint=f'{int(draft)+4}-07-31',original_expectation=original,value=original,gain=0.,nba_weight=0.,completed=False,contract_effect=0.))
+                        draft_development=dict(status='priced',method=POLICY,endpoint=f'{int(draft)+4}-07-31',original_expectation=original,value=original,gain=0.,nba_weight=0.,completed=False,contract_effect=0.,baseline_latest_label=baseline['latest_label']))
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None
         if pid is None:raise ValueError('A selected active player needs a stable identity')

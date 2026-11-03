@@ -90,7 +90,7 @@ def main(args):
                 team=snapshot['team'];day=snapshot['date']
                 old={a['id']:a for a in legacy[team][day]['assets']if a['kind']=='player'}
                 for i,asset in enumerate(snapshot['assets']):
-                    if asset['kind']=='player' and int(float(asset.get('details',{}).get('draft_year')or 0))<2022 and asset['id']in old:
+                    if asset['kind']=='player' and (int(float(asset.get('details',{}).get('draft_year')or 0))<2022 or not asset.get('details',{}).get('draft_slot')) and asset['id']in old:
                         import copy
                         snapshot['assets'][i]=copy.deepcopy(old[asset['id']])
                 snapshot['total']=sum(a['value']for a in snapshot['assets'])
