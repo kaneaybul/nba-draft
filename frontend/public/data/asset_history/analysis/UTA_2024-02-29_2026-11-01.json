@@ -1,0 +1,229 @@
+{
+  "start": "2024-02-29",
+  "end": "2026-11-01",
+  "method": "peak4-payroll-0.8-v5",
+  "attribution_method": "rolling-production-attribution-v1",
+  "opening": 2106666087.0937781,
+  "closing": 1707714571.5334368,
+  "change": -398951515.56034136,
+  "categories": {
+    "player": -397127067.0905509,
+    "draft": -146013694.93198007,
+    "trades": 48508485.09612132,
+    "contracts": -398028222.0044263,
+    "fa": 51069946.12060409,
+    "own_picks": 243045776.12760076,
+    "acquired_picks": -93124093.5672723,
+    "lottery": -11573961.188502677,
+    "pick_rules": 8120154.074734807,
+    "automatic": 296171161.80332994
+  },
+  "components": {
+    "player": {
+      "Rolling production forecast changes": -290726936.226249,
+      "Production window / aging": -106400130.86428641,
+      "Selection-to-player handoff": -1.5519559383392334e-05
+    },
+    "draft": {
+      "Rolling production forecast changes within owned draft window": -175079201.267777,
+      "Production window movement within owned draft window": 29065506.33579692
+    },
+    "trades": {
+      "Player transfers": 61528503.61235152,
+      "Future pick transfers": 1808220.821684122,
+      "Selected draft-right transfers": -14828239.337914325
+    },
+    "contracts": {
+      "Extensions and renewals": -54613557.221288085,
+      "Rookie terms": 23087584.642674364,
+      "Financial repricing": -245280482.9257842,
+      "Contract clock": 13381743.914205,
+      "FA terms versus reference": 15988124.39027728,
+      "Control expiry / waiver": -150591634.80451068
+    },
+    "fa": {
+      "Reference-market acquisitions": 51069946.12060409
+    },
+    "own_picks": {
+      "Own-origin rights revaluation": 231521105.50912166,
+      "Lottery effect moved out": 11524670.618479103
+    },
+    "acquired_picks": {
+      "Other-origin rights revaluation": -93173384.13729589,
+      "Lottery effect moved out": 49290.570023573935
+    },
+    "lottery": {
+      "Own-origin lottery luck": -11524670.618479103,
+      "Acquired-origin lottery luck": -49290.570023573935
+    },
+    "pick_rules": {
+      "External rights / rules": 8120154.074734807
+    },
+    "automatic": {
+      "Automatic reporting-horizon additions": 296171161.80332994
+    }
+  },
+  "validation": {
+    "reconciliation_error": 0.0,
+    "max_player_interval_error": 1.043081283569336e-07,
+    "max_pick_replay_error": 0.0,
+    "max_pick_bridge_error": 2.1606683731079102e-07
+  },
+  "description": "Utah Jazz NBA basketball model visualization requested for the existing kaneaybul/nba-draft app. These are modeled values of publicly known NBA players and draft picks, in salary-cap-normalized model dollars; no user financial, company, customer or employee data is included.",
+  "source": "User-requested corrected Jazz waterfall, using canonical v5 NBA observations already held in this private repository; captured November 1, 2026.",
+  "contributors": {
+    "player": [
+      {
+        "player": "Lauri Markkanen",
+        "value": -90265493.20453486
+      },
+      {
+        "player": "Collin Sexton",
+        "value": -79363249.26119567
+      },
+      {
+        "player": "Jordan Clarkson",
+        "value": -47379503.15877101
+      },
+      {
+        "player": "Jaren Jackson, Jr.",
+        "value": -47029914.49201061
+      },
+      {
+        "player": "Jusuf Nurkic",
+        "value": -41829540.25876512
+      },
+      {
+        "player": "K.J. Martin",
+        "value": -30272161.361500613
+      },
+      {
+        "player": "Kevin Love",
+        "value": -29261402.86470377
+      },
+      {
+        "player": "John Collins",
+        "value": 25728131.70412328
+      }
+    ],
+    "contracts": [
+      {
+        "player": "Lauri Markkanen",
+        "value": -81583226.7582601
+      },
+      {
+        "player": "Collin Sexton",
+        "value": -39581233.484125376
+      },
+      {
+        "player": "Lonzo Ball",
+        "value": -37210306.35786162
+      },
+      {
+        "player": "Jaren Jackson, Jr.",
+        "value": -34629300.13058816
+      },
+      {
+        "player": "Walker Kessler",
+        "value": -30779796.494881004
+      },
+      {
+        "player": "Cody Williams",
+        "value": -29641008.10161792
+      },
+      {
+        "player": "Russell Westbrook",
+        "value": -29008244.68237983
+      },
+      {
+        "player": "Kris Dunn",
+        "value": -25857798.605566096
+      }
+    ],
+    "draft": [
+      {
+        "player": "Taylor Hendricks",
+        "value": -71271055.98776712
+      },
+      {
+        "player": "Cody Williams",
+        "value": -63753320.71016081
+      },
+      {
+        "player": "Keyonte George",
+        "value": 40133156.888781406
+      },
+      {
+        "player": "Ace Bailey",
+        "value": -29204547.735939644
+      },
+      {
+        "player": "Isaiah Collier",
+        "value": -24668604.38998913
+      },
+      {
+        "player": "Kyle Filipowski",
+        "value": 11092084.742221951
+      },
+      {
+        "player": "John Tonje",
+        "value": -9125874.949593926
+      },
+      {
+        "player": "Brice Sensabaugh",
+        "value": -2351097.54459757
+      }
+    ],
+    "fa": [
+      {
+        "player": "Josh Okogie",
+        "value": 34639492.619200215
+      },
+      {
+        "player": "Jaxson Hayes",
+        "value": 15211771.908509716
+      },
+      {
+        "player": "Isaiah Wong",
+        "value": 1218681.5928941565
+      }
+    ],
+    "trades": [
+      {
+        "player": "Walker Kessler",
+        "value": -88599894.69864634
+      },
+      {
+        "player": "Jaren Jackson, Jr.",
+        "value": 84092107.21679254
+      },
+      {
+        "player": "John Collins",
+        "value": -73527584.25302362
+      },
+      {
+        "player": "Jusuf Nurkic",
+        "value": 66116664.38725795
+      },
+      {
+        "player": "Walter Clayton, Jr.",
+        "value": -61404587.3196892
+      },
+      {
+        "player": "Collin Sexton",
+        "value": -48313097.29657264
+      },
+      {
+        "player": "Lonzo Ball",
+        "value": 37210306.35786162
+      },
+      {
+        "player": "Kevin Love",
+        "value": 29781892.725731198
+      }
+    ]
+  },
+  "draft_endpoint_benchmark": {
+    "included_in_waterfall": false
+  }
+}
