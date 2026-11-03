@@ -62,11 +62,13 @@ def build(repo):
                 picks.append({'team':team,'origin':asset['physical_origin'],'year':asset['draft_year'],
                               'round':asset['round'],'value':value})
     model=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
-    if DATA_VERSION=='v5'and model.get('production_policy')!='year-four-production-endpoint-v1':
+    if DATA_VERSION in ('v5','v6')and model.get('production_policy')!='year-four-production-endpoint-v1':
         raise ValueError('Published v5 inventories need the shared endpoint-trained pick model')
     slots={str(row['pick']):row['quote']for row in model['pick_curve']}
     if len(slots)!=60 or any(not math.isfinite(v)for v in slots.values()):raise ValueError('Incomplete asset pick curve')
     season=int(day[:4])+(int(day[5:7])>=7)
+    if DATA_VERSION=='v6' and model.get('stock_policy')!='year-four-endpoint-stock-v2':
+        raise ValueError('v6 requires endpoint stock pick pricing')
     result={'schema_version':1,'method':manifest['method'],'history_version':version,'generated_at':manifest['generated_at'],
             'observation_date':day,'season':season,'reporting_cap':164961000,
             'players':players,'picks':picks,'slots':slots}
@@ -78,4 +80,5 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--repo',type=Path,default=Path.cwd());args=parser.parse_args()
     result=build(args.repo.resolve())
     print(json.dumps({'date':result['observation_date'],'players':len(result['players']),'pick_claims':len(result['picks']),'slots':len(result['slots'])}))
+
 

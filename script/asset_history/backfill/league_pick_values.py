@@ -246,7 +246,7 @@ def value_portfolio_scalar(asof,view,sim,model,years,reporting_cap=None):
         first_counts={year:sum(p[1]==year and p[2]==1 and owner=='FORFEITED'for p,owner in owners.items())for year in years}
         for p,owner in owners.items():
             if p[1]not in years or owner=='FORFEITED':continue
-            slot=actual[p];value=quote(p[2],slot,first_counts[p[1]])
+            slot=actual[p];value=quote(p[2],slot,first_counts[p[1]],p[1])
             key=(owner,p);values[key]+=value;counts[key]+=1;slot_sums[key]+=slot;global_sum+=value
         for c in view.get('economic_claims',[]):
             pred=c['predicate'];slot=raw[tuple(pred['pick'])]
@@ -309,22 +309,30 @@ def value_portfolio(asof,view,sim,model,years,reporting_cap=None):
     # Salary/production is nonlinear in slot, so price each outcome before
     # averaging. A quote at the average slot would give the wrong EV.
     max_forfeits=max((int(first_counts[y].max())for y in years),default=0)
-    lookup=np.zeros((3,max_forfeits+1,61))
-    for rnd in [1,2]:
-        for count in range(max_forfeits+1):
-            for slot in range(1,61):
-                if (rnd==1 and slot<=30-count)or(rnd==2 and slot>=30):lookup[rnd,count,slot]=quote(rnd,slot,count)
+    lookup={};production_lookup={}
+    for year in years:
+        lookup[year]=np.zeros((3,max_forfeits+1,61));production_lookup[year]=np.zeros_like(lookup[year])
+        for rnd in [1,2]:
+            for count in range(max_forfeits+1):
+                for slot in range(1,61):
+                    if (rnd==1 and slot<=30-count)or(rnd==2 and slot>=30):
+                        parts=quote.components(rnd,slot,count,year)
+                        lookup[year][rnd,count,slot]=parts['quote']
+                        production_lookup[year][rnd,count,slot]=parts['production_quote']
     for j,p in enumerate(keys):
         if p[1]not in years:continue
-        nums=actual[:,j];values=lookup[p[2],first_counts[p[1]],nums]
+        nums=actual[:,j];values=lookup[p[1]][p[2],first_counts[p[1]],nums]
         values=np.where(owners[:,j]==forfeited,0.,values);global_sum+=float(values.sum())
+        production=np.where(owners[:,j]==forfeited,0.,production_lookup[p[1]][p[2],first_counts[p[1]],nums])
+        production_sums=np.bincount(owners[:,j],weights=production,minlength=len(OWNER_NAMES))
         counts=np.bincount(owners[:,j],minlength=len(OWNER_NAMES));sums=np.bincount(owners[:,j],weights=values,minlength=len(OWNER_NAMES));slots=np.bincount(owners[:,j],weights=nums,minlength=len(OWNER_NAMES))
         for k in np.flatnonzero(counts[:30]):
             owner=OWNER_NAMES[k];chance=counts[k]/n;mean=slots[k]/counts[k]
             by_team[owner].append(dict(id=f'pick:{p[0]}:{p[1]}:{p[2]}',kind='pick',name=f'{p[1]} {p[0]} round{p[2]}'+(' · conditional entitlement'if chance<.999999 else''),value=float(sums[k]/n),
                 source='Dated reviewed trade/penalty rules; official NBA draft orders; joint forecast outcomes; trained production/rookie-cost model',
                 note=f'{chance:.1%} holding probability; mean selection {mean:.1f} conditional on holding. Protections and swaps share the same simulated outcomes.',
-                physical_origin=p[0],draft_year=p[1],round=p[2],holding_probability=float(chance),expected_selection_if_held=float(mean)))
+                physical_origin=p[0],draft_year=p[1],round=p[2],holding_probability=float(chance),expected_selection_if_held=float(mean),
+                details={'endpoint_production':float(production_sums[k]/n),'contract_adjustment':float((sums[k]-production_sums[k])/n),'stock_policy':model.get('stock_policy','legacy')}))
     generic=np.array([quote(2,s)for s in range(31,61)]);claims=False;index={p:j for j,p in enumerate(keys)}
     for c in view.get('economic_claims',[]):
         pred=c['predicate'];interval=pred.get('slot_range',pred.get('range'));nums=actual[:,index[tuple(pred['pick'])]]
@@ -375,3 +383,4 @@ def main():
         print(json.dumps({'date':cutoff,'league_total':values['total'],'claims':sum(len(v)for v in values['teams'].values()),'draws':a.draws}),flush=True)
 
 if __name__=='__main__':main()
+

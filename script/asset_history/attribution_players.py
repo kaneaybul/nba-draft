@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import date,timedelta
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from quote_window import quote_window
+from endpoint_stock import active as endpoint_active
 from league_player_values import agreements_at
 CAP=164961000.
 def name_key(name):
@@ -24,20 +25,22 @@ def parts(a):
     if not annual:return float(d.get('peak_production',d.get('app_style_four_year_peak_production_quote',a['value']))),0.,[]
     q=quote_window([r['production']for r in annual],[r['asset']for r in annual],[r['exposure']for r in annual])
     peak=float(d.get('peak_production',d.get('app_style_four_year_peak_production_quote',q['production_quote'])))
-    premium=a['value']-q['quote']
-    assert abs(peak-q['production_quote']-premium)<.05,(a['name'],peak,q,premium)
+    premium=float(d.get('rolling_production_quote',peak))-q['production_quote'] if endpoint_active(d) else a['value']-q['quote']
+    assert endpoint_active(d) or abs(peak-q['production_quote']-premium)<.05,(a['name'],peak,q,premium)
     return peak,premium,annual
 
 def clock(a,exposures):
     peak,premium,annual=parts(a)
-    if not annual:return dict(value=a['value'],peak=peak,method='no annual path; value held fixed')
+    if not annual:return dict(value=a['value'],peak=peak,rolling_peak=peak,method='no annual path; value held fixed')
     by={int(r['season']):r for r in annual};last=by[max(by)];p=[];v=[];e=[];tails=[]
     for year,exposure in sorted(exposures.items()):
         r=by.get(year,last)
         if year not in by:tails.append(year)
         p.append(r['production']);v.append(r['asset']);e.append(exposure)
     q=quote_window(p,v,e)
-    return dict(value=q['quote']+premium,peak=q['production_quote']+premium,tail_carry= tails,
+    rolling=q['production_quote']+premium
+    production=peak if endpoint_active(a.get('details',{})) else rolling
+    return dict(value=production+q['contract_adjustment_sum'],peak=production,rolling_peak=rolling,tail_carry= tails,
                 method='frozen annual rates and expected-peak premium; missing new tail rate carried flat')
 
 
@@ -72,7 +75,7 @@ def market_reference(a,dt,caps,market):
                           reference_asset=assets[-1],continuation_declined=declined,
                           salary_model=method,market_scale=scale))
     reference=quote_window(production,assets,exposure)
-    value=reference['quote']+premium
+    value=peak+reference['contract_adjustment_sum'] if endpoint_active(a.get('details',{})) else reference['quote']+premium
     return dict(value=value,contract_effect=a['value']-value,
                 production_quote=reference['production_quote']+premium,
                 method='same underlying production; as-of expected market terms and unsigned continuation policy',
@@ -137,7 +140,8 @@ def player_bridge(team,ctx):
                 if 1.8*production-.8*cost<0:production=0.;cost=0.
             p.append(production);v.append(1.8*production-.8*cost);e.append(r['exposure'])
         beforeq=quote_window(p,v,e);currentq=quote_window([r['production']for r in annual],[r['asset']for r in annual],e)
-        return dict(value=currentq['quote']-beforeq['quote'],production_component=currentq['production_quote']-beforeq['production_quote'],date=latest['known_from'],type=latest.get('contract_type'),player=a['name'])
+        endpoint=endpoint_active(a['details'])
+        return dict(value=currentq['contract_adjustment_sum']-beforeq['contract_adjustment_sum'] if endpoint else currentq['quote']-beforeq['quote'],production_component=0. if endpoint else currentq['production_quote']-beforeq['production_quote'],date=latest['known_from'],type=latest.get('contract_type'),player=a['name'])
     totals=Counter();intervals=[];details=[];contract_rows=[];draft_tracking={};warnings=[]
     clock_details=[];fa_entries=[];attribution=[];endpoint_attribution=[]
     for previous,current in zip(snapshots,snapshots[1:]):
@@ -170,7 +174,12 @@ def player_bridge(team,ctx):
             peak,_,_=parts(a);production=peak-before_peak-extension_p
             category=production_category(a,end)
             changes['draft_production_revaluation'if category=='draft'else'player_production_revaluation']+=production
-            attribute(a,category,'Rolling production forecast changes',production)
+            timing=0.
+            previous_asset=old.get(aid)
+            if previous_asset and endpoint_active(previous_asset.get('details',{})) and not endpoint_active(a.get('details',{})):
+                timing=clocked[aid]['rolling_peak']-before_peak
+                attribute(a,'timing','Endpoint to rolling-window handoff',timing)
+            attribute(a,category,'Year-four endpoint valuation change' if endpoint_active(a.get('details',{})) else 'Rolling production forecast changes',production-timing)
             financial=total-production-extension
             changes['contract_continuation_revaluation']+=financial
             attribute(a,'contracts','Existing contract and continuation revaluation',financial)
@@ -222,8 +231,10 @@ def player_bridge(team,ctx):
             expired_sign_trade=bool(trades)and unrestricted
             category='trade_players'if trades and not expired_sign_trade else'waiver_expiry_boundary'
             changes[category]-=clocked[aid]['value']
+            draft_loss=clocked[aid]['peak'] if category!='trade_players' and production_category(a,end)=='draft' and endpoint_active(a.get('details',{})) else 0.
+            if draft_loss:attribute(a,'draft','Loss of drafted player rights before year four',-draft_loss)
             attribute(a,'trades'if category=='trade_players'else'contracts',
-                      'Outgoing player'if category=='trade_players'else'Waiver or expiry of contract control',-clocked[aid]['value'])
+                      'Outgoing player'if category=='trade_players'else'Waiver or expiry of contract control',-clocked[aid]['value']+draft_loss)
             details.append(dict(start=start,end=end,player=a['name'],kind='trade_out'if category=='trade_players'else'waiver_or_expiry',value=-clocked[aid]['value'],events=[e['text']for e in event_matches(a,start,end)]))
         delta=sum(a['value']for a in new.values())-sum(a['value']for a in old.values())
         assert abs(sum(changes.values())-delta)<.05,(end,delta,changes)

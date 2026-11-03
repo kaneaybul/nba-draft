@@ -137,10 +137,13 @@ class PathCalibrator:
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
             self.events['unsigned_draft_right_existing_policy']+=1
-            curve=self.pick_curve[int(slot)]
+            from backfill.forfeiture_rules import RoundAwarePickQuotes
+            curve=RoundAwarePickQuotes(self.data['pick_model']).components(1 if slot<=30 else 2,int(slot),0,int(draft))
+            original=curve['draft_endpoint_expectation']
             return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
-                        value=curve['quote'],production_quote=curve['peak_production_quote'],
-                        contract_adjustment_sum=curve['quote']-curve['peak_production_quote'])
+                        value=curve['quote'],production_quote=curve['production_quote'],
+                        contract_adjustment_sum=curve['quote']-curve['production_quote'],
+                        draft_development=dict(status='priced',method=POLICY,endpoint=f'{int(draft)+4}-07-31',original_expectation=original,value=original,gain=0.,nba_weight=0.,completed=False,contract_effect=0.))
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None
         if pid is None:raise ValueError('A selected active player needs a stable identity')
@@ -233,6 +236,8 @@ class PathCalibrator:
             uncertainty_scope='remaining original four-year draft-window seasons')
         result['annual_values']=[dict(season=int(row['season']),exposure=float(row['exposure']),
             production=p,asset=1.8*p-.8*c)for row,p,c in zip(annual,result['annual_mean_production'],result['annual_mean_cost'])]
+        from endpoint_stock import promote_quote
+        result=promote_quote(result,self.draft_evaluation(player,annual),dt)
         self.events['priced']+=1
         return result
 
@@ -265,3 +270,4 @@ class PathCalibrator:
                     projection_extension=extension,
                     baseline_latest_label=baseline['latest_label'],
                     completed=cutoff>=draft+4,contract_effect=0.)
+

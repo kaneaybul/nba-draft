@@ -33,11 +33,11 @@ assert.match(league, /1\. BOS, Value change: \+\$20M/);
 assert.match(league, /2\. UTA, Value change: −\$30M/);
 assert.match(league, /Missing matching observations: MIA, ATL/);
 assert.match(league, /−\$10M/);
-const keys=['player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','pick_rules','automatic'];
+const keys=['player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','pick_rules','automatic','timing'];
 const row=(start,end,opening,closing,key)=>({start,end,opening,closing,categories:Object.fromEntries(keys.map(k=>[k,k===key?closing-opening:0])),components:Object.fromEntries(keys.map(k=>[k,{movement:k===key?closing-opening:0}])),contributors:Object.fromEntries(keys.map(k=>[k,k===key?[{player:'Test player',value:closing-opening}]:[]])),reconciliation_error:0});
-const ledger={team:'BOS',method:'rolling-production-attribution-v1',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
+const ledger={team:'BOS',method:'endpoint-production-attribution-v2',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
 const combined=aggregateAttribution(ledger,'a','c',100,110,'v5');
-assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,10);
+assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,11);
 assert.equal(aggregateAttribution(ledger,'a','c',100,111,'v5'),null,'Never show a chart that does not match canonical totals');
 assert.equal(aggregateAttribution({...ledger,method:'holdings-fallback'},'a','c',100,110,'v5'),null,'Only one attribution method is accepted');
 assert.equal(aggregateAttribution({...ledger,intervals:[ledger.intervals[1]]},'a','c',100,110,'v5'),null,'Do not bridge missing periods with another method');
@@ -82,7 +82,7 @@ assert.match(categoryMarkup,/League combined · Contract Management/);
 assert.match(categoryMarkup,/Waterfall categories unavailable: ATL/);
 
 // Exercise every team against the actual published ledgers when available.
-const data = resolve(frontend,'public/data/asset_history/v5');
+const data = resolve(frontend,'public/data/asset_history/v6');
 if(existsSync(resolve(data,'manifest.json'))){
  const manifest=JSON.parse(readFileSync(resolve(data,'manifest.json'),'utf8'));
  const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
@@ -100,6 +100,7 @@ if(existsSync(resolve(data,'manifest.json'))){
   }
   for(const r of actualRows)assert.ok(Math.abs(Object.values(r.categories).reduce((a,b)=>a+b,0)-r.change)<.01);
  }
- console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges.');
+ console.log('Published league checks passed: 30 teams, all eleven waterfall categories, four date ranges.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
+

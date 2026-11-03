@@ -102,7 +102,7 @@ class RoundAwarePickQuotes:
             self.endpoint=EndpointModel(model['endpoint_records'])
         self.fit=model['pick_fit'];self.rows={int(r['pick']):r for r in model['pick_curve']}
         self.factor=float(reporting_cap or self.fit['reporting_cap'])/float(self.fit['reporting_cap'])
-    def components(self,rnd,actual_slot,first_forfeitures=0):
+    def components(self,rnd,actual_slot,first_forfeitures=0,draft_year=None):
         rnd=int(rnd);slot=int(actual_slot)
         if rnd not in(1,2)or not 1<=slot<=60:raise ValueError('Invalid round/selection')
         x=math.log(slot);f=self.fit
@@ -125,7 +125,7 @@ class RoundAwarePickQuotes:
         raw=peak+adjustment;quote=max(0.,raw)
         if self.endpoint is not None:
             from calibration.endpoint_model import pick_components
-            result=pick_components(self.model,slot,cost,self.endpoint)
+            result=pick_components(self.model,slot,cost,self.endpoint,draft_year if self.model.get('stock_policy') else None)
             return {**{k:v*self.factor for k,v in result.items()},
                     'round':rnd,'actual_slot':slot,'rookie_scale_slot':scale_slot,
                     'expected_salary':sum(cost)*self.factor,
@@ -136,7 +136,7 @@ class RoundAwarePickQuotes:
                 'expected_salary':sum(cost)*self.factor,'annual_expected_salary':[v*self.factor for v in cost],
                 'contract_adjustment':adjustment*self.factor,'quote':quote*self.factor,
                 'floor_adjustment':(quote-raw)*self.factor,'salary_method':method}
-    def __call__(self,rnd,actual_slot,first_forfeitures=0):return self.components(rnd,actual_slot,first_forfeitures)['quote']
+    def __call__(self,rnd,actual_slot,first_forfeitures=0,draft_year=None):return self.components(rnd,actual_slot,first_forfeitures,draft_year)['quote']
 
 def penalty_rules():
     rules=[]
@@ -192,3 +192,4 @@ def cache_sources(output):
     return rows
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();print(json.dumps(cache_sources(a.output)))
+
