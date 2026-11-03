@@ -61,7 +61,7 @@ export function Waterfall({ opening, closing, changes, reviewed }: {
     <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabels[row.key] ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
     {picked && <section className="ah-drilldown"><h3>{categoryLabels[picked.key] ?? picked.label}</h3>
       {reviewed?.components[picked.key] && <ul>{Object.entries(reviewed.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
-      {!!reviewed?.contributors[picked.key]?.length && <><h4>Player contributions</h4><ul>{reviewed.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
+      {!!reviewed?.contributors[picked.key]?.length && <><h4>Largest player contributions</h4><ul>{reviewed.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
       {!reviewed && <p>Net change from holdings added, removed or repriced over the selected period.</p>}
     </section>}
   </>;
