@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readPageData } from './read_svelte_data.mjs';
+import { validateRatingSourceDates } from './live_rating_dates.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const today = new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 async function page(url) {
@@ -10,15 +11,11 @@ async function page(url) {
     catch(e) {if(i===2)throw e;}
   }
 }
-function fresh(value,label) {
-  const age=(Date.parse(today)-Date.parse(value))/86400000;
-  if(!Number.isFinite(age)||age<0||age>3)throw Error(`${label} stale or invalid: ${value}`);
-}
 const epmUrl='https://dunksandthrees.com/epm';
 const darkoUrl='https://www.darko.app/';
 const [e,d]=await Promise.all([page(epmUrl).then(a=>a.find(x=>Array.isArray(x.stats))),page(darkoUrl).then(a=>a.find(x=>x.players?.keys))]);
 if(!e||!d)throw Error('Source schema changed');
-fresh(e.date,'Expected EPM');fresh(d.ratingsThrough,'DARKO');
+validateRatingSourceDates(e.date,d.ratingsThrough,today);
 const season=Number(today.slice(0,4))+(Number(today.slice(5,7))>=7?1:0);
 if(e.season!==season||e.stats.some(x=>x.season!==season||x.game_dt!==e.date))throw Error('Expected EPM season/date mismatch');
 const darko=d.players.values[0].map((_,i)=>Object.fromEntries(d.players.keys.map((k,j)=>[k,d.players.values[j][i]])));
@@ -34,3 +31,4 @@ if(rows.some(x=>['o_epm','d_epm','o_dpm','d_dpm'].some(k=>!Number.isFinite(x[k])
 const output={schema_version:1,season,generated_at:new Date().toISOString(),epm_type:'expected',epm_as_of:e.date,darko_through:d.ratingsThrough,epm_url:epmUrl,darko_url:darkoUrl,players:rows};
 const dest=path.join(root,'raw/live/ratings.json');fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest+'.tmp',JSON.stringify(output)+'\n');fs.renameSync(dest+'.tmp',dest);
 console.log(`Expected EPM ${e.date}, DARKO through ${d.ratingsThrough}: ${rows.length} matched players`);
+

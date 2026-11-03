@@ -7,6 +7,9 @@ on:
       - frontend/src/assetValue.ts
       - frontend/package*.json
       - script/frontend/test_data_refresh.mjs
+      - script/data/refresh_live_ratings.mjs
+      - script/data/live_rating_dates.mjs
+      - script/data/test_live_ratings.mjs
       - .github/workflows/data-refresh-checks.yml
   workflow_dispatch:
 
@@ -29,3 +32,6 @@ jobs:
         working-directory: frontend
       - name: Verify projection and valuation updates reach the app
         run: node script/frontend/test_data_refresh.mjs
+      - name: Verify source parsing and forecast dates
+        run: node --test script/data/test_live_ratings.mjs
+
