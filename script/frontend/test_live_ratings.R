@@ -12,13 +12,24 @@ stopifnot(file.copy('raw/live/skill_stats.json',file.path(test_root,'raw/live/sk
 dir.create(file.path(test_root,'frontend/public/data/archive/2027-preseason'),recursive=TRUE)
 stopifnot(file.copy('frontend/public/data/archive/2027-preseason/impact_players.json',file.path(test_root,'frontend/public/data/archive/2027-preseason/impact_players.json')))
 stopifnot(model$live_evidence_weight(0,list(),2027)$weight==0,
- abs(model$live_evidence_weight(60,list(),2027)$weight-.04)<1e-9,
- model$live_evidence_weight(750,list(),2027)$weight==.5,
- model$live_evidence_weight(1500,list(),2027)$weight==1,
+ abs(model$live_evidence_weight(60,list(),2027)$weight-.2)<1e-9,
+ model$live_evidence_weight(75,list(),2027)$weight==.25,
+ model$live_evidence_weight(150,list(),2027)$weight==.5,
+ model$live_evidence_weight(225,list(),2027)$weight==.75,
+ abs(model$live_evidence_weight(299,list(),2027)$weight-299/300)<1e-9,
+ model$live_evidence_weight(300,list(),2027)$weight==1,
+ model$live_evidence_weight(300,list(),2027)$prior==0,
+ model$live_evidence_weight(301,list(),2027)$weight==1,
  model$live_evidence_weight(2000,list(),2027)$weight==1,
  model$live_evidence_weight(1500,list('2026'=2500),2027)$weight<1,
  model$live_evidence_weight(60,list('2026'=2500,'2025'=2000),2027)$weight<.025,
  model$live_evidence_weight(4000,list('2026'=2500),2027)$weight==1)
+# Only synthetic padding expires: observed NBA history keeps its existing weight.
+stopifnot(model$live_evidence_weight(300,list('2026'=2500),2027)$prior==1875,
+ abs(model$live_evidence_weight(300,list('2026'=2500),2027)$weight-300/2175)<1e-9,
+ model$live_evidence_weight(150,list('2026'=100),2027)$prior==150,
+ model$live_evidence_weight(300,list('2026'=100),2027)$prior==75,
+ model$live_evidence_weight(0,list(),2027)$prior==300)
 w <- vapply(seq(0,4000,50),function(m) model$live_evidence_weight(m,list('2026'=2500,'2025'=2000),2027)$weight,numeric(1))
 stopifnot(all(diff(w)>=0))
 rookie_w <- vapply(seq(0,4000,50),function(m) model$live_evidence_weight(m,list(),2027)$weight,numeric(1))
@@ -110,6 +121,16 @@ if('--require-export' %in% commandArgs(TRUE)) {
  pub <- jsonlite::fromJSON('frontend/public/data/v2/impact_players/2027.json')
  stopifnot(any(abs(pub$total-p$total[match(pub$nba_id,p$nba_id)])>.001,na.rm=TRUE),
  all(is.finite(pub$live_current_weight)),any(pub$live_skill_components_updated>0))
+ # Published weights must use the same rule as the model, including draft IDs.
+ evidence <- jsonlite::fromJSON('raw/live/skill_stats.json',simplifyVector=FALSE)
+ for(i in seq_len(nrow(pub))) {
+  id <- if('source_nba_id' %in% names(pub) && is.finite(pub$source_nba_id[i])) pub$source_nba_id[i] else pub$nba_id[i]
+  history <- evidence$historical_minutes[[as.character(id)]]
+  if(is.null(history)) history <- list()
+  expected <- model$live_evidence_weight(pub$live_evidence_minutes[i],history,evidence$season)
+  stopifnot(abs(pub$live_current_weight[i]-expected$weight)<1e-9,
+            abs(pub$live_prior_minutes[i]-expected$prior)<1e-9)
+ }
  baseline <- p$score[match(pub$nba_id,p$nba_id)]
  stopifnot(isTRUE(all.equal(pub$score_delta,round(pub$score-baseline,1),check.attributes=FALSE)))
  idx <- match(pub$nba_id,p$nba_id); matched <- !is.na(idx)
@@ -121,3 +142,4 @@ if('--require-export' %in% commandArgs(TRUE)) {
 }
 unlink(test_root,recursive=TRUE)
 cat('Live metric identity, idempotence, current-result accounting and export tests passed\n')
+

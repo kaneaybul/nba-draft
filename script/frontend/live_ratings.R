@@ -9,8 +9,9 @@ live_evidence_weight <- function(minutes, history, season) {
     remaining <- remaining-used
   }
   # Synthetic evidence protects sparse-history players early, then is replaced
-  # minute-for-minute. A rookie's preseason prior expires at 1,500 NBA minutes.
-  prior <- max(effective,max(0,1500-m))
+  # minute-for-minute. A rookie's synthetic prior expires at 300 NBA minutes.
+  # Actual historical evidence remains in the veteran prior after that point.
+  prior <- max(effective,max(0,300-m))
   list(weight=if(m+prior>0) m/(m+prior) else 0,prior=prior)
 }
 
@@ -142,7 +143,7 @@ apply_live_expected_ratings <- function(rows, base_dir) {
   rows$availability_reason <- paste0(rows$availability_reason,' SWITCH: ',rows$live_switch_coverage_games,' of ',rows$live_switch_stats_games,' games covered; ',round(100*rows$live_switch_current_weight,1),'% observed / ',round(100*(1-rows$live_switch_current_weight),1),'% preseason; ',rows$live_switch_status,'. Covered SWITCH minutes are estimated by game coverage.')
   rows$availability_reason[!good] <- paste0(rows$availability_reason[!good],' No complete current EPM/DARKO pair; external forecast prior retained.')
   audit <- list(schema_version=2,season=feed$season,generated_at=feed$generated_at,epm_type='expected',epm_as_of=feed$epm_as_of,darko_through=feed$darko_through,epm_url=feed$epm_url,darko_url=feed$darko_url,matched_players=sum(good),total_players=nrow(rows),unmatched_players=rows$player_name[!good],skill_stats_fetched_at=evidence$generated_at,skill_updated_players=sum(rows$live_skill_components_updated>0),max_current_weight=max(rows$live_current_weight),held_skill_components=evidence$held_components,switch_status=evidence$switch_status,
-    method='Overall impact is 80% latest expected EPM/DARKO blend plus 20% SKILL. Expected EPM and DARKO already incorporate historical evidence and uncertainty, so no additional current-minute shrinkage is applied to their forecasts. Gradual weighting applies only inside SKILL: up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 1,500 minutes and declines one-for-one; rookies fully replace this SKILL prior at 1,500 minutes. Actual historical evidence remains in veteran SKILL weighting. SWITCH uses its own matchup-covered evidence minutes, estimated by game coverage. A smaller valid matchup sample updates at a smaller weight; outages retain the last valid same-season sample without increasing its evidence weight. Missing components retain priors. The 80/20 mix is a modeling choice, not a backtested optimal weighting. Injuries and actual game results apply immediately.')
+    method='Overall impact is 80% latest expected EPM/DARKO blend plus 20% SKILL. Expected EPM and DARKO already incorporate historical evidence and uncertainty, so no additional current-minute shrinkage is applied to their forecasts. Gradual weighting applies only inside SKILL: up to 4,000 minutes, current season first; previous years count 75%, 56.25%, 42.19% per minute. Synthetic preseason evidence starts at 300 minutes and declines one-for-one; rookies receive 25% current evidence at 75 minutes, 50% at 150, 75% at 225, and fully replace this SKILL prior at 300 minutes. Actual historical evidence remains in veteran SKILL weighting. SWITCH uses the same 300-minute synthetic-prior rule with its own matchup-covered evidence minutes, estimated by game coverage. A smaller valid matchup sample updates at a smaller weight; outages retain the last valid same-season sample without increasing its evidence weight. Missing components retain priors. The 300-minute phaseout and 80/20 mix are modeling choices, not backtested optimal weights. Injuries and actual game results apply immediately.')
   audit$future_rating_method <- 'Future-year impact and SKILL paths retain their preseason aging shape, shifted by the current estimate minus preseason. Future values are recalculated from these updated ratings.'
   jsonlite::write_json(audit,file.path(base_dir,'frontend/public/data/live_status.json'),auto_unbox=TRUE,pretty=TRUE)
   message('Live ratings matched: ',sum(good),' / ',nrow(rows),'; SKILL updated: ',audit$skill_updated_players,'; max current weight: ',round(100*audit$max_current_weight,2),'%')
@@ -164,3 +165,4 @@ apply_live_game_results <- function(schedules, base_dir) {
   # into a new noisy player rating or added again as expected wins.
   schedules
 }
+
