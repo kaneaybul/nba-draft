@@ -25,7 +25,9 @@ def main(args):
         saved=json.loads(status.read_text())
         if saved.get('status')=='success'and saved.get('method')==METHOD and saved.get('observation_date')==asof and saved.get('source_signature')==source_signature(repo):
             manifest=json.loads((out/'manifest.json').read_text())
-            if len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
+            attribution_path=out/'attribution/manifest.json'
+            attribution_ok=attribution_path.exists() and json.loads(attribution_path.read_text()).get('latest')==asof and json.loads(attribution_path.read_text()).get('method')=='rolling-production-attribution-v1'
+            if attribution_ok and len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
                 return {**saved,'reused_identical_published_inputs':True}
     if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
         raise ValueError('The source refresh is not from today; retaining the last validated history')
@@ -89,6 +91,8 @@ def main(args):
     # publish validates the entire batch before it touches the public inventory.
     manifest=publish(candidates,out,require_league=not new_version)
     atomic(repo/'processed/asset_history/picks/trained_pick_model.json',json.loads(staged_model.read_text()))
+    from attribution import run as publish_attribution
+    publish_attribution(repo,runtime)
     compact(repo)
     staged=players/'player_state_staged'
     if not staged.is_dir():raise ValueError('Missing staged model state')
@@ -108,4 +112,5 @@ if __name__=='__main__':
         out=data_root(a.repo.resolve())
         atomic(out/'refresh_status.json',{'status':'retained_last_good','recorded_at':datetime.now(timezone.utc).isoformat(),'reason':str(exc)[:600]})
         raise
+
 
