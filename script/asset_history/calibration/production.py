@@ -137,6 +137,11 @@ class PathCalibrator:
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
             self.events['unsigned_draft_right_existing_policy']+=1
+            if self.data.get('pick_model',{}).get('stock_policy')!='year-four-endpoint-stock-v2':
+                curve=self.pick_curve[int(slot)]
+                return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
+                            value=curve['quote'],production_quote=curve['peak_production_quote'],
+                            contract_adjustment_sum=curve['quote']-curve['peak_production_quote'])
             from backfill.forfeiture_rules import RoundAwarePickQuotes
             curve=RoundAwarePickQuotes(self.data['pick_model']).components(1 if slot<=30 else 2,int(slot),0,int(draft))
             original=curve['draft_endpoint_expectation']
@@ -237,8 +242,6 @@ class PathCalibrator:
             uncertainty_scope='remaining original four-year draft-window seasons')
         result['annual_values']=[dict(season=int(row['season']),exposure=float(row['exposure']),
             production=p,asset=1.8*p-.8*c)for row,p,c in zip(annual,result['annual_mean_production'],result['annual_mean_cost'])]
-        from endpoint_stock import promote_quote
-        result=promote_quote(result,self.draft_evaluation(player,annual),dt)
         self.events['priced']+=1
         return result
 

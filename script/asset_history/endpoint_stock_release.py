@@ -70,5 +70,19 @@ def migrate(repo,runtime):
     atomic(repo/'processed/asset_history/endpoint_stock_release.json',dict(method=METHOD,source_version=LEGACY_VERSION,observation_date=asof,repriced_player_observations=grades['repriced'],checks=checks))
     compact(repo);print(json.dumps(checks),flush=True)
 
+def verify_existing(repo,runtime):
+    # Revalidate derived attribution without rewriting preserved snapshots.
+    materialize(repo)
+    from attribution import run
+    from validate_attribution import validate
+    from source_signature import source_signature
+    run(repo,runtime,workers=2);checks=validate(repo)
+    status_path=data_root(repo)/'refresh_status.json'
+    status=json.loads(status_path.read_text());status['source_signature']=source_signature(repo)
+    atomic(status_path,status)
+    report_path=repo/'processed/asset_history/endpoint_stock_release.json'
+    report=json.loads(report_path.read_text());report['checks']=checks;atomic(report_path,report)
+    compact(repo);print(json.dumps(checks),flush=True)
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--runtime',type=Path,required=True);a=p.parse_args();migrate(a.repo.resolve(),a.runtime.resolve())
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--runtime',type=Path,required=True);a=p.parse_args();repo=a.repo.resolve();runtime=a.runtime.resolve();(verify_existing if (data_root(repo)/'manifest.json').exists() else migrate)(repo,runtime)
