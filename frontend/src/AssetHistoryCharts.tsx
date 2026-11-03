@@ -12,7 +12,7 @@ export type AttributionAnalysis = {
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 export const signedMoney = (value: number) => `${value >= 50000 ? '+' : ''}${money(value)}`;
 export const categoryLabels = {
-  player: 'Player Development & Aging', draft: 'Drafted Player Development', trades: 'Trades',
+  player: 'Player Development & Aging', draft: 'Draft Value Added / Destroyed', timing: 'Development Window Timing', trades: 'Trades',
   contracts: 'Contract Management', fa: 'FA Signings', own_picks: 'Own Pick Revaluation',
   acquired_picks: 'Acquired Pick Revaluation', lottery: 'Lottery Luck',
   pick_rules: 'Pick Rights / Rules', automatic: 'Automatic Pick Additions',
@@ -31,7 +31,7 @@ export type AttributionInterval = {
 };
 export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
-  if (ledger.method !== 'rolling-production-attribution-v1' || ledger.valuation_method !== valuationMethod || start > end) return null;
+  if (ledger.method !== 'endpoint-production-attribution-v2' || ledger.valuation_method !== valuationMethod || start > end) return null;
   const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
   if (start !== end && (!rows.length || rows[0].start !== start || rows[rows.length - 1].end !== end)) return null;
   const categories = Object.fromEntries(Object.keys(categoryLabels).map(key => [key, 0]));
@@ -157,6 +157,6 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
     {!loading && !!missingAttribution.length && <p className="ah-caption">Waterfall categories unavailable: {missingAttribution.map(row => row.team).join(', ')}. These teams are excluded from category rankings.</p>}
     {!!missing.length && metric in categoryLabels && <p className="ah-caption">Category ranking covers {comparable.length} of {teams.length} teams.</p>}
     <details className="ah-method"><summary>Full league table</summary><div className="ah-table ah-league-table" tabIndex={0} aria-label="League values and waterfall categories, scroll horizontally"><table><thead><tr><th scope="col">Rank</th><th scope="col">Team</th>{columns.map(key => <th key={key} scope="col" aria-sort={metric === key ? 'descending' : 'none'}><button onClick={() => setMetric(key)}>{rankingLabels[key]}</button></th>)}</tr></thead><tbody>{comparable.map((row, index) => <tr key={row.team}><td>{index + 1}</td><td>{row.team}</td>{columns.map(key => { const value = leagueMetricValue(row, key); return <td key={key}>{value === undefined ? '—' : key === 'change' || key in categoryLabels ? signedMoney(value) : money(value)}</td>; })}</tr>)}</tbody></table></div></details>
-    <p className="ah-caption">Category rankings use the same waterfall amounts and selected dates. The ten categories sum to value change.</p>
+    <p className="ah-caption">Category rankings use the same waterfall amounts and selected dates. The categories sum to value change.</p>
   </section>;
 }

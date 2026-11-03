@@ -164,8 +164,12 @@ def export(output,asof=None,calibrator=None):
                             value=path['value'];details['annual_values']=[]
                             details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
                             details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
-                            details['draft_right_policy']='Generic endpoint-trained pick quote; dormant right has no NBA service path'
+                            details['draft_right_policy']='Year-four production expectation; unsigned right has no NBA evidence'
+                            if path.get('draft_development'):details['draft_development']=path['draft_development']
+                            if path.get('endpoint_stock_policy'):details['endpoint_stock_policy']=path['endpoint_stock_policy']
                         if path['status']=='priced':
+                            for key in ('rolling_production_quote','endpoint_stock_policy','development_window_basis'):
+                                if key in path:details[key]=path[key]
                             details['baseline_quote']=value
                             details['baseline_draft_maturity_weight']=details['draft_maturity_weight']
                             value=path['mean']
@@ -179,6 +183,8 @@ def export(output,asof=None,calibrator=None):
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
                 assets[-1]['value']=value
+                from endpoint_stock import promote_asset
+                promote_asset(assets[-1],dt)
             snapshots.append({'team':team,'date':dt,'method':METHOD,'reporting_cap':164961000.,'source_cutoff':dt,
               'assets':assets,'player_subtotal':sum(a['value']for a in assets),'unpriced_players':unpriced,
               'coverage':{'ownership':True,'contracts':c['contracts_complete'],'skill':c['skill_complete'],'injury_review':c['injury_review_complete']},
@@ -279,4 +285,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
     p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
+
 

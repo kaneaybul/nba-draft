@@ -124,12 +124,13 @@ def learning_cases(panel, records):
                        first_season_learning=False, holdouts=holdouts)
 
 
-def pick_components(model, slot, costs, prior_model=None):
+def pick_components(model, slot, costs, prior_model=None, draft_year=None):
     """Translate the shared endpoint-trained prior into a current asset quote."""
-    p = (prior_model or EndpointModel(model['endpoint_records'])).prior(slot, model['endpoint_training_through'])
+    cutoff=min(model['endpoint_training_through'],int(draft_year)-1) if draft_year is not None else model['endpoint_training_through']
+    p = (prior_model or EndpointModel(model['endpoint_records'])).prior(slot, cutoff)
     service = p['paths'][:, :4]
     w = p['weights']
-    production = float(w @ (2*np.sort(service,axis=1)[:,-2:].sum(axis=1)))
+    production = p['value'] if model.get('stock_policy')=='year-four-endpoint-stock-v2' else float(w @ (2*np.sort(service,axis=1)[:,-2:].sum(axis=1)))
     cumulative = float(w @ service.sum(axis=1))
     adjustment = .8 * (cumulative - sum(costs))
     raw = production + adjustment
@@ -146,7 +147,7 @@ def build_pick_model(previous, records, cutoff):
     model['legacy_original_window_fit']=copy.deepcopy(previous.get('legacy_original_window_fit',previous['pick_fit']))
     for k in ('holdout_year','holdout_players','holdout_rmse','training_players','player_seasons','cohorts'):
         model['pick_fit'].pop(k,None)
-    model.update(endpoint_records=records, endpoint_training_through=cutoff, production_policy=POLICY)
+    model.update(endpoint_records=records, endpoint_training_through=cutoff, production_policy=POLICY,stock_policy='year-four-endpoint-stock-v2')
     model['pick_fit'].update(target=POLICY,
         model='Linked service paths normalized to log-slot year-four production endpoint; salaries applied afterward',
         endpoint_training_players=len(records), endpoint_training_through=cutoff,
@@ -201,3 +202,4 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
             if audit is not None:audit.update(method='flat_last_positive_raw_rate',anchor_season=anchor)
             return [raw[y] if y in raw else raw[anchor] for y in years]
     return [raw[y] if y in raw else scale*level(y) for y in years]
+

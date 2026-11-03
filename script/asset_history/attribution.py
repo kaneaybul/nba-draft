@@ -14,8 +14,8 @@ from attribution_players import player_bridge,clock,parts,market_reference,name_
 from model_version import data_root,METHOD
 import attribution_picks as picks
 
-ATTRIBUTION_METHOD='rolling-production-attribution-v1'
-LABELS={'player':'Player Development & Aging','draft':'Drafted Player Development','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','pick_rules':'Pick Rights / Rules','automatic':'Automatic Pick Additions'}
+ATTRIBUTION_METHOD='endpoint-production-attribution-v2'
+LABELS={'player':'Player Development & Aging','draft':'Draft Value Added / Destroyed','timing':'Development Window Timing','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','pick_rules':'Pick Rights / Rules','automatic':'Automatic Pick Additions'}
 NAMES=dict(zip('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split(),['Atlanta Hawks','Brooklyn Nets','Boston Celtics','Charlotte Hornets','Chicago Bulls','Cleveland Cavaliers','Dallas Mavericks','Denver Nuggets','Detroit Pistons','Golden State Warriors','Houston Rockets','Indiana Pacers','Los Angeles Clippers','Los Angeles Lakers','Memphis Grizzlies','Miami Heat','Milwaukee Bucks','Minnesota Timberwolves','New Orleans Pelicans','New York Knicks','Oklahoma City Thunder','Orlando Magic','Philadelphia 76ers','Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Toronto Raptors','Utah Jazz','Washington Wizards']))
 
 def read(path):return json.loads(Path(path).read_text())
@@ -174,7 +174,7 @@ def assemble(ctx,players,pick_rows,lotteries):
             components={k:Counter()for k in LABELS};contributors={k:Counter()for k in LABELS}
             for r in attributed:components[r['category']][r['component']]+=r['value'];contributors[r['category']][r['player']]+=r['value']
             conversion=changes.get('draft_player_entry',0)+q.get('draft_pick_retirement',0)-transfers[team][pair]
-            components['player']['Selection-to-player handoff']+=conversion
+            components['contracts']['Pick-to-player contract terms']+=conversion
             components['trades']['Future pick transfers']+=q.get('trade_picks',0)
             components['trades']['Selected draft-right transfers']+=transfers[team][pair]
             for r in transfer_contributors[team,pair]:contributors['trades'][r['player']]+=r['value']
