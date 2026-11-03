@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import './assetHistory.css';
-import { aggregateAttribution, LeagueComparison, Waterfall, signedMoney, type AttributionLedger } from './AssetHistoryCharts';
+import { aggregateAttribution, LeagueComparison, Waterfall, signedMoney, type AttributionLedger, type RankingMetric } from './AssetHistoryCharts';
 type Asset={id:string;kind:'player'|'pick';name:string;value:number;source:string;note?:string;details?:{peak_production:number;contract_adjustment:number;draft_development?:{status:string;endpoint:string;value:number;original_expectation:number;gain:number}}};
 type Snapshot={team:string;date:string;total:number;reporting_cap:number;closed:boolean;vintage:'reconstructed'|'published';assets:Asset[];moves:{date:string;label:string;major:boolean}[];bridge?:{key:string;label:string;value:number}[];assumptions?:string[];source_dates?:Record<string,string>};
 type TeamFile={team:string;method:string;snapshots:Snapshot[]};
@@ -11,15 +11,32 @@ async function read<T,>(url:string,signal:AbortSignal):Promise<T>{const r=await 
 export function AssetHistoryWorkspace(){
  const [manifest,setManifest]=useState<Manifest|null>(null),[file,setFile]=useState<TeamFile|null>(null),[team,setTeam]=useState('UTA'),[selected,setSelected]=useState(''),[error,setError]=useState(''),[query,setQuery]=useState(''),[kind,setKind]=useState('all');
  const [revision,setRevision]=useState(0);
+ const [rankingMetric,setRankingMetric]=useState<RankingMetric>('change');
  const [startDate,setStartDate]=useState('2024-02-29');
- const [ledger,setLedger]=useState<AttributionLedger|null>(null);
+ const [ledgers,setLedgers]=useState<Record<string,AttributionLedger>>({});
+ const [leagueLoading,setLeagueLoading]=useState(false);
+ const ledger=ledgers[team];
  const [attributionError,setAttributionError]=useState('');
  const [historyVersion,setHistoryVersion]=useState('v5');
  const [refreshStatus,setRefreshStatus]=useState<RefreshStatus|null>(null);
  useEffect(()=>{const f=()=>setRevision(x=>x+1);const timer=window.setInterval(f,60000);window.addEventListener('focus',f);return()=>{clearInterval(timer);window.removeEventListener('focus',f);};},[]);
  useEffect(()=>{const c=new AbortController();read<{history_version?:string}>('/data/asset_valuation.json',c.signal).then(async metadata=>{const version=metadata.history_version;if(version!=='v5')throw Error('The current asset valuation release is unavailable.');const m=await read<Manifest>(`/data/asset_history/${version}/manifest.json`,c.signal);setHistoryVersion(version);setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
  useEffect(()=>{const c=new AbortController();read<RefreshStatus>(`/data/asset_history/${historyVersion}/refresh_status.json`,c.signal).then(setRefreshStatus).catch(()=>{});return()=>c.abort();},[revision,historyVersion]);
- useEffect(()=>{const c=new AbortController();setLedger(null);setAttributionError('');read<AttributionLedger>(`/data/asset_history/${historyVersion}/attribution/${team}.json`,c.signal).then(setLedger).catch(e=>{if(!c.signal.aborted)setAttributionError(String(e.message));});return()=>c.abort();},[team,historyVersion,manifest?.generated_at,revision]);
+ useEffect(()=>{
+  if(!manifest)return;
+  const c=new AbortController();setLedgers({});setLeagueLoading(true);setAttributionError('');
+  Promise.allSettled(manifest.teams.map(async t=>{
+   const book=await read<AttributionLedger>(`/data/asset_history/${historyVersion}/attribution/${t.team}.json`,c.signal);
+   if(book.team!==t.team)throw Error('Attribution team does not match');
+   return [t.team,book] as const;
+  })).then(results=>{
+   if(c.signal.aborted)return;
+   const available=results.flatMap(r=>r.status==='fulfilled'?[r.value]:[]);
+   setLedgers(Object.fromEntries(available));setLeagueLoading(false);
+   setAttributionError(results.some(r=>r.status==='rejected')?'Some waterfall categories are unavailable.':'');
+  });
+  return()=>c.abort();
+ },[historyVersion,manifest,revision]);
  const path=manifest?.teams.find(t=>t.team===team)?.path;
  useEffect(()=>{setFile(null);setQuery('');setError('');},[team]);
  useEffect(()=>{if(!path)return;const c=new AbortController();read<TeamFile>(path,c.signal).then(x=>{setFile(x);setSelected(d=>x.snapshots.some(s=>s.date===d)?d:x.snapshots[x.snapshots.length-1]?.date??'');setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[path,manifest?.generated_at]);
@@ -58,13 +75,14 @@ export function AssetHistoryWorkspace(){
  {analysis?<Waterfall opening={analysis.opening} closing={analysis.closing} changes={Object.entries(analysis.categories).map(([key,value])=>({key,label:key,value}))} analysis={analysis}/>:<p role="status">{attributionError?'Detailed attribution is unavailable. Please refresh after the next validated update.':'Loading reconciled attribution…'}</p>}
 
  </section>
- <LeagueComparison teams={manifest?.teams??[]} start={baseline.date} end={current.date} cap={current.reporting_cap} selectedTeam={team} onSelect={setTeam}/>
+ <LeagueComparison metric={rankingMetric} onMetricChange={setRankingMetric} teams={manifest?.teams??[]} ledgers={ledgers} valuationMethod={manifest?.method} loading={leagueLoading} start={baseline.date} end={current.date} cap={current.reporting_cap} selectedTeam={team} onSelect={setTeam}/>
  <details className="ah-method ah-moves"><summary>Moves since {previous?.date??current.date} ({current.moves.length})</summary>{current.moves.length?<ul>{current.moves.map((m,i)=><li key={i}><time>{m.date}</time> {m.label}</li>)}</ul>:<p>No annotated moves.</p>}</details>
  <section><div className="ah-filters"><h2>Assets · {current.date}</h2><input aria-label="Search assets" placeholder="Find a player or pick" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="Asset category" value={kind} onChange={e=>setKind(e.target.value)}><option value="all">All assets</option><option value="player">Players</option><option value="pick">Draft rights</option></select></div><div className="ah-table ah-inventory"><table><thead><tr><th>Asset</th><th>Type</th><th>Asset value</th><th>Change since {baseline.date}</th><th>Details</th></tr></thead><tbody>{assets.map(a=><tr key={a.id}><td>{a.name}</td><td>{a.kind==='player'?'Player':'Pick'}</td><td>{money(a.value)}</td><td>{oldAssets.has(a.id)?signedMoney(a.value-oldAssets.get(a.id)!):'Added'}</td><td><details><summary>View</summary>{a.details&&<p>Production {money(a.details.peak_production)} · Contract effect {money(a.details.contract_adjustment)}</p>}{a.details?.draft_development?.status==='priced'&&<p>Draft development: {signedMoney(a.details.draft_development.gain)} versus original expectation.</p>}{a.note&&<p>{a.note}</p>}<small>{a.source}</small></details></td></tr>)}</tbody></table></div><p className="ah-caption">Sorted by asset value. Changes compare assets held on both dates; removed assets appear in the waterfall.</p></section>
  <details className="ah-method"><summary>Sources and assumptions</summary>{current.source_dates&&<p>{Object.entries(current.source_dates).map(([name,date])=>`${name}: ${date}`).join(' · ')}</p>}{current.assumptions?.length?<ul>{current.assumptions.map((a,i)=><li key={i}>{a}</li>)}</ul>:null}<p>Method: {file?.method}. Draft endpoint grades are separate from the additive waterfall.</p></details>
  <footer><a href={path??undefined} download>Download {team} history</a> · Data through {points[points.length-1]!.date} · Method {file?.method}</footer></>}
  </main>;
 }
+
 
 
 

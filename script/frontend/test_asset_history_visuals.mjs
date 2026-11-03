@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 const frontend = process.env.ASSET_HISTORY_FRONTEND || resolve('frontend');
@@ -11,7 +11,7 @@ const source = readFileSync(resolve(frontend, 'src/AssetHistoryCharts.tsx'), 'ut
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2020 } }).outputText;
 const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
-const { Waterfall, LeagueComparison, aggregateAttribution } = module.exports;
+const { Waterfall, LeagueComparison, aggregateAttribution, categoryLabels, leagueRows, leagueMetricValue, rankLeague } = module.exports;
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
 const changes = [{key:'gain',label:'Gain',value:30e6},{key:'loss',label:'Loss',value:-60e6}];
 const waterfall = render(Waterfall, {opening:100e6,closing:70e6,changes});
@@ -29,8 +29,8 @@ const league = render(LeagueComparison, {teams:[
  {team:'ATL',points:[point('b',140e6)]}
 ],start:'a',end:'b',cap:1,selectedTeam:'UTA',onSelect:()=>{}});
 assert.match(league, /2 \/ 2/);
-assert.match(league, /1\. BOS, change: \+\$20M/);
-assert.match(league, /2\. UTA, change: −\$30M/);
+assert.match(league, /1\. BOS, Value change: \+\$20M/);
+assert.match(league, /2\. UTA, Value change: −\$30M/);
 assert.match(league, /Missing matching observations: MIA, ATL/);
 assert.match(league, /−\$10M/);
 const keys=['player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','pick_rules','automatic'];
@@ -46,4 +46,60 @@ assert.equal(aggregateAttribution(ledger,'a','a',100,100,'v5').change,0);
 assert.equal(aggregateAttribution({...ledger,valuation_method:'v4'},'a','c',100,110,'v5'),null);
 const malformed=structuredClone(ledger);malformed.intervals[0].components.draft.movement=15;
 assert.equal(aggregateAttribution(malformed,'a','c',100,110,'v5'),null,'Category details must reconcile');
-console.log('Asset History visual checks passed: one MECE method, multi-period aggregation, reconciliation, missing coverage, rank controls and no fallback.');
+
+// Category amounts must come from the same reconciled range as each waterfall.
+const teams = [
+ {team:'BOS',points:[point('a',100),point('b',120),point('c',110)]},
+ {team:'UTA',points:[point('a',100),point('b',95),point('c',125)]},
+ {team:'ATL',points:[point('a',100),point('b',140),point('c',150)]},
+ {team:'MIA',points:[point('a',100,2),point('b',140),point('c',150)]}
+];
+const ledgers = {BOS:ledger, UTA:{...ledger,team:'UTA',intervals:[row('a','b',100,95,'draft'),row('b','c',95,125,'contracts')]}};
+const rankedRows = leagueRows(teams,ledgers,'a','c',1,'v5');
+assert.equal(rankedRows.length,3);
+assert.deepEqual(rankLeague(rankedRows,'draft').map(r=>[r.team,r.value]),[['BOS',20],['UTA',-5]]);
+assert.deepEqual(rankLeague(rankedRows,'contracts').map(r=>[r.team,r.value]),[['UTA',30],['BOS',-10]]);
+assert.deepEqual(rankLeague(rankedRows,'change').map(r=>r.team),['ATL','UTA','BOS']);
+assert.deepEqual(rankLeague(leagueRows(teams,ledgers,'b','c',1,'v5'),'draft').map(r=>r.value),[0,0]);
+assert.equal(rankLeague(leagueRows(teams,ledgers,'a','c',1,'old'),'draft').length,0);
+assert.equal(rankLeague(leagueRows(teams,{...ledgers,BOS:{...ledger,team:'UTA'}},'a','c',1,'v5'),'draft').length,1);
+const broken = structuredClone(ledgers);broken.BOS.intervals[0].categories.draft=999;
+assert.deepEqual(rankLeague(leagueRows(teams,broken,'a','c',1,'v5'),'draft').map(r=>r.team),['UTA']);
+for(const key of keys){
+ assert.ok(league.includes(`value="${key}"`),`Missing ranking control: ${key}`);
+ for(const team of rankedRows.filter(r=>r.categories)){
+  assert.equal(leagueMetricValue(team,key),aggregateAttribution(ledgers[team.team],'a','c',100,team.total,'v5').categories[key]);
+ }
+}
+const completeMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'v5',selectedTeam:'UTA',onSelect:()=>{}});
+assert.match(completeMarkup,/Waterfall categories unavailable: ATL/);
+assert.match(completeMarkup,/aria-sort="descending"/);
+assert.match(completeMarkup,/Full league table/);
+assert.match(completeMarkup,/Contract Management/);
+const categoryMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'v5',selectedTeam:'UTA',metric:'contracts',onSelect:()=>{}});
+assert.match(categoryMarkup,/1\. UTA, Contract Management: \$0M/);
+assert.match(categoryMarkup,/League combined · Contract Management/);
+assert.match(categoryMarkup,/Waterfall categories unavailable: ATL/);
+
+// Exercise every team against the actual published ledgers when available.
+const data = resolve(frontend,'public/data/asset_history/v5');
+if(existsSync(resolve(data,'manifest.json'))){
+ const manifest=JSON.parse(readFileSync(resolve(data,'manifest.json'),'utf8'));
+ const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
+ const dates=manifest.teams[0].points.map(p=>p.date), end=dates.at(-1), cap=manifest.teams[0].points.at(-1).reporting_cap;
+ for(const start of [dates[0],'2024-02-29',dates.at(-2),end]){
+  const actualRows=leagueRows(manifest.teams,books,start,end,cap,manifest.method);
+  assert.equal(actualRows.length,30);
+  for(const key of Object.keys(categoryLabels)){
+   assert.equal(rankLeague(actualRows,key).length,30,`${start}: missing ${key} attribution`);
+   for(const r of actualRows){
+    const first=manifest.teams.find(t=>t.team===r.team).points.find(p=>p.date===start);
+    const waterfall=aggregateAttribution(books[r.team],start,end,first.total,r.total,manifest.method);
+    assert.equal(leagueMetricValue(r,key),waterfall.categories[key]);
+   }
+  }
+  for(const r of actualRows)assert.ok(Math.abs(Object.values(r.categories).reduce((a,b)=>a+b,0)-r.change)<.01);
+ }
+ console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges.');
+}
+console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
