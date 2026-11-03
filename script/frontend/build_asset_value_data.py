@@ -57,7 +57,7 @@ def build(repo):
                     if d.get(k)is not None:players[pid][k]=d[k]
                 if asset.get('details',{}).get('path_calibration',{}).get('status')=='priced':
                     c=asset['details']['path_calibration']
-                    players[pid]['distribution']={k:c[k]for k in ('p10','p50','p90','production_quote','contract_adjustment_sum','nba_weight')}
+                    players[pid]['distribution']={k:c[k]for k in ('p10','p50','p90','production_quote','contract_adjustment_sum','nba_weight')if k in c}
             elif asset['kind']=='pick':
                 picks.append({'team':team,'origin':asset['physical_origin'],'year':asset['draft_year'],
                               'round':asset['round'],'value':value})
