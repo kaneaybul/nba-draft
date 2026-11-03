@@ -1,0 +1,36 @@
+name: Build MECE asset attribution
+on:
+  pull_request:
+    paths:
+      - script/asset_history/**
+      - frontend/src/AssetHistory*
+      - .github/workflows/asset-history-mece.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare canonical attribution inputs
+        run: |
+          python3 - <<'PY'
+          import sys,zipfile
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history/backfill')
+          from runtime_archive import resolved_archive
+          names=['monthly_reconstruction/projections/expected_contracts.py','monthly_reconstruction/league_ownership/league_events.json','monthly_reconstruction/league_ownership/monthly_league_rosters.json','curated_ledger_v3.py']
+          with resolved_archive(Path('processed/asset_history/canonical_runtime_seed.zip')) as archive:
+              with zipfile.ZipFile(archive) as source,zipfile.ZipFile('/tmp/mece-inputs.zip','w',zipfile.ZIP_DEFLATED) as target:
+                  for name in names:target.writestr(name,source.read(name))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mece-attribution-inputs
+          path: /tmp/mece-inputs.zip
+          retention-days: 3
