@@ -1,0 +1,20 @@
+{
+  "source": "Corrected rolling-production-attribution-v1 Jazz archive; last daily interval removed to compare a preserved monthly observation.",
+  "team": "UTA",
+  "start": "2024-02-29",
+  "end": "2026-10-31",
+  "opening": 2106666087.0937781,
+  "closing": 1730852972.4180577,
+  "categories": {
+    "player": -386303909.50940675,
+    "draft": -139368808.97886926,
+    "trades": 48508485.09612132,
+    "contracts": -386505751.7806565,
+    "fa": 51069946.12060409,
+    "own_picks": 222759872.99402338,
+    "acquired_picks": -78690303.3070988,
+    "lottery": -11573961.188502677,
+    "pick_rules": 8120154.074734807,
+    "automatic": 296171161.80332994
+  }
+}

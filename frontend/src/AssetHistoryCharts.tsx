@@ -3,7 +3,7 @@ import { useState } from 'react';
 export type Change = { key: string; label: string; value: number };
 export type HistoryPoint = { date: string; total: number; players: number; picks: number; reporting_cap: number; vintage: string };
 export type LeagueTeam = { team: string; points?: HistoryPoint[] };
-export type ReviewedAnalysis = {
+export type AttributionAnalysis = {
   start: string; end: string; opening: number; closing: number; change: number;
   categories: Record<string, number>; components: Record<string, Record<string, number>>;
   contributors: Record<string, { player: string; value: number }[]>;
@@ -16,12 +16,46 @@ const categoryLabels: Record<string, string> = {
   contracts: 'Contract Management', fa: 'FA Signings', own_picks: 'Own Pick Revaluation',
   acquired_picks: 'Acquired Pick Revaluation', lottery: 'Lottery Luck',
   pick_rules: 'Pick Rights / Rules', automatic: 'Automatic Pick Additions',
-  player_added: 'Players added', player_removed: 'Players removed', player_repriced: 'Player value changes',
-  pick_added: 'Picks added', pick_removed: 'Picks removed', pick_repriced: 'Pick value changes',
 };
 
-export function Waterfall({ opening, closing, changes, reviewed }: {
-  opening: number; closing: number; changes: Change[]; reviewed?: ReviewedAnalysis;
+export type AttributionInterval = {
+  start: string; end: string; opening: number; closing: number;
+  categories: Record<string, number>; components: Record<string, Record<string, number>>;
+  contributors: Record<string, { player: string; value: number }[]>;
+  reconciliation_error: number;
+};
+export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[] };
+export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
+  if (ledger.method !== 'rolling-production-attribution-v1' || ledger.valuation_method !== valuationMethod || start > end) return null;
+  const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
+  if (start !== end && (!rows.length || rows[0].start !== start || rows[rows.length - 1].end !== end)) return null;
+  const categories = Object.fromEntries(Object.keys(categoryLabels).map(key => [key, 0]));
+  const components: Record<string, Record<string, number>> = {};
+  const contributions: Record<string, Record<string, number>> = {};
+  let prior = start, value = opening;
+  for (const row of rows) {
+    if (row.start !== prior || Math.abs(row.opening - value) > .01 || !Number.isFinite(row.reconciliation_error) || Math.abs(row.reconciliation_error) > .01) return null;
+    if (Object.keys(row.categories).length !== Object.keys(categoryLabels).length || Object.keys(categoryLabels).some(key => !Number.isFinite(row.categories[key]))) return null;
+    if (Math.abs(row.opening + Object.values(row.categories).reduce((a, b) => a + b, 0) - row.closing) > .01) return null;
+    for (const [key, amount] of Object.entries(row.categories)) {
+      categories[key] += amount;
+      components[key] ??= {};
+      const parts = row.components[key];
+      if (!parts || Math.abs(Object.values(parts).reduce((a, b) => a + b, 0) - amount) > .01) return null;
+      for (const [label, part] of Object.entries(parts)) components[key][label] = (components[key][label] ?? 0) + part;
+      contributions[key] ??= {};
+      for (const c of row.contributors[key] ?? []) contributions[key][c.player] = (contributions[key][c.player] ?? 0) + c.value;
+    }
+    prior = row.end; value = row.closing;
+  }
+  const error = opening + Object.values(categories).reduce((a, b) => a + b, 0) - closing;
+  if (Math.abs(value - closing) > .01 || Math.abs(error) > .01) return null;
+  return { start, end, opening, closing, change: closing - opening, categories, components,
+    contributors: Object.fromEntries(Object.entries(contributions).map(([key, people]) => [key, Object.entries(people).map(([player, value]) => ({ player, value })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value))])), validation: { reconciliation_error: error } };
+}
+
+export function Waterfall({ opening, closing, changes, analysis }: {
+  opening: number; closing: number; changes: Change[]; analysis: AttributionAnalysis;
 }) {
   const [active, setActive] = useState<string | null>(null);
   const error = opening + changes.reduce((sum, row) => sum + row.value, 0) - closing;
@@ -60,9 +94,8 @@ export function Waterfall({ opening, closing, changes, reviewed }: {
     </div>
     <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabels[row.key] ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
     {picked && <section className="ah-drilldown"><h3>{categoryLabels[picked.key] ?? picked.label}</h3>
-      {reviewed?.components[picked.key] && <ul>{Object.entries(reviewed.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
-      {!!reviewed?.contributors[picked.key]?.length && <><h4>Largest player contributions</h4><ul>{reviewed.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
-      {!reviewed && <p>Net change from holdings added, removed or repriced over the selected period.</p>}
+      {analysis.components[picked.key] && <ul>{Object.entries(analysis.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
+      {!!analysis.contributors[picked.key]?.length && <><h4>Largest contributors</h4><ul>{analysis.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
     </section>}
   </>;
 }
@@ -89,3 +122,4 @@ export function LeagueComparison({ teams, start, end, cap, selectedTeam, onSelec
     <p className="ah-caption">Changes include player forecasts, contracts and the addition of future picks.</p>
   </section>;
 }
+

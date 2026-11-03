@@ -1,0 +1,5171 @@
+{
+  "source": "Reviewed league waterfall transfer audit and corrected rolling-production-attribution-v1 archive, November 1 2026. Destinations and draft identities only; all prices are recomputed from current canonical observations.",
+  "drafts": [
+    {
+      "year": 2014,
+      "team": "CLE",
+      "player": "Andrew Wiggins"
+    },
+    {
+      "year": 2014,
+      "team": "MIL",
+      "player": "Jabari Parker"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "Joel Embiid"
+    },
+    {
+      "year": 2014,
+      "team": "ORL",
+      "player": "Aaron Gordon"
+    },
+    {
+      "year": 2014,
+      "team": "UTA",
+      "player": "Dant\u00e9 Exum"
+    },
+    {
+      "year": 2014,
+      "team": "BOS",
+      "player": "Marcus Smart"
+    },
+    {
+      "year": 2014,
+      "team": "LAL",
+      "player": "Julius Randle"
+    },
+    {
+      "year": 2014,
+      "team": "SAC",
+      "player": "Nik Stauskas"
+    },
+    {
+      "year": 2014,
+      "team": "CHO",
+      "player": "Noah Vonleh"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "Elfrid Payton"
+    },
+    {
+      "year": 2014,
+      "team": "DEN",
+      "player": "Doug McDermott"
+    },
+    {
+      "year": 2014,
+      "team": "ORL",
+      "player": "Dario \u0160ari\u0107"
+    },
+    {
+      "year": 2014,
+      "team": "MIN",
+      "player": "Zach LaVine"
+    },
+    {
+      "year": 2014,
+      "team": "PHO",
+      "player": "T.J. Warren"
+    },
+    {
+      "year": 2014,
+      "team": "ATL",
+      "player": "Adreian Payne"
+    },
+    {
+      "year": 2014,
+      "team": "CHI",
+      "player": "Jusuf Nurki\u0107"
+    },
+    {
+      "year": 2014,
+      "team": "BOS",
+      "player": "James Young"
+    },
+    {
+      "year": 2014,
+      "team": "PHO",
+      "player": "Tyler Ennis"
+    },
+    {
+      "year": 2014,
+      "team": "CHI",
+      "player": "Gary Harris"
+    },
+    {
+      "year": 2014,
+      "team": "TOR",
+      "player": "Bruno Caboclo"
+    },
+    {
+      "year": 2014,
+      "team": "OKC",
+      "player": "Mitch McGary"
+    },
+    {
+      "year": 2014,
+      "team": "MEM",
+      "player": "Jordan Adams"
+    },
+    {
+      "year": 2014,
+      "team": "UTA",
+      "player": "Rodney Hood"
+    },
+    {
+      "year": 2014,
+      "team": "CHO",
+      "player": "Shabazz Napier"
+    },
+    {
+      "year": 2014,
+      "team": "HOU",
+      "player": "Clint Capela"
+    },
+    {
+      "year": 2014,
+      "team": "MIA",
+      "player": "P.J. Hairston"
+    },
+    {
+      "year": 2014,
+      "team": "PHO",
+      "player": "Bogdan Bogdanovi\u0107"
+    },
+    {
+      "year": 2014,
+      "team": "LAC",
+      "player": "C.J. Wilcox"
+    },
+    {
+      "year": 2014,
+      "team": "OKC",
+      "player": "Josh Huestis"
+    },
+    {
+      "year": 2014,
+      "team": "SAS",
+      "player": "Kyle Anderson"
+    },
+    {
+      "year": 2014,
+      "team": "MIL",
+      "player": "Damien Inglis"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "K.J. McDaniels"
+    },
+    {
+      "year": 2014,
+      "team": "CLE",
+      "player": "Joe Harris"
+    },
+    {
+      "year": 2014,
+      "team": "NYK",
+      "player": "Cleanthony Early"
+    },
+    {
+      "year": 2014,
+      "team": "UTA",
+      "player": "Jarnell Stokes"
+    },
+    {
+      "year": 2014,
+      "team": "MIL",
+      "player": "Johnny O'Bryant"
+    },
+    {
+      "year": 2014,
+      "team": "TOR",
+      "player": "DeAndre Daniels"
+    },
+    {
+      "year": 2014,
+      "team": "DET",
+      "player": "Spencer Dinwiddie"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "Jerami Grant"
+    },
+    {
+      "year": 2014,
+      "team": "MIN",
+      "player": "Glenn Robinson III"
+    },
+    {
+      "year": 2014,
+      "team": "DEN",
+      "player": "Nikola Joki\u0107"
+    },
+    {
+      "year": 2014,
+      "team": "HOU",
+      "player": "Nick Johnson"
+    },
+    {
+      "year": 2014,
+      "team": "ATL",
+      "player": "Edy Tavares"
+    },
+    {
+      "year": 2014,
+      "team": "MIN",
+      "player": "Markel Brown"
+    },
+    {
+      "year": 2014,
+      "team": "CHO",
+      "player": "Dwight Powell"
+    },
+    {
+      "year": 2014,
+      "team": "WAS",
+      "player": "Jordan Clarkson"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "Russ Smith"
+    },
+    {
+      "year": 2014,
+      "team": "MIL",
+      "player": "Lamar Patterson"
+    },
+    {
+      "year": 2014,
+      "team": "CHI",
+      "player": "Cameron Bairstow"
+    },
+    {
+      "year": 2014,
+      "team": "PHO",
+      "player": "Alec Brown"
+    },
+    {
+      "year": 2014,
+      "team": "NYK",
+      "player": "Thanasis Antetokounmpo"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "Vasilije Mici\u0107"
+    },
+    {
+      "year": 2014,
+      "team": "MIN",
+      "player": "Alessandro Gentile"
+    },
+    {
+      "year": 2014,
+      "team": "PHI",
+      "player": "Nemanja Dangubi\u0107"
+    },
+    {
+      "year": 2014,
+      "team": "MIA",
+      "player": "Semaj Christon"
+    },
+    {
+      "year": 2014,
+      "team": "DEN",
+      "player": "Devyn Marble"
+    },
+    {
+      "year": 2014,
+      "team": "IND",
+      "player": "Louis Labeyrie"
+    },
+    {
+      "year": 2014,
+      "team": "SAS",
+      "player": "Jordan McRae"
+    },
+    {
+      "year": 2014,
+      "team": "TOR",
+      "player": "Xavier Thames"
+    },
+    {
+      "year": 2014,
+      "team": "SAS",
+      "player": "Cory Jefferson"
+    },
+    {
+      "year": 2015,
+      "team": "MIN",
+      "player": "Karl-Anthony Towns"
+    },
+    {
+      "year": 2015,
+      "team": "LAL",
+      "player": "D'Angelo Russell"
+    },
+    {
+      "year": 2015,
+      "team": "PHI",
+      "player": "Jahlil Okafor"
+    },
+    {
+      "year": 2015,
+      "team": "NYK",
+      "player": "Kristaps Porzi\u0146\u0123is"
+    },
+    {
+      "year": 2015,
+      "team": "ORL",
+      "player": "Mario Hezonja"
+    },
+    {
+      "year": 2015,
+      "team": "SAC",
+      "player": "Willie Cauley-Stein"
+    },
+    {
+      "year": 2015,
+      "team": "DEN",
+      "player": "Emmanuel Mudiay"
+    },
+    {
+      "year": 2015,
+      "team": "DET",
+      "player": "Stanley Johnson"
+    },
+    {
+      "year": 2015,
+      "team": "CHO",
+      "player": "Frank Kaminsky"
+    },
+    {
+      "year": 2015,
+      "team": "MIA",
+      "player": "Justise Winslow"
+    },
+    {
+      "year": 2015,
+      "team": "IND",
+      "player": "Myles Turner"
+    },
+    {
+      "year": 2015,
+      "team": "UTA",
+      "player": "Trey Lyles"
+    },
+    {
+      "year": 2015,
+      "team": "PHO",
+      "player": "Devin Booker"
+    },
+    {
+      "year": 2015,
+      "team": "OKC",
+      "player": "Cameron Payne"
+    },
+    {
+      "year": 2015,
+      "team": "ATL",
+      "player": "Kelly Oubre Jr."
+    },
+    {
+      "year": 2015,
+      "team": "BOS",
+      "player": "Terry Rozier"
+    },
+    {
+      "year": 2015,
+      "team": "MIL",
+      "player": "Rashad Vaughn"
+    },
+    {
+      "year": 2015,
+      "team": "HOU",
+      "player": "Sam Dekker"
+    },
+    {
+      "year": 2015,
+      "team": "WAS",
+      "player": "Jerian Grant"
+    },
+    {
+      "year": 2015,
+      "team": "TOR",
+      "player": "Delon Wright"
+    },
+    {
+      "year": 2015,
+      "team": "DAL",
+      "player": "Justin Anderson"
+    },
+    {
+      "year": 2015,
+      "team": "CHI",
+      "player": "Bobby Portis"
+    },
+    {
+      "year": 2015,
+      "team": "POR",
+      "player": "Rondae Hollis-Jefferson"
+    },
+    {
+      "year": 2015,
+      "team": "CLE",
+      "player": "Tyus Jones"
+    },
+    {
+      "year": 2015,
+      "team": "MEM",
+      "player": "Jarell Martin"
+    },
+    {
+      "year": 2015,
+      "team": "SAS",
+      "player": "Nikola Milutinov"
+    },
+    {
+      "year": 2015,
+      "team": "LAL",
+      "player": "Larry Nance Jr."
+    },
+    {
+      "year": 2015,
+      "team": "BOS",
+      "player": "R.J. Hunter"
+    },
+    {
+      "year": 2015,
+      "team": "BRK",
+      "player": "Chris McCullough"
+    },
+    {
+      "year": 2015,
+      "team": "GSW",
+      "player": "Kevon Looney"
+    },
+    {
+      "year": 2015,
+      "team": "MIN",
+      "player": "Cedi Osman"
+    },
+    {
+      "year": 2015,
+      "team": "HOU",
+      "player": "Montrezl Harrell"
+    },
+    {
+      "year": 2015,
+      "team": "BOS",
+      "player": "Jordan Mickey"
+    },
+    {
+      "year": 2015,
+      "team": "LAL",
+      "player": "Anthony Brown"
+    },
+    {
+      "year": 2015,
+      "team": "PHI",
+      "player": "Willy Hernang\u00f3mez"
+    },
+    {
+      "year": 2015,
+      "team": "MIN",
+      "player": "Rakeem Christmas"
+    },
+    {
+      "year": 2015,
+      "team": "PHI",
+      "player": "Richaun Holmes"
+    },
+    {
+      "year": 2015,
+      "team": "DET",
+      "player": "Darrun Hilliard"
+    },
+    {
+      "year": 2015,
+      "team": "CHO",
+      "player": "Juan Pablo Vaulet"
+    },
+    {
+      "year": 2015,
+      "team": "MIA",
+      "player": "Josh Richardson"
+    },
+    {
+      "year": 2015,
+      "team": "BRK",
+      "player": "Pat Connaughton"
+    },
+    {
+      "year": 2015,
+      "team": "UTA",
+      "player": "Olivier Hanlan"
+    },
+    {
+      "year": 2015,
+      "team": "IND",
+      "player": "Joe Young"
+    },
+    {
+      "year": 2015,
+      "team": "PHO",
+      "player": "Andrew Harrison"
+    },
+    {
+      "year": 2015,
+      "team": "BOS",
+      "player": "Marcus Thornton"
+    },
+    {
+      "year": 2015,
+      "team": "MIL",
+      "player": "Norman Powell"
+    },
+    {
+      "year": 2015,
+      "team": "PHI",
+      "player": "Art\u016bras Gudaitis"
+    },
+    {
+      "year": 2015,
+      "team": "OKC",
+      "player": "Dakari Johnson"
+    },
+    {
+      "year": 2015,
+      "team": "WAS",
+      "player": "Aaron White"
+    },
+    {
+      "year": 2015,
+      "team": "ATL",
+      "player": "Marcus Eriksson"
+    },
+    {
+      "year": 2015,
+      "team": "ORL",
+      "player": "Tyler Harvey"
+    },
+    {
+      "year": 2015,
+      "team": "DAL",
+      "player": "Satnam Singh"
+    },
+    {
+      "year": 2015,
+      "team": "CLE",
+      "player": "Sir'Dominic Pointer"
+    },
+    {
+      "year": 2015,
+      "team": "UTA",
+      "player": "Dani D\u00edez"
+    },
+    {
+      "year": 2015,
+      "team": "SAS",
+      "player": "Cady Lalanne"
+    },
+    {
+      "year": 2015,
+      "team": "NOP",
+      "player": "Branden Dawson"
+    },
+    {
+      "year": 2015,
+      "team": "DEN",
+      "player": "Nikola Radi\u010devi\u0107"
+    },
+    {
+      "year": 2015,
+      "team": "PHI",
+      "player": "J.P. Tokoto"
+    },
+    {
+      "year": 2015,
+      "team": "ATL",
+      "player": "Dimitrios Agravanis"
+    },
+    {
+      "year": 2015,
+      "team": "PHI",
+      "player": "Luka Mitrovi\u0107"
+    },
+    {
+      "year": 2016,
+      "team": "PHI",
+      "player": "Ben Simmons"
+    },
+    {
+      "year": 2016,
+      "team": "LAL",
+      "player": "Brandon Ingram"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Jaylen Brown"
+    },
+    {
+      "year": 2016,
+      "team": "PHO",
+      "player": "Dragan Bender"
+    },
+    {
+      "year": 2016,
+      "team": "MIN",
+      "player": "Kris Dunn"
+    },
+    {
+      "year": 2016,
+      "team": "NOP",
+      "player": "Buddy Hield"
+    },
+    {
+      "year": 2016,
+      "team": "DEN",
+      "player": "Jamal Murray"
+    },
+    {
+      "year": 2016,
+      "team": "SAC",
+      "player": "Marquese Chriss"
+    },
+    {
+      "year": 2016,
+      "team": "TOR",
+      "player": "Jakob Poeltl"
+    },
+    {
+      "year": 2016,
+      "team": "MIL",
+      "player": "Thon Maker"
+    },
+    {
+      "year": 2016,
+      "team": "ORL",
+      "player": "Domantas Sabonis"
+    },
+    {
+      "year": 2016,
+      "team": "UTA",
+      "player": "Taurean Prince"
+    },
+    {
+      "year": 2016,
+      "team": "PHO",
+      "player": "Georgios Papagiannis"
+    },
+    {
+      "year": 2016,
+      "team": "CHI",
+      "player": "Denzel Valentine"
+    },
+    {
+      "year": 2016,
+      "team": "DEN",
+      "player": "Juancho Hernang\u00f3mez"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Guerschon Yabusele"
+    },
+    {
+      "year": 2016,
+      "team": "MEM",
+      "player": "Wade Baldwin"
+    },
+    {
+      "year": 2016,
+      "team": "DET",
+      "player": "Henry Ellenson"
+    },
+    {
+      "year": 2016,
+      "team": "DEN",
+      "player": "Malik Beasley"
+    },
+    {
+      "year": 2016,
+      "team": "IND",
+      "player": "Caris LeVert"
+    },
+    {
+      "year": 2016,
+      "team": "ATL",
+      "player": "DeAndre' Bembry"
+    },
+    {
+      "year": 2016,
+      "team": "CHO",
+      "player": "Malachi Richardson"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Ante \u017di\u017ei\u0107"
+    },
+    {
+      "year": 2016,
+      "team": "PHI",
+      "player": "Timoth\u00e9 Luwawu-Cabarrot"
+    },
+    {
+      "year": 2016,
+      "team": "LAC",
+      "player": "Brice Johnson"
+    },
+    {
+      "year": 2016,
+      "team": "PHI",
+      "player": "Furkan Korkmaz"
+    },
+    {
+      "year": 2016,
+      "team": "TOR",
+      "player": "Pascal Siakam"
+    },
+    {
+      "year": 2016,
+      "team": "PHO",
+      "player": "Skal Labissi\u00e8re"
+    },
+    {
+      "year": 2016,
+      "team": "SAS",
+      "player": "Dejounte Murray"
+    },
+    {
+      "year": 2016,
+      "team": "GSW",
+      "player": "Damian Jones"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Deyonta Davis"
+    },
+    {
+      "year": 2016,
+      "team": "LAL",
+      "player": "Ivica Zubac"
+    },
+    {
+      "year": 2016,
+      "team": "LAC",
+      "player": "Cheick Diallo"
+    },
+    {
+      "year": 2016,
+      "team": "PHO",
+      "player": "Tyler Ulis"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Rade Zagorac"
+    },
+    {
+      "year": 2016,
+      "team": "MIL",
+      "player": "Malcolm Brogdon"
+    },
+    {
+      "year": 2016,
+      "team": "HOU",
+      "player": "Chinanu Onuaku"
+    },
+    {
+      "year": 2016,
+      "team": "MIL",
+      "player": "Patrick McCaw"
+    },
+    {
+      "year": 2016,
+      "team": "NOP",
+      "player": "David Michineau"
+    },
+    {
+      "year": 2016,
+      "team": "NOP",
+      "player": "Diamond Stone"
+    },
+    {
+      "year": 2016,
+      "team": "ORL",
+      "player": "Stephen Zimmerman"
+    },
+    {
+      "year": 2016,
+      "team": "UTA",
+      "player": "Isaiah Whitehead"
+    },
+    {
+      "year": 2016,
+      "team": "HOU",
+      "player": "Zhou Qi"
+    },
+    {
+      "year": 2016,
+      "team": "ATL",
+      "player": "Isa\u00efa Cordinier"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Demetrius Jackson"
+    },
+    {
+      "year": 2016,
+      "team": "DAL",
+      "player": "A.J. Hammons"
+    },
+    {
+      "year": 2016,
+      "team": "ORL",
+      "player": "Jake Layman"
+    },
+    {
+      "year": 2016,
+      "team": "CHI",
+      "player": "Paul Zipser"
+    },
+    {
+      "year": 2016,
+      "team": "DET",
+      "player": "Michael Gbinije"
+    },
+    {
+      "year": 2016,
+      "team": "IND",
+      "player": "Georges Niang"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Ben Bentil"
+    },
+    {
+      "year": 2016,
+      "team": "UTA",
+      "player": "Joel Bolomboy"
+    },
+    {
+      "year": 2016,
+      "team": "DEN",
+      "player": "Petr Cornelie"
+    },
+    {
+      "year": 2016,
+      "team": "ATL",
+      "player": "Kay Felder"
+    },
+    {
+      "year": 2016,
+      "team": "BRK",
+      "player": "Marcus Paige"
+    },
+    {
+      "year": 2016,
+      "team": "DEN",
+      "player": "Daniel Hamilton"
+    },
+    {
+      "year": 2016,
+      "team": "MEM",
+      "player": "Wang Zhelin"
+    },
+    {
+      "year": 2016,
+      "team": "BOS",
+      "player": "Abdel Nader"
+    },
+    {
+      "year": 2016,
+      "team": "SAC",
+      "player": "Isaiah Cousins"
+    },
+    {
+      "year": 2016,
+      "team": "UTA",
+      "player": "Tyrone Wallace"
+    },
+    {
+      "year": 2017,
+      "team": "PHI",
+      "player": "Markelle Fultz"
+    },
+    {
+      "year": 2017,
+      "team": "LAL",
+      "player": "Lonzo Ball"
+    },
+    {
+      "year": 2017,
+      "team": "BOS",
+      "player": "Jayson Tatum"
+    },
+    {
+      "year": 2017,
+      "team": "PHO",
+      "player": "Josh Jackson"
+    },
+    {
+      "year": 2017,
+      "team": "SAC",
+      "player": "De'Aaron Fox"
+    },
+    {
+      "year": 2017,
+      "team": "ORL",
+      "player": "Jonathan Isaac"
+    },
+    {
+      "year": 2017,
+      "team": "MIN",
+      "player": "Lauri Markkanen"
+    },
+    {
+      "year": 2017,
+      "team": "NYK",
+      "player": "Frank Ntilikina"
+    },
+    {
+      "year": 2017,
+      "team": "DAL",
+      "player": "Dennis Smith Jr."
+    },
+    {
+      "year": 2017,
+      "team": "SAC",
+      "player": "Zach Collins"
+    },
+    {
+      "year": 2017,
+      "team": "CHO",
+      "player": "Malik Monk"
+    },
+    {
+      "year": 2017,
+      "team": "DET",
+      "player": "Luke Kennard"
+    },
+    {
+      "year": 2017,
+      "team": "DEN",
+      "player": "Donovan Mitchell"
+    },
+    {
+      "year": 2017,
+      "team": "MIA",
+      "player": "Bam Adebayo"
+    },
+    {
+      "year": 2018,
+      "team": "DEN",
+      "player": "Justin Jackson"
+    },
+    {
+      "year": 2017,
+      "team": "CHI",
+      "player": "Justin Patton"
+    },
+    {
+      "year": 2017,
+      "team": "MIL",
+      "player": "D.J. Wilson"
+    },
+    {
+      "year": 2017,
+      "team": "IND",
+      "player": "T.J. Leaf"
+    },
+    {
+      "year": 2017,
+      "team": "ATL",
+      "player": "John Collins"
+    },
+    {
+      "year": 2017,
+      "team": "POR",
+      "player": "Harry Giles"
+    },
+    {
+      "year": 2017,
+      "team": "OKC",
+      "player": "Terrance Ferguson"
+    },
+    {
+      "year": 2017,
+      "team": "BRK",
+      "player": "Jarrett Allen"
+    },
+    {
+      "year": 2017,
+      "team": "TOR",
+      "player": "OG Anunoby"
+    },
+    {
+      "year": 2017,
+      "team": "UTA",
+      "player": "Tyler Lydon"
+    },
+    {
+      "year": 2017,
+      "team": "ORL",
+      "player": "An\u017eejs Pase\u010d\u0146iks"
+    },
+    {
+      "year": 2017,
+      "team": "POR",
+      "player": "Caleb Swanigan"
+    },
+    {
+      "year": 2017,
+      "team": "BRK",
+      "player": "Kyle Kuzma"
+    },
+    {
+      "year": 2017,
+      "team": "LAL",
+      "player": "Tony Bradley"
+    },
+    {
+      "year": 2017,
+      "team": "SAS",
+      "player": "Derrick White"
+    },
+    {
+      "year": 2017,
+      "team": "UTA",
+      "player": "Josh Hart"
+    },
+    {
+      "year": 2017,
+      "team": "CHO",
+      "player": "Frank Jackson"
+    },
+    {
+      "year": 2017,
+      "team": "PHO",
+      "player": "Davon Reed"
+    },
+    {
+      "year": 2017,
+      "team": "ORL",
+      "player": "Wes Iwundu"
+    },
+    {
+      "year": 2017,
+      "team": "SAC",
+      "player": "Frank Mason III"
+    },
+    {
+      "year": 2017,
+      "team": "ORL",
+      "player": "Ivan Rabb"
+    },
+    {
+      "year": 2017,
+      "team": "PHI",
+      "player": "Jonah Bolden"
+    },
+    {
+      "year": 2017,
+      "team": "BOS",
+      "player": "Semi Ojeleye"
+    },
+    {
+      "year": 2017,
+      "team": "CHI",
+      "player": "Jordan Bell"
+    },
+    {
+      "year": 2017,
+      "team": "PHI",
+      "player": "Jawun Evans"
+    },
+    {
+      "year": 2017,
+      "team": "NOP",
+      "player": "Dwayne Bacon"
+    },
+    {
+      "year": 2017,
+      "team": "ATL",
+      "player": "Tyler Dorsey"
+    },
+    {
+      "year": 2017,
+      "team": "UTA",
+      "player": "Thomas Bryant"
+    },
+    {
+      "year": 2017,
+      "team": "HOU",
+      "player": "Isaiah Hartenstein"
+    },
+    {
+      "year": 2017,
+      "team": "NYK",
+      "player": "Damyean Dotson"
+    },
+    {
+      "year": 2017,
+      "team": "HOU",
+      "player": "Dillon Brooks"
+    },
+    {
+      "year": 2017,
+      "team": "PHI",
+      "player": "Sterling Brown"
+    },
+    {
+      "year": 2017,
+      "team": "IND",
+      "player": "Ike Anigbogu"
+    },
+    {
+      "year": 2017,
+      "team": "MIL",
+      "player": "Sindarius Thornwell"
+    },
+    {
+      "year": 2017,
+      "team": "DEN",
+      "player": "Vlatko \u010can\u010dar"
+    },
+    {
+      "year": 2017,
+      "team": "PHI",
+      "player": "Mathias Lessort"
+    },
+    {
+      "year": 2017,
+      "team": "DEN",
+      "player": "Monte Morris"
+    },
+    {
+      "year": 2017,
+      "team": "NOP",
+      "player": "Edmond Sumner"
+    },
+    {
+      "year": 2017,
+      "team": "BOS",
+      "player": "Kadeem Allen"
+    },
+    {
+      "year": 2017,
+      "team": "PHO",
+      "player": "Alec Peters"
+    },
+    {
+      "year": 2017,
+      "team": "UTA",
+      "player": "Nigel Williams-Goss"
+    },
+    {
+      "year": 2017,
+      "team": "BOS",
+      "player": "Jabari Bird"
+    },
+    {
+      "year": 2017,
+      "team": "BRK",
+      "player": "Sasha Vezenkov"
+    },
+    {
+      "year": 2017,
+      "team": "NYK",
+      "player": "Ognjen Jaramaz"
+    },
+    {
+      "year": 2017,
+      "team": "SAS",
+      "player": "Jaron Blossomgame"
+    },
+    {
+      "year": 2017,
+      "team": "ATL",
+      "player": "Alpha Kaba"
+    },
+    {
+      "year": 2018,
+      "team": "PHO",
+      "player": "Deandre Ayton"
+    },
+    {
+      "year": 2018,
+      "team": "SAC",
+      "player": "Marvin Bagley III"
+    },
+    {
+      "year": 2018,
+      "team": "ATL",
+      "player": "Luka Don\u010di\u0107"
+    },
+    {
+      "year": 2018,
+      "team": "MEM",
+      "player": "Jaren Jackson Jr."
+    },
+    {
+      "year": 2018,
+      "team": "DAL",
+      "player": "Trae Young"
+    },
+    {
+      "year": 2018,
+      "team": "ORL",
+      "player": "Mo Bamba"
+    },
+    {
+      "year": 2018,
+      "team": "CHI",
+      "player": "Wendell Carter Jr."
+    },
+    {
+      "year": 2018,
+      "team": "CLE",
+      "player": "Collin Sexton"
+    },
+    {
+      "year": 2018,
+      "team": "NYK",
+      "player": "Kevin Knox"
+    },
+    {
+      "year": 2018,
+      "team": "PHI",
+      "player": "Mikal Bridges"
+    },
+    {
+      "year": 2018,
+      "team": "CHO",
+      "player": "Shai Gilgeous-Alexander"
+    },
+    {
+      "year": 2018,
+      "team": "LAC",
+      "player": "Miles Bridges"
+    },
+    {
+      "year": 2018,
+      "team": "LAC",
+      "player": "Jerome Robinson"
+    },
+    {
+      "year": 2018,
+      "team": "DEN",
+      "player": "Michael Porter Jr."
+    },
+    {
+      "year": 2018,
+      "team": "WAS",
+      "player": "Troy Brown Jr."
+    },
+    {
+      "year": 2018,
+      "team": "PHO",
+      "player": "Zhaire Smith"
+    },
+    {
+      "year": 2018,
+      "team": "MIL",
+      "player": "Donte DiVincenzo"
+    },
+    {
+      "year": 2018,
+      "team": "SAS",
+      "player": "Lonnie Walker IV"
+    },
+    {
+      "year": 2018,
+      "team": "ATL",
+      "player": "Kevin Huerter"
+    },
+    {
+      "year": 2018,
+      "team": "MIN",
+      "player": "Josh Okogie"
+    },
+    {
+      "year": 2018,
+      "team": "UTA",
+      "player": "Grayson Allen"
+    },
+    {
+      "year": 2018,
+      "team": "CHI",
+      "player": "Chandler Hutchison"
+    },
+    {
+      "year": 2018,
+      "team": "IND",
+      "player": "Aaron Holiday"
+    },
+    {
+      "year": 2018,
+      "team": "POR",
+      "player": "Anfernee Simons"
+    },
+    {
+      "year": 2018,
+      "team": "LAL",
+      "player": "Moritz Wagner"
+    },
+    {
+      "year": 2018,
+      "team": "PHI",
+      "player": "Landry Shamet"
+    },
+    {
+      "year": 2018,
+      "team": "BOS",
+      "player": "Robert Williams"
+    },
+    {
+      "year": 2018,
+      "team": "GSW",
+      "player": "Jacob Evans"
+    },
+    {
+      "year": 2018,
+      "team": "BRK",
+      "player": "D\u017eanan Musa"
+    },
+    {
+      "year": 2018,
+      "team": "ATL",
+      "player": "Omari Spellman"
+    },
+    {
+      "year": 2018,
+      "team": "PHO",
+      "player": "Elie Okobo"
+    },
+    {
+      "year": 2018,
+      "team": "MEM",
+      "player": "Jevon Carter"
+    },
+    {
+      "year": 2018,
+      "team": "DAL",
+      "player": "Jalen Brunson"
+    },
+    {
+      "year": 2018,
+      "team": "ATL",
+      "player": "Devonte' Graham"
+    },
+    {
+      "year": 2018,
+      "team": "ORL",
+      "player": "Melvin Frazier"
+    },
+    {
+      "year": 2018,
+      "team": "NYK",
+      "player": "Mitchell Robinson"
+    },
+    {
+      "year": 2018,
+      "team": "SAC",
+      "player": "Gary Trent Jr."
+    },
+    {
+      "year": 2018,
+      "team": "PHI",
+      "player": "Khyri Thomas"
+    },
+    {
+      "year": 2018,
+      "team": "PHI",
+      "player": "Isaac Bonga"
+    },
+    {
+      "year": 2018,
+      "team": "BRK",
+      "player": "Rodions Kurucs"
+    },
+    {
+      "year": 2018,
+      "team": "ORL",
+      "player": "Jarred Vanderbilt"
+    },
+    {
+      "year": 2018,
+      "team": "DET",
+      "player": "Bruce Brown"
+    },
+    {
+      "year": 2018,
+      "team": "WAS",
+      "player": "Issuf Sanon"
+    },
+    {
+      "year": 2018,
+      "team": "BRK",
+      "player": "Hamidou Diallo"
+    },
+    {
+      "year": 2018,
+      "team": "HOU",
+      "player": "De'Anthony Melton"
+    },
+    {
+      "year": 2018,
+      "team": "LAL",
+      "player": "Svi Mykhailiuk"
+    },
+    {
+      "year": 2018,
+      "team": "MIN",
+      "player": "Keita Bates-Diop"
+    },
+    {
+      "year": 2018,
+      "team": "SAS",
+      "player": "Chimezie Metu"
+    },
+    {
+      "year": 2018,
+      "team": "IND",
+      "player": "Alize Johnson"
+    },
+    {
+      "year": 2018,
+      "team": "NOP",
+      "player": "Tony Carr"
+    },
+    {
+      "year": 2018,
+      "team": "UTA",
+      "player": "Vince Edwards"
+    },
+    {
+      "year": 2018,
+      "team": "OKC",
+      "player": "Devon Hall"
+    },
+    {
+      "year": 2018,
+      "team": "DAL",
+      "player": "Shake Milton"
+    },
+    {
+      "year": 2018,
+      "team": "CHO",
+      "player": "Arnoldas Kulboka"
+    },
+    {
+      "year": 2018,
+      "team": "PHI",
+      "player": "Ray Spalding"
+    },
+    {
+      "year": 2018,
+      "team": "OKC",
+      "player": "Kevin Hervey"
+    },
+    {
+      "year": 2018,
+      "team": "DEN",
+      "player": "Thomas Welsh"
+    },
+    {
+      "year": 2018,
+      "team": "PHO",
+      "player": "George King"
+    },
+    {
+      "year": 2018,
+      "team": "PHI",
+      "player": "Kostas Antetokounmpo"
+    },
+    {
+      "year": 2019,
+      "team": "NOP",
+      "player": "Zion Williamson"
+    },
+    {
+      "year": 2019,
+      "team": "MEM",
+      "player": "Ja Morant"
+    },
+    {
+      "year": 2019,
+      "team": "NYK",
+      "player": "RJ Barrett"
+    },
+    {
+      "year": 2019,
+      "team": "LAL",
+      "player": "De'Andre Hunter"
+    },
+    {
+      "year": 2019,
+      "team": "CLE",
+      "player": "Darius Garland"
+    },
+    {
+      "year": 2019,
+      "team": "PHO",
+      "player": "Jarrett Culver"
+    },
+    {
+      "year": 2019,
+      "team": "CHI",
+      "player": "Coby White"
+    },
+    {
+      "year": 2019,
+      "team": "ATL",
+      "player": "Jaxson Hayes"
+    },
+    {
+      "year": 2019,
+      "team": "WAS",
+      "player": "Rui Hachimura"
+    },
+    {
+      "year": 2019,
+      "team": "ATL",
+      "player": "Cam Reddish"
+    },
+    {
+      "year": 2019,
+      "team": "MIN",
+      "player": "Cameron Johnson"
+    },
+    {
+      "year": 2019,
+      "team": "CHO",
+      "player": "P.J. Washington"
+    },
+    {
+      "year": 2019,
+      "team": "MIA",
+      "player": "Tyler Herro"
+    },
+    {
+      "year": 2019,
+      "team": "BOS",
+      "player": "Romeo Langford"
+    },
+    {
+      "year": 2019,
+      "team": "DET",
+      "player": "Sekou Doumbouya"
+    },
+    {
+      "year": 2019,
+      "team": "ORL",
+      "player": "Chuma Okeke"
+    },
+    {
+      "year": 2019,
+      "team": "BRK",
+      "player": "Nickeil Alexander-Walker"
+    },
+    {
+      "year": 2019,
+      "team": "IND",
+      "player": "Goga Bitadze"
+    },
+    {
+      "year": 2019,
+      "team": "SAS",
+      "player": "Luka \u0160amani\u0107"
+    },
+    {
+      "year": 2019,
+      "team": "BOS",
+      "player": "Matisse Thybulle"
+    },
+    {
+      "year": 2019,
+      "team": "OKC",
+      "player": "Brandon Clarke"
+    },
+    {
+      "year": 2019,
+      "team": "BOS",
+      "player": "Grant Williams"
+    },
+    {
+      "year": 2019,
+      "team": "UTA",
+      "player": "Darius Bazley"
+    },
+    {
+      "year": 2019,
+      "team": "PHI",
+      "player": "Ty Jerome"
+    },
+    {
+      "year": 2019,
+      "team": "POR",
+      "player": "Nassir Little"
+    },
+    {
+      "year": 2019,
+      "team": "CLE",
+      "player": "Dylan Windler"
+    },
+    {
+      "year": 2019,
+      "team": "BRK",
+      "player": "Mfiondu Kabengele"
+    },
+    {
+      "year": 2019,
+      "team": "GSW",
+      "player": "Jordan Poole"
+    },
+    {
+      "year": 2019,
+      "team": "SAS",
+      "player": "Keldon Johnson"
+    },
+    {
+      "year": 2019,
+      "team": "MIL",
+      "player": "Kevin Porter Jr."
+    },
+    {
+      "year": 2019,
+      "team": "BRK",
+      "player": "Nic Claxton"
+    },
+    {
+      "year": 2019,
+      "team": "PHO",
+      "player": "KZ Okpala"
+    },
+    {
+      "year": 2019,
+      "team": "PHI",
+      "player": "Carsen Edwards"
+    },
+    {
+      "year": 2019,
+      "team": "PHI",
+      "player": "Bruno Fernando"
+    },
+    {
+      "year": 2019,
+      "team": "ATL",
+      "player": "Didi Louzada"
+    },
+    {
+      "year": 2019,
+      "team": "CHO",
+      "player": "Cody Martin"
+    },
+    {
+      "year": 2019,
+      "team": "DAL",
+      "player": "Deividas Sirvydis"
+    },
+    {
+      "year": 2019,
+      "team": "CHI",
+      "player": "Daniel Gafford"
+    },
+    {
+      "year": 2019,
+      "team": "NOP",
+      "player": "Alen Smailagi\u0107"
+    },
+    {
+      "year": 2019,
+      "team": "SAC",
+      "player": "Justin James"
+    },
+    {
+      "year": 2019,
+      "team": "GSW",
+      "player": "Eric Paschall"
+    },
+    {
+      "year": 2019,
+      "team": "PHI",
+      "player": "Admiral Schofield"
+    },
+    {
+      "year": 2019,
+      "team": "MIN",
+      "player": "Jaylen Nowell"
+    },
+    {
+      "year": 2019,
+      "team": "MIA",
+      "player": "Bol Bol"
+    },
+    {
+      "year": 2019,
+      "team": "DET",
+      "player": "Isaiah Roby"
+    },
+    {
+      "year": 2019,
+      "team": "ORL",
+      "player": "Talen Horton-Tucker"
+    },
+    {
+      "year": 2019,
+      "team": "SAC",
+      "player": "Ignas Brazdeikis"
+    },
+    {
+      "year": 2019,
+      "team": "LAC",
+      "player": "Terance Mann"
+    },
+    {
+      "year": 2019,
+      "team": "SAS",
+      "player": "Quinndary Weatherspoon"
+    },
+    {
+      "year": 2019,
+      "team": "IND",
+      "player": "Jarrell Brantley"
+    },
+    {
+      "year": 2019,
+      "team": "BOS",
+      "player": "Tremont Waters"
+    },
+    {
+      "year": 2019,
+      "team": "CHO",
+      "player": "Jalen McDaniels"
+    },
+    {
+      "year": 2019,
+      "team": "UTA",
+      "player": "Justin Wright-Foreman"
+    },
+    {
+      "year": 2019,
+      "team": "PHI",
+      "player": "Marial Shayok"
+    },
+    {
+      "year": 2019,
+      "team": "NYK",
+      "player": "Kyle Guy"
+    },
+    {
+      "year": 2019,
+      "team": "LAC",
+      "player": "Jaylen Hands"
+    },
+    {
+      "year": 2019,
+      "team": "NOP",
+      "player": "Jordan Bone"
+    },
+    {
+      "year": 2019,
+      "team": "GSW",
+      "player": "Miye Oni"
+    },
+    {
+      "year": 2019,
+      "team": "TOR",
+      "player": "Dewan Hernandez"
+    },
+    {
+      "year": 2019,
+      "team": "SAC",
+      "player": "Vanja Marinkovi\u0107"
+    },
+    {
+      "year": 2020,
+      "team": "MIN",
+      "player": "Anthony Edwards"
+    },
+    {
+      "year": 2020,
+      "team": "GSW",
+      "player": "James Wiseman"
+    },
+    {
+      "year": 2020,
+      "team": "CHO",
+      "player": "LaMelo Ball"
+    },
+    {
+      "year": 2020,
+      "team": "CHI",
+      "player": "Patrick Williams"
+    },
+    {
+      "year": 2020,
+      "team": "CLE",
+      "player": "Isaac Okoro"
+    },
+    {
+      "year": 2020,
+      "team": "ATL",
+      "player": "Onyeka Okongwu"
+    },
+    {
+      "year": 2020,
+      "team": "DET",
+      "player": "Killian Hayes"
+    },
+    {
+      "year": 2020,
+      "team": "NYK",
+      "player": "Obi Toppin"
+    },
+    {
+      "year": 2020,
+      "team": "WAS",
+      "player": "Deni Avdija"
+    },
+    {
+      "year": 2020,
+      "team": "PHO",
+      "player": "Jalen Smith"
+    },
+    {
+      "year": 2020,
+      "team": "SAS",
+      "player": "Devin Vassell"
+    },
+    {
+      "year": 2020,
+      "team": "SAC",
+      "player": "Tyrese Haliburton"
+    },
+    {
+      "year": 2020,
+      "team": "NOP",
+      "player": "Kira Lewis Jr."
+    },
+    {
+      "year": 2020,
+      "team": "BOS",
+      "player": "Aaron Nesmith"
+    },
+    {
+      "year": 2020,
+      "team": "ORL",
+      "player": "Cole Anthony"
+    },
+    {
+      "year": 2020,
+      "team": "POR",
+      "player": "Isaiah Stewart"
+    },
+    {
+      "year": 2020,
+      "team": "MIN",
+      "player": "Aleksej Pokusevski"
+    },
+    {
+      "year": 2020,
+      "team": "DAL",
+      "player": "Josh Green"
+    },
+    {
+      "year": 2020,
+      "team": "BRK",
+      "player": "Saddiq Bey"
+    },
+    {
+      "year": 2020,
+      "team": "MIA",
+      "player": "Precious Achiuwa"
+    },
+    {
+      "year": 2020,
+      "team": "PHI",
+      "player": "Tyrese Maxey"
+    },
+    {
+      "year": 2020,
+      "team": "DEN",
+      "player": "Zeke Nnaji"
+    },
+    {
+      "year": 2020,
+      "team": "NYK",
+      "player": "Leandro Bolmaro"
+    },
+    {
+      "year": 2020,
+      "team": "MIL",
+      "player": "R.J. Hampton"
+    },
+    {
+      "year": 2020,
+      "team": "OKC",
+      "player": "Immanuel Quickley"
+    },
+    {
+      "year": 2020,
+      "team": "BOS",
+      "player": "Payton Pritchard"
+    },
+    {
+      "year": 2020,
+      "team": "UTA",
+      "player": "Udoka Azubuike"
+    },
+    {
+      "year": 2020,
+      "team": "LAL",
+      "player": "Jaden McDaniels"
+    },
+    {
+      "year": 2020,
+      "team": "TOR",
+      "player": "Malachi Flynn"
+    },
+    {
+      "year": 2020,
+      "team": "BOS",
+      "player": "Desmond Bane"
+    },
+    {
+      "year": 2020,
+      "team": "DAL",
+      "player": "Tyrell Terry"
+    },
+    {
+      "year": 2020,
+      "team": "CHO",
+      "player": "Vernon Carey Jr."
+    },
+    {
+      "year": 2020,
+      "team": "MIN",
+      "player": "Daniel Oturu"
+    },
+    {
+      "year": 2020,
+      "team": "PHI",
+      "player": "Th\u00e9o Maledon"
+    },
+    {
+      "year": 2020,
+      "team": "SAC",
+      "player": "Xavier Tillman Sr."
+    },
+    {
+      "year": 2020,
+      "team": "PHI",
+      "player": "Tyler Bey"
+    },
+    {
+      "year": 2020,
+      "team": "WAS",
+      "player": "V\u00edt Krej\u010d\u00ed"
+    },
+    {
+      "year": 2020,
+      "team": "UTA",
+      "player": "Saben Lee"
+    },
+    {
+      "year": 2020,
+      "team": "NOP",
+      "player": "Elijah Hughes"
+    },
+    {
+      "year": 2020,
+      "team": "MEM",
+      "player": "Robert Woodard II"
+    },
+    {
+      "year": 2020,
+      "team": "SAS",
+      "player": "Tre Jones"
+    },
+    {
+      "year": 2020,
+      "team": "NOP",
+      "player": "Nick Richards"
+    },
+    {
+      "year": 2020,
+      "team": "SAC",
+      "player": "Jahmi'us Ramsey"
+    },
+    {
+      "year": 2020,
+      "team": "CHI",
+      "player": "Marko Simonovic"
+    },
+    {
+      "year": 2020,
+      "team": "MIL",
+      "player": "Jordan Nwora"
+    },
+    {
+      "year": 2020,
+      "team": "POR",
+      "player": "CJ Elleby"
+    },
+    {
+      "year": 2020,
+      "team": "BOS",
+      "player": "Yam Madar"
+    },
+    {
+      "year": 2020,
+      "team": "GSW",
+      "player": "Nico Mannion"
+    },
+    {
+      "year": 2020,
+      "team": "PHI",
+      "player": "Isaiah Joe"
+    },
+    {
+      "year": 2020,
+      "team": "ATL",
+      "player": "Skylar Mays"
+    },
+    {
+      "year": 2020,
+      "team": "GSW",
+      "player": "Justinian Jessup"
+    },
+    {
+      "year": 2020,
+      "team": "SAC",
+      "player": "KJ Martin"
+    },
+    {
+      "year": 2020,
+      "team": "OKC",
+      "player": "Cassius Winston"
+    },
+    {
+      "year": 2020,
+      "team": "IND",
+      "player": "Cassius Stanley"
+    },
+    {
+      "year": 2020,
+      "team": "BRK",
+      "player": "Jay Scrubb"
+    },
+    {
+      "year": 2020,
+      "team": "CHO",
+      "player": "Grant Riller"
+    },
+    {
+      "year": 2020,
+      "team": "LAC",
+      "player": "Reggie Perry"
+    },
+    {
+      "year": 2020,
+      "team": "PHI",
+      "player": "Paul Reed"
+    },
+    {
+      "year": 2020,
+      "team": "TOR",
+      "player": "Jalen Harris"
+    },
+    {
+      "year": 2020,
+      "team": "NOP",
+      "player": "Sam Merrill"
+    },
+    {
+      "year": 2021,
+      "team": "DET",
+      "player": "Cade Cunningham"
+    },
+    {
+      "year": 2021,
+      "team": "HOU",
+      "player": "Jalen Green"
+    },
+    {
+      "year": 2021,
+      "team": "CLE",
+      "player": "Evan Mobley"
+    },
+    {
+      "year": 2021,
+      "team": "TOR",
+      "player": "Scottie Barnes"
+    },
+    {
+      "year": 2021,
+      "team": "ORL",
+      "player": "Jalen Suggs"
+    },
+    {
+      "year": 2021,
+      "team": "OKC",
+      "player": "Josh Giddey"
+    },
+    {
+      "year": 2021,
+      "team": "GSW",
+      "player": "Jonathan Kuminga"
+    },
+    {
+      "year": 2021,
+      "team": "ORL",
+      "player": "Franz Wagner"
+    },
+    {
+      "year": 2021,
+      "team": "SAC",
+      "player": "Davion Mitchell"
+    },
+    {
+      "year": 2021,
+      "team": "NOP",
+      "player": "Ziaire Williams"
+    },
+    {
+      "year": 2021,
+      "team": "CHO",
+      "player": "James Bouknight"
+    },
+    {
+      "year": 2021,
+      "team": "SAS",
+      "player": "Joshua Primo"
+    },
+    {
+      "year": 2021,
+      "team": "IND",
+      "player": "Chris Duarte"
+    },
+    {
+      "year": 2021,
+      "team": "GSW",
+      "player": "Moses Moody"
+    },
+    {
+      "year": 2021,
+      "team": "WAS",
+      "player": "Corey Kispert"
+    },
+    {
+      "year": 2021,
+      "team": "OKC",
+      "player": "Alperen \u015eeng\u00fcn"
+    },
+    {
+      "year": 2021,
+      "team": "MEM",
+      "player": "Trey Murphy III"
+    },
+    {
+      "year": 2021,
+      "team": "OKC",
+      "player": "Tre Mann"
+    },
+    {
+      "year": 2021,
+      "team": "NYK",
+      "player": "Kai Jones"
+    },
+    {
+      "year": 2021,
+      "team": "ATL",
+      "player": "Jalen Johnson"
+    },
+    {
+      "year": 2021,
+      "team": "NYK",
+      "player": "Keon Johnson"
+    },
+    {
+      "year": 2021,
+      "team": "LAL",
+      "player": "Isaiah Jackson"
+    },
+    {
+      "year": 2021,
+      "team": "HOU",
+      "player": "Usman Garuba"
+    },
+    {
+      "year": 2021,
+      "team": "HOU",
+      "player": "Josh Christopher"
+    },
+    {
+      "year": 2021,
+      "team": "LAC",
+      "player": "Quentin Grimes"
+    },
+    {
+      "year": 2021,
+      "team": "DEN",
+      "player": "Bones Hyland"
+    },
+    {
+      "year": 2021,
+      "team": "BRK",
+      "player": "Cam Thomas"
+    },
+    {
+      "year": 2021,
+      "team": "PHI",
+      "player": "Jaden Springer"
+    },
+    {
+      "year": 2021,
+      "team": "PHO",
+      "player": "Day'Ron Sharpe"
+    },
+    {
+      "year": 2021,
+      "team": "UTA",
+      "player": "Santi Aldama"
+    },
+    {
+      "year": 2021,
+      "team": "MIL",
+      "player": "Isaiah Todd"
+    },
+    {
+      "year": 2021,
+      "team": "NYK",
+      "player": "Jeremiah Robinson-Earl"
+    },
+    {
+      "year": 2021,
+      "team": "ORL",
+      "player": "Jason Preston"
+    },
+    {
+      "year": 2021,
+      "team": "OKC",
+      "player": "Rokas Jokubaitis"
+    },
+    {
+      "year": 2021,
+      "team": "NOP",
+      "player": "Herbert Jones"
+    },
+    {
+      "year": 2021,
+      "team": "OKC",
+      "player": "Miles McBride"
+    },
+    {
+      "year": 2021,
+      "team": "DET",
+      "player": "JT Thor"
+    },
+    {
+      "year": 2021,
+      "team": "CHI",
+      "player": "Ayo Dosunmu"
+    },
+    {
+      "year": 2021,
+      "team": "SAC",
+      "player": "Neemias Queta"
+    },
+    {
+      "year": 2021,
+      "team": "NOP",
+      "player": "Jared Butler"
+    },
+    {
+      "year": 2021,
+      "team": "SAS",
+      "player": "Joe Wieskamp"
+    },
+    {
+      "year": 2021,
+      "team": "DET",
+      "player": "Isaiah Livers"
+    },
+    {
+      "year": 2021,
+      "team": "NOP",
+      "player": "Greg Brown III"
+    },
+    {
+      "year": 2021,
+      "team": "BRK",
+      "player": "Kessler Edwards"
+    },
+    {
+      "year": 2021,
+      "team": "BOS",
+      "player": "Juhann Begarin"
+    },
+    {
+      "year": 2021,
+      "team": "TOR",
+      "player": "Dalano Banton"
+    },
+    {
+      "year": 2021,
+      "team": "TOR",
+      "player": "David Johnson"
+    },
+    {
+      "year": 2021,
+      "team": "ATL",
+      "player": "Sharife Cooper"
+    },
+    {
+      "year": 2021,
+      "team": "BRK",
+      "player": "Marcus Zegarowski"
+    },
+    {
+      "year": 2021,
+      "team": "PHI",
+      "player": "Filip Petru\u0161ev"
+    },
+    {
+      "year": 2021,
+      "team": "MEM",
+      "player": "Brandon Boston Jr."
+    },
+    {
+      "year": 2021,
+      "team": "DET",
+      "player": "Luka Garza"
+    },
+    {
+      "year": 2021,
+      "team": "PHI",
+      "player": "Charles Bassey"
+    },
+    {
+      "year": 2021,
+      "team": "IND",
+      "player": "Sandro Mamukelashvili"
+    },
+    {
+      "year": 2021,
+      "team": "OKC",
+      "player": "Aaron Wiggins"
+    },
+    {
+      "year": 2021,
+      "team": "CHO",
+      "player": "Scottie Lewis"
+    },
+    {
+      "year": 2021,
+      "team": "CHO",
+      "player": "Bal\u0161a Koprivica"
+    },
+    {
+      "year": 2021,
+      "team": "NYK",
+      "player": "Jericho Sims"
+    },
+    {
+      "year": 2021,
+      "team": "BRK",
+      "player": "RaiQuan Gray"
+    },
+    {
+      "year": 2021,
+      "team": "IND",
+      "player": "Georgios Kalaitzakis"
+    },
+    {
+      "year": 2022,
+      "team": "ORL",
+      "player": "Paolo Banchero"
+    },
+    {
+      "year": 2022,
+      "team": "OKC",
+      "player": "Chet Holmgren"
+    },
+    {
+      "year": 2022,
+      "team": "HOU",
+      "player": "Jabari Smith Jr."
+    },
+    {
+      "year": 2022,
+      "team": "SAC",
+      "player": "Keegan Murray"
+    },
+    {
+      "year": 2022,
+      "team": "DET",
+      "player": "Jaden Ivey"
+    },
+    {
+      "year": 2022,
+      "team": "IND",
+      "player": "Bennedict Mathurin"
+    },
+    {
+      "year": 2022,
+      "team": "POR",
+      "player": "Shaedon Sharpe"
+    },
+    {
+      "year": 2022,
+      "team": "NOP",
+      "player": "Dyson Daniels"
+    },
+    {
+      "year": 2022,
+      "team": "SAS",
+      "player": "Jeremy Sochan"
+    },
+    {
+      "year": 2022,
+      "team": "WAS",
+      "player": "Johnny Davis"
+    },
+    {
+      "year": 2022,
+      "team": "OKC",
+      "player": "Ousmane Dieng"
+    },
+    {
+      "year": 2022,
+      "team": "OKC",
+      "player": "Jalen Williams"
+    },
+    {
+      "year": 2022,
+      "team": "DET",
+      "player": "Jalen Duren"
+    },
+    {
+      "year": 2022,
+      "team": "CLE",
+      "player": "Ochai Agbaji"
+    },
+    {
+      "year": 2022,
+      "team": "CHA",
+      "player": "Mark Williams"
+    },
+    {
+      "year": 2022,
+      "team": "ATL",
+      "player": "AJ Griffin"
+    },
+    {
+      "year": 2022,
+      "team": "HOU",
+      "player": "Tari Eason"
+    },
+    {
+      "year": 2022,
+      "team": "CHI",
+      "player": "Dalen Terry"
+    },
+    {
+      "year": 2022,
+      "team": "MEM",
+      "player": "Jake LaRavia"
+    },
+    {
+      "year": 2022,
+      "team": "SAS",
+      "player": "Malaki Branham"
+    },
+    {
+      "year": 2022,
+      "team": "DEN",
+      "player": "Christian Braun"
+    },
+    {
+      "year": 2022,
+      "team": "MIN",
+      "player": "Walker Kessler"
+    },
+    {
+      "year": 2022,
+      "team": "MEM",
+      "player": "David Roddy"
+    },
+    {
+      "year": 2022,
+      "team": "MIL",
+      "player": "MarJon Beauchamp"
+    },
+    {
+      "year": 2022,
+      "team": "SAS",
+      "player": "Blake Wesley"
+    },
+    {
+      "year": 2022,
+      "team": "MIN",
+      "player": "Wendell Moore Jr."
+    },
+    {
+      "year": 2022,
+      "team": "MIA",
+      "player": "Nikola Jovi\u0107"
+    },
+    {
+      "year": 2022,
+      "team": "GSW",
+      "player": "Patrick Baldwin Jr."
+    },
+    {
+      "year": 2022,
+      "team": "HOU",
+      "player": "TyTy Washington Jr."
+    },
+    {
+      "year": 2022,
+      "team": "DEN",
+      "player": "Peyton Watson"
+    },
+    {
+      "year": 2022,
+      "team": "IND",
+      "player": "Andrew Nembhard"
+    },
+    {
+      "year": 2022,
+      "team": "ORL",
+      "player": "Caleb Houstan"
+    },
+    {
+      "year": 2022,
+      "team": "TOR",
+      "player": "Christian Koloko"
+    },
+    {
+      "year": 2022,
+      "team": "OKC",
+      "player": "Jaylin Williams"
+    },
+    {
+      "year": 2022,
+      "team": "LAL",
+      "player": "Max Christie"
+    },
+    {
+      "year": 2022,
+      "team": "DET",
+      "player": "Gabriele Procida"
+    },
+    {
+      "year": 2022,
+      "team": "DAL",
+      "player": "Jaden Hardy"
+    },
+    {
+      "year": 2022,
+      "team": "MEM",
+      "player": "Kennedy Chandler"
+    },
+    {
+      "year": 2022,
+      "team": "CLE",
+      "player": "Khalifa Diop"
+    },
+    {
+      "year": 2022,
+      "team": "CHA",
+      "player": "Bryce McGowens"
+    },
+    {
+      "year": 2022,
+      "team": "NOP",
+      "player": "E.J. Liddell"
+    },
+    {
+      "year": 2022,
+      "team": "NYK",
+      "player": "Trevor Keels"
+    },
+    {
+      "year": 2022,
+      "team": "LAC",
+      "player": "Moussa Diabat\u00e9"
+    },
+    {
+      "year": 2022,
+      "team": "GSW",
+      "player": "Ryan Rollins"
+    },
+    {
+      "year": 2022,
+      "team": "MIN",
+      "player": "Josh Minott"
+    },
+    {
+      "year": 2022,
+      "team": "DEN",
+      "player": "Ismael Kamagate"
+    },
+    {
+      "year": 2022,
+      "team": "MEM",
+      "player": "Vince Williams Jr."
+    },
+    {
+      "year": 2022,
+      "team": "IND",
+      "player": "Kendall Brown"
+    },
+    {
+      "year": 2022,
+      "team": "CLE",
+      "player": "Isaiah Mobley"
+    },
+    {
+      "year": 2022,
+      "team": "MIN",
+      "player": "Matteo Spagnolo"
+    },
+    {
+      "year": 2022,
+      "team": "ATL",
+      "player": "Tyrese Martin"
+    },
+    {
+      "year": 2022,
+      "team": "NOP",
+      "player": "Karlo Matkovi\u0107"
+    },
+    {
+      "year": 2022,
+      "team": "BOS",
+      "player": "JD Davison"
+    },
+    {
+      "year": 2022,
+      "team": "WAS",
+      "player": "Yannick Nzosa"
+    },
+    {
+      "year": 2022,
+      "team": "GSW",
+      "player": "Gui Santos"
+    },
+    {
+      "year": 2022,
+      "team": "CLE",
+      "player": "Luke Travers"
+    },
+    {
+      "year": 2022,
+      "team": "POR",
+      "player": "Jabari Walker"
+    },
+    {
+      "year": 2022,
+      "team": "MIL",
+      "player": "Hugo Besson"
+    },
+    {
+      "year": 2023,
+      "team": "SAS",
+      "player": "Victor Wembanyama"
+    },
+    {
+      "year": 2023,
+      "team": "CHA",
+      "player": "Brandon Miller"
+    },
+    {
+      "year": 2023,
+      "team": "POR",
+      "player": "Scoot Henderson"
+    },
+    {
+      "year": 2023,
+      "team": "HOU",
+      "player": "Amen Thompson"
+    },
+    {
+      "year": 2023,
+      "team": "DET",
+      "player": "Ausar Thompson"
+    },
+    {
+      "year": 2023,
+      "team": "ORL",
+      "player": "Anthony Black"
+    },
+    {
+      "year": 2023,
+      "team": "WAS",
+      "player": "Bilal Coulibaly"
+    },
+    {
+      "year": 2023,
+      "team": "IND",
+      "player": "Jarace Walker"
+    },
+    {
+      "year": 2023,
+      "team": "UTA",
+      "player": "Taylor Hendricks"
+    },
+    {
+      "year": 2023,
+      "team": "OKC",
+      "player": "Cason Wallace"
+    },
+    {
+      "year": 2023,
+      "team": "ORL",
+      "player": "Jett Howard"
+    },
+    {
+      "year": 2023,
+      "team": "DAL",
+      "player": "Dereck Lively II"
+    },
+    {
+      "year": 2023,
+      "team": "TOR",
+      "player": "Gradey Dick"
+    },
+    {
+      "year": 2023,
+      "team": "NOP",
+      "player": "Jordan Hawkins"
+    },
+    {
+      "year": 2023,
+      "team": "ATL",
+      "player": "Kobe Bufkin"
+    },
+    {
+      "year": 2023,
+      "team": "UTA",
+      "player": "Keyonte George"
+    },
+    {
+      "year": 2023,
+      "team": "LAL",
+      "player": "Jalen Hood-Schifino"
+    },
+    {
+      "year": 2023,
+      "team": "MIA",
+      "player": "Jaime Jaquez Jr."
+    },
+    {
+      "year": 2023,
+      "team": "GSW",
+      "player": "Brandin Podziemski"
+    },
+    {
+      "year": 2023,
+      "team": "HOU",
+      "player": "Cam Whitmore"
+    },
+    {
+      "year": 2023,
+      "team": "BKN",
+      "player": "Noah Clowney"
+    },
+    {
+      "year": 2023,
+      "team": "BKN",
+      "player": "Dariq Whitehead"
+    },
+    {
+      "year": 2023,
+      "team": "POR",
+      "player": "Kris Murray"
+    },
+    {
+      "year": 2023,
+      "team": "DAL",
+      "player": "Olivier-Maxence Prosper"
+    },
+    {
+      "year": 2023,
+      "team": "DET",
+      "player": "Marcus Sasser"
+    },
+    {
+      "year": 2023,
+      "team": "IND",
+      "player": "Ben Sheppard"
+    },
+    {
+      "year": 2023,
+      "team": "CHA",
+      "player": "Nick Smith Jr."
+    },
+    {
+      "year": 2023,
+      "team": "UTA",
+      "player": "Brice Sensabaugh"
+    },
+    {
+      "year": 2023,
+      "team": "DEN",
+      "player": "Julian Strawther"
+    },
+    {
+      "year": 2023,
+      "team": "LAC",
+      "player": "Kobe Brown"
+    },
+    {
+      "year": 2023,
+      "team": "DET",
+      "player": "James Nnaji"
+    },
+    {
+      "year": 2023,
+      "team": "DEN",
+      "player": "Jalen Pickett"
+    },
+    {
+      "year": 2023,
+      "team": "MIN",
+      "player": "Leonard Miller"
+    },
+    {
+      "year": 2023,
+      "team": "SAC",
+      "player": "Colby Jones"
+    },
+    {
+      "year": 2023,
+      "team": "CHI",
+      "player": "Julian Phillips"
+    },
+    {
+      "year": 2023,
+      "team": "MIL",
+      "player": "Andre Jackson Jr."
+    },
+    {
+      "year": 2023,
+      "team": "DEN",
+      "player": "Hunter Tyson"
+    },
+    {
+      "year": 2023,
+      "team": "BOS",
+      "player": "Jordan Walsh"
+    },
+    {
+      "year": 2023,
+      "team": "ATL",
+      "player": "Mouhamed Gueye"
+    },
+    {
+      "year": 2023,
+      "team": "LAL",
+      "player": "Maxwell Lewis"
+    },
+    {
+      "year": 2023,
+      "team": "CHA",
+      "player": "Amari Bailey"
+    },
+    {
+      "year": 2023,
+      "team": "WAS",
+      "player": "Tristan Vukcevic"
+    },
+    {
+      "year": 2023,
+      "team": "POR",
+      "player": "Rayan Rupert"
+    },
+    {
+      "year": 2023,
+      "team": "SAS",
+      "player": "Sidy Cissoko"
+    },
+    {
+      "year": 2023,
+      "team": "MEM",
+      "player": "GG Jackson II"
+    },
+    {
+      "year": 2023,
+      "team": "ATL",
+      "player": "Seth Lundy"
+    },
+    {
+      "year": 2023,
+      "team": "IND",
+      "player": "Mojave King"
+    },
+    {
+      "year": 2023,
+      "team": "LAC",
+      "player": "Jordan Miller"
+    },
+    {
+      "year": 2023,
+      "team": "CLE",
+      "player": "Emoni Bates"
+    },
+    {
+      "year": 2023,
+      "team": "OKC",
+      "player": "Keyontae Johnson"
+    },
+    {
+      "year": 2023,
+      "team": "BKN",
+      "player": "Jalen Wilson"
+    },
+    {
+      "year": 2023,
+      "team": "PHX",
+      "player": "Toumani Camara"
+    },
+    {
+      "year": 2023,
+      "team": "MIN",
+      "player": "Jaylen Clark"
+    },
+    {
+      "year": 2023,
+      "team": "SAC",
+      "player": "Jalen Slawson"
+    },
+    {
+      "year": 2023,
+      "team": "IND",
+      "player": "Isaiah Wong"
+    },
+    {
+      "year": 2023,
+      "team": "MEM",
+      "player": "Tarik Biberovic"
+    },
+    {
+      "year": 2023,
+      "team": "GSW",
+      "player": "Trayce Jackson-Davis"
+    },
+    {
+      "year": 2023,
+      "team": "MIL",
+      "player": "Chris Livingston"
+    },
+    {
+      "year": 2024,
+      "team": "ATL",
+      "player": "Zaccharie Risacher"
+    },
+    {
+      "year": 2024,
+      "team": "WAS",
+      "player": "Alex Sarr"
+    },
+    {
+      "year": 2024,
+      "team": "HOU",
+      "player": "Reed Sheppard"
+    },
+    {
+      "year": 2024,
+      "team": "SAS",
+      "player": "Stephon Castle"
+    },
+    {
+      "year": 2024,
+      "team": "DET",
+      "player": "Ron Holland"
+    },
+    {
+      "year": 2024,
+      "team": "CHO",
+      "player": "Tidjane Sala\u00fcn"
+    },
+    {
+      "year": 2024,
+      "team": "POR",
+      "player": "Donovan Clingan"
+    },
+    {
+      "year": 2024,
+      "team": "MIN",
+      "player": "Rob Dillingham"
+    },
+    {
+      "year": 2024,
+      "team": "MEM",
+      "player": "Zach Edey"
+    },
+    {
+      "year": 2024,
+      "team": "UTA",
+      "player": "Cody Williams"
+    },
+    {
+      "year": 2024,
+      "team": "CHI",
+      "player": "Matas Buzelis"
+    },
+    {
+      "year": 2024,
+      "team": "OKC",
+      "player": "Nikola Topi\u0107"
+    },
+    {
+      "year": 2024,
+      "team": "SAC",
+      "player": "Devin Carter"
+    },
+    {
+      "year": 2024,
+      "team": "WAS",
+      "player": "Bub Carrington"
+    },
+    {
+      "year": 2024,
+      "team": "MIA",
+      "player": "Kel'el Ware"
+    },
+    {
+      "year": 2024,
+      "team": "PHI",
+      "player": "Jared McCain"
+    },
+    {
+      "year": 2024,
+      "team": "LAL",
+      "player": "Dalton Knecht"
+    },
+    {
+      "year": 2024,
+      "team": "ORL",
+      "player": "Tristan Da Silva"
+    },
+    {
+      "year": 2024,
+      "team": "TOR",
+      "player": "Ja'Kobe Walter"
+    },
+    {
+      "year": 2024,
+      "team": "CLE",
+      "player": "Jaylon Tyson"
+    },
+    {
+      "year": 2024,
+      "team": "NOP",
+      "player": "Yves Missi"
+    },
+    {
+      "year": 2024,
+      "team": "PHO",
+      "player": "DaRon Holmes"
+    },
+    {
+      "year": 2024,
+      "team": "MIL",
+      "player": "AJ Johnson"
+    },
+    {
+      "year": 2024,
+      "team": "WAS",
+      "player": "Kyshawn George"
+    },
+    {
+      "year": 2024,
+      "team": "NYK",
+      "player": "Pac\u00f4me Dadiet"
+    },
+    {
+      "year": 2024,
+      "team": "OKC",
+      "player": "Dillon Jones"
+    },
+    {
+      "year": 2024,
+      "team": "MIN",
+      "player": "Terrence Shannon Jr."
+    },
+    {
+      "year": 2024,
+      "team": "PHX",
+      "player": "Ryan Dunn"
+    },
+    {
+      "year": 2024,
+      "team": "UTA",
+      "player": "Isaiah Collier"
+    },
+    {
+      "year": 2024,
+      "team": "BOS",
+      "player": "Baylor Scheierman"
+    },
+    {
+      "year": 2024,
+      "team": "TOR",
+      "player": "Jonathan Mogbo"
+    },
+    {
+      "year": 2024,
+      "team": "UTA",
+      "player": "Kyle Filipowski"
+    },
+    {
+      "year": 2024,
+      "team": "MIL",
+      "player": "Tyler Smith"
+    },
+    {
+      "year": 2024,
+      "team": "NYK",
+      "player": "Tyler Kolek"
+    },
+    {
+      "year": 2024,
+      "team": "IND",
+      "player": "Johnny Furphy"
+    },
+    {
+      "year": 2024,
+      "team": "SAS",
+      "player": "Juan Nunez"
+    },
+    {
+      "year": 2024,
+      "team": "DET",
+      "player": "Bobi Klintman"
+    },
+    {
+      "year": 2024,
+      "team": "OKC",
+      "player": "Ajay Mitchell"
+    },
+    {
+      "year": 2024,
+      "team": "MEM",
+      "player": "Jaylen Wells"
+    },
+    {
+      "year": 2024,
+      "team": "PHX",
+      "player": "Oso Ighodaro"
+    },
+    {
+      "year": 2024,
+      "team": "PHI",
+      "player": "Adem Bona"
+    },
+    {
+      "year": 2024,
+      "team": "CHA",
+      "player": "KJ Simpson"
+    },
+    {
+      "year": 2024,
+      "team": "ATL",
+      "player": "Nikola Djurisic"
+    },
+    {
+      "year": 2024,
+      "team": "MIA",
+      "player": "Pelle Larsson"
+    },
+    {
+      "year": 2024,
+      "team": "TOR",
+      "player": "Jamal Shead"
+    },
+    {
+      "year": 2024,
+      "team": "LAC",
+      "player": "Cam Christie"
+    },
+    {
+      "year": 2024,
+      "team": "NOP",
+      "player": "Antonio Reeves"
+    },
+    {
+      "year": 2024,
+      "team": "SAS",
+      "player": "Harrison Ingram"
+    },
+    {
+      "year": 2024,
+      "team": "IND",
+      "player": "Tristen Newton"
+    },
+    {
+      "year": 2024,
+      "team": "IND",
+      "player": "Enrique Freeman"
+    },
+    {
+      "year": 2024,
+      "team": "NYK",
+      "player": "Melvin Ajin\u00e7a"
+    },
+    {
+      "year": 2024,
+      "team": "GSW",
+      "player": "Quinten Post"
+    },
+    {
+      "year": 2024,
+      "team": "MEM",
+      "player": "Cam Spencer"
+    },
+    {
+      "year": 2024,
+      "team": "BOS",
+      "player": "Anton Watson"
+    },
+    {
+      "year": 2024,
+      "team": "LAL",
+      "player": "Bronny James"
+    },
+    {
+      "year": 2024,
+      "team": "NYK",
+      "player": "Kevin McCullar Jr."
+    },
+    {
+      "year": 2024,
+      "team": "TOR",
+      "player": "Ulrich Chomche"
+    },
+    {
+      "year": 2024,
+      "team": "NYK",
+      "player": "Ariel Hukporti"
+    },
+    {
+      "year": 2025,
+      "team": "DAL",
+      "player": "Cooper Flagg"
+    },
+    {
+      "year": 2025,
+      "team": "SAS",
+      "player": "Dylan Harper"
+    },
+    {
+      "year": 2025,
+      "team": "PHI",
+      "player": "VJ Edgecombe"
+    },
+    {
+      "year": 2025,
+      "team": "CHA",
+      "player": "Kon Knueppel"
+    },
+    {
+      "year": 2025,
+      "team": "UTA",
+      "player": "Ace Bailey"
+    },
+    {
+      "year": 2025,
+      "team": "WAS",
+      "player": "Tre Johnson"
+    },
+    {
+      "year": 2025,
+      "team": "NOP",
+      "player": "Jeremiah Fears"
+    },
+    {
+      "year": 2025,
+      "team": "BRK",
+      "player": "Egor D\u0451min"
+    },
+    {
+      "year": 2025,
+      "team": "TOR",
+      "player": "Collin Murray-Boyles"
+    },
+    {
+      "year": 2025,
+      "team": "PHX",
+      "player": "Khaman Maluach"
+    },
+    {
+      "year": 2025,
+      "team": "MEM",
+      "player": "Cedric Coward"
+    },
+    {
+      "year": 2025,
+      "team": "CHI",
+      "player": "Noa Essengue"
+    },
+    {
+      "year": 2025,
+      "team": "NOP",
+      "player": "Derik Queen"
+    },
+    {
+      "year": 2025,
+      "team": "SAS",
+      "player": "Carter Bryant"
+    },
+    {
+      "year": 2025,
+      "team": "OKC",
+      "player": "Thomas Sorber"
+    },
+    {
+      "year": 2025,
+      "team": "POR",
+      "player": "Yang Hansen"
+    },
+    {
+      "year": 2025,
+      "team": "MIN",
+      "player": "Joan Beringer"
+    },
+    {
+      "year": 2025,
+      "team": "WAS",
+      "player": "Walter Clayton"
+    },
+    {
+      "year": 2025,
+      "team": "BRK",
+      "player": "Nolan Traor\u00e9"
+    },
+    {
+      "year": 2025,
+      "team": "MIA",
+      "player": "Kasparas Jaku\u010dionis"
+    },
+    {
+      "year": 2025,
+      "team": "WAS",
+      "player": "Will Riley"
+    },
+    {
+      "year": 2025,
+      "team": "BKN",
+      "player": "Drake Powell"
+    },
+    {
+      "year": 2025,
+      "team": "ATL",
+      "player": "Asa Newell"
+    },
+    {
+      "year": 2025,
+      "team": "SAC",
+      "player": "Nique Clifford"
+    },
+    {
+      "year": 2025,
+      "team": "ORL",
+      "player": "Jase Richardson"
+    },
+    {
+      "year": 2025,
+      "team": "BKN",
+      "player": "Ben Saraf"
+    },
+    {
+      "year": 2025,
+      "team": "BKN",
+      "player": "Danny Wolf"
+    },
+    {
+      "year": 2025,
+      "team": "BOS",
+      "player": "Hugo Gonz\u00e1lez"
+    },
+    {
+      "year": 2025,
+      "team": "CHA",
+      "player": "Liam McNeeley"
+    },
+    {
+      "year": 2025,
+      "team": "LAC",
+      "player": "Yanic Konan Niederh\u00e4user"
+    },
+    {
+      "year": 2025,
+      "team": "PHX",
+      "player": "Rasheer Fleming"
+    },
+    {
+      "year": 2025,
+      "team": "ORL",
+      "player": "Noah Penda"
+    },
+    {
+      "year": 2025,
+      "team": "CHA",
+      "player": "Sion James"
+    },
+    {
+      "year": 2025,
+      "team": "CHA",
+      "player": "Ryan Kalkbrenner"
+    },
+    {
+      "year": 2025,
+      "team": "PHI",
+      "player": "Johni Broome"
+    },
+    {
+      "year": 2025,
+      "team": "LAL",
+      "player": "Adou Thiero"
+    },
+    {
+      "year": 2025,
+      "team": "DET",
+      "player": "Chaz Lanier"
+    },
+    {
+      "year": 2025,
+      "team": "IND",
+      "player": "Kam Jones"
+    },
+    {
+      "year": 2025,
+      "team": "TOR",
+      "player": "Alijah Martin"
+    },
+    {
+      "year": 2025,
+      "team": "NOP",
+      "player": "Micah Peavy"
+    },
+    {
+      "year": 2025,
+      "team": "PHX",
+      "player": "Koby Brea"
+    },
+    {
+      "year": 2025,
+      "team": "SAC",
+      "player": "Maxime Raynaud"
+    },
+    {
+      "year": 2025,
+      "team": "WAS",
+      "player": "Jamir Watkins"
+    },
+    {
+      "year": 2025,
+      "team": "OKC",
+      "player": "Brooks Barnhizer"
+    },
+    {
+      "year": 2025,
+      "team": "MIN",
+      "player": "Rocco Zikarsky"
+    },
+    {
+      "year": 2025,
+      "team": "BOS",
+      "player": "Amari Williams"
+    },
+    {
+      "year": 2025,
+      "team": "MIL",
+      "player": "Bogoljub Markovic"
+    },
+    {
+      "year": 2025,
+      "team": "MEM",
+      "player": "Javon Small"
+    },
+    {
+      "year": 2025,
+      "team": "CLE",
+      "player": "Tyrese Proctor"
+    },
+    {
+      "year": 2025,
+      "team": "LAC",
+      "player": "Kobe Sanders"
+    },
+    {
+      "year": 2025,
+      "team": "NYK",
+      "player": "Mohamed Diawara"
+    },
+    {
+      "year": 2025,
+      "team": "GSW",
+      "player": "Alex Toohey"
+    },
+    {
+      "year": 2025,
+      "team": "UTA",
+      "player": "John Tonje"
+    },
+    {
+      "year": 2025,
+      "team": "IND",
+      "player": "Taelon Peter"
+    },
+    {
+      "year": 2025,
+      "team": "CHI",
+      "player": "Lachlan Olbrich"
+    },
+    {
+      "year": 2025,
+      "team": "GSW",
+      "player": "Will Richard"
+    },
+    {
+      "year": 2025,
+      "team": "BOS",
+      "player": "Max Shulga"
+    },
+    {
+      "year": 2025,
+      "team": "CLE",
+      "player": "Saliou Niang"
+    },
+    {
+      "year": 2025,
+      "team": "MEM",
+      "player": "Jahmai Mashack"
+    }
+  ],
+  "routes": [
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "IND",
+      "to_team": "TOR",
+      "date": "2025-02-28",
+      "player": "James Wiseman"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "IND",
+      "to_team": "CHI",
+      "date": "2026-06-30",
+      "player": "Kam Jones"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "NOP",
+      "to_team": "OKC",
+      "date": "2025-02-28",
+      "player": "Daniel Theis"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "MIA",
+      "to_team": "OKC",
+      "date": "2022-02-28",
+      "player": "KZ Okpala"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "SAC",
+      "to_team": "SAS",
+      "date": "2024-10-31",
+      "player": "Jalen McDaniels"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "NYK",
+      "to_team": "DET",
+      "date": "2024-02-29",
+      "player": "Ryan Arcidiacono"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "DET",
+      "to_team": "UTA",
+      "date": "2024-02-29",
+      "player": "Kevin Knox II"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "UTA",
+      "to_team": "OKC",
+      "date": "2022-01-31",
+      "player": "Miye Oni"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "UTA",
+      "to_team": "OKC",
+      "date": "2023-07-31",
+      "player": "Rudy Gay"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "UTA",
+      "to_team": "MEM",
+      "date": "2026-02-28",
+      "player": "Georges Niang"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "UTA",
+      "to_team": "MEM",
+      "date": "2026-02-28",
+      "player": "Kyle Anderson"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "UTA",
+      "to_team": "BOS",
+      "date": "2026-02-28",
+      "player": "John Tonje"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "UTA",
+      "to_team": "MIN",
+      "date": "2026-08-31",
+      "player": "John Konchar"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "CHI",
+      "to_team": "CHA",
+      "date": "2026-09-30",
+      "player": "Rob Dillingham"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "OKC",
+      "to_team": "HOU",
+      "date": "2023-10-31",
+      "player": "Jeremiah Robinson-Earl"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "PHI",
+      "to_team": "SAC",
+      "date": "2023-11-30",
+      "player": "Filip Petrusev"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "PHI",
+      "to_team": "DET",
+      "date": "2024-02-29",
+      "player": "Danuel House"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "PHI",
+      "to_team": "WAS",
+      "date": "2025-02-28",
+      "player": "Reggie Jackson"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "PHI",
+      "to_team": "MEM",
+      "date": "2026-02-28",
+      "player": "Eric Gordon"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "MIL",
+      "to_team": "SAC",
+      "date": "2024-02-29",
+      "player": "Robin Lopez"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "HOU",
+      "date": "2022-02-28",
+      "player": "Enes Kanter"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "ORL",
+      "date": "2022-02-28",
+      "player": "P.J. Dozier"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "IND",
+      "date": "2022-07-31",
+      "player": "Nik Stauskas"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "IND",
+      "date": "2022-07-31",
+      "player": "Malik Fitts"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "IND",
+      "date": "2022-07-31",
+      "player": "Juwan Morgan"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "SAS",
+      "date": "2023-01-31",
+      "player": "Noah Vonleh"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "OKC",
+      "date": "2023-02-28",
+      "player": "Justin Jackson"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "BOS",
+      "to_team": "UTA",
+      "date": "2026-02-28",
+      "player": "Chris Boucher"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "CLE",
+      "to_team": "UTA",
+      "date": "2026-02-28",
+      "player": "Lonzo Ball"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "MEM",
+      "to_team": "NOP",
+      "date": "2026-09-30",
+      "player": "Taj Gibson"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "POR",
+      "to_team": "ATL",
+      "date": "2026-02-28",
+      "player": "Duop Reath"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "LAC",
+      "to_team": "UTA",
+      "date": "2025-02-28",
+      "player": "P.J. Tucker"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "LAC",
+      "to_team": "UTA",
+      "date": "2025-02-28",
+      "player": "Mo Bamba"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "ORL",
+      "to_team": "CHA",
+      "date": "2026-02-28",
+      "player": "Tyus Jones"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "HOU",
+      "to_team": "OKC",
+      "date": "2023-10-31",
+      "player": "Kevin Porter Jr."
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "HOU",
+      "to_team": "MEM",
+      "date": "2024-02-29",
+      "player": "Victor Oladipo"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "CHA",
+      "to_team": "MIL",
+      "date": "2025-07-31",
+      "player": "Vasilije Micic"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "ATL",
+      "to_team": "NYK",
+      "date": "2022-01-31",
+      "player": "Solomon Hill"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "GSW",
+      "to_team": "IND",
+      "date": "2024-02-29",
+      "player": "Cory Joseph"
+    },
+    {
+      "kind": "intermediate_transfer",
+      "from_team": "DEN",
+      "to_team": "BKN",
+      "date": "2026-02-28",
+      "player": "Hunter Tyson"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "DAL",
+      "to_team": "WAS",
+      "date": "2026-02-28",
+      "player": "Dante Exum"
+    },
+    {
+      "kind": "unpriced_origin_basis",
+      "from_team": "MEM",
+      "to_team": "DAL",
+      "date": "2026-07-31",
+      "player": "Tarik Biberovic"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "MIA",
+      "to_team": "UTA",
+      "date": "2025-02-28",
+      "player": "Josh Richardson"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "SAC",
+      "to_team": "DET",
+      "date": "2026-02-28",
+      "player": "Dario Saric"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "NYK",
+      "to_team": "MIN",
+      "date": "2024-10-31",
+      "player": "Keita Bates-Diop"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "CHI",
+      "to_team": "CHA",
+      "date": "2026-07-31",
+      "player": "Mouhamadou Gueye"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "PHI",
+      "to_team": "SAS",
+      "date": "2024-02-29",
+      "player": "Marcus Morris"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "PHI",
+      "to_team": "IND",
+      "date": "2024-02-29",
+      "player": "Furkan Korkmaz"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "MIL",
+      "to_team": "IND",
+      "date": "2023-02-28",
+      "player": "Serge Ibaka"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "MIL",
+      "to_team": "PHX",
+      "date": "2026-02-28",
+      "player": "Cole Anthony"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "CLE",
+      "to_team": "NYK",
+      "date": "2022-01-31",
+      "player": "Denzel Valentine"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "CLE",
+      "to_team": "SAS",
+      "date": "2023-07-31",
+      "player": "Lamar Stevens"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "LAC",
+      "to_team": "HOU",
+      "date": "2023-02-28",
+      "player": "John Wall"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "LAC",
+      "to_team": "TOR",
+      "date": "2026-02-28",
+      "player": "Chris Paul"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "WAS",
+      "to_team": "MEM",
+      "date": "2025-02-28",
+      "player": "Johnny Davis"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "WAS",
+      "to_team": "CHA",
+      "date": "2026-02-28",
+      "player": "Malaki Branham"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "WAS",
+      "to_team": "CLE",
+      "date": "2026-08-31",
+      "player": "Cam Whitmore"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "LAL",
+      "to_team": "UTA",
+      "date": "2025-02-28",
+      "player": "Jalen Hood-Schifino"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "PHX",
+      "to_team": "MEM",
+      "date": "2024-02-29",
+      "player": "Chimezie Metu"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "PHX",
+      "to_team": "MIL",
+      "date": "2026-02-28",
+      "player": "Nigel Hayes-Davis"
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "WAS",
+      "to_team": "SAS",
+      "date": "2025-02-28",
+      "player": "Patrick Baldwin, Jr."
+    },
+    {
+      "kind": "reviewed_intermediate",
+      "from_team": "LAC",
+      "to_team": "UTA",
+      "date": "2024-07-31",
+      "player": "Russell Westbrook"
+    }
+  ],
+  "draft_owners": [
+    {
+      "player": "J.D. Davison",
+      "team": "BOS"
+    },
+    {
+      "player": "Jordan Walsh",
+      "team": "BOS"
+    },
+    {
+      "player": "Baylor Scheierman",
+      "team": "BOS"
+    },
+    {
+      "player": "Anton Watson",
+      "team": "BOS"
+    },
+    {
+      "player": "Hugo Gonzalez",
+      "team": "BOS"
+    },
+    {
+      "player": "Amari Williams",
+      "team": "BOS"
+    },
+    {
+      "player": "Max Shulga",
+      "team": "BOS"
+    },
+    {
+      "player": "Chris Cenac, Jr.",
+      "team": "BOS"
+    },
+    {
+      "player": "Dillon Mitchell",
+      "team": "BOS"
+    },
+    {
+      "player": "Christian Koloko",
+      "team": "TOR"
+    },
+    {
+      "player": "Gradey Dick",
+      "team": "TOR"
+    },
+    {
+      "player": "Ja'Kobe Walter",
+      "team": "TOR"
+    },
+    {
+      "player": "Jamal Shead",
+      "team": "TOR"
+    },
+    {
+      "player": "Jonathan Mogbo",
+      "team": "TOR"
+    },
+    {
+      "player": "Ulrich Chomche",
+      "team": "TOR"
+    },
+    {
+      "player": "Collin Murray-Boyles",
+      "team": "TOR"
+    },
+    {
+      "player": "Alijah Martin",
+      "team": "TOR"
+    },
+    {
+      "player": "Allen Graves",
+      "team": "TOR"
+    },
+    {
+      "player": "Jaden Bradley",
+      "team": "TOR"
+    },
+    {
+      "player": "Caleb Houstan",
+      "team": "ORL"
+    },
+    {
+      "player": "Paolo Banchero",
+      "team": "ORL"
+    },
+    {
+      "player": "Anthony Black",
+      "team": "ORL"
+    },
+    {
+      "player": "Jett Howard",
+      "team": "ORL"
+    },
+    {
+      "player": "Tristan Da Silva",
+      "team": "ORL"
+    },
+    {
+      "player": "Jase Richardson",
+      "team": "ORL"
+    },
+    {
+      "player": "Noah Penda",
+      "team": "ORL"
+    },
+    {
+      "player": "Izaiyah Nelson",
+      "team": "ORL"
+    },
+    {
+      "player": "Jabari Smith, Jr.",
+      "team": "HOU"
+    },
+    {
+      "player": "Tari Eason",
+      "team": "HOU"
+    },
+    {
+      "player": "TyTy Washington, Jr.",
+      "team": "HOU"
+    },
+    {
+      "player": "Amen Thompson",
+      "team": "HOU"
+    },
+    {
+      "player": "Cam Whitmore",
+      "team": "HOU"
+    },
+    {
+      "player": "Reed Sheppard",
+      "team": "HOU"
+    },
+    {
+      "player": "Bruce Thornton",
+      "team": "HOU"
+    },
+    {
+      "player": "Trevor Keels",
+      "team": "NYK"
+    },
+    {
+      "player": "Pacome Dadiet",
+      "team": "NYK"
+    },
+    {
+      "player": "Ariel Hukporti",
+      "team": "NYK"
+    },
+    {
+      "player": "Kevin McCullar, Jr.",
+      "team": "NYK"
+    },
+    {
+      "player": "Tyler Kolek",
+      "team": "NYK"
+    },
+    {
+      "player": "Mohamed Diawara",
+      "team": "NYK"
+    },
+    {
+      "player": "Jack Kayil",
+      "team": "NYK"
+    },
+    {
+      "player": "Tyler Nickel",
+      "team": "NYK"
+    },
+    {
+      "player": "Ousmane Dieng",
+      "team": "OKC"
+    },
+    {
+      "player": "Chet Holmgren",
+      "team": "OKC"
+    },
+    {
+      "player": "Jalen Williams",
+      "team": "OKC"
+    },
+    {
+      "player": "Jaylin Williams",
+      "team": "OKC"
+    },
+    {
+      "player": "Keyontae Johnson",
+      "team": "OKC"
+    },
+    {
+      "player": "Cason Wallace",
+      "team": "OKC"
+    },
+    {
+      "player": "Nikola Topic",
+      "team": "OKC"
+    },
+    {
+      "player": "Dillon Jones",
+      "team": "OKC"
+    },
+    {
+      "player": "Ajay Mitchell",
+      "team": "OKC"
+    },
+    {
+      "player": "Thomas Sorber",
+      "team": "OKC"
+    },
+    {
+      "player": "Brooks Barnhizer",
+      "team": "OKC"
+    },
+    {
+      "player": "Bennett Stirtz",
+      "team": "OKC"
+    },
+    {
+      "player": "Aday Mara",
+      "team": "OKC"
+    },
+    {
+      "player": "Otega Oweh",
+      "team": "OKC"
+    },
+    {
+      "player": "Jaden Ivey",
+      "team": "DET"
+    },
+    {
+      "player": "Jalen Duren",
+      "team": "DET"
+    },
+    {
+      "player": "Gabriele Procida",
+      "team": "DET"
+    },
+    {
+      "player": "Ausar Thompson",
+      "team": "DET"
+    },
+    {
+      "player": "Marcus Sasser",
+      "team": "DET"
+    },
+    {
+      "player": "Ronald Holland II",
+      "team": "DET"
+    },
+    {
+      "player": "Bobi Klintman",
+      "team": "DET"
+    },
+    {
+      "player": "Chaz Lanier",
+      "team": "DET"
+    },
+    {
+      "player": "Ebuka Okorie",
+      "team": "DET"
+    },
+    {
+      "player": "Ugonna Onyenso",
+      "team": "DET"
+    },
+    {
+      "player": "Dyson Daniels",
+      "team": "NOP"
+    },
+    {
+      "player": "E.J. Liddell",
+      "team": "NOP"
+    },
+    {
+      "player": "Karlo Matkovic",
+      "team": "NOP"
+    },
+    {
+      "player": "Jordan Hawkins",
+      "team": "NOP"
+    },
+    {
+      "player": "Yves Missi",
+      "team": "NOP"
+    },
+    {
+      "player": "Antonio Reeves",
+      "team": "NOP"
+    },
+    {
+      "player": "Derik Queen",
+      "team": "NOP"
+    },
+    {
+      "player": "Jeremiah Fears",
+      "team": "NOP"
+    },
+    {
+      "player": "Micah Peavy",
+      "team": "NOP"
+    },
+    {
+      "player": "Jaron Pierre, Jr.",
+      "team": "NOP"
+    },
+    {
+      "player": "Johnny Davis",
+      "team": "WAS"
+    },
+    {
+      "player": "Yannick Nzosa",
+      "team": "WAS"
+    },
+    {
+      "player": "Bilal Coulibaly",
+      "team": "WAS"
+    },
+    {
+      "player": "Tristan Vukcevic",
+      "team": "WAS"
+    },
+    {
+      "player": "Kyshawn George",
+      "team": "WAS"
+    },
+    {
+      "player": "Alex Sarr",
+      "team": "WAS"
+    },
+    {
+      "player": "Bub Carrington",
+      "team": "WAS"
+    },
+    {
+      "player": "Will Riley",
+      "team": "WAS"
+    },
+    {
+      "player": "Tre Johnson",
+      "team": "WAS"
+    },
+    {
+      "player": "Jamir Watkins",
+      "team": "WAS"
+    },
+    {
+      "player": "A.J. Dybantsa",
+      "team": "WAS"
+    },
+    {
+      "player": "Felix Okpara",
+      "team": "WAS"
+    },
+    {
+      "player": "Brice Sensabaugh",
+      "team": "UTA"
+    },
+    {
+      "player": "Keyonte George",
+      "team": "UTA"
+    },
+    {
+      "player": "Taylor Hendricks",
+      "team": "UTA"
+    },
+    {
+      "player": "Cody Williams",
+      "team": "UTA"
+    },
+    {
+      "player": "Isaiah Collier",
+      "team": "UTA"
+    },
+    {
+      "player": "Kyle Filipowski",
+      "team": "UTA"
+    },
+    {
+      "player": "Ace Bailey",
+      "team": "UTA"
+    },
+    {
+      "player": "Walter Clayton, Jr.",
+      "team": "UTA"
+    },
+    {
+      "player": "John Tonje",
+      "team": "UTA"
+    },
+    {
+      "player": "Darryn Peterson",
+      "team": "UTA"
+    },
+    {
+      "player": "Ryan Rollins",
+      "team": "GSW"
+    },
+    {
+      "player": "Gui Santos",
+      "team": "GSW"
+    },
+    {
+      "player": "Patrick Baldwin, Jr.",
+      "team": "GSW"
+    },
+    {
+      "player": "Brandin Podziemski",
+      "team": "GSW"
+    },
+    {
+      "player": "Trayce Jackson-Davis",
+      "team": "GSW"
+    },
+    {
+      "player": "Quinten Post",
+      "team": "GSW"
+    },
+    {
+      "player": "Will Richard",
+      "team": "GSW"
+    },
+    {
+      "player": "Alex Toohey",
+      "team": "GSW"
+    },
+    {
+      "player": "Yaxel Lendeborg",
+      "team": "GSW"
+    },
+    {
+      "player": "Lajae Jones",
+      "team": "GSW"
+    },
+    {
+      "player": "Toumani Camara",
+      "team": "PHX"
+    },
+    {
+      "player": "Ryan Dunn",
+      "team": "PHX"
+    },
+    {
+      "player": "Oso Ighodaro",
+      "team": "PHX"
+    },
+    {
+      "player": "Khaman Maluach",
+      "team": "PHX"
+    },
+    {
+      "player": "Koby Brea",
+      "team": "PHX"
+    },
+    {
+      "player": "Rasheer Fleming",
+      "team": "PHX"
+    },
+    {
+      "player": "Koa Peat",
+      "team": "PHX"
+    },
+    {
+      "player": "Moussa Diabate",
+      "team": "LAC"
+    },
+    {
+      "player": "Jordan Miller",
+      "team": "LAC"
+    },
+    {
+      "player": "Kobe Brown",
+      "team": "LAC"
+    },
+    {
+      "player": "Cam Christie",
+      "team": "LAC"
+    },
+    {
+      "player": "Yanic Konan Niederhauser",
+      "team": "LAC"
+    },
+    {
+      "player": "Kobe Sanders",
+      "team": "LAC"
+    },
+    {
+      "player": "Keaton Wagler",
+      "team": "LAC"
+    },
+    {
+      "player": "Narcisse N'Goy",
+      "team": "LAC"
+    },
+    {
+      "player": "Baba Miller",
+      "team": "LAC"
+    },
+    {
+      "player": "Nick Martinelli",
+      "team": "LAC"
+    },
+    {
+      "player": "Dalen Terry",
+      "team": "CHI"
+    },
+    {
+      "player": "Julian Phillips",
+      "team": "CHI"
+    },
+    {
+      "player": "Matas Buzelis",
+      "team": "CHI"
+    },
+    {
+      "player": "Noa Essengue",
+      "team": "CHI"
+    },
+    {
+      "player": "Lachlan Olbrich",
+      "team": "CHI"
+    },
+    {
+      "player": "Caleb Wilson",
+      "team": "CHI"
+    },
+    {
+      "player": "Dailyn Swain",
+      "team": "CHI"
+    },
+    {
+      "player": "Josh Minott",
+      "team": "MIN"
+    },
+    {
+      "player": "Wendell Moore, Jr.",
+      "team": "MIN"
+    },
+    {
+      "player": "Walker Kessler",
+      "team": "MIN"
+    },
+    {
+      "player": "Matteo Spagnolo",
+      "team": "MIN"
+    },
+    {
+      "player": "Jaylen Clark",
+      "team": "MIN"
+    },
+    {
+      "player": "Leonard Miller",
+      "team": "MIN"
+    },
+    {
+      "player": "Terrence Shannon, Jr.",
+      "team": "MIN"
+    },
+    {
+      "player": "Rob Dillingham",
+      "team": "MIN"
+    },
+    {
+      "player": "Joan Beringer",
+      "team": "MIN"
+    },
+    {
+      "player": "Rocco Zikarsky",
+      "team": "MIN"
+    },
+    {
+      "player": "Trey Kaufman-Renn",
+      "team": "MIN"
+    },
+    {
+      "player": "Isaiah Evans",
+      "team": "MIN"
+    },
+    {
+      "player": "Christian Braun",
+      "team": "DEN"
+    },
+    {
+      "player": "Peyton Watson",
+      "team": "DEN"
+    },
+    {
+      "player": "Ismael Kamagate",
+      "team": "DEN"
+    },
+    {
+      "player": "Jalen Pickett",
+      "team": "DEN"
+    },
+    {
+      "player": "Julian Strawther",
+      "team": "DEN"
+    },
+    {
+      "player": "Hunter Tyson",
+      "team": "DEN"
+    },
+    {
+      "player": "DaRon Holmes II",
+      "team": "DEN"
+    },
+    {
+      "player": "Bryce Hopkins",
+      "team": "DEN"
+    },
+    {
+      "player": "Trevon Brazile",
+      "team": "DEN"
+    },
+    {
+      "player": "Dariq Whitehead",
+      "team": "BKN"
+    },
+    {
+      "player": "Jalen Wilson",
+      "team": "BKN"
+    },
+    {
+      "player": "Noah Clowney",
+      "team": "BKN"
+    },
+    {
+      "player": "Ben Saraf",
+      "team": "BKN"
+    },
+    {
+      "player": "Danny Wolf",
+      "team": "BKN"
+    },
+    {
+      "player": "Egor Demin",
+      "team": "BKN"
+    },
+    {
+      "player": "Nolan Traore",
+      "team": "BKN"
+    },
+    {
+      "player": "Drake Powell",
+      "team": "BKN"
+    },
+    {
+      "player": "Mikel Brown Jr.",
+      "team": "BKN"
+    },
+    {
+      "player": "Tyler Bilodeau",
+      "team": "BKN"
+    },
+    {
+      "player": "Joshua Jefferson",
+      "team": "BKN"
+    },
+    {
+      "player": "Isaiah Mobley",
+      "team": "CLE"
+    },
+    {
+      "player": "Khalifa Diop",
+      "team": "CLE"
+    },
+    {
+      "player": "Luke Travers",
+      "team": "CLE"
+    },
+    {
+      "player": "Ochai Agbaji",
+      "team": "CLE"
+    },
+    {
+      "player": "Emoni Bates",
+      "team": "CLE"
+    },
+    {
+      "player": "Jaylon Tyson",
+      "team": "CLE"
+    },
+    {
+      "player": "Saliou Niang",
+      "team": "CLE"
+    },
+    {
+      "player": "Tyrese Proctor",
+      "team": "CLE"
+    },
+    {
+      "player": "Meleek Thomas",
+      "team": "CLE"
+    },
+    {
+      "player": "Keegan Murray",
+      "team": "SAC"
+    },
+    {
+      "player": "Jalen Slawson",
+      "team": "SAC"
+    },
+    {
+      "player": "Colby Jones",
+      "team": "SAC"
+    },
+    {
+      "player": "Devin Carter",
+      "team": "SAC"
+    },
+    {
+      "player": "Nique Clifford",
+      "team": "SAC"
+    },
+    {
+      "player": "Maxime Raynaud",
+      "team": "SAC"
+    },
+    {
+      "player": "Alex Karaban",
+      "team": "SAC"
+    },
+    {
+      "player": "Darius Acuff, Jr.",
+      "team": "SAC"
+    },
+    {
+      "player": "Emanuel Sharp",
+      "team": "SAC"
+    },
+    {
+      "player": "Mark Williams",
+      "team": "CHA"
+    },
+    {
+      "player": "Bryce McGowens",
+      "team": "CHA"
+    },
+    {
+      "player": "Amari Bailey",
+      "team": "CHA"
+    },
+    {
+      "player": "Brandon Miller",
+      "team": "CHA"
+    },
+    {
+      "player": "Nick Smith, Jr.",
+      "team": "CHA"
+    },
+    {
+      "player": "Tidjane Salaun",
+      "team": "CHA"
+    },
+    {
+      "player": "K.J. Simpson",
+      "team": "CHA"
+    },
+    {
+      "player": "Kon Knueppel",
+      "team": "CHA"
+    },
+    {
+      "player": "Liam McNeeley",
+      "team": "CHA"
+    },
+    {
+      "player": "Ryan Kalkbrenner",
+      "team": "CHA"
+    },
+    {
+      "player": "Sion James",
+      "team": "CHA"
+    },
+    {
+      "player": "Christian Anderson, Jr.",
+      "team": "CHA"
+    },
+    {
+      "player": "Hannes Steinbach",
+      "team": "CHA"
+    },
+    {
+      "player": "Blake Wesley",
+      "team": "SAS"
+    },
+    {
+      "player": "Jeremy Sochan",
+      "team": "SAS"
+    },
+    {
+      "player": "Malaki Branham",
+      "team": "SAS"
+    },
+    {
+      "player": "Sidy Cissoko",
+      "team": "SAS"
+    },
+    {
+      "player": "Victor Wembanyama",
+      "team": "SAS"
+    },
+    {
+      "player": "Stephon Castle",
+      "team": "SAS"
+    },
+    {
+      "player": "Harrison Ingram",
+      "team": "SAS"
+    },
+    {
+      "player": "Juan Nunez",
+      "team": "SAS"
+    },
+    {
+      "player": "Carter Bryant",
+      "team": "SAS"
+    },
+    {
+      "player": "Dylan Harper",
+      "team": "SAS"
+    },
+    {
+      "player": "Tarris Reed, Jr.",
+      "team": "SAS"
+    },
+    {
+      "player": "Jayden Quaintance",
+      "team": "SAS"
+    },
+    {
+      "player": "Ja'Kobi Gillespie",
+      "team": "SAS"
+    },
+    {
+      "player": "Maliq Brown",
+      "team": "SAS"
+    },
+    {
+      "player": "Jaden Hardy",
+      "team": "DAL"
+    },
+    {
+      "player": "Dereck Lively II",
+      "team": "DAL"
+    },
+    {
+      "player": "Olivier-Maxence Prosper",
+      "team": "DAL"
+    },
+    {
+      "player": "Melvin Ajinca",
+      "team": "DAL"
+    },
+    {
+      "player": "Cooper Flagg",
+      "team": "DAL"
+    },
+    {
+      "player": "Morez Johnson, Jr.",
+      "team": "DAL"
+    },
+    {
+      "player": "Sergio De Larrea",
+      "team": "DAL"
+    },
+    {
+      "player": "Tobi Lawal",
+      "team": "DAL"
+    },
+    {
+      "player": "Andrew Nembhard",
+      "team": "IND"
+    },
+    {
+      "player": "Bennedict Mathurin",
+      "team": "IND"
+    },
+    {
+      "player": "Kendall Brown",
+      "team": "IND"
+    },
+    {
+      "player": "Ben Sheppard",
+      "team": "IND"
+    },
+    {
+      "player": "Isaiah Wong",
+      "team": "IND"
+    },
+    {
+      "player": "Mojave King",
+      "team": "IND"
+    },
+    {
+      "player": "Jarace Walker",
+      "team": "IND"
+    },
+    {
+      "player": "Enrique Freeman",
+      "team": "IND"
+    },
+    {
+      "player": "Tristen Newton",
+      "team": "IND"
+    },
+    {
+      "player": "Johnny Furphy",
+      "team": "IND"
+    },
+    {
+      "player": "Taelon Peter",
+      "team": "IND"
+    },
+    {
+      "player": "Kam Jones",
+      "team": "IND"
+    },
+    {
+      "player": "Braden Smith",
+      "team": "IND"
+    },
+    {
+      "player": "Hugo Besson",
+      "team": "MIL"
+    },
+    {
+      "player": "MarJon Beauchamp",
+      "team": "MIL"
+    },
+    {
+      "player": "Chris Livingston",
+      "team": "MIL"
+    },
+    {
+      "player": "Andre Jackson, Jr.",
+      "team": "MIL"
+    },
+    {
+      "player": "A.J. Johnson",
+      "team": "MIL"
+    },
+    {
+      "player": "Tyler Smith",
+      "team": "MIL"
+    },
+    {
+      "player": "Bogoljub Markovic",
+      "team": "MIL"
+    },
+    {
+      "player": "Brayden Burries",
+      "team": "MIL"
+    },
+    {
+      "player": "Malique Lewis",
+      "team": "MIL"
+    },
+    {
+      "player": "Nate Ament",
+      "team": "MIL"
+    },
+    {
+      "player": "Jabari Walker",
+      "team": "POR"
+    },
+    {
+      "player": "Shaedon Sharpe",
+      "team": "POR"
+    },
+    {
+      "player": "Kris Murray",
+      "team": "POR"
+    },
+    {
+      "player": "Rayan Rupert",
+      "team": "POR"
+    },
+    {
+      "player": "Scoot Henderson",
+      "team": "POR"
+    },
+    {
+      "player": "Donovan Clingan",
+      "team": "POR"
+    },
+    {
+      "player": "Yang Hansen",
+      "team": "POR"
+    },
+    {
+      "player": "Max Christie",
+      "team": "LAL"
+    },
+    {
+      "player": "Maxwell Lewis",
+      "team": "LAL"
+    },
+    {
+      "player": "Jalen Hood-Schifino",
+      "team": "LAL"
+    },
+    {
+      "player": "Dalton Knecht",
+      "team": "LAL"
+    },
+    {
+      "player": "Bronny James",
+      "team": "LAL"
+    },
+    {
+      "player": "Adou Thiero",
+      "team": "LAL"
+    },
+    {
+      "player": "Cameron Carr",
+      "team": "LAL"
+    },
+    {
+      "player": "Vsevolod Ishchenko",
+      "team": "LAL"
+    },
+    {
+      "player": "A.J. Griffin, Jr.",
+      "team": "ATL"
+    },
+    {
+      "player": "Tyrese Martin",
+      "team": "ATL"
+    },
+    {
+      "player": "Kobe Bufkin",
+      "team": "ATL"
+    },
+    {
+      "player": "Seth Lundy",
+      "team": "ATL"
+    },
+    {
+      "player": "Mouhamed Gueye",
+      "team": "ATL"
+    },
+    {
+      "player": "Zaccharie Risacher",
+      "team": "ATL"
+    },
+    {
+      "player": "Nikola Djurisic",
+      "team": "ATL"
+    },
+    {
+      "player": "Asa Newell",
+      "team": "ATL"
+    },
+    {
+      "player": "Kingston Flemings",
+      "team": "ATL"
+    },
+    {
+      "player": "Zuby Ejiofor",
+      "team": "ATL"
+    },
+    {
+      "player": "Henri Veesaar",
+      "team": "ATL"
+    },
+    {
+      "player": "Vincent Williams, Jr.",
+      "team": "MEM"
+    },
+    {
+      "player": "Jake LaRavia",
+      "team": "MEM"
+    },
+    {
+      "player": "David Roddy",
+      "team": "MEM"
+    },
+    {
+      "player": "Kennedy Chandler",
+      "team": "MEM"
+    },
+    {
+      "player": "G.G. Jackson",
+      "team": "MEM"
+    },
+    {
+      "player": "Tarik Biberovic",
+      "team": "MEM"
+    },
+    {
+      "player": "Zach Edey",
+      "team": "MEM"
+    },
+    {
+      "player": "Jaylen Wells",
+      "team": "MEM"
+    },
+    {
+      "player": "Cam Spencer",
+      "team": "MEM"
+    },
+    {
+      "player": "Cedric Coward",
+      "team": "MEM"
+    },
+    {
+      "player": "Javon Small",
+      "team": "MEM"
+    },
+    {
+      "player": "Jahmai Mashack",
+      "team": "MEM"
+    },
+    {
+      "player": "Karim Lopez",
+      "team": "MEM"
+    },
+    {
+      "player": "Cameron Boozer",
+      "team": "MEM"
+    },
+    {
+      "player": "Richie Saunders",
+      "team": "MEM"
+    },
+    {
+      "player": "Jared McCain",
+      "team": "PHI"
+    },
+    {
+      "player": "Adem Bona",
+      "team": "PHI"
+    },
+    {
+      "player": "V.J. Edgecombe",
+      "team": "PHI"
+    },
+    {
+      "player": "Johni Broome",
+      "team": "PHI"
+    },
+    {
+      "player": "Labaron Philon, Jr.",
+      "team": "PHI"
+    },
+    {
+      "player": "Nikola Jovic",
+      "team": "MIA"
+    },
+    {
+      "player": "Jaime Jaquez, Jr.",
+      "team": "MIA"
+    },
+    {
+      "player": "Kel'el Ware",
+      "team": "MIA"
+    },
+    {
+      "player": "Pelle Larsson",
+      "team": "MIA"
+    },
+    {
+      "player": "Kasparas Jakucionis",
+      "team": "MIA"
+    },
+    {
+      "player": "Ryan Conwell",
+      "team": "MIA"
+    }
+  ]
+}
