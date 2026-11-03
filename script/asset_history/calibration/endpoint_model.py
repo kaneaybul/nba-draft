@@ -28,7 +28,8 @@ def endpoint_scenarios(mean, feature, cutoff, residuals, exclude=None, offset=0)
     Use only error paths completed by the information date. Early historical
     origins have shorter observed prefixes: carry their last error, rather than
     use future labels or independently resample annual outcomes. Expose that
-    limitation. Nonnegative scenarios retain each own annual production mean.
+    limitation. Signed scenarios retain each own annual production mean; the
+    production floor is applied only when each scenario is valued.
     """
     full = np.asarray(mean, float)
     requested = len(full)
@@ -41,10 +42,7 @@ def endpoint_scenarios(mean, feature, cutoff, residuals, exclude=None, offset=0)
     errors = paths-full[:horizon]
     if horizon < requested:
         errors = np.pad(errors, ((0,0),(0,requested-horizon)), mode='edge')
-    paths = np.maximum(full[None,:] + errors, 0.)
-    target = np.maximum(full, 0.)
-    center = weights @ paths
-    paths *= np.divide(target, center, out=np.zeros_like(target), where=center>0)
+    paths = full[None,:] + errors
     paths = paths[:,offset:offset+4]
     if paths.shape[1] != 4:
         raise ValueError('Incomplete endpoint scenario horizon')
@@ -80,7 +78,7 @@ def build_records(panel, errors=None):
         if state is None and observed and float(observed.get('minutes') or 0) > 0:
             excluded.append(dict(key=key, reason='endpoint service without rating'))
             continue
-        tail = np.maximum(panel.forecast(end, pid, 4) if state else [0.] * 4, 0.).tolist()
+        tail = list(panel.forecast(end, pid, 4) if state else [0.] * 4)
         if state:
             paths, weights, values, audit = endpoint_scenarios(tail,
                 feature_vector(state.age,state.total,state.minutes,state.yoe),end,residuals,key)
@@ -259,7 +257,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
     """Read raw production before contract choices; extend own missing years."""
     from valuation_engine import AnnualState, project_path
     years = list(range(draft+5, draft+9))
-    raw = {int(r['season']): max(0., float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))
+    raw = {int(r['season']): float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])
            for r in annual}
     if audit is not None:audit.update(method='published_raw_production',extended_seasons=[y for y in years if y not in raw])
     if all(y in raw for y in years):
@@ -279,7 +277,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
     coefficient = float(first['scale_budget_scenario'])/float(first['salary_cap_scenario'])*164961000.*30/float(first['league_timin'])
     replacement = float(first['replacement'])
     anchors = [y for y in raw if y in path and raw[y] > 0]
-    level = lambda y: max(0., (path[y].total-replacement)*path[y].minutes*coefficient)
+    level = lambda y: (path[y].total-replacement)*path[y].minutes*coefficient
     scale = 1.
     if audit is not None:audit['method']='own_career_model_extension'
     if anchors:

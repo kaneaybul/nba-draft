@@ -101,6 +101,15 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(audit['n'],2)
         self.assertTrue(all(np.count_nonzero(p)==2 for p in paths))
 
+    def test_below_replacement_mean_retains_simulated_upside(self):
+        feature=[22.,0.,1.,2.]
+        rows=[dict(key='a',origin=2016,horizon=4,feature=feature,residual=[20.]*4),
+              dict(key='b',origin=2016,horizon=4,feature=feature,residual=[-20.]*4)]
+        paths,w,values,audit=endpoint_scenarios([-10.]*4,feature,2020,ResidualPool(rows))
+        np.testing.assert_allclose(w@paths,[-10.]*4)
+        self.assertAlmostEqual(w@values,20.)
+        self.assertEqual(production_quotes(w@paths)[0],0.)
+
     def test_early_prefix_extension_is_explicit_and_no_future_errors_enter(self):
         feature=[22.,0.,1.,2.]
         rows=[dict(key='a',origin=2017,horizon=8,feature=feature,residual=[2.,99.,99.,99.,99.,99.,99.,99.]),

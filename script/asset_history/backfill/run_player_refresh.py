@@ -150,7 +150,7 @@ def export(output,asof=None,calibrator=None):
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 raw_path=raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 details['raw_annual_production']=[dict(season=int(r['season']),
-                    production=max(0.,float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])))for r in raw_path
+                    production=float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))for r in raw_path
                     if r.get('annual_production')not in(None,'')and r.get('salary_cap_scenario')not in(None,'')]
                 value=float(row['app_style_four_year_asset_quote_with_draft_prior'])
                 if calibrator is not None:

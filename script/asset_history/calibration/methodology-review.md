@@ -16,7 +16,8 @@ material is indexed excerpts and summaries, not an exported full transcript.
 | Nonlinear pick option value | Pick zero floor was applied after averaging | Floor each linked endpoint/service outcome, then average; keep the floor effect explicit |
 | Separate production from salary | Pick-to-player conversion placed all differences in contracts | Split endpoint change, rolling/endpoint production basis, and financial terms |
 | Draft outcome without double counting | Daily stock substitution changed the agreed asset definition | Use the exact identity P = E + (P−E); draft records ΔE, the named basis records Δ(P−E), and contracts record financial changes |
-| Preserve own trajectory | Endpoint point estimate did not retain path upside | Residual scenarios retain the player's own nonnegative annual production means; comparisons calibrate uncertainty rather than replace talent |
+| Preserve own trajectory | Endpoint point estimate did not retain path upside | Residual scenarios retain the player's own signed annual production means; comparisons calibrate uncertainty rather than replace talent |
+| Preserve upside below replacement | Flooring the mean before simulating erases comeback paths | Retain signed means; apply the nonnegative production floor only while pricing each simulated path |
 | No future labels | Longer endpoint horizons need more history | Only completed residual prefixes enter each origin; unavailable tail errors carry the last linked error and are explicitly audited |
 
 For every career path, production is twice the best two season-equivalents;
