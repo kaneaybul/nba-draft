@@ -33,5 +33,5 @@ The source-identical migration preserves v5 and rebuilds v6 with identical
 ownership, production forecasts, injury inputs and contract schedules. Active
 endpoint grades are promoted without changing their salary component. Older
 archived cohorts and unsupported endpoint observations retain their previous
-production policy; unsigned supported rights start at their fixed cohort prior.
+production policy and their movements stay in Player Development & Aging rather than being mislabeled endpoint draft gains; unsigned supported rights start at their fixed cohort prior.
 All app asset surfaces and daily refreshes use the new common version.

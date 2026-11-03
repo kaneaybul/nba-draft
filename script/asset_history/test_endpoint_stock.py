@@ -65,6 +65,13 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(asset['details']['path_calibration']['mean'],110.)
         self.assertEqual(asset['details']['path_calibration']['mean_path_quote'],80.)
 
+    def test_unsupported_archived_cohort_is_not_labeled_endpoint_draft_value(self):
+        points=[dict(date='2026-01-31',assets=[self.player('Rookie',100.,endpoint=False)]),
+                dict(date='2026-02-28',assets=[self.player('Rookie',90.,endpoint=False)])]
+        rows=player_bridge('UTA',self.context(points))['attribution']
+        self.assertEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),-10.)
+
     def test_salary_cannot_change_endpoint_gain(self):
         d=self.player('Rookie',100.,endpoint=False,financial=-20.)['details']
         d['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.)

@@ -114,7 +114,7 @@ def player_bridge(team,ctx):
         return found
     def production_category(a,dt):
         info=drafted.get(name_key(a['name']))
-        return production_bucket(info['year']if info else None,dt)
+        return production_bucket(info['year'],dt) if info and endpoint_active(a.get('details',{})) else 'player'
     contract_names=defaultdict(list)
     for r in contracts:contract_names[name_key(r['player_name'])].append(r)
     def contract_change(a,start,end):

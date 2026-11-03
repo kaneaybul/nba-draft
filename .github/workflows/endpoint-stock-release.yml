@@ -63,7 +63,7 @@ jobs:
           npm run test:trade-machine
           npm run test:trade-suggestions
           npm run validate:data
-          node ../script/frontend/test_asset_history_visuals.mjs
+          ASSET_HISTORY_FRONTEND=. node ../script/frontend/test_asset_history_visuals.mjs
           npm run build
       - name: Commit the validated data to the reviewed branch
         run: |
