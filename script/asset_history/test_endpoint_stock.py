@@ -1,7 +1,7 @@
 import copy,sys,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
-from endpoint_stock import promote,STOCK_POLICY
+from endpoint_stock import promote,promote_asset,STOCK_POLICY
 from attribution_players import player_bridge,clock
 from calibration.endpoint_model import pick_components,EndpointModel
 
@@ -56,6 +56,14 @@ class EndpointStockTests(unittest.TestCase):
         book=player_bridge('UTA',self.context(points));rows=book['attribution']
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),-70.)
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),10.)
+
+    def test_publication_promotes_the_exact_completed_endpoint_once(self):
+        asset=self.player('Rookie',100.,endpoint=False,financial=-20.)
+        asset['details']['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.,nba_weight=1.)
+        promote_asset(asset,'2027-07-31');promote_asset(asset,'2027-07-31')
+        self.assertEqual(asset['value'],110.)
+        self.assertEqual(asset['details']['path_calibration']['mean'],110.)
+        self.assertEqual(asset['details']['path_calibration']['mean_path_quote'],80.)
 
     def test_salary_cannot_change_endpoint_gain(self):
         d=self.player('Rookie',100.,endpoint=False,financial=-20.)['details']

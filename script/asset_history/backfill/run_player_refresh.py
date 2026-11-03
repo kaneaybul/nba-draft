@@ -183,6 +183,8 @@ def export(output,asof=None,calibrator=None):
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
                 assets[-1]['value']=value
+                from endpoint_stock import promote_asset
+                promote_asset(assets[-1],dt)
             snapshots.append({'team':team,'date':dt,'method':METHOD,'reporting_cap':164961000.,'source_cutoff':dt,
               'assets':assets,'player_subtotal':sum(a['value']for a in assets),'unpriced_players':unpriced,
               'coverage':{'ownership':True,'contracts':c['contracts_complete'],'skill':c['skill_complete'],'injury_review':c['injury_review_complete']},
