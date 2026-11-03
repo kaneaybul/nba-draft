@@ -16,6 +16,8 @@ on:
       - script/data/live_switch.py
       - script/data/refresh_live_skill_stats.py
       - script/data/refresh_live_ratings.mjs
+      - script/data/live_rating_dates.mjs
+      - script/data/test_live_ratings.mjs
       - script/data/refresh_injury_outlook.py
       - script/data/refresh_player_pool.py
       - script/frontend/export_frontend_data.R
@@ -185,5 +187,6 @@ jobs:
           git add raw/bref_position_estimates.csv raw/bref_position_estimates_by_year
           git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
           bash script/frontend/publish_refresh.sh "Refresh expected NBA ratings, injuries and completed results"
+
 
 
