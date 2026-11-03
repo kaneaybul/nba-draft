@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-02T22:21:35.419Z",
+  "generated_at": "2026-11-03T13:59:47.746Z",
   "cap_fallbacks": [
     {
       "team": "NOP",
@@ -13289,7 +13289,7 @@
       "team": "CHA",
       "row_type": "draft_pick",
       "display_order": 8024,
-      "position": "PF",
+      "position": "C",
       "age": 20.6,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
@@ -28739,7 +28739,7 @@
       "team": "LAC",
       "row_type": "draft_pick",
       "display_order": 8030,
-      "position": "C",
+      "position": "PF",
       "age": 22.9,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
@@ -30107,7 +30107,7 @@
       "team": "LAL",
       "row_type": "draft_pick",
       "display_order": 8016,
-      "position": "SF",
+      "position": "PF",
       "age": 22.1,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
@@ -51097,7 +51097,7 @@
       "team": "TOR",
       "row_type": "draft_pick",
       "display_order": 8007,
-      "position": "PF",
+      "position": "C",
       "age": 20.4,
       "rank": null,
       "contract_notes": "Projected first-round rookie-scale contract from consensus/mock rank",
