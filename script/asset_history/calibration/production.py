@@ -143,6 +143,7 @@ class PathCalibrator:
             return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
                         value=curve['quote'],production_quote=curve['production_quote'],
                         contract_adjustment_sum=curve['quote']-curve['production_quote'],
+                        endpoint_stock_policy='year-four-endpoint-stock-v2',rolling_production_quote=curve['production_quote'],development_window_basis=0.,
                         draft_development=dict(status='priced',method=POLICY,endpoint=f'{int(draft)+4}-07-31',original_expectation=original,value=original,gain=0.,nba_weight=0.,completed=False,contract_effect=0.))
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None

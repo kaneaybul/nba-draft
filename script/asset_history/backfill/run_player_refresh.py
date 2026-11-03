@@ -166,6 +166,7 @@ def export(output,asof=None,calibrator=None):
                             details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
                             details['draft_right_policy']='Year-four production expectation; unsigned right has no NBA evidence'
                             if path.get('draft_development'):details['draft_development']=path['draft_development']
+                            if path.get('endpoint_stock_policy'):details['endpoint_stock_policy']=path['endpoint_stock_policy']
                         if path['status']=='priced':
                             for key in ('rolling_production_quote','endpoint_stock_policy','development_window_basis'):
                                 if key in path:details[key]=path[key]

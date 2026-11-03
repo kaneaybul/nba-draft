@@ -49,6 +49,14 @@ class EndpointStockTests(unittest.TestCase):
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='timing'),-20.)
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']in('draft','player')),0.)
 
+    def test_waived_draft_rights_charge_production_to_draft_not_contracts(self):
+        other=self.player('Veteran',100.,endpoint=False,draft=2010)
+        points=[dict(date='2026-01-31',assets=[other,self.player('Rookie',70.,financial=-10.)]),
+                dict(date='2026-02-28',assets=[other])]
+        book=player_bridge('UTA',self.context(points));rows=book['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),-70.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),10.)
+
     def test_salary_cannot_change_endpoint_gain(self):
         d=self.player('Rookie',100.,endpoint=False,financial=-20.)['details']
         d['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.)
