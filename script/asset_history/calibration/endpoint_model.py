@@ -199,6 +199,9 @@ def pick_components(model, slot, costs, prior_model=None, draft_year=None):
     """Translate the shared endpoint-trained prior into a current asset quote."""
     cutoff=min(model['endpoint_training_through'],int(draft_year)-1) if draft_year is not None else model['endpoint_training_through']
     p = (prior_model or EndpointModel(model['endpoint_records'])).prior(slot, cutoff)
+    cost_key=tuple(float(c)for c in costs)
+    if model.get('stock_policy')==PICK_POLICY and cost_key in p.get('pick_cost_quotes',{}):
+        return dict(p['pick_cost_quotes'][cost_key])
     service = p['paths'][:, :4]
     w = p['weights']
     production = p['value'] if model.get('stock_policy') in ('year-four-endpoint-stock-v2',PICK_POLICY) else float(w @ (2*np.sort(service,axis=1)[:,-2:].sum(axis=1)))
@@ -220,10 +223,12 @@ def pick_components(model, slot, costs, prior_model=None, draft_year=None):
         quote=expected
     else:
         quote=max(0.,raw)
-    return dict(production_quote=production, cumulative_production=cumulative,
+    result=dict(production_quote=production, cumulative_production=cumulative,
                 contract_adjustment=adjustment, quote=quote,
                 floor_adjustment=quote-raw,
                 draft_endpoint_expectation=p['value'])
+    if model.get('stock_policy')==PICK_POLICY:p.setdefault('pick_cost_quotes',{})[cost_key]=dict(result)
+    return result
 
 
 def build_pick_model(previous, records, cutoff):

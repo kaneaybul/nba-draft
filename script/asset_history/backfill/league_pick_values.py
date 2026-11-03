@@ -19,6 +19,20 @@ NEW_KNOWN='2026-05-28'
 FUTURE_POLICY='For2030andlater, continue the latest announced lottery system; the NBA has not yet determined those rules.'
 FORFEIT_POLICY='First-round forfeitures are excluded before the lottery. Under the new system, keep the remaining relegated teams’ No.12floor and origin-based repeat-pick restrictions. Second-round ordering uses the full30-origin counterfactual lottery. This forfeiture interaction is a modeling assumption pending a detailed NBA procedure.'
 
+_PORTFOLIO_QUOTE_CACHE=[]
+def portfolio_quote(model,reporting_cap=None):
+    """Reuse immutable model/cost quotes across joint counterfactual replays.
+
+    Each caller's model object is the publication's fixed fitted model. Retain
+    identity references so a different model can never inherit cached prices.
+    """
+    for saved,cap,quote in _PORTFOLIO_QUOTE_CACHE:
+        if saved is model and cap==reporting_cap:return quote
+    quote=RoundAwarePickQuotes(model,reporting_cap)
+    _PORTFOLIO_QUOTE_CACHE.append((model,reporting_cap,quote))
+    del _PORTFOLIO_QUOTE_CACHE[:-4]
+    return quote
+
 def first_forfeited_physical(rules,asof=None):
     """Find unconditional physical firsts, including fixed entitlement transfers.
 
@@ -229,7 +243,7 @@ class Draws:
 
 def value_portfolio_scalar(asof,view,sim,model,years,reporting_cap=None):
     if not view['complete']:raise ValueError('Unresolved legal pick events prevent publication')
-    quote=RoundAwarePickQuotes(model,reporting_cap);rules=compile_choice_policies(view['rules'],Draws(sim),quote)
+    quote=portfolio_quote(model,reporting_cap);rules=compile_choice_policies(view['rules'],Draws(sim),quote)
     values=defaultdict(float);counts=defaultdict(int);slot_sums=defaultdict(float);global_sum=0.;claims=defaultdict(float);claim_ranges={}
     generic=np.array([quote(2,s)for s in range(31,61)])
     for slots in Draws(sim):
@@ -293,7 +307,7 @@ def actual_number_arrays(raw,owners,keys,forfeited_owner):
 def value_portfolio(asof,view,sim,model,years,reporting_cap=None):
     from vector_pick_allocator import allocate_vector,OWNER_INDEX,OWNER_NAMES
     if not view['complete']:raise ValueError('Unresolved legal pick events prevent publication')
-    quote=RoundAwarePickQuotes(model,reporting_cap)
+    quote=portfolio_quote(model,reporting_cap)
     short_round=bool(first_forfeited_physical(view['rules'],asof))
     rules=compile_choice_policies(prepare_rule_conditions(view['rules'])if short_round else view['rules'],Draws(sim),quote)
     keys=[(t,y,r)for y in sorted(sim['first'])for t in sim['names']for r in [1,2]]
