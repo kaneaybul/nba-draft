@@ -4,7 +4,7 @@ Every adjacent pair reconciles to canonical inventory without a residual bucket.
 Arbitrary selected windows are sums of those same additive interval records.
 """
 from __future__ import annotations
-import argparse,csv,gzip,hashlib,importlib.util,json,os,re,sys,zipfile
+import argparse,base64,csv,gzip,hashlib,importlib.util,json,os,re,sys,zipfile
 from collections import Counter,defaultdict
 from concurrent.futures import ProcessPoolExecutor,as_completed
 from multiprocessing import get_context
@@ -203,6 +203,15 @@ def run(repo,runtime,workers=3):
     ctx=context(repo,runtime);print('Loaded canonical histories and source evidence for 30 teams',flush=True)
     players={t:player_bridge(t,ctx)for t in ctx['teams']};corrections=correct_transfers(players,ctx);print('Player intervals reconciled; trade conservation passed',flush=True)
     picks.setup(ctx,repo);cache=repo/'processed/asset_history/attribution_cache';cache.mkdir(exist_ok=True,parents=True);rows=[];pending=[]
+    seed=cache/'initial_cache.json'
+    if seed.exists():
+        for name,item in read(seed)['files'].items():
+            if not re.fullmatch(r'(?:[0-9]{4}-[0-9]{2}-[0-9]{2}|lotteries)\.json\.gz',name):raise ValueError('Unsafe attribution cache name')
+            target=cache/name
+            if target.exists():continue
+            data=base64.b64decode(item['base64'])
+            if hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('Attribution cache digest mismatch')
+            target.write_bytes(data)
     for pair in zip(ctx['dates'],ctx['dates'][1:]):
         key=pick_cache_key(ctx,pair);path=cache/(pair[1]+'.json.gz')
         if path.exists():
