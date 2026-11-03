@@ -11,7 +11,7 @@ import numpy as np
 from .historical import name_key
 from .path_model import slot_weights, evidence_weight, fit_reliability, path_quotes
 
-POLICY = 'year-four-production-endpoint-paths-v2'
+POLICY = 'year-four-assessed-production-paths-v3'
 PICK_POLICY = 'year-four-endpoint-picks-rolling-players-v3'
 
 
@@ -22,40 +22,7 @@ def production_quotes(paths):
     return 2 * np.sort(np.maximum(p, 0), axis=1)[:, -2:].sum(axis=1)
 
 
-def endpoint_scenarios(mean, feature, cutoff, residuals, exclude=None, offset=0):
-    """Linked forecast errors, priced at the endpoint before taking a mean.
-
-    Use only error paths completed by the information date. Early historical
-    origins have shorter observed prefixes: carry their last error, rather than
-    use future labels or independently resample annual outcomes. Expose that
-    limitation. Signed scenarios retain each own annual production mean; the
-    production floor is applied only when each scenario is valued.
-    """
-    full = np.asarray(mean, float)
-    requested = len(full)
-    known = [min(r['horizon'], cutoff-r['origin']) for r in residuals.rows
-             if r['origin'] < cutoff and r['key'] != exclude]
-    horizon = min(requested, max(known, default=0))
-    if horizon < 1:
-        raise ValueError('No completed forecast-error prefix at endpoint origin')
-    paths, weights, audit = residuals.scenarios(full[:horizon], feature, cutoff, True, exclude)
-    errors = paths-full[:horizon]
-    if horizon < requested:
-        errors = np.pad(errors, ((0,0),(0,requested-horizon)), mode='edge')
-    paths = full[None,:] + errors
-    paths = paths[:,offset:offset+4]
-    if paths.shape[1] != 4:
-        raise ValueError('Incomplete endpoint scenario horizon')
-    audit.update(observed_error_horizon=horizon, requested_error_horizon=requested,
-                 tail_error_policy='carry last linked error' if horizon<requested else 'fully observed linked errors',
-                 own_annual_mean_preserved=True)
-    values = production_quotes(paths)
-    return paths, weights, values, audit
-
-
 def build_records(panel, errors=None):
-    from .path_model import ResidualPool, feature_vector
-    residuals = ResidualPool(panel.residual_rows() if errors is None else errors)
 
     records, excluded = [], []
     seen = set()
@@ -79,12 +46,11 @@ def build_records(panel, errors=None):
             excluded.append(dict(key=key, reason='endpoint service without rating'))
             continue
         tail = list(panel.forecast(end, pid, 4) if state else [0.] * 4)
-        if state:
-            paths, weights, values, audit = endpoint_scenarios(tail,
-                feature_vector(state.age,state.total,state.minutes,state.yoe),end,residuals,key)
-        else:
-            paths=np.zeros((1,4));weights=np.ones(1);values=np.zeros(1)
-            audit=dict(n=1,latest_label=end,verified_no_endpoint_service=True)
+        # The endpoint is now known. Its label is the canonical contract-neutral
+        # forward appraisal, not an extra premium for unknown years five to eight.
+        paths=np.asarray([tail]);weights=np.ones(1);values=production_quotes(paths)
+        audit=dict(n=1,latest_label=end,method='completed year-four assessed production',
+                   verified_no_endpoint_service=state is None)
         service = [panel.outcome(key, cohort+j, pid) if cohort+j in panel.raw else None for j in range(1, 5)]
         # Unknown service is excluded from the rolling translation, never zero.
         linked = None if any(p is None for p in service) else [float(p) for p in service] + tail
@@ -150,10 +116,11 @@ class EndpointModel:
         return prior['endpoint_distribution']
 
 
-def learning_cases(panel, records, errors=None):
+def learning_cases(panel, records, errors=None, endpoint_errors=None):
     """Predict the SAME endpoint at every stage, with completed-label cutoffs."""
-    from .path_model import ResidualPool, feature_vector
-    residuals=ResidualPool(panel.residual_rows() if errors is None else errors)
+    from .path_model import feature_vector
+    from .endpoint_paths import EndpointRevisionPool,build_endpoint_errors
+    residuals=EndpointRevisionPool(build_endpoint_errors(panel)if endpoint_errors is None else endpoint_errors)
     model = EndpointModel(records)
     cases = []
     for r in records:
@@ -171,8 +138,9 @@ def learning_cases(panel, records, errors=None):
                 continue
             full = panel.forecast(origin, pid, r['cohort']+8-origin)
             state=panel.states[origin,pid]
-            paths, weights, values, audit=endpoint_scenarios(full,
-                feature_vector(state.age,state.total,state.minutes,state.yoe),origin,residuals,r['key'],4-stage)
+            paths,weights,audit=residuals.scenarios(full[4-stage:8-stage],
+                feature_vector(state.age,state.total,state.minutes,state.yoe),origin,4-stage,r['key'])
+            values=production_quotes(paths)
             cases.append(dict(key=r['key'], player=r['player'], cohort=r['cohort'],
                               stage=stage, origin=origin, label_end=r['end'], slot=r['slot'],
                               minutes=panel.career_minutes(r['key'], pid, r['cohort'], origin),
@@ -230,7 +198,7 @@ def build_pick_model(previous, records, cutoff):
     model['pick_fit'].update(target=POLICY,
         model='Linked service paths normalized to log-slot year-four production endpoint; salaries applied afterward',
         endpoint_training_players=len(records), endpoint_training_through=cutoff,
-        endpoint_label_scope='Expected per-career-path production quote assessable after season four; forecast-error labels completed by that origin; not hindsight seasons five through eight or trade prices',
+        endpoint_label_scope='Contract-neutral production appraisal assessed after season four; uncertainty concerns development and forecast revisions before that endpoint, never realized seasons five through eight',
         rolling_translation='First-four service paths linked to the same mature endpoint paths',
         legacy_coefficients='Retained for archived-model compatibility only; current release uses endpoint_records')
     quote = RoundAwarePickQuotes(model)

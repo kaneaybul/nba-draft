@@ -17,7 +17,7 @@ def validate(repo):
                 d=asset.get('details',{})
                 if endpoint_active(d):
                     assert abs(d['peak_production']-d['draft_development']['value']-d['development_window_basis'])<.01,('Rolling / endpoint basis identity',team,asset['name'])
-                    assert d['draft_development']['method']=='year-four-production-endpoint-paths-v2'
+                    assert d['draft_development']['method']=='year-four-assessed-production-paths-v3'
                     assert abs(asset['value']-d['peak_production']-d['contract_adjustment'])<.01,('Contract split',team,asset['name'])
         intervals=book['intervals'];assert len(intervals)==len(history)-1
         for i,row in enumerate(intervals):

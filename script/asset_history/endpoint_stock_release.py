@@ -10,7 +10,7 @@ from validate_attribution import validate
 def calibration_changes(repo):
     with gzip.open(repo/'processed/asset_history/player_state/path_calibration.json.gz','rt')as f:cached=json.load(f)
     root=repo/'script/asset_history/calibration'
-    names={'production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','legacy_v4.py'}
+    names={'production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','endpoint_paths.py','legacy_v4.py'}
     return [name for name,expected in cached['source_hashes']if name in names and
             hashlib.sha256((root/name).read_bytes()).hexdigest()!=expected]
 

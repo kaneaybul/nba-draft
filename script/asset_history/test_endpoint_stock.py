@@ -4,8 +4,9 @@ import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from endpoint_stock import promote,promote_asset,STOCK_POLICY
 from attribution_players import player_bridge,clock
-from calibration.endpoint_model import pick_components,EndpointModel,endpoint_scenarios,production_quotes
+from calibration.endpoint_model import pick_components,EndpointModel,production_quotes
 from calibration.path_model import ResidualPool,summarize,weighted_quantile
+from calibration.endpoint_paths import EndpointRevisionPool
 
 class EndpointStockTests(unittest.TestCase):
     def test_pick_uses_endpoint_not_first_rookie_service(self):
@@ -32,7 +33,7 @@ class EndpointStockTests(unittest.TestCase):
                annual_values=[dict(season=2027+i,production=production/4,asset=production/4+financial/4,exposure=1.)for i in range(4)])
         if endpoint:d.update(endpoint_stock_policy=STOCK_POLICY,rolling_production_quote=production,
             development_window_basis=production-grade_value,
-            draft_development=dict(status='priced',method='year-four-production-endpoint-paths-v2',value=grade_value,original_expectation=100.,gain=grade_value-100.,endpoint=f'{draft+4}-07-31'))
+            draft_development=dict(status='priced',method='year-four-assessed-production-paths-v3',value=grade_value,original_expectation=100.,gain=grade_value-100.,endpoint=f'{draft+4}-07-31'))
         return dict(id=name,name=name,kind='player',value=production+financial,details=d)
 
     def context(self,points):
@@ -81,6 +82,14 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),-10.)
 
+    def test_unsigned_quote_flag_still_receives_complete_basis_metadata(self):
+        asset=self.player('Rookie',100.,endpoint=False,financial=10.)
+        asset['details'].update(endpoint_stock_policy=STOCK_POLICY,
+            draft_development=dict(status='priced',endpoint='2027-07-31',value=100.,original_expectation=100.,gain=0.))
+        promote_asset(asset,'2026-11-03');promote_asset(asset,'2026-11-03')
+        self.assertEqual(asset['value'],110.)
+        self.assertEqual(asset['details']['development_window_basis'],0.)
+
     def test_salary_cannot_change_endpoint_gain_or_daily_production(self):
         d=self.player('Rookie',100.,endpoint=False,financial=-20.)['details']
         d['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.)
@@ -88,37 +97,48 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(d['draft_development']['gain'],30.)
         self.assertEqual(d['contract_adjustment'],-20.)
 
-    def test_linked_endpoint_paths_are_priced_before_averaging(self):
+    def revision_pool(self):
         feature=[22.,0.,1.,2.]
-        rows=[dict(key='a',origin=2016,horizon=4,feature=feature,residual=[10.,-10.,10.,-10.]),
-              dict(key='b',origin=2016,horizon=4,feature=feature,residual=[-10.,10.,-10.,10.]),
-              dict(key='future',origin=2020,horizon=4,feature=feature,residual=[1e8]*4)]
-        paths,w,values,audit=endpoint_scenarios([10.]*4,feature,2020,ResidualPool(rows),'target')
+        return feature,EndpointRevisionPool([
+            dict(key='a',origin=2017,lead=3,label_end=2020,feature=feature,residual=[10.,-10.,10.,-10.]),
+            dict(key='b',origin=2017,lead=3,label_end=2020,feature=feature,residual=[-10.,10.,-10.,10.]),
+            dict(key='future',origin=2019,lead=3,label_end=2022,feature=feature,residual=[1e8]*4),
+            dict(key='target',origin=2017,lead=3,label_end=2020,feature=feature,residual=[1e9]*4)])
+
+    def test_linked_endpoint_appraisals_are_priced_before_averaging(self):
+        feature,pool=self.revision_pool()
+        paths,w,audit=pool.scenarios([10.]*4,feature,2020,3.,'target')
         np.testing.assert_allclose(w@paths,[10.]*4)
-        self.assertAlmostEqual(w@values,80.)
+        self.assertAlmostEqual(w@production_quotes(paths),80.)
         self.assertEqual(production_quotes(w@paths)[0],40.)
         self.assertEqual(audit['latest_label'],2020)
         self.assertEqual(audit['n'],2)
         self.assertTrue(all(np.count_nonzero(p)==2 for p in paths))
 
-    def test_below_replacement_mean_retains_simulated_upside(self):
+    def test_below_replacement_forecast_retains_development_upside(self):
         feature=[22.,0.,1.,2.]
-        rows=[dict(key='a',origin=2016,horizon=4,feature=feature,residual=[20.]*4),
-              dict(key='b',origin=2016,horizon=4,feature=feature,residual=[-20.]*4)]
-        paths,w,values,audit=endpoint_scenarios([-10.]*4,feature,2020,ResidualPool(rows))
+        pool=EndpointRevisionPool([
+            dict(key='a',origin=2017,lead=1,label_end=2018,feature=feature,residual=[20.]*4),
+            dict(key='b',origin=2017,lead=1,label_end=2018,feature=feature,residual=[-20.]*4)])
+        paths,w,audit=pool.scenarios([-10.]*4,feature,2020,1.)
         np.testing.assert_allclose(w@paths,[-10.]*4)
-        self.assertAlmostEqual(w@values,20.)
+        self.assertAlmostEqual(w@production_quotes(paths),20.)
         self.assertEqual(production_quotes(w@paths)[0],0.)
 
-    def test_early_prefix_extension_is_explicit_and_no_future_errors_enter(self):
+    def test_development_uncertainty_fades_to_the_known_mature_quote(self):
         feature=[22.,0.,1.,2.]
-        rows=[dict(key='a',origin=2017,horizon=8,feature=feature,residual=[2.,99.,99.,99.,99.,99.,99.,99.]),
-              dict(key='b',origin=2017,horizon=1,feature=feature,residual=[-2.])]
-        paths,w,values,audit=endpoint_scenarios([10.]*7,feature,2018,ResidualPool(rows),offset=3)
-        self.assertEqual(audit['observed_error_horizon'],1)
-        self.assertEqual(audit['requested_error_horizon'],7)
-        self.assertEqual(audit['latest_label'],2018)
-        np.testing.assert_allclose(paths,[[12.]*4,[8.]*4])
+        pool=EndpointRevisionPool([
+            dict(key='a',origin=2017,lead=1,label_end=2018,feature=feature,residual=[10.,-10.,10.,-10.]),
+            dict(key='b',origin=2017,lead=1,label_end=2018,feature=feature,residual=[-10.,10.,-10.,10.])])
+        means=[]
+        for remaining in [1.,.5,.01,0.]:
+            paths,w,audit=pool.scenarios([10.]*4,feature,2020,remaining)
+            means.append(float(w@production_quotes(paths)))
+            np.testing.assert_allclose(w@paths,[10.]*4)
+        np.testing.assert_allclose(means,[80.,60.,40.4,40.])
+        # The completed endpoint uses the existing mature forecast appraisal.
+        # Unknown actual production after that endpoint is not another premium.
+        self.assertEqual(means[-1],production_quotes([10.]*4)[0])
 
     def test_zero_weight_scenarios_do_not_change_quantiles(self):
         self.assertEqual(weighted_quantile([10.,1e9],[1.,0.]),[10.,10.,10.])

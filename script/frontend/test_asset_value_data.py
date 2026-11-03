@@ -23,7 +23,7 @@ class PublishedAppValues(unittest.TestCase):
                     {'id':f'pick:{team}:2028:1','kind':'pick','physical_origin':team,'draft_year':2028,'round':1,'value':30.}]
             (public/'teams'/f'{team}.json').write_text(json.dumps({'snapshots':[{'date':'2026-11-01','assets':assets}]}))
         model=root/'processed/asset_history/picks/trained_pick_model.json';model.parent.mkdir(parents=True)
-        model.write_text(json.dumps({'production_policy':'year-four-production-endpoint-paths-v2','stock_policy':'year-four-endpoint-picks-rolling-players-v3','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
+        model.write_text(json.dumps({'production_policy':'year-four-assessed-production-paths-v3','stock_policy':'year-four-endpoint-picks-rolling-players-v3','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
         return public
 
     def test_preserves_published_quotes_and_the_complete_annual_path(self):

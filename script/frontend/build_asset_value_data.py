@@ -62,7 +62,7 @@ def build(repo):
                 picks.append({'team':team,'origin':asset['physical_origin'],'year':asset['draft_year'],
                               'round':asset['round'],'value':value})
     model=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
-    if DATA_VERSION=='v7'and model.get('production_policy')!='year-four-production-endpoint-paths-v2':
+    if DATA_VERSION=='v7'and model.get('production_policy')!='year-four-assessed-production-paths-v3':
         raise ValueError('Published inventories need the shared career-path endpoint-trained pick model')
     slots={str(row['pick']):row['quote']for row in model['pick_curve']}
     if len(slots)!=60 or any(not math.isfinite(v)for v in slots.values()):raise ValueError('Incomplete asset pick curve')

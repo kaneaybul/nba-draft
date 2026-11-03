@@ -34,7 +34,6 @@ def promote_quote(quote,grade,day):
 
 def promote_asset(asset,day):
     d=asset.get('details',{})
-    if active(d):return asset
     if not d.get('draft_development'):return asset
     d.setdefault('peak_production',float(d.get('app_style_four_year_peak_production_quote',asset['value'])))
     d.setdefault('contract_adjustment',float(d.get('app_style_four_year_contract_adjustment_sum',asset['value']-d['peak_production'])))

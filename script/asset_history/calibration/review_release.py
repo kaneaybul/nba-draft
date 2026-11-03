@@ -15,15 +15,17 @@ def report(repo):
     assert data['policy']==POLICY
     model=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
     assert model['stock_policy']==PICK_POLICY and model['production_policy']==POLICY
-    premiums=[];prefixes=Counter()
+    premiums=[]
     for r in data['endpoint_records']:
         w=np.asarray(r['endpoint_weights']);p=np.asarray(r['endpoint_paths']);q=production_quotes(p)
         assert abs(float(w@q)-r['value'])<.01
         np.testing.assert_allclose(w@p,r['endpoint'],rtol=1e-10,atol=1e-6)
         audit=r['endpoint_audit'];assert audit['latest_label']<=r['end']
         premiums.append(r['value']-float(production_quotes(w@p)[0]))
-        if 'observed_error_horizon'in audit:prefixes[audit['observed_error_horizon']]+=1
-    assert max(premiums)>1.,'Endpoint label still prices one averaged path'
+    assert max(abs(p)for p in premiums)<.01,'Completed endpoint gained a new mature-player uncertainty premium'
+    for r in data['endpoint_errors']:
+        assert r['label_end']==r['origin']+r['lead'] and r['label_end']<=data['training_through']
+        assert len(r['residual'])==4
     for r in data['cases']:
         assert r['latest_prior_label']<r['cohort'],'Moving original draft expectation'
         assert r['latest_residual_label']<=r['origin'],'Future endpoint simulation error'
@@ -68,6 +70,7 @@ def report(repo):
                 if grade.get('own_production_value')is not None and grade.get('own_mean_path_value')is not None:
                     if grade['own_production_value']-grade['own_mean_path_value']>1.:counts['own_endpoint_path_premium_quotes']+=1
                 if grade['completed']:
+                    assert abs(grade['value']-grade['own_mean_path_value'])<.01
                     counts['frozen_completed_endpoint_quotes']+=1
                 elif grade['nba_weight']==0.:
                     assert abs(grade['gain'])<.01
@@ -78,10 +81,10 @@ def report(repo):
     checks=validate(repo)
     result=dict(method=METHOD,checks=checks,counts=dict(counts),endpoint_labels=len(premiums),
         label_selection_premium_mean=float(np.mean(premiums)),label_selection_premium_max=float(max(premiums)),
-        observed_error_prefix_horizons=dict(prefixes),learning_holdouts={k:v for k,v in data['report'].items()if k!='holdouts'},
+        endpoint_revision_training_paths=len(data['endpoint_errors']),learning_holdouts={k:v for k,v in data['report'].items()if k!='holdouts'},
         teams=differences,limitations=['Indexed old-chat excerpts were retrievable; a complete verbatim transcript was unavailable.',
         'Supported endpoint cohort scope is 2022+; earlier player marks are preserved.',
-        'Early historical endpoint simulations carry the last completed linked error when the full horizon is not observed.'])
+        'Endpoint uncertainty is learned from revisions to assessed forecasts before year four; mature-player pricing is retained.'])
     atomic(repo/'processed/asset_history/methodology_review.json',result)
     print(json.dumps(result),flush=True)
     return result

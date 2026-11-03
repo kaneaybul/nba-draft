@@ -13,7 +13,8 @@ from .historical import HistoricalPanel,name_key,eligible_careers
 from .path_model import ResidualPool,slot_weights,regularize_paths,summarize,evidence_weight,fit_reliability
 from backfill.league_player_values import agreements_at
 from .endpoint_model import (EndpointModel, build_records, learning_cases, build_pick_model,
-                            own_endpoint_path, production_quotes, endpoint_scenarios, POLICY, PICK_POLICY)
+                            own_endpoint_path, production_quotes, POLICY, PICK_POLICY)
+from .endpoint_paths import EndpointRevisionPool,build_endpoint_errors
 
 REPORTING_CAP=164961000.
 
@@ -37,7 +38,7 @@ def prepare(runtime,repo,state,output):
            runtime/'monthly_reconstruction/projections/app_sources/career_projection_selected_terms.csv',
            runtime/'monthly_reconstruction/projections/valuation_engine.py',
            *[runtime/f'app_model/impact_{y}.json'for y in range(2016,last+1)],
-           *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','legacy_v4.py')]]
+           *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','endpoint_paths.py','legacy_v4.py')]]
     hashes=[(p.name,hashlib.sha256(p.read_bytes()).hexdigest())for p in files]
     pick=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
     cost_inputs={'rows':[{k:r.get(k)for k in ('pick','annual_full_rookie_scale_reporting_dollars','annual_paid_cost_fraction')}for r in pick['pick_curve']],
@@ -55,14 +56,15 @@ def prepare(runtime,repo,state,output):
         panel=HistoricalPanel(runtime,source,last_year=last)
         errors=panel.residual_rows();careers=panel.career_rows()
         records,excluded=build_records(panel,errors)
-        cases,report=learning_cases(panel,records,errors)
+        endpoint_errors=build_endpoint_errors(panel)
+        cases,report=learning_cases(panel,records,errors,endpoint_errors)
         from .run_backtest import evaluate
         legacy_training=output/'legacy_training';legacy_training.mkdir(exist_ok=True)
         evaluate(panel,errors,careers,legacy_training)
         legacy_cases=json.loads((legacy_training/'young_holdouts.json').read_text())
         data=dict(policy=POLICY,signature=signature,training_through=last,errors=errors,careers=careers,cases=cases,
                   legacy_cases=legacy_cases,
-                  endpoint_records=records,endpoint_excluded=excluded,
+                  endpoint_records=records,endpoint_excluded=excluded,endpoint_errors=endpoint_errors,
                   endpoint_states=[dict(pid=pid,**asdict(s))for (year,pid),s in panel.states.items()],
                   report=report,source_hashes=hashes,audit=dict(panel.audit))
         with gzip.open(cache,'wt',compresslevel=6)as f:json.dump(data,f,separators=(',',':'),allow_nan=False)
@@ -70,7 +72,7 @@ def prepare(runtime,repo,state,output):
                                data['endpoint_records'],last)
     (state/'endpoint_pick_model.json').write_text(json.dumps(pick_model,separators=(',',':'),allow_nan=False))
     (output/'path_calibration_status.json').write_text(json.dumps({k:v for k,v in data.items()
-        if k not in ('errors','careers','cases','legacy_cases','endpoint_states','endpoint_records')},indent=2,allow_nan=False))
+        if k not in ('errors','careers','cases','legacy_cases','endpoint_states','endpoint_records','endpoint_errors')},indent=2,allow_nan=False))
     data['pick_model']=pick_model
     return PathCalibrator(runtime,repo,data)
 
@@ -78,7 +80,7 @@ def prepare(runtime,repo,state,output):
 class PathCalibrator:
     def __init__(self,runtime,repo,data):
         self.runtime=runtime;self.repo=repo;self.data=data
-        self.residuals=ResidualPool(data['errors']);self.careers=data['careers'];self.cases=data['cases']
+        self.residuals=ResidualPool(data['errors']);self.endpoint_residuals=EndpointRevisionPool(data['endpoint_errors']);self.careers=data['careers'];self.cases=data['cases']
         self.endpoint=EndpointModel(data['endpoint_records'])
         from valuation_engine import AnnualState
         self.endpoint_states={(r['season'],r['pid']):AnnualState(**{k:v for k,v in r.items()if k!='pid'})for r in data['endpoint_states']}
@@ -131,7 +133,18 @@ class PathCalibrator:
         annual=sorted([r for r in annual if number(r['exposure'])>0],key=lambda r:int(r['season']))
         if not annual:raise ValueError('Missing full annual path')
         cutoff=int(annual[0]['league_reference_year']);stage=cutoff-int(draft)
-        if stage<0 or stage>=4:return None  # Preserve older dormant rights and veteran policies.
+        if stage<0:return None
+        if stage>=4:
+            if player.get('asset_type')=='unsigned_draft_right' and int(draft)>=2022:
+                # The legal dormant right keeps its existing price. Its NBA
+                # development outcome is still assessed and frozen at year four.
+                grade=self.completed_unsigned_grade(int(draft),int(slot),name_key(player['player_name']))
+                value=float(player['app_style_four_year_asset_quote_with_draft_prior'])
+                production=float(player['app_style_four_year_peak_production_quote'])
+                return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
+                    value=value,production_quote=production,contract_adjustment_sum=value-production,
+                    draft_development=grade)
+            return None
         if player.get('asset_type')=='unsigned_draft_right':
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
@@ -245,6 +258,18 @@ class PathCalibrator:
         self.events['priced']+=1
         return result
 
+    def completed_unsigned_grade(self,draft,slot,key):
+        record=next((r for r in self.data['endpoint_records']if r['key']==key and r['cohort']==draft),None)
+        if record is None:return dict(status='unavailable',reason='Missing completed endpoint rating')
+        prior=self.endpoint.prior(slot,draft-1,key,endpoint_only=True)
+        value=float(record['value']);original=float(prior['value'])
+        return dict(status='priced',method=POLICY,endpoint=f'{draft+4}-07-31',
+            original_expectation=original,value=value,gain=value-original,nba_weight=1.,
+            own_production_value=value,annual_production=record['endpoint'],own_mean_path_value=value,
+            scenario_valuation='completed assessed endpoint; legal right priced separately',
+            scenarios=1,p10=value,p50=value,p90=value,projection_extension=record['endpoint_audit'],
+            baseline_latest_label=prior['latest_label'],completed=True,contract_effect=0.)
+
     def draft_evaluation(self,player,annual):
         draft=number(player.get('draft_year'));slot=number(player.get('draft_slot'))
         if draft is None or slot is None or not annual:return None
@@ -275,9 +300,10 @@ class PathCalibrator:
                 games=float(player['healthy_forecast_annual_games']);mpg=float(player.get('healthy_forecast_conditional_MPG')or 0.)
                 feature=feature_vector(self.ages.get((cutoff,pid),22.),float(player['healthy_current_total']),games*mpg,
                                        self.experience.get((cutoff,pid),cutoff-draft))
-                offset=max(0,draft+5-int(annual[0]['season']))
-                paths,own_weights,own_values,residual_audit=endpoint_scenarios(
-                    [0.]*offset+list(path),feature,cutoff,self.residuals,key,offset)
+                remaining=sum(float(row['exposure'])for row in annual if draft<int(row['season'])<=draft+4)
+                paths,own_weights,residual_audit=self.endpoint_residuals.scenarios(
+                    path,feature,cutoff,min(3.,max(0.,remaining)),key)
+                own_values=production_quotes(paths)
                 extension.update(residual_audit)
                 own=float(own_weights@own_values)
             value=original+weight*((own or 0)-original)

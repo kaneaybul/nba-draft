@@ -1,65 +1,81 @@
 # Career-path methodology review (v7)
 
-The earlier November 1–2 discussion, recovered through prior-conversation
-retrieval, agreed to price linked multi-year careers before averaging, keep
-daily player values on the rolling four-season window, and use a fixed,
-contract-neutral year-four draft appraisal. The later explicit instruction
-requires pick production to use that year-four valuation. The retrieved
-material is indexed excerpts and summaries, not an exported full transcript.
+The earlier November 1–2 discussion agreed to price linked careers before
+averaging, retain daily rolling four-season player prices, and assess draft
+outcomes against a fixed, contract-neutral year-four expectation. The later
+explicit instruction requires pick production to use that year-four valuation.
+The recovered material consists of indexed chat excerpts and summaries, checked
+against the original method notes; a full verbatim transcript was unavailable.
 
-| Requirement | Discrepancy found in v6 | v7 implementation |
+| Requirement | Audit finding | v7 implementation |
 | --- | --- | --- |
-| Price careers, then average | Endpoint labels and own estimates priced one mean forecast | Endpoint labels, learning predictions and published draft estimates use linked forecast-error scenarios, each priced first |
-| Keep daily player stock rolling | Publication replaced young-player production with endpoint appraisal | Daily price retains rolling path mean, annual components and valid path quantiles; endpoint appraisal is separate |
-| Fixed draft expectation | Learning cases used an updating as-of prior; daily prior also changed as cohorts matured | Original baseline uses only labels completed before the draft year in training and supported player updates |
-| Same target in picks and learning | Endpoint point forecasts omitted nonlinear uncertainty | Pick model and reliability learn the same per-path year-four production valuation |
-| Separate production from salary | Pick-to-player conversion placed all differences in contracts | Split endpoint change, rolling/endpoint production basis, and financial terms |
-| Draft outcome without double counting | Daily stock substitution changed the agreed asset definition | Use the exact identity P = E + (P−E); draft records ΔE, the named basis records Δ(P−E), and contracts record financial changes |
-| Preserve own trajectory | Endpoint point estimate did not retain path upside | Residual scenarios retain the player's own signed annual production means; comparisons calibrate uncertainty rather than replace talent |
-| Preserve upside below replacement | Flooring the mean before simulating erases comeback paths | Retain signed means; apply the nonnegative production floor only while pricing each simulated path |
-| Complete dated reconstruction | The portable seed omitted the archived October 31, 2026 panel | Restore the original captured inputs from commit d4c35c1, with digest and observation-date checks |
-| No future labels | Longer endpoint horizons need more history | Only completed residual prefixes enter each origin; unavailable tail errors carry the last linked error and are explicitly audited |
+| Price careers before averaging | The own year-four estimate priced one projected mean path | Simulate revisions to the future assessed appraisal, price every linked path, then average |
+| Retain the mature-player policy | The endpoint must be the quote actually assessable at year four; later realized production would be a different target | Completed labels use the existing contract-neutral forward appraisal; development uncertainty converges to that appraisal without an extra mature-player premium |
+| Daily player stock stays rolling | v6 publication replaced young-player production with the endpoint appraisal | Retain the rolling path price, annual components and distribution; export the endpoint appraisal separately |
+| Fix the original expectation | Learning cases and daily priors used updating training cutoffs | Use only labels completed before the draft year for the original baseline in training and supported player updates |
+| Separate financial effects | Pick-to-player conversion put production-basis differences in contracts | Split endpoint changes, rolling/endpoint production basis and financial terms |
+| Draft outcomes enter once | Daily stock substitution changed the agreed price definition | Use P = E + (P−E): draft records changes in E; the named basis records changes in P−E |
+| Preserve own trajectory and upside | Flooring a weak mean before simulating erased recovery paths | Retain signed own forecasts and linked revision vectors; apply the production floor while valuing each path |
+| Retain valid uncertainty | Endpoint publication discarded the rolling-price quantiles | Keep rolling quantiles attached to the rolling price; draft appraisal quantiles describe a separate distribution |
+| Complete dated history | The portable seed omitted the October 31, 2026 source panel | Restore its original captured inputs from commit d4c35c1, with digest and observation-date checks |
+| Avoid future labels | Uncertainty concerns what can be assessed at the endpoint | Use only forecast-revision labels completed by each information date, excluding the target player |
 
-For every career path, production is twice the best two season-equivalents;
-financial adjustment is `0.8 × Σ exposure × (production − salary)`. Daily window
-exposures sum to four, including partial first/fifth seasons. Signed liabilities,
-release guarantees, expected unsigned-market salaries and continuation choices
-retain the existing policy. Negative career payoffs retain expected rookie costs. The pick right keeps its
-existing ex-ante zero floor after expected career payoffs are combined; it does
-not gain a free option to avoid costs after the career outcome is known.
-Historical pick rights still use the same joint
-lottery/protection/swap/forfeiture outcome engine, priced before averaging.
+A completed year-four production label is twice the best two forward annual
+production forecasts, assessed using information available after season four.
+Actual production in years five through eight is not a label. No additional
+uncertainty premium is attached after the endpoint becomes known, preserving
+the existing mature-player policy.
 
-Endpoint production is assessed using information after season four, forecasting
-the following four years. It is not realized years five through eight. Each
-historical endpoint label uses completed error paths known at that origin.
-Early origins lack full error histories: the available linked prefix is extended
-by carrying its last error, with observed/requested horizons recorded. No new
-independent annual sampling or hidden future outcomes are introduced.
+Before the endpoint, entire forecast-revision vectors describe plausible future
+appraisals. Each vector comes from the difference between an earlier four-year
+forward forecast and the appraisal assessable one, two or three years later.
+Those labels finish at the later appraisal date, never four years afterward.
+Neighbor selection uses only the earlier player's features. The player's own
+annual forecast means remain unchanged; comparables supply uncertainty rather
+than replace the trajectory. Each possible appraisal is priced before averaging.
+Adjacent remaining development horizons are blended using fractional season
+exposures, converging continuously to the known mature quote as the window ends.
 
-The same endpoint label trains the pick curve and evidence weight. Rookie-season
-NBA weight remains zero because a first-season learning policy was excluded in
-the prior decision. Subsequent weights use observed NBA minutes and the fitted
-reliability scale. Baselines are fixed at draft time; completed endpoints freeze.
-No veteran uplift, pick multiplier, aggregate recentering or cap assets is added.
+The pick curve averages historical completed year-four appraisals across whole
+careers and retains the existing log-slot regularization. Linked first-four
+service supplies its separate rookie financial component. Negative career
+payoffs retain expected rookie costs; the existing ex-ante zero floor is applied
+after expected career payoffs are combined. It does not create a free option to
+avoid costs after learning which player disappointed.
 
-A draft holding's endpoint changes telescope to its endpoint estimate less the
-fixed original expectation. Rolling daily stock differs from that appraisal:
+NBA reliability is refitted against the same assessed endpoint target. Original
+draft expectations use only labels completed before that draft. Rookie-season
+NBA weight remains zero, as required by the earlier exclusion of a new
+first-season learning policy. Later weights use observed NBA minutes. Completed
+endpoints freeze. No veteran uplift, extra pick multiplier, forced break-even
+adjustment or cap assets are introduced.
+
+Daily player prices retain the rolling four-season-equivalent window, including
+partial first/fifth seasons. For every priced career, production is twice its
+best two season-equivalents; the financial adjustment is
+`0.8 × Σ exposure × (production − salary)`. Existing signed liabilities, release
+guarantees, expected market salaries and continuation decisions are retained.
+Prior blending and uncertainty in daily quotes apply only to the remaining
+original development window; later veteran projections retain their policy.
+
+The draft holding's endpoint changes telescope to its endpoint estimate less
+the original expectation. Daily rolling stock differs from that appraisal:
 its named basis is P−E. The waterfall labels this Rolling Window / Valuation
-Basis. Its changes can be material and are shown explicitly;
-they are computed from the two production valuations, never used as a balancing
-residual. Pure window movement affects the basis, not draft performance.
-Contracts and contract-induced service choices remain financial. Trades transfer
-the actual rolling stock; development credit stops at ownership transfer.
+Basis and derives its changes directly from those two valuations. Pure window
+movement does not become draft underperformance. Contracts remain financial;
+trades transfer the actual rolling stock and development credit stops at transfer.
+All 30 teams use the same categories, reconciliation and league rankings.
 
-This release refits and replays all supported 2022+ cohorts on preserved dated
-inputs, all 30 teams and all observation dates. Earlier unsupported player marks
-remain archived values and are not labeled as endpoint draft gains. Older v5/v6
-histories remain preserved. Player Impact's legacy production columns are retained;
-Asset Value, Trade Machine and Asset History share v7. Calibration signatures cover
-all model source and training inputs, and only validated staged state is published.
+The release preserves v5/v6 and rebuilds supported 2022+ draft cohorts on their
+saved dated inputs. Earlier unsupported marks are preserved and are not labeled
+as endpoint draft gains. The recovered October 31 panel covers 562 players and
+all 30 teams, with evidence through October 30 matching the archived snapshot.
+Legacy Player Impact production columns remain separate; Asset Value, Trade
+Machine and Asset History share v7. Historical forecasts are reconstructions
+under the model specification, not archived transaction-price observations.
 
 Method-only rebuilds checkpoint canonical annual forecasts separately from path
 calibration. Reuse requires matching dated runtime inputs, producer code, injury
-and contract sources, observation date, and every output digest. Path calibration
+and contract sources, observation date, and every saved output digest. Calibration
 and attribution rerun; ordinary incremental daily refreshes do not use this cache.
+Published closed histories require a new method version for corrections.
