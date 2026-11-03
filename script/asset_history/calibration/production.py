@@ -13,10 +13,9 @@ from .historical import HistoricalPanel,name_key,eligible_careers
 from .path_model import ResidualPool,slot_weights,regularize_paths,summarize,evidence_weight,fit_reliability
 from backfill.league_player_values import agreements_at
 from .endpoint_model import (EndpointModel, build_records, learning_cases, build_pick_model,
-                            own_endpoint_path, production_quotes)
+                            own_endpoint_path, production_quotes, endpoint_scenarios, POLICY, PICK_POLICY)
 
 REPORTING_CAP=164961000.
-POLICY='year-four-production-endpoint-v1'
 
 
 def number(value):
@@ -55,8 +54,8 @@ def prepare(runtime,repo,state,output):
         from dataclasses import asdict
         panel=HistoricalPanel(runtime,source,last_year=last)
         errors=panel.residual_rows();careers=panel.career_rows()
-        records,excluded=build_records(panel)
-        cases,report=learning_cases(panel,records)
+        records,excluded=build_records(panel,errors)
+        cases,report=learning_cases(panel,records,errors)
         from .run_backtest import evaluate
         legacy_training=output/'legacy_training';legacy_training.mkdir(exist_ok=True)
         evaluate(panel,errors,careers,legacy_training)
@@ -137,7 +136,7 @@ class PathCalibrator:
             # A dormant legal right has no NBA service forecast to calibrate.
             # Preserve its existing slot-prior quote and name-based identity.
             self.events['unsigned_draft_right_existing_policy']+=1
-            if self.data.get('pick_model',{}).get('stock_policy')!='year-four-endpoint-stock-v2':
+            if self.data.get('pick_model',{}).get('stock_policy') not in ('year-four-endpoint-stock-v2',PICK_POLICY):
                 curve=self.pick_curve[int(slot)]
                 return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
                             value=curve['quote'],production_quote=curve['peak_production_quote'],
@@ -148,7 +147,7 @@ class PathCalibrator:
             return dict(status='unsigned_draft_right_existing_policy',cutoff=cutoff,
                         value=curve['quote'],production_quote=curve['production_quote'],
                         contract_adjustment_sum=curve['quote']-curve['production_quote'],
-                        endpoint_stock_policy='year-four-endpoint-stock-v2',rolling_production_quote=curve['production_quote'],development_window_basis=0.,
+                        endpoint_stock_policy=PICK_POLICY,rolling_production_quote=curve['production_quote'],development_window_basis=0.,
                         draft_development=dict(status='priced',method=POLICY,endpoint=f'{int(draft)+4}-07-31',original_expectation=original,value=original,gain=0.,nba_weight=0.,completed=False,contract_effect=0.))
         key=name_key(player['player_name']);raw_id=player.get('source_nba_id')or player.get('ledger_nba_id')
         pid=int(float(raw_id))if raw_id not in(None,'')else None
@@ -156,11 +155,11 @@ class PathCalibrator:
         dt=player['cutoff_date'];h=len(annual);e=np.array([float(r['exposure'])for r in annual])
         if not np.isclose(e.sum(),4):raise ValueError('Path calibration requires four full season-equivalents')
         fitted=self.rate(cutoff)
-        if fitted['n']<30:
+        if fitted['n']<30 and stage>0:
             self.events['insufficient_mature_learning_labels']+=1
             return dict(status='insufficient_mature_learning_labels',cutoff=cutoff)
         try:
-            endpoint_prior=self.endpoint.prior(int(slot),cutoff,key)
+            endpoint_prior=self.endpoint.prior(int(slot),int(draft)-1 if int(draft)>=2022 else cutoff,key)
         except ValueError:
             self.events['insufficient_mature_career_paths']+=1
             return dict(status='insufficient_mature_career_paths',cutoff=cutoff)
@@ -236,7 +235,7 @@ class PathCalibrator:
         result.update(status='priced',policy=POLICY,cutoff=cutoff,training_signature=self.data['signature'],
             nba_weight=weight,completed_minutes=minutes,current_observed_minutes=observed,
             learning_scale=fitted['scale'],learning_training_n=fitted['n'],
-            latest_learning_label=fitted['latest_label'],latest_residual_label=residual_meta['latest_label'],
+            latest_learning_label=fitted.get('latest_label'),latest_residual_label=residual_meta['latest_label'],
             latest_prior_label=endpoint_prior['latest_label'],prior_scale=prior_scale,
             learning_target=POLICY,
             uncertainty_scope='remaining original four-year draft-window seasons')
@@ -252,26 +251,44 @@ class PathCalibrator:
         cutoff=int(annual[0]['league_reference_year'])
         # Reporting-window draft classes; inherited players are not re-graded.
         if draft<2022:return None
-        baseline=self.endpoint.prior(slot,draft-1,key)
+        baseline=self.endpoint.prior(slot,draft-1,key,endpoint_only=True)
         original=baseline['value'];extension={}
+        from .path_model import feature_vector, weighted_quantile
+        prior_values,prior_weights=self.endpoint.distribution(slot,draft-1,key)
         if cutoff>=draft+4:
             record=next((r for r in self.data['endpoint_records']if r['key']==key and r['cohort']==draft),None)
             if record is None:return dict(status='unavailable',reason='Missing completed endpoint rating')
-            value=record['value'];own=value;weight=1.;path=record['endpoint']
+            own_values=production_quotes(record['endpoint_paths']);own_weights=np.asarray(record['endpoint_weights'])
+            value=record['value'];own=value;weight=1.;path=record['endpoint'];extension=record['endpoint_audit']
         else:
             fit=self.rate(cutoff)
-            if fit['n']<30:return dict(status='unavailable',reason='Insufficient completed learning labels')
+            if cutoff>draft and fit['n']<30:return dict(status='unavailable',reason='Insufficient completed learning labels')
             pid=int(float(player.get('source_nba_id')or player['ledger_nba_id']))
             minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(draft+1,cutoff+1))
             observed=self.observations.get((player['cutoff_date'],pid),0.)if cutoff>draft else 0.
             weight=0. if cutoff==draft else evidence_weight(minutes+observed,fit['scale'])
             path=own_endpoint_path(player,annual,draft,self.endpoint_states,self.runtime,extension)if weight else None
-            own=float(production_quotes(path)[0])if path is not None else None
+            if path is None:
+                own=None;own_values=np.zeros(1);own_weights=np.ones(1)
+            else:
+                games=float(player['healthy_forecast_annual_games']);mpg=float(player.get('healthy_forecast_conditional_MPG')or 0.)
+                feature=feature_vector(self.ages.get((cutoff,pid),22.),float(player['healthy_current_total']),games*mpg,
+                                       self.experience.get((cutoff,pid),cutoff-draft))
+                offset=max(0,draft+5-int(annual[0]['season']))
+                paths,own_weights,own_values,residual_audit=endpoint_scenarios(
+                    [0.]*offset+list(path),feature,cutoff,self.residuals,key,offset)
+                extension.update(residual_audit)
+                own=float(own_weights@own_values)
             value=original+weight*((own or 0)-original)
+        distribution=np.concatenate([prior_values,own_values]);probabilities=np.concatenate([(1-weight)*prior_weights,weight*own_weights])
+        if abs(float(probabilities@distribution)-value)>.01:raise ValueError('Endpoint distribution mean mismatch')
+        quantiles=weighted_quantile(distribution,probabilities)
         return dict(status='priced',method=POLICY,endpoint=f'{draft+4}-07-31',
                     original_expectation=original,value=value,gain=value-original,
                     nba_weight=weight,own_production_value=own,annual_production=path,
+                    own_mean_path_value=float(production_quotes(path)[0])if path is not None else None,
+                    scenario_valuation='price each linked career endpoint, then average',
+                    scenarios=int(np.count_nonzero(probabilities)),p10=quantiles[0],p50=quantiles[1],p90=quantiles[2],
                     projection_extension=extension,
                     baseline_latest_label=baseline['latest_label'],
                     completed=cutoff>=draft+4,contract_effect=0.)
-

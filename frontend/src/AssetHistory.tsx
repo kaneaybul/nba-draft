@@ -17,10 +17,10 @@ export function AssetHistoryWorkspace(){
  const [leagueLoading,setLeagueLoading]=useState(false);
  const ledger=ledgers[team];
  const [attributionError,setAttributionError]=useState('');
- const [historyVersion,setHistoryVersion]=useState('v6');
+ const [historyVersion,setHistoryVersion]=useState('v7');
  const [refreshStatus,setRefreshStatus]=useState<RefreshStatus|null>(null);
  useEffect(()=>{const f=()=>setRevision(x=>x+1);const timer=window.setInterval(f,60000);window.addEventListener('focus',f);return()=>{clearInterval(timer);window.removeEventListener('focus',f);};},[]);
- useEffect(()=>{const c=new AbortController();read<{history_version?:string}>('/data/asset_valuation.json',c.signal).then(async metadata=>{const version=metadata.history_version;if(version!=='v6')throw Error('The current asset valuation release is unavailable.');const m=await read<Manifest>(`/data/asset_history/${version}/manifest.json`,c.signal);setHistoryVersion(version);setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
+ useEffect(()=>{const c=new AbortController();read<{history_version?:string}>('/data/asset_valuation.json',c.signal).then(async metadata=>{const version=metadata.history_version;if(version!=='v7')throw Error('The current asset valuation release is unavailable.');const m=await read<Manifest>(`/data/asset_history/${version}/manifest.json`,c.signal);setHistoryVersion(version);setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
  useEffect(()=>{const c=new AbortController();read<RefreshStatus>(`/data/asset_history/${historyVersion}/refresh_status.json`,c.signal).then(setRefreshStatus).catch(()=>{});return()=>c.abort();},[revision,historyVersion]);
  useEffect(()=>{
   if(!manifest)return;
@@ -55,7 +55,7 @@ export function AssetHistoryWorkspace(){
  const latestDate=points[points.length-1]?.date;
  const stale=latestDate&&Date.now()-Date.parse(latestDate)>3*86400000;
  return <main className="asset-history workspace"><header className="ah-heading"><div><span className="ah-eyebrow">FOUR-SEASON ASSET INVENTORY</span><h1>Asset history</h1><p>Explore how a team’s players and draft rights change in value over time.</p></div><label>Team<select value={team} onChange={e=>setTeam(e.target.value)}>{manifest?.teams.map(t=><option key={t.team} value={t.team}>{t.team}{t.status==='pending_backfill'?' · awaiting history':''}</option>)}</select></label></header>
- <details className="ah-method"><summary>How asset value works</summary><p>Picks and developing players use projected production value at year four. Older players use a rolling four-season window. Contract costs are separate; picks include protections and swaps. Young-player estimates blend the original draft expectation with NBA evidence.</p><p>All values use the same salary cap. Historical estimates are reconstructed; the current month refreshes daily. Cash, cap space and trade exceptions are excluded.</p></details>
+ <details className="ah-method"><summary>How asset value works</summary><p>Player values price possible career paths over a rolling four-season window, then average the results. Pick production uses the expected year-four valuation. Draft results track changes against the fixed original expectation; rolling-window basis changes and contract effects are separate. Picks include protections and swaps.</p><p>All values use the same salary cap. Historical estimates are reconstructed; the current month refreshes daily. Cash, cap space and trade exceptions are excluded.</p></details>
  {error&&<p role="alert" className="ah-message">{error} <button onClick={()=>setRevision(r=>r+1)}>Retry</button></p>}
  {(stale||refreshStatus?.status==='retained_last_good')&&<p role="status" className="ah-message">The latest update is awaiting validation. The last validated inventory{latestDate?` from ${latestDate}`:''} remains available.</p>}
  {!manifest&&!error&&<p role="status">Loading coverage…</p>}

@@ -57,14 +57,34 @@ class ProductionQuotes(unittest.TestCase):
     def test_completed_draft_endpoint_does_not_roll_with_new_forecasts(self):
         c,p,a=fixture();p['draft_year']='2022'
         for row in a:row['league_reference_year']='2026'
-        c.endpoint=SimpleNamespace(prior=lambda slot,cutoff,key:dict(value=100.,latest_label=2021))
-        c.data['endpoint_records']=[dict(key='fixture',cohort=2022,value=170.,endpoint=[40,40,45,35])]
+        c.endpoint=SimpleNamespace(prior=lambda slot,cutoff,key,**kwargs:dict(value=100.,latest_label=2021),
+            distribution=lambda *args:(np.array([100.]),np.array([1.])))
+        c.data['endpoint_records']=[dict(key='fixture',cohort=2022,value=170.,endpoint=[40,40,45,35],
+            endpoint_paths=[[40,40,45,35]],endpoint_weights=[1.],endpoint_audit={'latest_label':2026})]
         before=c.draft_evaluation(p,a)
         for row in a:row['annual_production']='999999999'
         after=c.draft_evaluation(p,a)
         self.assertEqual(before,after)
         self.assertEqual(after['gain'],70.)
         self.assertEqual(after['contract_effect'],0.)
+
+    def test_own_endpoint_prices_paths_and_is_independent_of_salary(self):
+        c,p,a=fixture();c.runtime=None;c.endpoint_states={}
+        c.endpoint=SimpleNamespace(prior=lambda *args,**kwargs:dict(value=40.,latest_label=2021),
+            distribution=lambda *args:(np.array([40.]),np.array([1.])))
+        for i,row in enumerate(a):row['season']=str(2028+i)
+        c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
+        with patch('calibration.production.own_endpoint_path',return_value=[10.]*4):
+            result=c.draft_evaluation(p,a)
+            for row in a:row['app_effective_contract']='1000000000'
+            self.assertEqual(c.draft_evaluation(p,a),result)
+        self.assertAlmostEqual(result['own_production_value'],80.)
+        self.assertAlmostEqual(result['own_mean_path_value'],40.)
+        weight=1100./1200.
+        self.assertAlmostEqual(result['value'],40.+weight*40.)
+        self.assertEqual(result['contract_effect'],0.)
+        self.assertLess(result['baseline_latest_label'],int(p['draft_year']))
+        self.assertLessEqual(result['projection_extension']['latest_label'],2024)
 
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
@@ -150,3 +170,4 @@ class ProductionQuotes(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+

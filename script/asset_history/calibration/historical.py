@@ -209,7 +209,7 @@ class HistoricalPanel:
             key = self.by_id[origin,pid]['key']
             if key in self.ambiguous:
                 continue
-            h = min(5,self.last_year-origin)
+            h = min(8,self.last_year-origin)
             observed = [self.outcome(key,origin+j,pid) for j in range(1,h+1)]
             # Retain every known prefix; a later missing season cannot erase it.
             h = next((i for i,v in enumerate(observed) if v is None),h)
@@ -255,3 +255,4 @@ def eligible_careers(rows, cutoff, stage=0, horizon=4):
                  production=r['production'][:horizon]) for r in rows
             if r['stage']==stage and r['horizon']>=horizon
             and r['cohort']+stage+horizon<=cutoff]
+

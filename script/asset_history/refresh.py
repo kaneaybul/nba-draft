@@ -26,7 +26,7 @@ def main(args):
         if saved.get('status')=='success'and saved.get('method')==METHOD and saved.get('observation_date')==asof and saved.get('source_signature')==source_signature(repo):
             manifest=json.loads((out/'manifest.json').read_text())
             attribution_path=out/'attribution/manifest.json'
-            attribution_ok=attribution_path.exists() and json.loads(attribution_path.read_text()).get('latest')==asof and json.loads(attribution_path.read_text()).get('method')=='endpoint-production-attribution-v2'
+            attribution_ok=attribution_path.exists() and json.loads(attribution_path.read_text()).get('latest')==asof and json.loads(attribution_path.read_text()).get('method')=='rolling-endpoint-attribution-v3'
             if attribution_ok and len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
                 return {**saved,'reused_identical_published_inputs':True}
     if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:
@@ -55,7 +55,7 @@ def main(args):
     legacy_pick_totals=None
     if new_version:
         old_model=json.loads(staged_model.read_text())
-        for k in ('production_policy','endpoint_records','endpoint_training_through'):old_model.pop(k,None)
+        for k in ('production_policy','stock_policy','endpoint_records','endpoint_training_through'):old_model.pop(k,None)
         old_path=work/'legacy_pick_model.json';old_path.write_text(json.dumps(old_model))
         old_picks=refresh_picks(repo,runtime,asof,work/'legacy_pick_candidates.json',args.draws,old_path)
         if old_picks['source_fingerprint']!=picks['source_fingerprint']:raise ValueError('Method comparison needs identical pick sources')
@@ -81,6 +81,22 @@ def main(args):
         dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
         repriced=reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
         candidates=reconstruct(player_data,picks,legacy,events,asof,source_dates(repo,asof),repriced)
+        if getattr(args,'preserve_unsupported',False):
+            # This release audits 2022+ draft cohorts. Preserve earlier player
+            # marks verbatim rather than imply a newly validated endpoint model.
+            from assemble import bridge
+            previous={}
+            for snapshot in candidates:
+                team=snapshot['team'];day=snapshot['date']
+                old={a['id']:a for a in legacy[team][day]['assets']if a['kind']=='player'}
+                for i,asset in enumerate(snapshot['assets']):
+                    if asset['kind']=='player' and int(float(asset.get('details',{}).get('draft_year')or 0))<2022 and asset['id']in old:
+                        import copy
+                        snapshot['assets'][i]=copy.deepcopy(old[asset['id']])
+                snapshot['total']=sum(a['value']for a in snapshot['assets'])
+                snapshot.pop('bridge',None)
+                if team in previous:snapshot['bridge']=bridge(previous[team],snapshot)
+                previous[team]=snapshot
     else:
         player_data=[s for s in player_data if s['date']==asof]
         candidates=assemble(player_data,{asof:picks},events,'reconstructed'if args.allow_reconstructed else'published',source_dates(repo,asof),previous)
@@ -106,7 +122,7 @@ def main(args):
     return audit
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');p.add_argument('--preserve-unsupported',action='store_true');a=p.parse_args()
     try:print(json.dumps(main(a)))
     except Exception as exc:
         out=data_root(a.repo.resolve())

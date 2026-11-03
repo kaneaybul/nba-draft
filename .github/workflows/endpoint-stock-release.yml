@@ -1,7 +1,7 @@
-name: Validate year-four stock release
+name: Validate career-path methodology release
 on:
   push:
-    branches: [codex/year-four-stock]
+    branches: [codex/career-path-methodology]
     paths:
       - script/asset_history/**
       - script/frontend/*asset*.py
@@ -11,12 +11,12 @@ on:
 permissions:
   contents: write
 concurrency:
-  group: year-four-stock-release
+  group: career-path-methodology-release
   cancel-in-progress: true
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       OPENBLAS_NUM_THREADS: '1'
       VITE_PUBLIC_READ_ONLY: 'true'
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: codex/year-four-stock
+          ref: codex/career-path-methodology
           fetch-depth: 1
       - uses: actions/setup-python@v5
         with:
@@ -47,7 +47,7 @@ jobs:
           from run_player_refresh import unpack
           unpack(Path('processed/asset_history/canonical_runtime_seed.zip'),Path(os.environ['RUNNER_TEMP'])/'endpoint-stock/runtime')
           PY
-      - name: Reprice all 30 histories and reconcile endpoint draft outcomes
+      - name: Refit endpoint distributions and replay all 30 histories
         run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/endpoint-stock/runtime"
       - uses: actions/setup-node@v4
         with:
@@ -56,6 +56,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Verify app entry points and league rankings
         run: |
+          python3 script/asset_history/calibration/review_release.py --repo .
           python3 script/frontend/build_asset_value_data.py --repo .
           cd frontend
           npm ci
@@ -69,10 +70,10 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/public/data/asset_history/v6 processed/asset_history
+          git add frontend/public/data/asset_history/v7 processed/asset_history
           if ! git diff --cached --quiet; then
-            git commit -m 'Publish reconciled year-four stock pricing and draft attribution'
-            git push origin HEAD:codex/year-four-stock
+            git commit -m 'Publish audited career-path valuation and rolling attribution'
+            git push origin HEAD:codex/career-path-methodology
           fi
       - name: Preserve validation diagnostics
         if: always()
@@ -82,6 +83,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
           path: |
-            processed/asset_history/endpoint_stock_release.json
+            processed/asset_history/methodology_review.json
+            processed/asset_history/player_state/path_calibration.json.gz
             processed/asset_history/attribution_validation.json
-            frontend/public/data/asset_history/v6/attribution/manifest.json
+            frontend/public/data/asset_history/v7/attribution/manifest.json

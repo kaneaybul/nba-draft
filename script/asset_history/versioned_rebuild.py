@@ -61,8 +61,9 @@ def reprice_historical_picks(repo,model,dates,draws=10000):
         years=display_years(day,{int(y):d for y,d in orders['draft_completion_dates'].items()},announced_draft_months=orders.get('announced_draft_months'))
         sim=simulate(day,forecasts['ratings'][source],forecasts['standings'][source],view['rules'],orders['orders'],forecasts['qualifiers'],draws,max(2033,max(years)))
         value=value_portfolio(day,view,sim,model,years)
-        value['assumptions'].append('Reconstructed v5 pick prices use the fixed current endpoint-trained model and the last archived strength/standings forecast dated '+source+'; legal rights are dated '+day+'.')
+        value['assumptions'].append('Reconstructed career-path pick prices use the fixed current endpoint-trained model and the last archived strength/standings forecast dated '+source+'; legal rights are dated '+day+'.')
         print('Repriced historical picks: '+day,flush=True)
         return day,value
     with ThreadPoolExecutor(max_workers=3)as pool:return dict(pool.map(one,dates))
+
 
