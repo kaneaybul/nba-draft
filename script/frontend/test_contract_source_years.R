@@ -3,7 +3,7 @@ expressions <- parse("script/frontend/export_frontend_data.R")
 env <- new.env(parent = globalenv())
 wanted <- c("spotrac_contract_path", "normalize_spotrac_contract_status", "read_spotrac_contracts")
 for (expr in expressions) {
-  if (is.call(expr) && identical(expr[[1]], as.name("<-")) && as.character(expr[[2]]) %in% wanted) eval(expr, env)
+  if (is.call(expr) && identical(expr[[1]], as.name("<-")) && is.symbol(expr[[2]]) && as.character(expr[[2]]) %in% wanted) eval(expr, env)
 }
 root <- tempfile("contract-year-"); dir.create(file.path(root, "processed/livedata/impactrefresh"), recursive = TRUE)
 row <- data.frame(nba_id = 1, player_name = "Test", team = "UTA", salary_y0 = 100, salary_y1 = 110, salary_y2 = 120,
