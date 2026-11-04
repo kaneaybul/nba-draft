@@ -17,6 +17,14 @@ def require_uniform_minutes_policy(snapshots):
             if asset['kind']=='player'and asset.get('details',{}).get('role_minutes_policy')!=POLICY:
                 raise ValueError('Mixed minutes policies in the history window; publish a complete new valuation version')
 
+def published_source_dates(prior,asof):
+    sources={json.dumps(points[asof]['source_dates'],sort_keys=True)for points in prior.values()}
+    if len(sources)!=1:raise ValueError('Published replay requires matching source provenance for all teams')
+    result=json.loads(sources.pop())
+    if any(date.fromisoformat(value)>date.fromisoformat(asof)for value in result.values()):
+        raise ValueError('Published replay contains future source provenance')
+    return result
+
 def source_dates(repo,asof):
     ratings=json.loads((repo/'raw/live/ratings.json').read_text());skill=json.loads((repo/'raw/live/skill_stats.json').read_text())
     epm=(date.fromisoformat(ratings['epm_as_of'])-timedelta(days=1)).isoformat()
@@ -92,7 +100,8 @@ def main(args):
         legacy=legacy_snapshots(repo)
         dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
         repriced=reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
-        candidates=reconstruct(player_data,picks,legacy,events,asof,source_dates(repo,asof),repriced)
+        sources=published_source_dates(prior,asof)if published_inputs else source_dates(repo,asof)
+        candidates=reconstruct(player_data,picks,legacy,events,asof,sources,repriced)
 
     else:
         player_data=[s for s in player_data if s['date']==asof]
@@ -118,7 +127,7 @@ def main(args):
     shutil.copytree(staged,replacement)
     if state.exists():shutil.rmtree(state)
     replacement.rename(state)
-    audit={'status':'success','method':METHOD,'observation_date':asof,'recorded_at':datetime.now(timezone.utc).isoformat(),'teams':len({s['team']for s in candidates}),'observations':len(candidates),'version_reconstruction':new_version,'source_dates':source_dates(repo,asof),'source_signature':source_signature(repo)}
+    audit={'status':'success','method':METHOD,'observation_date':asof,'recorded_at':datetime.now(timezone.utc).isoformat(),'teams':len({s['team']for s in candidates}),'observations':len(candidates),'version_reconstruction':new_version,'source_dates':published_source_dates(prior,asof)if published_inputs else source_dates(repo,asof),'source_signature':source_signature(repo)}
     atomic(out/'refresh_status.json',audit)
     return audit
 
