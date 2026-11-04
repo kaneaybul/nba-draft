@@ -37,6 +37,10 @@ class Checks(unittest.TestCase):
  def test_incomplete_rejected(self):
   x=sample();x['coverage']['contracts']=False
   with self.assertRaises(AssertionError):validate(x)
+ def test_incomplete_coverage_names_team_gate_and_players(self):
+  x=sample();x['team']='CHA';x['coverage']['contracts']=False
+  x['player_coverage']={'missing_complete_contracts':['Missing Contract']}
+  with self.assertRaisesRegex(AssertionError,'CHA.*contracts.*Missing Contract'):validate(x)
  def test_duplicates_rejected(self):
   x=sample();x['assets']*=2;x['total']=200
   with self.assertRaises(AssertionError):validate(x)
@@ -100,3 +104,4 @@ class Checks(unittest.TestCase):
   e=[.1,1,1,1,.9];p=[0,10,20,30,40];q=quote_window(p,[x+.8*(x-10)for x in p],e)
   self.assertEqual(sum(q['selected_exposure']),2);self.assertAlmostEqual(q['production_quote'],136)
 if __name__=='__main__':unittest.main()
+

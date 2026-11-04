@@ -30,7 +30,10 @@ def validate(s):
     assert s['team'] in TEAMS and s['method']==METHOD
     d=date.fromisoformat(s['date']);assert d<=datetime.now(timezone.utc).date()
     assert s['reporting_cap']>0 and finite(s['reporting_cap'])
-    assert all(s['coverage'].get(k) is True for k in REQUIRED),'Incomplete coverage'
+    missing=[k for k in REQUIRED if s['coverage'].get(k) is not True]
+    detail=s.get('player_coverage',{})
+    gaps={k:detail[k] for k in ('missing_complete_contracts','unpriced_active_players','injury_review_known_gaps') if detail.get(k)}
+    assert not missing,f"Incomplete coverage for {s['team']} on {s['date']}: {', '.join(missing)}; {json.dumps(gaps,sort_keys=True)}"
     assert s['source_cutoff']==s['date'],'Source cutoff must match valuation date'
     assert s['vintage'] in ('reconstructed','published')
     if s['vintage']=='published':
@@ -92,3 +95,4 @@ def publish(candidates,out=OUT,require_league=False):
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--input',type=Path,required=True);p.add_argument('--require-league',action='store_true');a=p.parse_args()
     data=json.loads(a.input.read_text());print(json.dumps(publish(data['snapshots'],require_league=a.require_league)['teams']))
+

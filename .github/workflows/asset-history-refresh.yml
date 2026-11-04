@@ -84,6 +84,9 @@ jobs:
             # Preserve expensive validated results even if a later push fails.
             git diff --cached --binary > "$RUNNER_TEMP/asset-history-release.patch"
             git commit -m "Refresh validated NBA asset history"
+            # The runner is disposable. Keep uncommitted model intermediates
+            # out of the publication rebase, including on retained updates.
+            git stash push --include-untracked -m asset-history-intermediates
             published=false
             for attempt in 1 2 3; do
               git fetch origin main
@@ -107,6 +110,8 @@ jobs:
             ${{ runner.temp }}/asset-history/player_refresh.log
             ${{ runner.temp }}/asset-history-release.patch
             ${{ runner.temp }}/asset-history/players/*.log
+            ${{ runner.temp }}/asset-history/players/*/league_player_coverage.json
+            ${{ runner.temp }}/asset-history/players/player_candidates.json
             ${{ runner.temp }}/asset-history/pending_pick_review.json
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/league_ownership/roster_refresh_source.json
@@ -117,6 +122,7 @@ jobs:
       - name: Report a retained observation
         if: steps.portfolios.outcome != 'success'
         run: echo "::warning::Asset history retained its last validated observation. Source or ownership review is pending; see the validation artifact."
+
 
 
 
