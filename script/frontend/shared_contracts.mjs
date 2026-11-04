@@ -14,7 +14,7 @@ export function mergeSharedContracts(snapshot, previous, years, idFor, normalize
     const prior = existing.get(`${p.team}||${normalize(p.player_name)}`) ?? previous.find(r => r.nba_id === p.nba_id) ?? {};
     const cells = years.map(year => {
       const c = p.cells.find(c => c.year === year);
-      if (c?.amount != null) return {...c, source:'contract', source_url:c.source, guarantee_source:c.guaranteed_amount == null ? 'unavailable' : 'contract'};
+      if (c?.amount != null) return {...c, source:'contract', source_url:c.source ?? p.source, guarantee_source:c.guaranteed_amount == null ? 'unavailable' : 'contract'};
       const old = prior.cells?.find(c => c.year === year && c.kind === 'cap_hold');
       return old ? {...old, source:'cached', source_quality:'cached', note:'Retained cap-hold estimate; signed salaries use the shared agreement ledger'} : {year,amount:null,kind:'empty',source:'unavailable',status:c?.status ?? null};
     });
