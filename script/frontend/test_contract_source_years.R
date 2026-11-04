@@ -13,5 +13,7 @@ same <- env$read_spotrac_contracts(root, 2026)
 next_year <- env$read_spotrac_contracts(root, 2027)
 stopifnot(same$salary_y0 == 100, next_year$salary_y0 == 110, next_year$salary_y1 == 120,
           next_year$contract_status_y1 == "Team Option", is.na(next_year$salary_y2), next_year$source_contract_year == 2027)
+write.csv(data.frame(), file.path(root, "processed/livedata/impactrefresh/contracts_2026_spotrac.csv"), row.names = FALSE)
+stopifnot(nrow(env$read_spotrac_contracts(root, 2027)) == 0L)
 unlink(root, recursive = TRUE)
 cat("Cached contract salary horizons remain on the correct NBA season.\n")
