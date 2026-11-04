@@ -57,6 +57,7 @@ jobs:
             shared-draft-projections-v9-
             consistent-asset-projections-v8-
       - name: Rebuild shared player prices and all 30 team histories
+        id: rebuild
         run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/consistent-assets/runtime" --rebuild-unpublished
       - uses: actions/cache/save@v4
         if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
@@ -85,7 +86,8 @@ jobs:
           npm run shard:data
           npm run validate:data
           npm run build
-      - name: Return the complete validated release for review
+      - name: Preserve the reconstructed release for validation and review
+        if: always() && steps.rebuild.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: shared-draft-value-release

@@ -63,5 +63,6 @@ def freeze_draft_results(snapshots,saved=None):
                 asset['details']['draft_development']=copy.deepcopy(saved[key])
             else:
                 asset['details']['draft_development']=dict(status='unavailable',
-                    reason='No shared year-four assessment in the observed history')
+                    reason='No shared year-four assessment in the observed history',
+                    endpoint=grade['endpoint'])
     return saved

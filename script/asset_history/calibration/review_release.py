@@ -9,7 +9,7 @@ from publish import TEAMS,atomic
 from validate_attribution import validate
 from calibration.endpoint_model import production_quotes,POLICY,PICK_POLICY
 from calibration.path_model import evidence_weight
-from calibration.coverage import documented_missing_endpoint
+from calibration.coverage import documented_missing_endpoint,documented_unobserved_endpoint
 
 def report(repo):
     with gzip.open(repo/'processed/asset_history/player_state/path_calibration.json.gz','rt')as f:data=json.load(f)
@@ -32,6 +32,13 @@ def report(repo):
         assert r['latest_residual_label']<=r['origin'],'Future endpoint simulation error'
     for r in data['report']['holdouts']:
         assert r['latest_learning_label']<=r['origin'],'Future reliability label'
+    final_assessments=set()
+    for team in TEAMS:
+        for snapshot in json.loads((data_root(repo)/'teams'/f'{team}.json').read_text())['snapshots']:
+            for asset in snapshot['assets']:
+                grade=asset.get('details',{}).get('draft_development',{})
+                if grade.get('status')=='priced' and grade.get('completed') and snapshot['date']<=grade['endpoint']:
+                    final_assessments.add((asset['id'],grade['endpoint']))
     baselines={};counts=Counter();differences=[];unavailable=[]
     for team in TEAMS:
         current=json.loads((data_root(repo)/'teams'/f'{team}.json').read_text())
@@ -52,6 +59,10 @@ def report(repo):
                     counts['recomputed_older_cohort_player_observations']+=1
                     continue
                 grade=d.get('draft_development',{})
+                if documented_unobserved_endpoint(pid,s['date'],grade,final_assessments):
+                    counts['unobserved_year_four_assessments']+=1
+                    unavailable.append(dict(team=team,date=s['date'],player=a['name'],reason=grade['reason']))
+                    continue
                 if grade.get('status')!='priced' and d.get('asset_type')in ('unsigned_draft_right','dormant_draft_right') and s['date']>f'{draft+4}-07-31':
                     counts['post_window_unsigned_right_existing_policy']+=1
                     continue
