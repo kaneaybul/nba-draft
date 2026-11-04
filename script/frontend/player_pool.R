@@ -91,7 +91,7 @@ apply_live_player_pool <- function(rows,history,base_dir) {
   rows$pool_review_pending <- FALSE;rows$source_nba_id <- NA_real_
   providers <- jsonlite::fromJSON(file.path(base_dir,'raw/live/ratings.json'))$players
   contract_path <- file.path(base_dir,'processed/livedata/impactrefresh/contracts_2026_spotrac.csv')
-  contracts <- if(file.exists(contract_path)) read.csv(contract_path,check.names=FALSE) else data.frame()
+  contracts <- if(file.exists(contract_path) && file.info(contract_path)$size > 4) read.csv(contract_path,check.names=FALSE) else data.frame()
   for(p in registry$players) {
     if(p$pool_status=='draft') next
     if(!p$app_nba_id %in% rows$nba_id) rows <- rbind(rows,new_pool_player(rows,p,history,season,providers))

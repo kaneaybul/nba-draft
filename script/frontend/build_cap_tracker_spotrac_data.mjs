@@ -96,7 +96,10 @@ export function buildSpotracCapTrackerData() {
   ].sort(contractRowSort);
   let deadMoney = buildDeadMoneyRows(spotracRows);
   let teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
-  const fallbackTeams = [...new Set(spotracRows.filter((row) => row.source_url?.startsWith("https://site.api.espn.com/")).map((row) => cleanTeam(row.team_abbr || TEAM_ABBR[row.team])))];
+  const fallbackTeams = [...new Set([
+    ...spotracRows.filter((row) => row.source_url?.startsWith("https://site.api.espn.com/")).map((row) => cleanTeam(row.team_abbr || TEAM_ABBR[row.team])),
+    ...readCsvFile(spotracAuditPath).filter((row) => row.status === "fresh_espn_roster_after_spotrac_error").map((row) => TEAM_ABBR[row.team] || cleanTeam(row.team))
+  ])];
   const retained = retainCachedCapTeams({ teams: fallbackTeams, previous: readJson(outPath, null), years: YEARS,
     contracts: contractRows, deadMoney, teamSeasons });
   contractRows = retained.contracts;
