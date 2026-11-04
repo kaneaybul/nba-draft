@@ -77,3 +77,9 @@ if('--require-export' %in% commandArgs(TRUE)) {
 stopifnot(identical(tools::md5sum(archive_path),archive_hash))
 cat('Roster completeness, stable identity, season-relative Score, affine invariance, ties, season isolation and immutable preseason Delta tests passed\n')
 
+
+# A signed roster contract remains rostered when some pay is not guaranteed.
+owned <- pool[pool$pool_status=='roster',,drop=FALSE][1,,drop=FALSE]
+owned$contract_status <- 'Non-Guaranteed';owned$projection_roster_status <- 'open_market'
+owned <- model$enforce_roster_truth_placements(owned,2026)
+stopifnot(owned$projection_roster_status=='signed',owned$pool_status=='roster')

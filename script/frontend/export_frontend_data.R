@@ -3319,6 +3319,10 @@ enforce_roster_truth_placements <- function(x, roster_year) {
     x$market_team[active] <- truth_team[active]
     x$team_projection_base[active] <- truth_team[active]
     x$projection_roster_status[active] <- projection_roster_status(x$contract_status[active], x$contract[active])
+    if ("pool_status" %in% names(x)) {
+      live_signed <- active & !is.na(x$pool_status) & x$pool_status == "roster"
+      x$projection_roster_status[live_signed] <- "signed"
+    }
     if ("rights_team" %in% names(x)) {
       x$rights_team[active & is_blank_text(x$rights_team)] <- truth_team[active & is_blank_text(x$rights_team)]
     }
