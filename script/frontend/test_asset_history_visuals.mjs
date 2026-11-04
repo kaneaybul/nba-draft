@@ -82,7 +82,9 @@ assert.match(categoryMarkup,/League combined · Contract Management/);
 assert.match(categoryMarkup,/Waterfall categories unavailable: ATL/);
 
 // Exercise every team against the actual published ledgers when available.
-const data = resolve(frontend,'public/data/asset_history/v7');
+const versionSource = readFileSync(resolve(frontend,'../script/asset_history/model_version.py'),'utf8');
+const version = versionSource.match(/DATA_VERSION\s*=\s*['"]([^'"]+)['"]/)[1];
+const data = resolve(frontend,`public/data/asset_history/${version}`);
 if(existsSync(resolve(data,'manifest.json'))){
  const manifest=JSON.parse(readFileSync(resolve(data,'manifest.json'),'utf8'));
  const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
@@ -103,4 +105,5 @@ if(existsSync(resolve(data,'manifest.json'))){
  console.log('Published league checks passed: 30 teams, all eleven waterfall categories, four date ranges.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
+
 

@@ -60,6 +60,7 @@ jobs:
         run: |
           node ../script/frontend/test_data_refresh.mjs
           npm run test:asset-value
+          node ../script/frontend/test_asset_surface_consistency.mjs
           npm run test:trade-machine
           npm run test:trade-suggestions
           npm run build
