@@ -53,7 +53,26 @@ jobs:
           key: consistent-asset-projections-v8-${{ github.sha }}
           restore-keys: consistent-asset-projections-v8-
       - name: Recompute every player and pick in the Asset History window
-        run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/consistent-assets/runtime"
+        run: |
+          python3 - <<'PYCODE'
+          import os,sys
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history')
+          from model_version import data_root
+          from endpoint_stock_release import release,calibration_changes
+          from validate_attribution import validate
+          from refresh import require_uniform_minutes_policy
+          import json
+          repo=Path.cwd();runtime=Path(os.environ['RUNNER_TEMP'])/'consistent-assets/runtime'
+          if (data_root(repo)/'manifest.json').exists():
+              if calibration_changes(repo):raise ValueError('Published calibration changed; create a new valuation version')
+              for path in (data_root(repo)/'teams').glob('*.json'):
+                  require_uniform_minutes_policy(json.loads(path.read_text())['snapshots'])
+              print('Reusing the complete, independently validated versioned history')
+              print(json.dumps(validate(repo)))
+          else:
+              print(json.dumps(release(repo,runtime)))
+          PYCODE
       - uses: actions/cache/save@v4
         if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
         with:

@@ -9,7 +9,7 @@ const esbuild = require('esbuild');
 const compiled = await esbuild.build({ stdin: {
   contents: 'export * from "./assetValue"; export { playerTradeValue, getPlayerSortValue } from "./App"; export { playerTradeMachineAsset } from "./tradeMachine";',
   resolveDir: resolve(root, 'frontend/src'), loader: 'ts'
-}, bundle: true, write: false, platform: 'node', format: 'esm', target: 'es2022', logLevel: 'silent' });
+}, bundle: true, write: false, loader: { '.css': 'empty' }, platform: 'node', format: 'esm', target: 'es2022', logLevel: 'silent' });
 const api = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`);
 const read = path => JSON.parse(readFileSync(resolve(root, 'frontend/public', path.replace(/^\//, '')), 'utf8'));
 const index = read('/data/asset_valuation.json');
