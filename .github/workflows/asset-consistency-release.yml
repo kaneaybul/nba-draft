@@ -63,6 +63,15 @@ jobs:
         run: |
           python3 script/asset_history/calibration/review_release.py --repo .
           python3 script/frontend/build_asset_value_data.py --repo .
+      - name: Checkpoint the independently validated asset history
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/public/data/asset_history/v8 processed/asset_history
+          if ! git diff --cached --quiet; then
+            git commit -m 'Checkpoint reconciled v8 asset inventories and source captures'
+            git push origin HEAD:codex/consistent-asset-window
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -75,7 +84,7 @@ jobs:
           r-version: '4.3.2'
       - name: Verify and republish Impact minutes from the existing source inputs
         run: |
-          Rscript -e 'rspm <- Sys.getenv("RSPM", ""); repos <- if(nzchar(rspm)) rspm else "https://cloud.r-project.org"; packages <- c("jsonlite","rvest","mgcv"); missing <- packages[!vapply(packages,requireNamespace,logical(1),quietly=TRUE)]; if(length(missing)) install.packages(missing,repos=repos); stopifnot(all(vapply(packages,requireNamespace,logical(1),quietly=TRUE)))'
+          Rscript -e 'rspm <- Sys.getenv("RSPM", ""); repos <- if(nzchar(rspm)) rspm else "https://cloud.r-project.org"; packages <- c("data.table","jsonlite","mgcv","ranger","readr","rpart","rvest","xml2"); missing <- packages[!vapply(packages,requireNamespace,logical(1),quietly=TRUE)]; if(length(missing)) install.packages(missing,repos=repos); stopifnot(all(vapply(packages,requireNamespace,logical(1),quietly=TRUE)))'
           Rscript script/frontend/test_live_minutes.R
           Rscript script/frontend/export_frontend_data.R
           python3 script/frontend/build_asset_value_data.py --repo .
@@ -114,6 +123,7 @@ jobs:
             ${{ runner.temp }}/consistent-assets/players/*/monthly_player_values.csv
             ${{ runner.temp }}/consistent-assets/players/*/league_player_coverage.json
             ${{ runner.temp }}/consistent-assets/players/player_state_staged
+            frontend/public/data/asset_history/v8
             processed/asset_history/methodology_review.json
             processed/asset_history/attribution_validation.json
             frontend/public/data/asset_history/v8/refresh_status.json
