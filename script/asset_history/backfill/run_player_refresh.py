@@ -41,6 +41,8 @@ def stage_state(previous,state,asof,reseed=False):
         if earlier.exists():
             (state/'prior_day').mkdir(exist_ok=True)
             shutil.copyfile(earlier,state/'prior_day/latest_inputs.json.gz')
+    archived=previous/'archived_inputs'
+    if archived.exists():shutil.copytree(archived,state/'archived_inputs',dirs_exist_ok=True)
     # Retry keeps the same before-update checkpoint; a new day stores current
     # persistent inputs as the next before-update checkpoint.
     if latest and not reseed:
@@ -113,6 +115,23 @@ def injury_history(runtime,state,base_file,output):
     base=json.loads(base_file.read_text())if base_file.exists()else[]
     if isinstance(base,dict):base=base.get('records',[])
     output.write_text(json.dumps(base+saved['records'],separators=(',',':')))
+
+def restore_published_availability(runtime,captured,asof):
+    """Restore dated overlays without reading today's raw source feeds."""
+    audit=captured.get('daily_input_audit');injury=captured.get('injury_availability')
+    if not audit or audit.get('date')!=asof or not injury or injury.get('date')!=asof:
+        raise ValueError('Published replay requires exact dated clock and injury captures')
+    monthly=runtime/'monthly_reconstruction'
+    (monthly/'daily_input_audit.json').write_text(json.dumps(audit))
+    (monthly/'injuries/current_availability.json').write_text(json.dumps(injury))
+
+def require_published_observations(runtime,repo,asof):
+    from model_version import LEGACY_VERSION,data_root
+    manifest=json.loads((data_root(repo,LEGACY_VERSION)/'manifest.json').read_text())
+    expected={r['date']for team in manifest['teams']for r in team['points']if r['date']<=asof}
+    rows=json.loads((runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json').read_text())
+    missing=expected-{r['cutoff_date']for r in rows}
+    if missing:raise ValueError('Missing saved published observations before reconstruction: '+', '.join(sorted(missing)))
 
 def export(output,asof=None,calibrator=None):
     snapshots=[]
@@ -262,8 +281,17 @@ def run(args):
                 (runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').write_text(json.dumps(ownership_source,indent=2))
         failed=set(report['failed_mandatory_player_ids'])-{r['nba_id']for r in ignored}
         if failed or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
-    from extend_daily_inputs import extend
-    extend(runtime,repo,args.as_of)
+    if getattr(args,'use_published_inputs',False):
+        restore_published_availability(runtime,captured,args.as_of)
+        require_published_observations(runtime,repo,args.as_of)
+        # Recompute SKILL from the restored observations; a later live feed is
+        # neither needed nor permitted during a source-identical replay.
+        sys.path.insert(0,str(runtime/'monthly_reconstruction/skill'))
+        import blend_monthly_skill
+        blend_monthly_skill.main()
+    else:
+        from extend_daily_inputs import extend
+        extend(runtime,repo,args.as_of)
     injuries=output/'combined_injury_episodes.json'
     injury_history(runtime,state,repo/'processed/asset_history/injuries/major_injury_additions.json',injuries)
     calibration=output/f'calibration_{args.as_of}.json'
@@ -303,3 +331,4 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
     p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
+

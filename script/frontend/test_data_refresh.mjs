@@ -12,7 +12,7 @@ const compiled = await esbuild.build({
   entryPoints: [path.join(root, 'frontend/src/data.ts')],
   bundle: true, write: false, platform: 'node', format: 'esm', target: 'es2022', logLevel: 'silent'
 });
-const { loadAppData, loadNewerAppData } = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`);
+const { loadAppData, loadNewerAppData, loadDataForView } = await import(`data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`);
 // Exercise the actual publisher's version so a stale browser gate cannot pass
 // by testing only against an equally stale hand-written fixture.
 const publication = readFileSync(path.join(root, 'script/asset_history/model_version.py'), 'utf8');
@@ -71,6 +71,25 @@ try {
   serve(updated, valuations);
   assert.equal(await loadNewerAppData(revalued.manifest), null);
 
+  // Historical Impact and trades must quote the identical Asset History date.
+  const historicalManifest = structuredClone(updated);
+  historicalManifest.static_data.datasets.impact_players.shards.push({ year: 2025, file: 'players-2025.json', sha256: 'past-players' });
+  const indexed = { ...valuations, seasons: { '2025': { observation_date: '2025-06-30', path: '/data/asset_valuations/v8/2025.json' } } };
+  const dated = { ...valuations, season: 2025, observation_date: '2025-06-30', players: { '1': { date: '2025-06-30', value: 6789, annual: [] } } };
+  const historicalFetch = globalThis.fetch;
+  let badDate = false;
+  globalThis.fetch = async (url, options) => {
+    if (url.startsWith('/data/asset_valuations/v8/2025.json')) return { ok: true, json: async () => badDate ? { ...dated, observation_date: '2025-05-31' } : dated };
+    if (url.startsWith('/data/asset_valuation.json')) return { ok: true, json: async () => indexed };
+    if (url.startsWith('/data/players-2025.json')) return { ok: true, json: async () => [{ ...player, year: 2025 }] };
+    return historicalFetch(url, options);
+  };
+  const historical = await loadDataForView({ ...revalued, manifest: historicalManifest }, 'impact', 2025, 'dated-regression');
+  assert.equal(historical.players.find(row => row.year === 2025).asset_valuation.value, 6789);
+  assert.equal(historical.players.find(row => row.year === 2025).asset_valuation.date, '2025-06-30');
+  badDate = true;
+  await assert.rejects(loadDataForView({ ...revalued, manifest: historicalManifest }, 'impact', 2025, 'bad-date-regression'), /dated asset valuation release is inconsistent/);
+
   globalThis.fetch = async () => ({ ok: false, status: 503 });
   await assert.rejects(loadNewerAppData(current), /503/);
   serve(current);
@@ -83,3 +102,4 @@ try {
 } finally {
   globalThis.fetch = originalFetch;
 }
+

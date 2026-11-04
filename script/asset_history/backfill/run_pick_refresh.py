@@ -52,7 +52,7 @@ def new_pick_actions(events,catalog,asof,first_display_year):
             extra.append(dict(event_id=event['event_id'],known_from=event['date'],reviewed=True,source=event['source'],kind='add_rule',rule=rule))
     return extra,new_catalog,unknown
 
-def run(repo,runtime,asof,output,draws=10000,model_path=None):
+def run(repo,runtime,asof,output,draws=10000,model_path=None,use_published_inputs=False):
     inputs=repo/'processed/asset_history/picks'
     baseline=json.loads((inputs/'opening_baseline.json').read_text());catalog=json.loads((inputs/'dated_events.json').read_text());orders=json.loads((inputs/'dated_orders.json').read_text());model=json.loads((inputs/'trained_pick_model.json').read_text());historical=json.loads((inputs/'forecast_inputs.json').read_text())
     if model_path is not None:model=json.loads(model_path.read_text())
@@ -68,7 +68,12 @@ def run(repo,runtime,asof,output,draws=10000,model_path=None):
         raise ValueError('New conditional pick terms require review; preserving last validated portfolio')
     view=active_rules(baseline,actions+fresh,asof,catalog+new_catalog)
     if not view['complete']:raise ValueError('Incomplete current legal pick view')
-    ratings,standing=current_forecast(repo,asof)
+    if use_published_inputs:
+        if asof not in historical['ratings']or asof not in historical['standings']:
+            raise ValueError('Method-only pick replay needs the exact published dated forecast')
+        ratings,standing=historical['ratings'][asof],historical['standings'][asof]
+    else:
+        ratings,standing=current_forecast(repo,asof)
     sim=simulate(asof,ratings,standing,view['rules'],orders['orders'],historical['qualifiers'],draws,max(2033,max(years)))
     result=value_portfolio(asof,view,sim,model,years)
     result['assumptions'].append('Daily team-strength forecasts extend the last reconstructed rating using changes in the app’s team projections, preserving the source basis at the October2026 transition.')

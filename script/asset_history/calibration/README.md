@@ -1,6 +1,7 @@
 # Young-player path valuation
 
-The current release is v7: [career-path methodology review](methodology-review.md).
+The current release is v8: [consistent history window](consistency-release.md).
+The valuation specification is documented in the [career-path methodology review](methodology-review.md).
 The v5 and v6 documents below describe archived policies.
 Its shared production prior and reliability weights are trained on the year-four
 production endpoint. The v4 implementation described below is retained as the
@@ -29,4 +30,5 @@ python script/frontend/test_asset_value_data.py
 ```
 
 The live producer uses production.py with the full annual inputs. The earlier input exporter, chronological backtest, prototype comparison and trade benchmark remain reproducible diagnostic tools.
+
 

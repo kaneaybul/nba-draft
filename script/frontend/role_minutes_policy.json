@@ -1,0 +1,12 @@
+{
+  "policy": "veteran-conditional-mpg-ten-appearance-prior-v2",
+  "prior_appearances": 10,
+  "maximum_baseline_mpg": 38,
+  "parity_cases": [
+    {"prior":20,"games":0,"minutes":0,"mpg":20,"weight":0},
+    {"prior":20,"games":5,"minutes":150,"mpg":23.333333333333332,"weight":0.3333333333333333},
+    {"prior":20,"games":10,"minutes":300,"mpg":25,"weight":0.5},
+    {"prior":20,"games":40,"minutes":1200,"mpg":28,"weight":0.8},
+    {"prior":38,"games":20,"minutes":900,"mpg":38,"weight":0.6666666666666666}
+  ]
+}

@@ -30,7 +30,7 @@ def release(repo,runtime,rebuild_unpublished=False):
         shutil.rmtree(data_root(repo));exists=False
     if not exists:
         main(SimpleNamespace(repo=repo,work_dir=runtime.parent,reseed=True,
-            allow_reconstructed=True,use_published_inputs=True,preserve_unsupported=True,draws=10000))
+            allow_reconstructed=True,use_published_inputs=True,draws=10000))
     else:
         from materialize import materialize,compact
         from attribution import run
@@ -47,3 +47,4 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--runtime',type=Path,required=True)
     p.add_argument('--rebuild-unpublished',action='store_true');a=p.parse_args()
     print(json.dumps(release(a.repo.resolve(),a.runtime.resolve(),a.rebuild_unpublished)))
+

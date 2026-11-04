@@ -70,6 +70,13 @@ export function runAssetValueRegressionTests(): string[] {
   expect(playerFourYearAssetValue(unavailable) === null, "missing live quotes never silently switch to the legacy model");
   expect(playerFourYearAssetValue(withAssetValueContext([{ ...cheap, year: 2026 }], undefined, published)[0]) === null,
     "historical season rows cannot silently substitute a legacy quote for a dated asset observation");
+  const dated = withAssetValueContext([{ ...cheap, year: 2026 }], undefined,
+    { ...published, season: 2026, observation_date: "2026-06-30", players: {
+      "1": { date: "2026-06-30", value: 456, annual: [] }
+    } })[0];
+  expect(playerFourYearAssetValue(dated) === 456 && getPlayerSortValue(dated, "asset_value") === 456
+    && playerTradeValue(dated) === 456 && playerTradeMachineAsset(dated, "UTA").tradeValue === 456,
+    "dated historical Impact, sorting and both trade entry points match the identical inventory quote");
   const ambiguous = withAssetPickValues([picks[1], { ...picks[1], asset_id: "duplicate" }], published);
   expect(ambiguous.every((pick) => pick.value_priced === false), "ambiguous legal claims cannot duplicate a portfolio quote");
   return [

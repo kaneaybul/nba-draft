@@ -3,6 +3,7 @@ name: Verify frontend data refresh
 on:
   pull_request:
     paths:
+      - script/frontend/role_minutes_policy.json
       - frontend/src/data.ts
       - frontend/src/assetValue.ts
       - frontend/package*.json
@@ -60,3 +61,4 @@ jobs:
 
       - name: Verify remaining-season minutes and injury accounting
         run: Rscript script/frontend/test_live_minutes.R
+

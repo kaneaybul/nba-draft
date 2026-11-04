@@ -12,9 +12,9 @@ class PublishedAppValues(unittest.TestCase):
 
     def seed(self,root):
         version=root/'script/asset_history/model_version.py';version.parent.mkdir(parents=True)
-        version.write_text("DATA_VERSION='v7'\nLEGACY_VERSION='v6'\nMETHOD='peak4-payroll-0.8-v7'\n")
-        public=root/'frontend/public/data/asset_history/v7';(public/'teams').mkdir(parents=True)
-        manifest={'method':'peak4-payroll-0.8-v7','generated_at':'2026-11-01T14:00:00Z',
+        version.write_text("DATA_VERSION='v8'\nLEGACY_VERSION='v7'\nMETHOD='peak4-payroll-0.8-v8'\n")
+        public=root/'frontend/public/data/asset_history/v8';(public/'teams').mkdir(parents=True)
+        manifest={'method':'peak4-payroll-0.8-v8','generated_at':'2026-11-01T14:00:00Z',
                   'teams':[{'team':team,'status':'available','latest':'2026-11-01'}for team in TEAMS]}
         (public/'manifest.json').write_text(json.dumps(manifest))
         for i,team in enumerate(TEAMS):
@@ -43,6 +43,32 @@ class PublishedAppValues(unittest.TestCase):
             model=json.loads(path.read_text());model['production_policy']='year-four-production-endpoint-v1'
             path.write_text(json.dumps(model))
             with self.assertRaisesRegex(ValueError,'career-path'):build(root)
+
+    def test_historical_seasons_copy_the_exact_dated_inventory(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);public=self.seed(root)
+            for path in (public/'teams').glob('*.json'):
+                data=json.loads(path.read_text())
+                past=json.loads(json.dumps(data['snapshots'][0]))
+                past['date']='2025-06-30'
+                past['assets'][0]['value']=224.
+                for annual in past['assets'][0]['details']['annual_values']:
+                    annual['season']-=2;annual['production']*=2;annual['asset']*=2
+                data['snapshots'].insert(0,past);path.write_text(json.dumps(data))
+            current=build(root)
+            historical=json.loads((root/'frontend/public/data/asset_valuations/v8/2025.json').read_text())
+            self.assertEqual(historical['players']['1']['value'],224.)
+            self.assertEqual(historical['players']['1']['date'],'2025-06-30')
+            self.assertEqual(current['players']['1']['value'],112.)
+            self.assertEqual(current['seasons']['2025']['observation_date'],'2025-06-30')
+
+    def test_mixed_historical_observation_dates_are_rejected(self):
+        with tempfile.TemporaryDirectory()as directory:
+            root=Path(directory);public=self.seed(root)
+            path=public/'teams/UTA.json';data=json.loads(path.read_text())
+            data['snapshots'].insert(0,dict(data['snapshots'][0],date='2025-06-30'))
+            path.write_text(json.dumps(data))
+            with self.assertRaisesRegex(ValueError,'same-date league seasons'):build(root)
 
     def test_endpoint_appraisal_cannot_replace_rolling_quote_or_its_distribution(self):
         with tempfile.TemporaryDirectory()as directory:
@@ -99,5 +125,6 @@ class PublishedAppValues(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
 
 

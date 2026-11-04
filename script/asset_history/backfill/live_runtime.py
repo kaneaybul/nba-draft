@@ -34,7 +34,7 @@ def encode(x):
 def fingerprint(canonical):
     p=canonical/'monthly_reconstruction/projections'
     files=[p/n for n in ('valuation_engine.py','role_smoothing.py','adaptive_calibration.py','integrate_monthly.py','quote_window.py','expected_contracts.py')]
-    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('asset_minutes.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv']
+    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('asset_minutes.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv',Path(__file__).resolve().parents[2]/'frontend/role_minutes_policy.json']
     return {f.name:hashlib.sha256(f.read_bytes()).hexdigest()for f in files}
 
 def load_state(path,canonical):

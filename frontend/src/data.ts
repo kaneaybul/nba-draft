@@ -63,7 +63,7 @@ export async function loadDataForView(data: AppData, view: string, season: numbe
     const [rawRows, capTracker, valuations] = await Promise.all([
       loadSeasonDataset<PlayerImpact>(next.manifest, "impact_players", season, cacheBust),
       next.capTracker ? Promise.resolve(next.capTracker) : loadOptionalSingleton<CapTrackerData>(next.manifest, "cap_tracker", cacheBust),
-      loadAssetValuations(cacheBust)
+      loadAssetValuations(cacheBust, season)
     ]);
     const rows = withAssetValueContext(rawRows, capTracker, valuations);
     if (capTracker) next = { ...next, capTracker };
@@ -204,10 +204,20 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
   return { manifest: { ...manifest, valuation_generated_at: valuations?.generated_at }, players: withAssetValueContext(normalized.players, capTracker, valuations), teams, lineups: normalized.lineups, schedules, picks: withAssetPickValues(picks, valuations), prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview, injuryOutlook };
 }
 
-async function loadAssetValuations(cacheBust?: string): Promise<AssetValuationData | undefined> {
+async function loadAssetValuations(cacheBust?: string, season?: number): Promise<AssetValuationData | undefined> {
   const data = await loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current");
-  if (data.method !== "peak4-payroll-0.8-v7" || data.history_version !== "v7") {
+  if (data.method !== "peak4-payroll-0.8-v8" || data.history_version !== "v8") {
     throw new Error("The current asset valuation release is unavailable. Reload after the update finishes.");
+  }
+  if (season !== undefined && season !== data.season && data.seasons?.[String(season)]) {
+    const entry = data.seasons[String(season)];
+    const historical = await loadJson<AssetValuationData>(entry.path, cacheBust ?? data.generated_at);
+    if (historical.method !== data.method || historical.history_version !== data.history_version
+      || historical.season !== season || historical.observation_date !== entry.observation_date
+      || historical.generated_at !== data.generated_at) {
+      throw new Error("The dated asset valuation release is inconsistent. Reload after the update finishes.");
+    }
+    return historical;
   }
   return data;
 }

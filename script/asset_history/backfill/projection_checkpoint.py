@@ -16,7 +16,7 @@ def signature(repo,runtime,injuries,asof):
     patterns=('raw/live/*.json','processed/livedata/impactrefresh/salary_cap_assumptions.csv',
         'processed/asset_history/contracts/contract_agreements.json','processed/asset_history/contracts/contract_adjustments.json',
         'processed/asset_history/injuries/*.json','frontend/public/data/v2/team_schedules/*.json',
-        'script/asset_history/backfill/*.py','script/asset_history/quote_window.py')
+        'script/asset_history/backfill/*.py','script/asset_history/quote_window.py','script/frontend/role_minutes_policy.json')
     records=[('runtime/'+str(p.relative_to(runtime)),digest(p))for p in sorted(files)]
     for pattern in patterns:
         records.extend(('repo/'+str(p.relative_to(repo)),digest(p))for p in sorted(repo.glob(pattern))if not p.name.startswith('test_'))
@@ -47,3 +47,4 @@ def save(cache,output,state,teams,expected):
             target=cache/team/name;shutil.copyfile(output/team/name,target);files[str(target.relative_to(cache))]=digest(target)
         target=cache/'states'/f'{team}.json';shutil.copyfile(state/f'{team}.json',target);files[str(target.relative_to(cache))]=digest(target)
     (cache/'manifest.json').write_text(json.dumps(dict(signature=expected,teams=list(teams),files=files),separators=(',',':')))
+

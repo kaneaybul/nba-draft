@@ -16,6 +16,7 @@ export type AssetValuationData = {
   players: Record<string, NonNullable<PlayerImpact["asset_valuation"]>>;
   slots: Record<string, number>;
   picks: Array<{ team: string; origin: string; year: number; round: number; value: number }>;
+  seasons?: Record<string, { observation_date: string; path: string }>;
 };
 
 export function annualAssetValue(production: number, salary: number, unsigned = false): AnnualAssetValue | null {
