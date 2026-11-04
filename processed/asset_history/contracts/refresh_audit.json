@@ -1,19 +1,32 @@
 {
-  "cutoff": "2026-11-03",
-  "generated_at": "2026-11-03T15:08:57.277253+00:00",
+  "cutoff": "2026-11-04",
+  "generated_at": "2026-11-04T13:53:07.580091+00:00",
   "mandatory_player_ids": [
     1643758
   ],
   "rotation_players": 20,
   "available_players": 21,
-  "pending_player_ids": [],
+  "pending_player_ids": [
+    1641706
+  ],
   "optional_source_failures": [],
   "failed_mandatory_player_ids": [],
+  "retained_agreements": [
+    {
+      "nba_id": 1641706,
+      "player_name": "Brandon Miller",
+      "known_from": "2026-10-19",
+      "source": "https://www.salaryswish.com/players/brandon-miller",
+      "reason": "Same-agreement scrape introduced an unreviewed future maximum; retained last validated schedule and queued source review",
+      "rejected_stated_total": 229659024.0,
+      "retained_stated_total": 209000000.0
+    }
+  ],
   "unverified_option_player_ids": [],
   "all_original_agreements": 3813,
   "discovery": {
     "ownership_source": "dated_ownership_replay",
-    "owned_source_identities": 525,
+    "owned_source_identities": 524,
     "unidentified_owned_players": []
   },
   "results": [
@@ -28,204 +41,204 @@
       "sha256": "a70fc06fb67b8a8d769c772e85605b91c0c85dc55a14fc8dd4a311178c156d69"
     },
     {
-      "nba_id": 1631128,
-      "player_name": "Christian Braun",
-      "realgm_profile": "https://basketball.realgm.com/player/Christian-Braun/Summary/143286",
-      "source_url": "https://www.salaryswish.com/players/christian-braun",
+      "nba_id": 1631243,
+      "player_name": "Mouhamed Gueye",
+      "realgm_profile": "https://basketball.realgm.com/player/Mouhamed-Gueye/Summary/160946",
+      "source_url": "https://www.salaryswish.com/players/mouhamed-gueye",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/christian-braun",
+      "url": "https://www.salaryswish.com/players/mouhamed-gueye",
       "parse_issues": [],
-      "sha256": "8df6c3445754717c0ff5b943dac74fb6b626ee545b4f5560aad46429a15e02b7"
+      "sha256": "6f9b811260d6d5c19c0a47f7a521a0a716945a7a975b6c1aff13fbdae026208d"
     },
     {
-      "nba_id": 1631131,
-      "player_name": "Oscar Tshiebwe",
-      "realgm_profile": "https://basketball.realgm.com/player/Oscar-Tshiebwe/Summary/117422",
-      "source_url": "https://www.salaryswish.com/players/oscar-tshiebwe",
+      "nba_id": 1631245,
+      "player_name": "Quenton Jackson",
+      "realgm_profile": "https://basketball.realgm.com/player/Quenton-Jackson/Summary/131622",
+      "source_url": "https://www.salaryswish.com/players/quenton-jackson",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/oscar-tshiebwe",
+      "url": "https://www.salaryswish.com/players/quenton-jackson",
       "parse_issues": [],
-      "sha256": "550889bd9b0ec3c83ad2d19218ab8752dc30301d93b5b8d8c11722f32da2b230"
+      "sha256": "16133afc461a72d8821532db53d8e939493ce8d7c857950716ab2c0160918ca0"
     },
     {
-      "nba_id": 1631133,
-      "player_name": "Jabari Walker",
-      "realgm_profile": "https://basketball.realgm.com/player/Jabari-Walker/Summary/162031",
-      "source_url": "https://www.salaryswish.com/players/jabari-walker",
+      "nba_id": 1631248,
+      "player_name": "Baylor Scheierman",
+      "realgm_profile": "https://basketball.realgm.com/player/Baylor-Scheierman/Summary/134595",
+      "source_url": "https://www.salaryswish.com/players/baylor-scheierman",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/jabari-walker",
+      "url": "https://www.salaryswish.com/players/baylor-scheierman",
       "parse_issues": [],
-      "sha256": "9f7babdc6e843ca3f55995f35b2c3786157a2edb283efe642edcb2be7f1f2efe"
+      "sha256": "6c752e9e17862dfbc590df43561c02ae84782d178af361bf6d1ffd521c2b032a"
     },
     {
-      "nba_id": 1631157,
-      "player_name": "Ryan Rollins",
-      "realgm_profile": "https://basketball.realgm.com/player/Ryan-Rollins/Summary/169177",
-      "source_url": "https://www.salaryswish.com/players/ryan-rollins",
+      "nba_id": 1631250,
+      "player_name": "Pete Nance",
+      "realgm_profile": "https://basketball.realgm.com/player/Pete-Nance/Summary/127259",
+      "source_url": "https://www.salaryswish.com/players/pete-nance",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/ryan-rollins",
+      "url": "https://www.salaryswish.com/players/pete-nance",
       "parse_issues": [],
-      "sha256": "dd40cb8996cc3d9af26cc0ece2c0556a9575cba2ab8f22a23328d61272397922"
+      "sha256": "fff086b31beb44329faface87ec7e8b3e290378a8e14463066c0c33783d46f5d"
     },
     {
-      "nba_id": 1631159,
-      "player_name": "Leonard Miller",
-      "realgm_profile": "https://basketball.realgm.com/player/Leonard-Miller/Summary/150556",
-      "source_url": "https://www.salaryswish.com/players/leonard-miller",
+      "nba_id": 1631255,
+      "player_name": "Karlo Matkovic",
+      "realgm_profile": "https://basketball.realgm.com/player/Karlo-Matkovic/Summary/118836",
+      "source_url": "https://www.salaryswish.com/players/karlo-matkovic",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/leonard-miller",
+      "url": "https://www.salaryswish.com/players/karlo-matkovic",
       "parse_issues": [],
-      "sha256": "b637ac4a15fe703962cafc8d9cae9ca74cd700b408ecc86983f79f55de1bb166"
+      "sha256": "5d13f0fb4ad3c3ad0e9ea4c2b25fdade4fcb67044c28b268bfecb044c04b0051"
     },
     {
-      "nba_id": 1631165,
-      "player_name": "Keon Ellis",
-      "realgm_profile": "https://basketball.realgm.com/player/Keon-Ellis/Summary/136248",
-      "source_url": "https://www.salaryswish.com/players/keon-ellis",
+      "nba_id": 1631260,
+      "player_name": "A.J. Green",
+      "realgm_profile": "https://basketball.realgm.com/player/AJ-Green/Summary/107398",
+      "source_url": "https://www.salaryswish.com/players/aj-green",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/keon-ellis",
+      "url": "https://www.salaryswish.com/players/aj-green",
       "parse_issues": [],
-      "sha256": "798f430a91250ad951d1fa3c9aee8ba325c15556d85fb908187c34fa7243b994"
+      "sha256": "ab4c7f0c26bf1c2cd813245b11426f34f4eb62d6a0f838dfce5cb67848b69c28"
     },
     {
-      "nba_id": 1631166,
-      "player_name": "Drew Timme",
-      "realgm_profile": "https://basketball.realgm.com/player/Drew-Timme/Summary/117478",
-      "source_url": "https://www.salaryswish.com/players/drew-timme",
+      "nba_id": 1631288,
+      "player_name": "Jamal Cain",
+      "realgm_profile": "https://basketball.realgm.com/player/Jamal-Cain/Summary/121491",
+      "source_url": "https://www.salaryswish.com/players/jamal-cain",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/drew-timme",
+      "url": "https://www.salaryswish.com/players/jamal-cain",
       "parse_issues": [],
-      "sha256": "c6548d3d1d1e1c6546c515ce625013a1e2c7c1b2fb6da18821d59593ac3efb6f"
+      "sha256": "9dd87361d2fb351cc343c3afd2fe40556961590d1cb2f888f8c0ea6b1f91ee37"
     },
     {
-      "nba_id": 1631169,
-      "player_name": "Josh Minott",
-      "realgm_profile": "https://basketball.realgm.com/player/Josh-Minott/Summary/175934",
-      "source_url": "https://www.salaryswish.com/players/josh-minott",
+      "nba_id": 1631321,
+      "player_name": "Sidy Cissoko",
+      "realgm_profile": "https://basketball.realgm.com/player/Sidy-Cissoko/Summary/175693",
+      "source_url": "https://www.salaryswish.com/players/sidy-cissoko",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/josh-minott",
+      "url": "https://www.salaryswish.com/players/sidy-cissoko",
       "parse_issues": [],
-      "sha256": "60625d06e0137751603077dc2e37937bcb37d30c513a1c64353cd3bc7a5e07f3"
+      "sha256": "aebc1e5c797b1223a5197c24dc31b685c74ef552c48554029c9ab3b2f38d4bcb"
     },
     {
-      "nba_id": 1631170,
-      "player_name": "Jaime Jaquez, Jr.",
-      "realgm_profile": "https://basketball.realgm.com/player/Jaime-Jaquez-Jr/Summary/103926",
-      "source_url": "https://www.salaryswish.com/players/jaime-jaquez-jr",
+      "nba_id": 1631323,
+      "player_name": "Simone Fontecchio",
+      "realgm_profile": "https://basketball.realgm.com/player/Simone-Fontecchio/Summary/27886",
+      "source_url": "https://www.salaryswish.com/players/simone-fontecchio",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/jaime-jaquez-jr",
+      "url": "https://www.salaryswish.com/players/simone-fontecchio",
       "parse_issues": [],
-      "sha256": "d008512fe64c62c1fb07ae41165914120d2692af0d4f8bba266146ef9d96e989"
+      "sha256": "eaec1caaa290e2d30c0035ecc8719c390e62db986876db3aadb04a3cc0f720a6"
     },
     {
-      "nba_id": 1631172,
-      "player_name": "Ousmane Dieng",
-      "realgm_profile": "https://basketball.realgm.com/player/Ousmane-Dieng/Summary/148828",
-      "source_url": "https://www.salaryswish.com/players/ousmane-dieng",
+      "nba_id": 1631342,
+      "player_name": "Daeqwon Plowden",
+      "realgm_profile": "https://basketball.realgm.com/player/Daeqwon-Plowden/Summary/121755",
+      "source_url": "https://www.salaryswish.com/players/daeqwon-plowden",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/ousmane-dieng",
+      "url": "https://www.salaryswish.com/players/daeqwon-plowden",
       "parse_issues": [],
-      "sha256": "22da713f0164dbb6ac316bfe8b5714e1cd1955e768939e19d1b7ea9c87bdbd2b"
+      "sha256": "5f0d21e67c9db4da01e24b2bc6d5ba13c36e44652541cf7f1b43e51484900017"
     },
     {
-      "nba_id": 1631199,
-      "player_name": "Ron Harper, Jr.",
-      "realgm_profile": "https://basketball.realgm.com/player/Ron-Harper-Jr/Summary/121151",
-      "source_url": "https://www.salaryswish.com/players/ron-harper-jr",
+      "nba_id": 1631457,
+      "player_name": "Alex Morales",
+      "realgm_profile": "https://basketball.realgm.com/player/Alex-Morales/Summary/152047",
+      "source_url": "https://www.salaryswish.com/players/alex-morales",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/ron-harper-jr",
+      "url": "https://www.salaryswish.com/players/alex-morales",
       "parse_issues": [],
-      "sha256": "da70f0a0c4ef759dd666fe16ff51c67a1d41cf1cd7c1ee0af11a465895ab1cab"
+      "sha256": "005cd82845814708e7c2c9884db31b59feccad01cf96ab3fdd9851e2b96e3205"
     },
     {
-      "nba_id": 1631200,
-      "player_name": "Kris Murray",
-      "realgm_profile": "https://basketball.realgm.com/player/Kris-Murray/Summary/163409",
-      "source_url": "https://www.salaryswish.com/players/kris-murray",
+      "nba_id": 1641705,
+      "player_name": "Victor Wembanyama",
+      "realgm_profile": "https://basketball.realgm.com/player/Victor-Wembanyama/Summary/136048",
+      "source_url": "https://www.salaryswish.com/players/victor-wembanyama",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/kris-murray",
+      "url": "https://www.salaryswish.com/players/victor-wembanyama",
       "parse_issues": [],
-      "sha256": "9175a635cfd075e7a5b461380d6f00e8b6ee7b7536925928223833dfb264a96a"
+      "sha256": "5cdb337f1c2abb67e58a0e5de351132815440ecbed99bbc47c0c351db835d9d7"
     },
     {
-      "nba_id": 1631204,
-      "player_name": "Marcus Sasser",
-      "realgm_profile": "https://basketball.realgm.com/player/Marcus-Sasser/Summary/148690",
-      "source_url": "https://www.salaryswish.com/players/marcus-sasser",
+      "nba_id": 1641706,
+      "player_name": "Brandon Miller",
+      "realgm_profile": "https://basketball.realgm.com/player/Brandon-Miller/Summary/151234",
+      "source_url": "https://www.salaryswish.com/players/brandon-miller",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/marcus-sasser",
+      "url": "https://www.salaryswish.com/players/brandon-miller",
       "parse_issues": [],
-      "sha256": "f8fb9f676635edba192366b9a7675a2a3672570b62978a81eb63882bafeb531d"
+      "sha256": "7d0436af8070921ebd705ce7eadd4383488db35ae4842dd2619d798ccc7f0928"
     },
     {
-      "nba_id": 1631212,
-      "player_name": "Peyton Watson",
-      "realgm_profile": "https://basketball.realgm.com/player/Peyton-Watson/Summary/133038",
-      "source_url": "https://www.salaryswish.com/players/peyton-watson",
+      "nba_id": 1641707,
+      "player_name": "Taylor Hendricks",
+      "realgm_profile": "https://basketball.realgm.com/player/Taylor-Hendricks/Summary/149561",
+      "source_url": "https://www.salaryswish.com/players/taylor-hendricks",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/peyton-watson",
+      "url": "https://www.salaryswish.com/players/taylor-hendricks",
       "parse_issues": [],
-      "sha256": "25531be568d0c46affefb0c100a74da30c250a143b111758ce9391a5431b93f7"
+      "sha256": "c4f7b077423326c5ffd9ae465f65664fc5c840a414e2dfd419fcca7a9fccda26"
     },
     {
-      "nba_id": 1631215,
-      "player_name": "Khalifa Diop",
-      "realgm_profile": "https://basketball.realgm.com/player/Khalifa-Diop/Summary/128505",
-      "source_url": "https://www.salaryswish.com/players/khalifa-diop",
+      "nba_id": 1641708,
+      "player_name": "Amen Thompson",
+      "realgm_profile": "https://basketball.realgm.com/player/Amen-Thompson/Summary/176051",
+      "source_url": "https://www.salaryswish.com/players/amen-thompson",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/khalifa-diop",
+      "url": "https://www.salaryswish.com/players/amen-thompson",
       "parse_issues": [],
-      "sha256": "700eb8f375de7266c7a29fe547e0f15ef15ecdf2a372f8b69cfb2523020a5a5f"
+      "sha256": "c50426855199ac11456b589bfcaf7dc1bad5a75662dde7ef1ca908898955a4f6"
     },
     {
-      "nba_id": 1631217,
-      "player_name": "Moussa Diabate",
-      "realgm_profile": "https://basketball.realgm.com/player/Moussa-Diabate/Summary/126848",
-      "source_url": "https://www.salaryswish.com/players/moussa-diabate",
+      "nba_id": 1641709,
+      "player_name": "Ausar Thompson",
+      "realgm_profile": "https://basketball.realgm.com/player/Ausar-Thompson/Summary/176052",
+      "source_url": "https://www.salaryswish.com/players/ausar-thompson",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/moussa-diabate",
+      "url": "https://www.salaryswish.com/players/ausar-thompson",
       "parse_issues": [],
-      "sha256": "aca775ad8b93f29d1eaa41df8b1f6a8f5de015b96990a9ba68c478659b5c27f5"
+      "sha256": "c2c757d3207db6206dddb6a87671cfbb0f1678c6f9fc5690fc2ddb49a4cbf5e5"
     },
     {
-      "nba_id": 1631218,
-      "player_name": "Trayce Jackson-Davis",
-      "realgm_profile": "https://basketball.realgm.com/player/Trayce-Jackson-Davis/Summary/126857",
-      "source_url": "https://www.salaryswish.com/players/trayce-jackson-davis",
+      "nba_id": 1641710,
+      "player_name": "Anthony Black",
+      "realgm_profile": "https://basketball.realgm.com/player/Anthony-Black/Summary/176057",
+      "source_url": "https://www.salaryswish.com/players/anthony-black",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/trayce-jackson-davis",
+      "url": "https://www.salaryswish.com/players/anthony-black",
       "parse_issues": [],
-      "sha256": "6618dfebe75486a21ed61156f028ec8c8fad646a314347a0e75cfb0ecca60996"
+      "sha256": "3bb6203ab48784920c49f3ac99763eebfd9a1aa601b0895d01fd0ddfeef6e87d"
     },
     {
-      "nba_id": 1631221,
-      "player_name": "Collin Gillespie",
-      "realgm_profile": "https://basketball.realgm.com/player/Collin-Gillespie/Summary/118702",
-      "source_url": "https://www.salaryswish.com/players/collin-gillespie",
+      "nba_id": 1641711,
+      "player_name": "Gradey Dick",
+      "realgm_profile": "https://basketball.realgm.com/player/Gradey-Dick/Summary/151289",
+      "source_url": "https://www.salaryswish.com/players/gradey-dick",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/collin-gillespie",
+      "url": "https://www.salaryswish.com/players/gradey-dick",
       "parse_issues": [],
-      "sha256": "6015e10d7a9bdd33e01403e185a814c2a62cdcac5aff871946288d1263592280"
+      "sha256": "de3d86dff13da25ba2e163c58eb4ed3f83f68e1a59da6c65a0e647d9457a2e2a"
     },
     {
-      "nba_id": 1631222,
-      "player_name": "Jake LaRavia",
-      "realgm_profile": "https://basketball.realgm.com/player/Jake-LaRavia/Summary/151853",
-      "source_url": "https://www.salaryswish.com/players/jake-laravia",
+      "nba_id": 1641712,
+      "player_name": "Rayan Rupert",
+      "realgm_profile": "https://basketball.realgm.com/player/Rayan-Rupert/Summary/152400",
+      "source_url": "https://www.salaryswish.com/players/rayan-rupert",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/jake-laravia",
+      "url": "https://www.salaryswish.com/players/rayan-rupert",
       "parse_issues": [],
-      "sha256": "ade8a8fd1054ff35b323270fde9e924116d4b4cd6a3e5f15fcfcfc3f5a6c9ba2"
+      "sha256": "4b10e467e71e3d227c84c6a46194c26b84733fa9f8e107b78af61e9e07920a26"
     },
     {
-      "nba_id": 1631230,
-      "player_name": "Dominick Barlow",
-      "realgm_profile": "https://basketball.realgm.com/player/Dominick-Barlow/Summary/180398",
-      "source_url": "https://www.salaryswish.com/players/dominick-barlow",
+      "nba_id": 1641713,
+      "player_name": "G.G. Jackson",
+      "realgm_profile": "https://basketball.realgm.com/player/GG-Jackson/Summary/182761",
+      "source_url": "https://www.salaryswish.com/players/gg-jackson-ii",
       "status": "available",
-      "url": "https://www.salaryswish.com/players/dominick-barlow",
+      "url": "https://www.salaryswish.com/players/gg-jackson-ii",
       "parse_issues": [],
-      "sha256": "5dbf4ca03d25cfdffbae8604e31463b8547d2aaf5195c8baf02d8984005ac498"
+      "sha256": "393a33dcee96ab40b33f030e9c61aa990b24cf0c99acac1c02d7796f7dcd2b2f"
     }
   ],
   "method": "Dated transaction refresh plus oldest-check rotation; failures retain prior source schedules and retry."

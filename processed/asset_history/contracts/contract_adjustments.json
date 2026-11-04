@@ -6732,6 +6732,17 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
+    "player_name": "Baylor Scheierman",
+    "nba_id": 1631248,
+    "known_from": "2026-10-30",
+    "remove_years": [],
+    "exercise_years": [
+      2028
+    ],
+    "source": "https://www.salaryswish.com/players/baylor-scheierman",
+    "quality": "dated_option_resolution_from_contract_history"
+  },
+  {
     "player_name": "Zach Edey",
     "nba_id": 1641744,
     "known_from": "2025-10-21",
