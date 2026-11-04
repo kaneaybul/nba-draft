@@ -1,9 +1,18 @@
 import json,tempfile,unittest
 from pathlib import Path
-from run_player_refresh import stage_state
+from run_player_refresh import stage_state,restore_published_availability
 from ownership_runtime import restore_events,save_events
 
 class DailyState(unittest.TestCase):
+ def test_published_replay_restores_dated_injuries_and_clock_without_live_inputs(self):
+  with tempfile.TemporaryDirectory()as directory:
+   root=Path(directory);monthly=root/'monthly_reconstruction';(monthly/'injuries').mkdir(parents=True)
+   captured=dict(daily_input_audit=dict(date='2026-11-03',completed_team_dates={'UTA':[]}),
+                 injury_availability=dict(date='2026-11-03',records=[]))
+   restore_published_availability(root,captured,'2026-11-03')
+   self.assertEqual(json.loads((monthly/'daily_input_audit.json').read_text()),captured['daily_input_audit'])
+   self.assertEqual(json.loads((monthly/'injuries/current_availability.json').read_text()),captured['injury_availability'])
+   with self.assertRaisesRegex(ValueError,'exact dated'):restore_published_availability(root,captured,'2026-11-04')
  def test_method_reseed_keeps_dated_sources_but_resets_model_states(self):
   with tempfile.TemporaryDirectory()as directory:
    root=Path(directory);saved=root/'saved';saved.mkdir()

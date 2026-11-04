@@ -56,13 +56,13 @@ def main(args):
     from run_pick_refresh import run as refresh_picks
     staged_model=players/'player_state_staged/endpoint_pick_model.json'
     if not staged_model.exists():raise ValueError('Missing endpoint-trained shared pick model')
-    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,staged_model)
+    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,staged_model,use_published_inputs=published_inputs)
     legacy_pick_totals=None
     if new_version:
         old_model=json.loads(staged_model.read_text())
         for k in ('production_policy','stock_policy','endpoint_records','endpoint_training_through'):old_model.pop(k,None)
         old_path=work/'legacy_pick_model.json';old_path.write_text(json.dumps(old_model))
-        old_picks=refresh_picks(repo,runtime,asof,work/'legacy_pick_candidates.json',args.draws,old_path)
+        old_picks=refresh_picks(repo,runtime,asof,work/'legacy_pick_candidates.json',args.draws,old_path,use_published_inputs=published_inputs)
         if old_picks['source_fingerprint']!=picks['source_fingerprint']:raise ValueError('Method comparison needs identical pick sources')
         legacy_pick_totals={t:sum(a['value']for a in old_picks['teams'][t])for t in TEAMS}
     player_data=json.loads((players/'player_candidates.json').read_text())['snapshots']
