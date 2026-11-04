@@ -18,14 +18,13 @@ on:
     types:
       - completed
 
-# The source refresh and its data commits use this same group.
-concurrency:
-  group: roster-refresh
-  cancel-in-progress: false
-
 jobs:
   refresh:
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    # Skipped upstream runs must not displace a waiting player rebuild.
+    concurrency:
+      group: roster-refresh
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
