@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {mergeSharedContracts,capCells} from './shared_contracts.mjs';
 const fixture={complete:true,as_of:'2026-11-04',coverage:{priced_players:2,missing_players:[]},players:[
  {nba_id:1,player_name:'Regular',team:'UTA',cells:[{year:2027,amount:100,cap_amount:90,kind:'guaranteed',counts_against_cap:true}],source:'signed',known_from:'2026-07-01'},
@@ -13,9 +15,10 @@ assert.equal(merged.length,2);
 assert.throws(()=>mergeSharedContracts({...fixture,complete:false},prior,[2027],p=>p.nba_id,s=>s),/Incomplete/);
 
 if(process.argv.includes('--require-export')) {
- const book=JSON.parse(fs.readFileSync('processed/contracts/current.json','utf8'));
- const cap=JSON.parse(fs.readFileSync('frontend/public/data/cap_tracker.json','utf8'));
- const players=JSON.parse(fs.readFileSync(`frontend/public/data/v2/impact_players/${book.season}.json`,'utf8'));
+ const root=fileURLToPath(new URL('../../',import.meta.url));
+ const book=JSON.parse(fs.readFileSync(path.join(root,'processed/contracts/current.json'),'utf8'));
+ const cap=JSON.parse(fs.readFileSync(path.join(root,'frontend/public/data/cap_tracker.json'),'utf8'));
+ const players=JSON.parse(fs.readFileSync(path.join(root,`frontend/public/data/v2/impact_players/${book.season}.json`),'utf8'));
  const active=players.filter(p=>p.pool_status==='roster');
  assert.equal(active.length,book.players.length,'Current roster and the dated contract book must agree');
  for(const p of book.players){
