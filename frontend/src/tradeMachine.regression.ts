@@ -7,6 +7,7 @@ export function runTradeMachineRegressionTests(): string[] {
   if(tradeSalaryForPlayer(twoWay)!==0) throw new Error("Two-way cash pay must not enter cap salary matching");
   const regular = { contract: 2000000, contract_cap_salary: 1800000 } as PlayerImpact;
   if(tradeSalaryForPlayer(regular)!==1800000) throw new Error("Trade matching must use the verified cap salary");
+  if(tradeSalaryForPlayer({contract:2000000,contract_cap_salary:null} as PlayerImpact)!==2000000) throw new Error("An unavailable cap salary must preserve the signed salary fallback");
   return [
     capRoomAbsorptionClearsWithoutMatchingSalary(),
     balancedTradeValueIsModelAccepted(),
