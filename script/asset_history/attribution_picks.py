@@ -26,8 +26,8 @@ def setup(ctx,repo):
     if missing:raise ValueError('Missing reviewed pick replay actions')
     ctx['actions']=actions
     last=max(ctx['dates'])
+    from run_pick_refresh import current_forecast,new_pick_actions
     if last>max(ctx['inputs']['ratings']):
-        from run_pick_refresh import current_forecast,new_pick_actions
         if last>=json.loads((repo/'raw/live/results.json').read_text())['generated_at'][:10]:
             ratings,record=current_forecast(repo,last)
             ctx['inputs']['ratings'][last]=ratings;ctx['inputs']['standings'][last]=record
