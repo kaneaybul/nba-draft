@@ -91,6 +91,11 @@ apply_live_player_pool <- function(rows,history,base_dir) {
   rows$pool_review_pending <- FALSE;rows$source_nba_id <- NA_real_
   providers <- jsonlite::fromJSON(file.path(base_dir,'raw/live/ratings.json'))$players
   contract_path <- file.path(base_dir,'processed/livedata/impactrefresh/contracts_2026_spotrac.csv')
+  salary_column <- 'salary_y1'
+  if(!file.exists(contract_path) || file.info(contract_path)$size <= 4) {
+    contract_path <- file.path(base_dir,'processed/livedata/impactrefresh/contracts_2027_current.csv')
+    salary_column <- 'salary_y0'
+  }
   contracts <- if(file.exists(contract_path) && file.info(contract_path)$size > 4) read.csv(contract_path,check.names=FALSE) else data.frame()
   for(p in registry$players) {
     if(p$pool_status=='draft') next
@@ -112,9 +117,9 @@ apply_live_player_pool <- function(rows,history,base_dir) {
     rows$roster_state[i] <- if(active) 'active' else 'inactive'
     rows$roster_status_source[i] <- if(isTRUE(p$review_pending)) 'Prior roster retained pending review' else registry$source
     rows$roster_truth_pulled_at[i] <- registry$generated_at
-    known_contract <- if(nrow(contracts)) match(rows$nba_id[i],contracts$nba_id) else NA_integer_
-    if(!active) rows$contract[i] <- NA_real_ else if(!is.na(known_contract)&&is.finite(contracts$salary_y1[known_contract])&&contracts$salary_y1[known_contract]>0) {
-      rows$contract[i] <- contracts$salary_y1[known_contract]
+    known_contract <- if(nrow(contracts)) match(pool_scalar(p$nba_id,rows$nba_id[i]),contracts$nba_id) else NA_integer_
+    if(!active) rows$contract[i] <- NA_real_ else if(!is.na(known_contract)&&is.finite(contracts[[salary_column]][known_contract])&&contracts[[salary_column]][known_contract]>0) {
+      rows$contract[i] <- contracts[[salary_column]][known_contract]
     } else if(!is.finite(rows$contract[i])&&!is.null(p$salary)&&is.finite(p$salary)&&p$salary>0) rows$contract[i] <- p$salary
     status <- pool_scalar(p$contract_status,'Signed')
     if(active && status %in% c('UFA','RFA','Rookie FA')) status <- 'Signed'

@@ -192,3 +192,13 @@ jobs:
           git add raw/bref_position_estimates.csv raw/bref_position_estimates_by_year
           git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
           bash script/frontend/publish_refresh.sh "Refresh expected NBA ratings, injuries and completed results"
+
+      - name: Preserve failed export diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-export-diagnostics
+          path: |
+            frontend/public/data/v2/impact_players/2027.json
+            frontend/public/data/cap_tracker.json
+          retention-days: 7
