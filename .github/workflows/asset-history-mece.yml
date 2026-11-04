@@ -59,7 +59,7 @@ jobs:
         with:
           name: mece-attribution-release
           path: |
-            frontend/public/data/asset_history/v6/attribution
+            frontend/public/data/asset_history/v7/attribution
             processed/asset_history/attribution_cache
             processed/asset_history/attribution_validation.json
           retention-days: 7

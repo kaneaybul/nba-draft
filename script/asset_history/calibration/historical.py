@@ -255,3 +255,4 @@ def eligible_careers(rows, cutoff, stage=0, horizon=4):
                  production=r['production'][:horizon]) for r in rows
             if r['stage']==stage and r['horizon']>=horizon
             and r['cohort']+stage+horizon<=cutoff]
+

@@ -11,7 +11,8 @@ import numpy as np
 from .historical import name_key
 from .path_model import slot_weights, evidence_weight, fit_reliability, path_quotes
 
-POLICY = 'year-four-production-endpoint-v1'
+POLICY = 'year-four-assessed-production-paths-v3'
+PICK_POLICY = 'year-four-endpoint-picks-rolling-players-v3'
 
 
 def production_quotes(paths):
@@ -21,7 +22,8 @@ def production_quotes(paths):
     return 2 * np.sort(np.maximum(p, 0), axis=1)[:, -2:].sum(axis=1)
 
 
-def build_records(panel):
+def build_records(panel, errors=None):
+
     records, excluded = [], []
     seen = set()
     for d in panel.drafts:
@@ -43,13 +45,19 @@ def build_records(panel):
         if state is None and observed and float(observed.get('minutes') or 0) > 0:
             excluded.append(dict(key=key, reason='endpoint service without rating'))
             continue
-        tail = np.maximum(panel.forecast(end, pid, 4) if state else [0.] * 4, 0.).tolist()
+        tail = list(panel.forecast(end, pid, 4) if state else [0.] * 4)
+        # The endpoint is now known. Its label is the canonical contract-neutral
+        # forward appraisal, not an extra premium for unknown years five to eight.
+        paths=np.asarray([tail]);weights=np.ones(1);values=production_quotes(paths)
+        audit=dict(n=1,latest_label=end,method='completed year-four assessed production',
+                   verified_no_endpoint_service=state is None)
         service = [panel.outcome(key, cohort+j, pid) if cohort+j in panel.raw else None for j in range(1, 5)]
         # Unknown service is excluded from the rolling translation, never zero.
         linked = None if any(p is None for p in service) else [float(p) for p in service] + tail
         records.append(dict(key=key, player=d['player'], cohort=cohort, slot=slot,
-                            end=end, endpoint=tail, value=float(production_quotes(tail)[0]),
-                            production=linked))
+                            end=end, endpoint=tail, value=float(weights@values),
+                            endpoint_paths=paths.tolist(),endpoint_weights=weights.tolist(),
+                            endpoint_audit=audit,production=linked))
     return records, excluded
 
 
@@ -58,8 +66,8 @@ class EndpointModel:
         self.records = records
         self.cache = {}
 
-    def prior(self, slot, cutoff, exclude=None):
-        k = (int(slot), int(cutoff), exclude)
+    def prior(self, slot, cutoff, exclude=None, endpoint_only=False):
+        k = (int(slot), int(cutoff), exclude, endpoint_only)
         if k in self.cache:
             return self.cache[k]
         rows = [r for r in self.records if r['end'] <= cutoff and r['key'] != exclude]
@@ -69,11 +77,18 @@ class EndpointModel:
         beta = np.linalg.lstsq(x, [r['value'] for r in rows], rcond=None)[0]
         target = max(0., float(np.array([1., math.log(slot)]) @ beta))
         linked = [r for r in rows if r.get('production') is not None]
-        if len(linked) < 30:
+        if len(linked)<30 and not endpoint_only:
             raise ValueError('Insufficient linked service / endpoint paths')
+        if not linked:
+            # Endpoint-only labels remain valid when early service ratings are
+            # unavailable. They cannot manufacture a daily service translation.
+            result=dict(value=target,paths=np.empty((0,8)),weights=np.empty(0),scale=None,
+                        training_n=len(rows),linked_n=0,latest_label=max(r['end']for r in rows),coefficients=beta.tolist())
+            self.cache[k]=result
+            return result
         weights = slot_weights([r['slot'] for r in linked], slot)
         paths = np.asarray([r['production'] for r in linked], float)
-        center = float(weights @ production_quotes(paths[:, 4:8]))
+        center = float(weights @ np.asarray([r['value'] for r in linked]))
         if center <= 0:
             raise ValueError('Cannot normalize a zero endpoint production prior')
         # Existing log-slot shrinkage, fitted to the NEW production endpoint.
@@ -85,9 +100,27 @@ class EndpointModel:
         self.cache[k] = result
         return result
 
+    def distribution(self,slot,cutoff,exclude=None):
+        prior=self.prior(slot,cutoff,exclude,endpoint_only=True)
+        if 'endpoint_distribution' not in prior:
+            rows=[r for r in self.records if r['end']<=cutoff and r['key']!=exclude]
+            w=slot_weights([r['slot']for r in rows],slot)
+            values=[];weights=[]
+            center=float(w@np.asarray([r['value']for r in rows]))
+            scale=prior['value']/center if center>0 else 0.
+            for row,weight in zip(rows,w):
+                p=row['endpoint_paths'] if 'endpoint_paths'in row else [row['endpoint'] if 'endpoint'in row else row['production'][4:8]]
+                probabilities=np.asarray(row.get('endpoint_weights',[1.]),float)
+                values.extend(production_quotes(p)*scale);weights.extend(weight*probabilities)
+            prior['endpoint_distribution']=(np.asarray(values),np.asarray(weights))
+        return prior['endpoint_distribution']
 
-def learning_cases(panel, records):
+
+def learning_cases(panel, records, errors=None, endpoint_errors=None):
     """Predict the SAME endpoint at every stage, with completed-label cutoffs."""
+    from .path_model import feature_vector
+    from .endpoint_paths import EndpointRevisionPool,build_endpoint_errors
+    residuals=EndpointRevisionPool(build_endpoint_errors(panel)if endpoint_errors is None else endpoint_errors)
     model = EndpointModel(records)
     cases = []
     for r in records:
@@ -100,15 +133,19 @@ def learning_cases(panel, records):
             if (origin, pid) not in panel.states or origin < 2018:
                 continue
             try:
-                prior = model.prior(r['slot'], origin, r['key'])
+                prior = model.prior(r['slot'], r['cohort']-1, r['key'],endpoint_only=True)
             except ValueError:
                 continue
             full = panel.forecast(origin, pid, r['cohort']+8-origin)
-            own = full[4-stage:8-stage]
+            state=panel.states[origin,pid]
+            paths,weights,audit=residuals.scenarios(full[4-stage:8-stage],
+                feature_vector(state.age,state.total,state.minutes,state.yoe),origin,4-stage,r['key'])
+            values=production_quotes(paths)
             cases.append(dict(key=r['key'], player=r['player'], cohort=r['cohort'],
                               stage=stage, origin=origin, label_end=r['end'], slot=r['slot'],
                               minutes=panel.career_minutes(r['key'], pid, r['cohort'], origin),
-                              prior=prior['value'], nba=float(production_quotes(own)[0]),
+                              prior=prior['value'], nba=float(weights@values),
+                              latest_residual_label=audit['latest_label'],
                               actual=r['value'], latest_prior_label=prior['latest_label']))
     holdouts = []
     for r in cases:
@@ -128,16 +165,26 @@ def pick_components(model, slot, costs, prior_model=None, draft_year=None):
     """Translate the shared endpoint-trained prior into a current asset quote."""
     cutoff=min(model['endpoint_training_through'],int(draft_year)-1) if draft_year is not None else model['endpoint_training_through']
     p = (prior_model or EndpointModel(model['endpoint_records'])).prior(slot, cutoff)
+    cost_key=tuple(float(c)for c in costs)
+    if model.get('stock_policy')==PICK_POLICY and cost_key in p.get('pick_cost_quotes',{}):
+        return dict(p['pick_cost_quotes'][cost_key])
     service = p['paths'][:, :4]
     w = p['weights']
-    production = p['value'] if model.get('stock_policy')=='year-four-endpoint-stock-v2' else float(w @ (2*np.sort(service,axis=1)[:,-2:].sum(axis=1)))
+    production = p['value'] if model.get('stock_policy') in ('year-four-endpoint-stock-v2',PICK_POLICY) else float(w @ (2*np.sort(service,axis=1)[:,-2:].sum(axis=1)))
     cumulative = float(w @ service.sum(axis=1))
     adjustment = .8 * (cumulative - sum(costs))
     raw = production + adjustment
-    return dict(production_quote=production, cumulative_production=cumulative,
-                contract_adjustment=adjustment, quote=max(0., raw),
-                floor_adjustment=max(0., raw)-raw,
+    # Each production career is already priced before the expectation above.
+    # Salary is linear, so this equals E[P_i + .8*(service_i-cost)]. Retain
+    # negative career payoffs: the right's ex-ante floor cannot erase expected
+    # rookie costs after learning which player disappointed.
+    quote=max(0.,raw)
+    result=dict(production_quote=production, cumulative_production=cumulative,
+                contract_adjustment=adjustment, quote=quote,
+                floor_adjustment=quote-raw,
                 draft_endpoint_expectation=p['value'])
+    if model.get('stock_policy')==PICK_POLICY:p.setdefault('pick_cost_quotes',{})[cost_key]=dict(result)
+    return result
 
 
 def build_pick_model(previous, records, cutoff):
@@ -147,13 +194,13 @@ def build_pick_model(previous, records, cutoff):
     model['legacy_original_window_fit']=copy.deepcopy(previous.get('legacy_original_window_fit',previous['pick_fit']))
     for k in ('holdout_year','holdout_players','holdout_rmse','training_players','player_seasons','cohorts'):
         model['pick_fit'].pop(k,None)
-    model.update(endpoint_records=records, endpoint_training_through=cutoff, production_policy=POLICY,stock_policy='year-four-endpoint-stock-v2')
+    model.update(endpoint_records=records, endpoint_training_through=cutoff, production_policy=POLICY,stock_policy=PICK_POLICY)
     model['pick_fit'].update(target=POLICY,
         model='Linked service paths normalized to log-slot year-four production endpoint; salaries applied afterward',
         endpoint_training_players=len(records), endpoint_training_through=cutoff,
-        endpoint_label_scope='Retrospective production forecast observable after season four; not realized seasons five through eight or observed trade prices',
+        endpoint_label_scope='Contract-neutral production appraisal assessed after season four; uncertainty concerns development and forecast revisions before that endpoint, never realized seasons five through eight',
         rolling_translation='First-four service paths linked to the same mature endpoint paths',
-        legacy_coefficients='Retained for archived-model compatibility only; v5 uses endpoint_records')
+        legacy_coefficients='Retained for archived-model compatibility only; current release uses endpoint_records')
     quote = RoundAwarePickQuotes(model)
     for row in model['pick_curve']:
         c = quote.components(1 if row['pick'] <= 30 else 2, row['pick'])
@@ -168,7 +215,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
     """Read raw production before contract choices; extend own missing years."""
     from valuation_engine import AnnualState, project_path
     years = list(range(draft+5, draft+9))
-    raw = {int(r['season']): max(0., float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))
+    raw = {int(r['season']): float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])
            for r in annual}
     if audit is not None:audit.update(method='published_raw_production',extended_seasons=[y for y in years if y not in raw])
     if all(y in raw for y in years):
@@ -188,7 +235,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
     coefficient = float(first['scale_budget_scenario'])/float(first['salary_cap_scenario'])*164961000.*30/float(first['league_timin'])
     replacement = float(first['replacement'])
     anchors = [y for y in raw if y in path and raw[y] > 0]
-    level = lambda y: max(0., (path[y].total-replacement)*path[y].minutes*coefficient)
+    level = lambda y: (path[y].total-replacement)*path[y].minutes*coefficient
     scale = 1.
     if audit is not None:audit['method']='own_career_model_extension'
     if anchors:

@@ -152,7 +152,7 @@ def export(output,asof=None,calibrator=None):
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 raw_path=raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 details['raw_annual_production']=[dict(season=int(r['season']),
-                    production=max(0.,float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])))for r in raw_path
+                    production=float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))for r in raw_path
                     if r.get('annual_production')not in(None,'')and r.get('salary_cap_scenario')not in(None,'')]
                 value=float(row['app_style_four_year_asset_quote_with_draft_prior'])
                 if calibrator is not None:
@@ -213,6 +213,9 @@ def run(args):
     seed=repo/'processed/asset_history/canonical_runtime_seed.zip'
     if not args.prepared_runtime:unpack(seed,runtime)
     results_path=repo/'raw/live/results.json'
+    from archived_inputs import restore_archived_inputs
+    restored=restore_archived_inputs(runtime,repo,args.as_of,latest_inputs)
+    if restored:print('Restored exact archived panels: '+', '.join(restored),flush=True)
     if reseed:latest_inputs(runtime,previous_state/'prior_day',results_path=results_path)
     latest_inputs(runtime,state,results_path=results_path)
     if reseed:
@@ -274,9 +277,19 @@ def run(args):
         if review.exists():command+=['--injury-review',str(review)]
         with(output/f'{team}.log').open('w')as log:subprocess.run(command,check=True,stdout=log,stderr=subprocess.STDOUT)
         print('Completed player quotes: '+team,flush=True)
-    # First team establishes one shared source-hashed league calibration.
-    compute(TEAMS[0])
-    with ThreadPoolExecutor(max_workers=args.workers)as pool:list(pool.map(compute,TEAMS[1:]))
+    # Checkpoint the expensive mean projections separately from the path target.
+    # Reuse is restricted to source-identical method-only reseeds.
+    from projection_checkpoint import signature,reuse,save
+    checkpoint=output.parent/'annual_projection_checkpoint'
+    checkpoint_signature=signature(repo,runtime,injuries,args.as_of)if args.reseed and getattr(args,'use_published_inputs',False)else None
+    reused=bool(checkpoint_signature and reuse(checkpoint,output,state,TEAMS,checkpoint_signature))
+    if reused:print('Reused verified source-identical annual projections',flush=True)
+    else:
+        if checkpoint_signature:(checkpoint/'manifest.json').unlink(missing_ok=True)
+        # First team establishes one shared source-hashed league calibration.
+        compute(TEAMS[0])
+        with ThreadPoolExecutor(max_workers=args.workers)as pool:list(pool.map(compute,TEAMS[1:]))
+        if checkpoint_signature:save(checkpoint,output,state,TEAMS,checkpoint_signature)
     from calibration.production import prepare
     calibrator=prepare(runtime,repo,state,output)
     result=export(output,None if reseed else args.as_of,calibrator)

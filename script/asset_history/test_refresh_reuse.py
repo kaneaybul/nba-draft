@@ -23,7 +23,7 @@ class PublishedInputReuse(unittest.TestCase):
         (raw/'player_pool.json').write_text(json.dumps({'generated_at':day+'T12:00:00Z'}))
         out=data_root(root);out.mkdir(parents=True)
         (out/'attribution').mkdir()
-        (out/'attribution/manifest.json').write_text(json.dumps({'latest':day,'method':'endpoint-production-attribution-v2'}))
+        (out/'attribution/manifest.json').write_text(json.dumps({'latest':day,'method':'rolling-endpoint-attribution-v3'}))
         (out/'manifest.json').write_text(json.dumps({'teams':[dict(team=t,latest=day)for t in TEAMS]}))
         (out/'refresh_status.json').write_text(json.dumps(dict(status='success',method=METHOD,
             observation_date=day,source_signature=source_signature(root))))

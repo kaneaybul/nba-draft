@@ -33,6 +33,8 @@ def path_quotes(production, cost, exposures=None):
 
 def weighted_quantile(values, weights, quantiles=(.1, .5, .9)):
     v, w = np.asarray(values, float), np.asarray(weights, float)
+    positive=w>0
+    v,w=v[positive],w[positive]
     order = np.argsort(v)
     v, w = v[order], w[order]
     cdf = (np.cumsum(w) - .5*w) / w.sum()
@@ -165,3 +167,4 @@ def fit_reliability(cases, cutoff, scales=(25., 50., 100., 250., 500., 1000., 20
     mse, scale = min(scores)
     return dict(scale=scale, n=len(train), cutoff=cutoff, rmse=math.sqrt(mse),
                 latest_label=max(r['label_end'] for r in train))
+
