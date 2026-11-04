@@ -147,6 +147,8 @@ def export(output,asof=None,calibrator=None):
                 pid=int(float(raw_id))if raw_id else None
                 ident='player:nba:'+str(pid)if pid is not None else'player:name:'+''.join(x for x in row['player_name'].lower()if x.isalpha())
                 details={k:row.get(k)for k in ['asset_type','profile_method','skill_method','role_method','role_MPG_sample_weight','role_games_sample_weight','draft_year','draft_slot','draft_maturity_weight','app_style_four_year_peak_production_quote','app_style_four_year_contract_adjustment_sum','healthy_current_total','healthy_forecast_annual_games','healthy_forecast_conditional_MPG','injury_availability_factor','injury_model_method','flags']}
+                from asset_minutes import POLICY
+                details['role_minutes_policy']=POLICY
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 raw_path=raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 details['raw_annual_production']=[dict(season=int(r['season']),
@@ -204,7 +206,10 @@ def run(args):
     repo=args.repo.resolve();runtime=args.runtime_dir.resolve();output=args.output.resolve();output.mkdir(parents=True,exist_ok=True)
     previous_state=args.state_dir.resolve();previous_state.mkdir(parents=True,exist_ok=True)
     state=output/'player_state_staged'
-    reseed=stage_state(previous_state,state,args.as_of,args.reseed)
+    from asset_minutes import POLICY
+    policy_changed=any(json.loads(p.read_text()).get('role_minutes_policy')!=POLICY
+        for p in previous_state.glob('*.json')if p.stem in TEAMS)
+    reseed=stage_state(previous_state,state,args.as_of,args.reseed or policy_changed)
     seed=repo/'processed/asset_history/canonical_runtime_seed.zip'
     if not args.prepared_runtime:unpack(seed,runtime)
     results_path=repo/'raw/live/results.json'
@@ -285,5 +290,3 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
     p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
-
-

@@ -34,7 +34,7 @@ def encode(x):
 def fingerprint(canonical):
     p=canonical/'monthly_reconstruction/projections'
     files=[p/n for n in ('valuation_engine.py','role_smoothing.py','adaptive_calibration.py','integrate_monthly.py','quote_window.py','expected_contracts.py')]
-    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv']
+    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('asset_minutes.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv']
     return {f.name:hashlib.sha256(f.read_bytes()).hexdigest()for f in files}
 
 def load_state(path,canonical):
@@ -64,7 +64,8 @@ def persistent_calibration(original,state,capture):
     return Persistent
 
 def save_state(path,canonical,team,cutoff,roles,calibration):
-    x={'schema_version':1,'team':team,'as_of':cutoff,'model_source_hashes':fingerprint(canonical),
+    from asset_minutes import POLICY
+    x={'schema_version':1,'team':team,'as_of':cutoff,'model_source_hashes':fingerprint(canonical),'role_minutes_policy':POLICY,
        'role_state':{k:getattr(roles,k,None)for k in ROLE_STATE},
        'calibration_state':{'previous':calibration.previous,'positions':[{'identity':k,'state':v}for k,v in calibration.position_state.items()]}}
     path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(encode(x),allow_nan=False));tmp.replace(path)

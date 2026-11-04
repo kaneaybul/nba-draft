@@ -275,6 +275,8 @@ def run(args):
         src.inventory=[s for s in src.inventory if s['asof_date']>state['as_of']]
         coverage=[c for c in coverage if c['date']>state['as_of']]
         if not src.inventory:raise ValueError('No new source observation after saved daily state')
+    from asset_minutes import install as install_asset_minutes
+    restore_minutes=install_asset_minutes(role_smoothing)
     restore_clock=install_clocks(model,role_smoothing,src,canonical,args.team)
     roles=role_smoothing.RoleSmoother(src)
     observations=json.loads((args.skill_dir/'monthly_skill_observations.json').read_text())
@@ -308,6 +310,7 @@ def run(args):
     finally:
         model.HERE=original_here;model.Inputs=original_inputs;model.AdaptiveCalibration=original_calibration
         restore_clock()
+        restore_minutes()
     if state_file:
         save_state(state_file,canonical,args.team,src.inventory[-1]['asof_date'],roles,calibration_capture['instance'])
     if args.calibration_cache and not args.calibration_cache.exists():
