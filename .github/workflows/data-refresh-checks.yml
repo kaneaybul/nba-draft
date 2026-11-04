@@ -10,6 +10,9 @@ on:
       - script/data/refresh_live_ratings.mjs
       - script/data/live_rating_dates.mjs
       - script/data/test_live_ratings.mjs
+      - script/frontend/live_minutes.R
+      - script/frontend/test_live_minutes.R
+      - script/frontend/injury_projections.R
       - script/frontend/player_pool.R
       - script/frontend/test_player_pool.R
       - script/frontend/export_frontend_data.R
@@ -55,3 +58,5 @@ jobs:
         run: Rscript script/frontend/test_player_pool.R
 
 
+      - name: Verify remaining-season minutes and injury accounting
+        run: Rscript script/frontend/test_live_minutes.R

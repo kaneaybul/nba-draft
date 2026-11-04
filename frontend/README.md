@@ -135,7 +135,9 @@ An open app checks for a newer export every minute and when it regains focus, th
 
 ### Live playing-time forecasts
 
-The active season uses expected EPM MPG as its role baseline, followed by DARKO MPG, actual MPG after at least two appearances, then the existing career MPG model when provider forecasts are missing. The games model supplies the participation prior; a missing/nonpositive games estimate uses 60 games for a rostered player with a positive role forecast. Provider MPG is conditional on playing, separate from the participation/availability calculation. Source MPG and the team-reconciled healthy MPG are both exported. Large observed/provider discrepancies after three appearances are flagged for role review rather than given a second arbitrary weight.
+Returning players with at least one prior NBA season and a valid career-model MPG forecast use a ten-appearance prior for remaining-season conditional MPG: `(10 * model MPG + actual appearances * observed MPG) / (10 + actual appearances)`. With no appearances, model MPG is retained. The untouched model forecast is saved as `minutes_mpg_prior`, preventing repeated refreshes from compounding the blend. `minutes_mpg_current_weight` exports the actual-evidence weight. Rookies, unknown experience and unavailable model priors retain the previous hierarchy: expected EPM MPG, DARKO MPG, actual MPG after two appearances, then the career fallback. Provider inputs remain exported separately. Team-reconciled healthy MPG can differ from the blended role input because expected team minutes must total 240.
+
+The blend weight was selected on reconstructed 2024-25 monthly remaining-season forecasts and tested on 2025-26 returning-player conditional MPG. Held-out MAE was 3.44 versus 3.73 for season-average MPG and 4.47 for the refit model alone. This did not validate superiority to historical EPM, rookie forecasts, total workload, or four-year asset values. The existing future career model and its adjustments are retained. The games model supplies the participation prior separately; injuries affect dated future availability. Source MPG, model prior, actual minutes and reconciled workload remain inspectable.
 
 The original trained GP forecast is retained as `minutes_gp_prior`; its value divided by 82 supplies the participation rate. Full-season projected GP = actual appearances + that rate times the sum of availability probabilities over remaining team games. Current injuries change those dated probabilities, including uncertain return windows and season-ending absences. Past missed games do not separately lower the participation rate, and the original forecast is not treated as a fixed season GP budget. Every refresh recalculates from the original model forecast. This is a transparent use of the full-season GP model, not a separately validated model of participation conditional on recovery.
 
@@ -179,5 +181,3 @@ remains a diagnostic and never multiplies a player or pick quote again. The
 preseason archive preserves its original production numbers under explicit
 Production labels. Both model regressions and published-path reconciliation run
 before deployment.
-
-
