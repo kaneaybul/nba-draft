@@ -224,7 +224,7 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
   }
   if (file.exists(contract_path) && file.info(contract_path)$size > 4) {
     contracts <- read.csv(contract_path, stringsAsFactors = FALSE)
-    current <- players[players$year == 2027L & !is.na(players$roster_truth_team) & players$roster_truth_team != "FA", , drop = FALSE]
+    current <- players[players$year == 2027L & !is.na(players$pool_status) & players$pool_status == "roster", , drop = FALSE]
     match_idx <- match(current$nba_id, contracts$nba_id)
     expected_salary <- contracts[[salary_column]][match_idx]
     known <- is.finite(current$nba_id) & !is.na(match_idx) & is.finite(expected_salary) & expected_salary > 0
