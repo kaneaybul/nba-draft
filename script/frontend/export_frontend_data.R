@@ -3911,6 +3911,7 @@ build_impact_players <- function(base_dir) {
   for (col in live_minute_numeric_fields) x[[col]] <- NA_real_
   for (col in live_minute_character_fields) x[[col]] <- NA_character_
   x$pool_review_pending <- FALSE; x$source_nba_id <- NA_real_
+  x$contract_cap_salary <- NA_real_; x$contract_source <- NA_character_
   projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year, contract_scale_model)
   if (nrow(projected_2027) > 0) {
     x <- rbind(x, projected_2027[, names(x), drop = FALSE])
@@ -3933,7 +3934,7 @@ build_impact_players <- function(base_dir) {
     "live_switch_evidence_minutes", "live_switch_current_weight", "live_switch_coverage_games", "live_switch_stats_games", "live_switch_status", "live_switch_observed_at",
     "pool_status", "pool_note", "pool_checked_at", "pool_identity_status", "pool_review_pending", "source_nba_id",
     "skill_source", "skill_source_year", "timin", "season_value", "raw_minutes", "raw_timin",
-    "value", "contract", "contract_status", "value_add", "trade_value",
+    "value", "contract", "contract_cap_salary", "contract_source", "contract_status", "value_add", "trade_value",
     "fa_value", "fa_raw_value", "fa_uncapped_value", "fa_min_salary", "fa_max_salary",
     "fa_market_adjustment", "fa_projected_timin", "fa_missing_roster_slots", "fa_is_max",
     "fa_max_tier", "scalability", "skill_model_off", "skill_model_def", "skill_off_total", "skill_def_total",
