@@ -9,8 +9,11 @@ const fixture={complete:true,as_of:'2026-11-04',coverage:{priced_players:2,missi
 const prior=[{id:'old',nba_id:1,player_name:'Regular',team:'UTA',cells:[{year:2027,amount:110,kind:'guaranteed'},{year:2028,amount:200,kind:'cap_hold'}]}];
 const merged=mergeSharedContracts(fixture,prior,[2027,2028],p=>'player-'+p.nba_id,s=>s.toLowerCase());
 assert.equal(merged.find(p=>p.nba_id===2).cells[0].amount,50);
+assert.equal(merged.find(p=>p.nba_id===2).cells[0].source,'contract');
+assert.equal(merged.find(p=>p.nba_id===2).cells[0].source_url,'signed');
 assert.equal(capCells(merged,2027).reduce((n,c)=>n+(c.amount??0),0),90);
 assert.equal(merged.find(p=>p.nba_id===1).cells[1].kind,'cap_hold');
+assert.equal(merged.find(p=>p.nba_id===1).cells[1].source,'cached');
 assert.equal(merged.length,2);
 assert.throws(()=>mergeSharedContracts({...fixture,complete:false},prior,[2027],p=>p.nba_id,s=>s),/Incomplete/);
 

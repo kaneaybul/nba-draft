@@ -7,16 +7,16 @@ export function mergeSharedContracts(snapshot, previous, years, idFor, normalize
   const keys = new Set(snapshot.players.map(p => `${p.team}||${normalize(p.player_name)}`));
   const existing = new Map(previous.map(p => [`${p.team}||${normalize(p.player_name)}`, p]));
   const result = previous.filter(p => !ids.has(p.nba_id) && !keys.has(`${p.team}||${normalize(p.player_name)}`))
-    .map(p => ({...p, cells:p.cells.map(c => c.kind === 'cap_hold' ? {...c, source_quality:'cached', note:'Retained cap-hold estimate from the prior cap source'} : {year:c.year,amount:null,kind:'empty',status:null})}))
+    .map(p => ({...p, cells:p.cells.map(c => c.kind === 'cap_hold' ? {...c, source:'cached', source_quality:'cached', note:'Retained cap-hold estimate from the prior cap source'} : {year:c.year,amount:null,kind:'empty',status:null})}))
     .filter(p => p.cells.some(c => c.kind === 'cap_hold' && c.amount > 0));
   for (const p of snapshot.players) {
     const review = snapshot.source_refresh?.retained_agreements?.find(r=>r.nba_id===p.nba_id);
     const prior = existing.get(`${p.team}||${normalize(p.player_name)}`) ?? previous.find(r => r.nba_id === p.nba_id) ?? {};
     const cells = years.map(year => {
       const c = p.cells.find(c => c.year === year);
-      if (c?.amount != null) return {...c, guarantee_source:c.guaranteed_amount == null ? 'unavailable' : 'contract'};
+      if (c?.amount != null) return {...c, source:'contract', source_url:c.source, guarantee_source:c.guaranteed_amount == null ? 'unavailable' : 'contract'};
       const old = prior.cells?.find(c => c.year === year && c.kind === 'cap_hold');
-      return old ? {...old, source_quality:'cached', note:'Retained cap-hold estimate; signed salaries use the shared agreement ledger'} : {year,amount:null,kind:'empty',status:c?.status ?? null};
+      return old ? {...old, source:'cached', source_quality:'cached', note:'Retained cap-hold estimate; signed salaries use the shared agreement ledger'} : {year,amount:null,kind:'empty',source:'unavailable',status:c?.status ?? null};
     });
     result.push({...prior, id:idFor(p,p.team),canonical_key:idFor(p,p.team),nba_id:p.nba_id,
       player_name:p.player_name,team:p.team,row_type:'player',position:p.position ?? prior.position,

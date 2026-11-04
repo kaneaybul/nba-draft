@@ -208,6 +208,7 @@ export function CapTrackerWorkspace({ data }: { data: AppData }) {
               <option value="all">All sources</option>
               <option value="spotrac">Spotrac</option>
               <option value="contract">Contract</option>
+              <option value="cached">Prior estimate</option>
               <option value="bref-option">BRef option</option>
               <option value="override">Override</option>
               <option value="estimated">Estimated</option>
@@ -911,6 +912,7 @@ function sourceLabel(value: string) {
   if (value === "bref-option") return "BRef option";
   if (value === "spotrac") return "Spotrac";
   if (value === "contract") return "Contract";
+  if (value === "cached") return "Prior estimate";
   if (value === "override") return "Override";
   if (value === "estimated") return "Estimated";
   if (value === "projected") return "Projected";
