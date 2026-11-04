@@ -6930,6 +6930,17 @@
     "quality": "dated_option_resolution_from_contract_history"
   },
   {
+    "player_name": "DaRon Holmes II",
+    "nba_id": 1641747,
+    "known_from": "2026-10-31",
+    "remove_years": [
+      2028
+    ],
+    "exercise_years": [],
+    "source": "https://www.salaryswish.com/players/daron-holmes",
+    "quality": "dated_option_resolution_from_contract_history"
+  },
+  {
     "player_name": "Rob Dillingham",
     "nba_id": 1642265,
     "known_from": "2025-10-18",
