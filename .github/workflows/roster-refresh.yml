@@ -64,6 +64,12 @@ jobs:
           still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
           if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
 
+      - name: Refresh current multi-year contract exports
+        env:
+          DATABALLR_END_YEAR: "2027"
+          DATABALLR_CONTRACT_END_SEASON: "2026"
+        run: Rscript script/data/pull_contracts_databallr.R
+
       - name: Stage a verified fresh Spotrac snapshot if supplied
         run: python3 script/data/prepare_spotrac_snapshot.py raw/cap_sources/spotrac/current_snapshot.json.xz "$SPOTRAC_HTML_SNAPSHOT_DIR"
 
@@ -134,6 +140,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/public/data
+          git add processed/livedata/impactrefresh/contracts_*_current.csv
+          git add processed/livedata/impactrefresh/contracts_by_year.csv
           git add processed/livedata/impactrefresh/current_rosters_2026.csv
           git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
           git add processed/livedata/impactrefresh/contracts_2026_spotrac.csv
