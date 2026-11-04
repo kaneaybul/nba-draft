@@ -39,7 +39,7 @@ def clock(a,exposures):
         p.append(r['production']);v.append(r['asset']);e.append(exposure)
     q=quote_window(p,v,e)
     rolling=q['production_quote']+premium
-    production=rolling
+    production=peak if endpoint_active(a.get('details',{})) and not a['details']['draft_development'].get('completed') else rolling
     return dict(value=production+q['contract_adjustment_sum'],peak=production,rolling_peak=rolling,tail_carry= tails,
                 method='frozen annual rates and expected-peak premium; missing new tail rate carried flat')
 
@@ -159,7 +159,7 @@ def player_bridge(team,ctx):
             clock_details.append(dict(start=start,end=end,player=a['name'],asset_id=aid,
                                       total=production+financial,production=production,
                                       financial=financial,tail_carry=cf.get('tail_carry',[]),production_category=production_category(a,end)))
-            attribute(a,'timing' if production_category(a,start)=='draft' else 'player','Rolling production window and aging',production)
+            attribute(a,production_category(a,end),'Production window and aging',production)
             attribute(a,'contracts','Remaining contract-year mix',financial)
         def revalue(a,before,before_peak,isnew=False):
             aid=a['id'];key=name_key(a['name']);total=a['value']-before
@@ -173,24 +173,7 @@ def player_bridge(team,ctx):
             peak,_,_=parts(a);production=peak-before_peak-extension_p
             category=production_category(a,end)
             changes['draft_production_revaluation'if category=='draft'else'player_production_revaluation']+=production
-            previous_asset=old.get(aid)
-            old_grade=previous_asset.get('details',{}).get('draft_development',{}) if previous_asset else {}
-            grade=a.get('details',{}).get('draft_development',{})
-            drafted_here=bool(drafted.get(key))
-            split=not isnew and drafted_here and previous_asset is not None and endpoint_active(previous_asset.get('details',{})) and grade.get('status')=='priced' and old_grade.get('status')=='priced'
-            if split:
-                endpoint_change=float(grade['value'])-float(old_grade['value'])
-                # P = E + (P-E). This is a change in two observed valuation
-                # bases, never a reconciliation plug or extra asset.
-                old_basis=before_peak-float(old_grade['value'])
-                new_basis=peak-extension_p-float(grade['value'])
-                basis_change=new_basis-old_basis
-                if abs(endpoint_change+basis_change-production)>.01:raise ValueError('Draft / rolling basis split')
-                attribute(a,'draft','Year-four endpoint valuation change',endpoint_change)
-                attribute(a,'timing','Rolling / endpoint production basis change',basis_change)
-                endpoint_attribution.append(dict(start=start,end=end,player=a['name'],endpoint_change=endpoint_change,old_basis=old_basis,new_basis=new_basis))
-            else:
-                attribute(a,'player','Rolling production forecast changes',production)
+            attribute(a,category,'Padded draftee value change' if category=='draft' else 'Player production forecast changes',production)
             financial=total-production-extension
             changes['contract_continuation_revaluation']+=financial
             attribute(a,'contracts','Existing contract and continuation revaluation',financial)
@@ -244,10 +227,8 @@ def player_bridge(team,ctx):
             changes[category]-=clocked[aid]['value']
             draft_loss=0.
             if category!='trade_players' and production_category(a,start)=='draft':
-                grade=a['details']['draft_development'];draft_loss=float(grade['value'])
+                draft_loss=float(clocked[aid]['peak'])
                 attribute(a,'draft','Loss of drafted player rights before year four',-draft_loss)
-                basis=clocked[aid]['peak']-draft_loss
-                attribute(a,'timing','Retirement of rolling / endpoint production basis',-basis)
                 attribute(a,'contracts','Waiver or expiry of contract control',-clocked[aid]['value']+clocked[aid]['peak'])
             else:
                 attribute(a,'trades'if category=='trade_players'else'contracts',
@@ -267,5 +248,6 @@ def player_bridge(team,ctx):
     payload=dict(totals=dict(totals),derived_totals=derived,intervals=intervals,details=details,
                  clock_details=clock_details,fa_entries=fa_entries,attribution=attribution,endpoint_attribution=endpoint_attribution,
                  contracts=contract_rows,draft_tracking=list(draft_tracking.values()),warnings=warnings,
-                 method='rolling-endpoint-attribution-v3; draft endpoint changes plus named rolling/endpoint basis changes equal rolling production changes; contracts remain separate')
+                 method='shared-draft-attribution-v4; one padded player production value through year four; contracts remain separate')
     return payload
+

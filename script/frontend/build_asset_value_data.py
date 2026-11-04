@@ -29,6 +29,10 @@ def player_quote(asset,day):
             if abs(adjustment-calibration['contract_adjustment_sum'])>.01:raise ValueError('Expected annual contract costs do not reconcile')
             if abs(calibration['mean']-value)>.01:raise ValueError('Expected scenario quote does not reconcile')
         if abs(quote-value)>.01:raise ValueError('Annual path disagrees with the published player quote')
+    grade=details.get('draft_development',{})
+    if grade.get('status')=='priced' and day<=grade.get('endpoint',''):
+        if abs(grade['value']-details['peak_production'])>.01:
+            raise ValueError('Draft appraisal differs from the shared player quote')
     result={'date':day,'value':value,'annual':annual}
     for key in ('draft_development','raw_annual_production','role_minutes_policy'):
         if details.get(key)is not None:result[key]=details[key]
@@ -71,7 +75,7 @@ def build(repo):
                     feed['picks'].append({'team':team,'origin':asset['physical_origin'],'year':asset['draft_year'],'round':asset['round'],'value':asset['value']})
     model=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
     if model.get('production_policy')!='year-four-assessed-production-paths-v3':raise ValueError('Published inventories need the shared career-path endpoint-trained pick model')
-    if model.get('stock_policy')!='year-four-endpoint-picks-rolling-players-v3':raise ValueError('Current release requires endpoint picks and rolling player pricing')
+    if model.get('stock_policy')!='year-four-endpoint-picks-shared-players-v4':raise ValueError('Current release requires shared padded player pricing')
     slots={str(r['pick']):r['quote']for r in model['pick_curve']}
     if len(slots)!=60 or any(not math.isfinite(v)for v in slots.values()):raise ValueError('Incomplete asset pick curve')
     index={}

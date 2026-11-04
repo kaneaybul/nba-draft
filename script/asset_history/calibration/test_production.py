@@ -58,7 +58,7 @@ class ProductionQuotes(unittest.TestCase):
             self.assertEqual(own_endpoint_path({},annual,2023,{},None),[10,20,30,40])
 
     def test_completed_draft_endpoint_does_not_roll_with_new_forecasts(self):
-        c,p,a=fixture();p['draft_year']='2022'
+        c,p,a=fixture();p.update(draft_year='2022',app_style_four_year_peak_production_quote='170')
         for row in a:row['league_reference_year']='2026'
         c.endpoint=SimpleNamespace(prior=lambda slot,cutoff,key,**kwargs:dict(value=100.,latest_label=2021),
             distribution=lambda *args:(np.array([100.]),np.array([1.])))
@@ -80,33 +80,31 @@ class ProductionQuotes(unittest.TestCase):
         result=c.quote(p,a)
         self.assertEqual(result['value'],112.)
         self.assertEqual(result['production_quote'],80.)
-        self.assertEqual(result['draft_development']['gain'],-100.)
+        self.assertEqual(result['draft_development']['gain'],-20.)
         self.assertTrue(result['draft_development']['completed'])
         self.assertEqual(result['draft_development']['contract_effect'],0.)
 
-    def test_own_endpoint_prices_paths_and_is_independent_of_salary(self):
+    def test_draft_grade_uses_the_shared_player_quote_and_separates_salary(self):
         c,p,a=fixture();c.runtime=None;c.endpoint_states={}
         c.endpoint=SimpleNamespace(prior=lambda *args,**kwargs:dict(value=40.,latest_label=2021),
             distribution=lambda *args:(np.array([40.]),np.array([1.])))
         c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
-        with patch('calibration.production.own_endpoint_path',return_value=[10.]*4):
-            result=c.draft_evaluation(p,a)
-            for row in a:row['app_effective_contract']='1000000000'
-            self.assertEqual(c.draft_evaluation(p,a),result)
-        self.assertAlmostEqual(result['own_production_value'],80.)
-        self.assertAlmostEqual(result['own_mean_path_value'],40.)
-        weight=1100./1200.
-        self.assertAlmostEqual(result['value'],40.+weight*40.)
+        shared=dict(status='priced',production_quote=90.,nba_weight=.8)
+        result=c.draft_evaluation(p,a,shared)
+        for row in a:row['app_effective_contract']='1000000000'
+        self.assertEqual(c.draft_evaluation(p,a,shared),result)
+        self.assertAlmostEqual(result['value'],90.)
+        self.assertAlmostEqual(result['gain'],50.)
         self.assertEqual(result['contract_effect'],0.)
         self.assertLess(result['baseline_latest_label'],int(p['draft_year']))
-        self.assertLessEqual(result['projection_extension']['latest_label'],2024)
 
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
-        self.assertAlmostEqual(result['mean'],86.)
+        self.assertAlmostEqual(result['mean'],83.5)
         self.assertAlmostEqual(result['mean_path_quote'],56.)
         self.assertAlmostEqual(result['path_selection_premium'],30.)
-        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],86.)
+        self.assertAlmostEqual(result['draft_prior_adjustment'],-2.5)
+        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],83.5)
         self.assertAlmostEqual(sum((r['asset']-r['production'])*r['exposure']for r in result['annual_values']),result['contract_adjustment_sum'])
 
     def test_observed_minutes_update_reliability_and_veterans_keep_the_old_policy(self):
@@ -114,6 +112,18 @@ class ProductionQuotes(unittest.TestCase):
         c.observations[p['cutoff_date'],7]=600.
         self.assertGreater(c.quote(p,a)['nba_weight'],first['nba_weight'])
         p['draft_year']='2020'
+        self.assertIsNone(c.quote(p,a))
+
+    def test_last_development_season_continuously_reaches_the_normal_quote(self):
+        c,p,a=fixture()
+        base=dict(a[0],league_reference_year='2026')
+        a=[dict(base,season=str(2027+i),exposure='1')for i in range(5)]
+        a[0]['exposure']='0.000001';a[-1]['exposure']='0.999999'
+        shared=c.quote(p,a)
+        self.assertGreater(shared['nba_weight'],.99999)
+        self.assertAlmostEqual(shared['mean'],56.,places=3)
+        a=a[1:]
+        a[-1]['exposure']='1'
         self.assertIsNone(c.quote(p,a))
 
     def test_first_season_has_no_extrapolated_minute_weight(self):
@@ -141,7 +151,7 @@ class ProductionQuotes(unittest.TestCase):
     def test_release_uses_guarantee_but_good_scenarios_pay_full_salary(self):
         c,p,a=fixture();a[0]['app_effective_contract']='10'
         cells=[dict(year=2025,amount=10,waiver_option_verified=True,waiver_guaranteed_amount_asof=2.)]
-        with patch('calibration.production.agreements_at',return_value=(cells,True,None)),patch('calibration.production.evidence_weight',return_value=1.):
+        with patch('calibration.production.agreements_at',return_value=(cells,True,None)),patch('calibration.production.development_weight',return_value=1.):
             result=c.quote(p,a)
         self.assertAlmostEqual(result['annual_mean_cost'][0],6.)
         self.assertAlmostEqual(result['annual_mean_production'][0],10.)
@@ -185,4 +195,5 @@ class ProductionQuotes(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
 

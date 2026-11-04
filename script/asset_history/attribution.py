@@ -14,8 +14,8 @@ from attribution_players import player_bridge,clock,parts,market_reference,name_
 from model_version import data_root,METHOD
 import attribution_picks as picks
 
-ATTRIBUTION_METHOD='rolling-endpoint-attribution-v3'
-LABELS={'player':'Player Development & Aging','draft':'Draft Value Added / Destroyed','timing':'Rolling Window / Valuation Basis','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','pick_rules':'Pick Rights / Rules','automatic':'Automatic Pick Additions'}
+ATTRIBUTION_METHOD='shared-draft-attribution-v4'
+LABELS={'player':'Player Development & Aging','draft':'Draft Value Added / Destroyed','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','automatic':'Automatic Pick Additions'}
 NAMES=dict(zip('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split(),['Atlanta Hawks','Brooklyn Nets','Boston Celtics','Charlotte Hornets','Chicago Bulls','Cleveland Cavaliers','Dallas Mavericks','Denver Nuggets','Detroit Pistons','Golden State Warriors','Houston Rockets','Indiana Pacers','Los Angeles Clippers','Los Angeles Lakers','Memphis Grizzlies','Miami Heat','Milwaukee Bucks','Minnesota Timberwolves','New Orleans Pelicans','New York Knicks','Oklahoma City Thunder','Orlando Magic','Philadelphia 76ers','Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Toronto Raptors','Utah Jazz','Washington Wizards']))
 
 def read(path):return json.loads(Path(path).read_text())
@@ -176,28 +176,26 @@ def assemble(ctx,players,pick_rows,lotteries):
             conversion=changes.get('draft_player_entry',0)+q.get('draft_pick_retirement',0)-transfers[team][pair]
             # The retired right carries the fixed draft endpoint expectation.
             # Split conversion into observed production bases and financial terms.
-            endpoint_change=0.;basis_change=0.
+            endpoint_change=0.
             for entry in p['details']:
                 if entry['kind']!='draft_entry' or (entry['start'],entry['end'])!=pair:continue
                 player=next(a for a in new['assets']if a['kind']=='player'and a['name']==entry['player'])
                 detail=player.get('details',{});grade=detail.get('draft_development',{})
                 if grade.get('status')!='priced':continue
-                original=float(grade['original_expectation']);endpoint=float(grade['value'])
+                original=float(grade['original_expectation'])
                 production=float(detail['peak_production'])
-                gain=endpoint-original;basis=production-endpoint
-                endpoint_change+=gain;basis_change+=basis
-                contributors['draft'][player['name']]+=gain;contributors['timing'][player['name']]+=basis
-            components['draft']['Draft entry endpoint change versus original expectation']+=endpoint_change
-            components['timing']['Pick endpoint to rolling player production basis']+=basis_change
-            components['contracts']['Pick-to-player contract terms']+=conversion-endpoint_change-basis_change
+                gain=production-original
+                endpoint_change+=gain
+                contributors['draft'][player['name']]+=gain
+            components['draft']['Padded draft entry value versus original expectation']+=endpoint_change
+            components['contracts']['Pick-to-player contract terms']+=conversion-endpoint_change
             components['trades']['Future pick transfers']+=q.get('trade_picks',0)
             components['trades']['Selected draft-right transfers']+=transfers[team][pair]
             for r in transfer_contributors[team,pair]:contributors['trades'][r['player']]+=r['value']
             own=sum(l['teams'][team]['own']for l in lotteries if start<l['date']<=end);acquired=sum(l['teams'][team]['acquired']for l in lotteries if start<l['date']<=end)
-            components['own_picks']['Own-origin pick forecast changes']+=q.get('own_pick_revaluation',0)-own
-            components['acquired_picks']['Acquired-origin pick forecast changes']+=q.get('acquired_pick_revaluation',0)-acquired
+            components['own_picks']['Own-origin pick forecast and rights changes']+=q.get('own_pick_revaluation',0)-own
+            components['acquired_picks']['Acquired-origin pick forecast and rights changes']+=q.get('acquired_pick_revaluation',0)-acquired
             components['lottery']['Own-origin lottery luck']+=own;components['lottery']['Acquired-origin lottery luck']+=acquired
-            components['pick_rules']['External pick rights / rules']+=q.get('external_legal',0)
             components['automatic']['Automatic reporting-horizon additions']+=q.get('horizon_entry',0)
             for r in pick_by_pair[pair]['contributions']:
                 if r['team']==team:contributors['own_picks'if r['category']=='own_pick_revaluation'else'acquired_picks'][r['player']]+=r['value']
@@ -207,7 +205,9 @@ def assemble(ctx,players,pick_rows,lotteries):
                         if r['team']==team:
                             contributors['lottery'][r['player']]+=r['value'];contributors['own_picks'if r['category']=='own'else'acquired_picks'][r['player']]-=r['value']
             for r in pick_by_pair[pair]['legal']:
-                if r['team']==team:contributors['trades'if r['category']=='trade_picks'else'pick_rules'][r['date']+' · pick rights']+=r['value']
+                if r['team']==team:
+                    category={'trade_picks':'trades','own_pick_revaluation':'own_picks','acquired_pick_revaluation':'acquired_picks'}[r['category']]
+                    contributors[category][r['date']+' · pick rights']+=r['value']
             categories={k:sum(v.values())for k,v in components.items()};error=old['total']+sum(categories.values())-new['total']
             if abs(error)>.01:raise ValueError(('Portfolio does not reconcile',team,start,end,error,categories))
             interval_rows.append(dict(start=start,end=end,opening=old['total'],closing=new['total'],categories=categories,components={k:dict(v)for k,v in components.items()},contributors={k:[dict(player=n,value=v)for n,v in sorted(rows.items(),key=lambda z:abs(z[1]),reverse=True)if abs(v)>.000001]for k,rows in contributors.items()},reconciliation_error=error))
@@ -266,3 +266,4 @@ def main():
         runtime=args.work_dir/'runtime';unpack(repo/'processed/asset_history/canonical_runtime_seed.zip',runtime)
     run(repo,runtime.resolve(),args.workers)
 if __name__=='__main__':main()
+

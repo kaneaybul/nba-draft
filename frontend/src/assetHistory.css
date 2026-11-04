@@ -7,3 +7,21 @@
 
 
 .ah-league-table th{min-width:130px}.ah-league-table th:nth-child(-n+2){min-width:40px}.ah-league-table th button{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit;background:transparent;border:0;padding:0;text-align:left}.ah-league-table th[aria-sort=descending]{color:#6bd4c3;opacity:1}.ah-league-table td{white-space:nowrap;font-variant-numeric:tabular-nums}@media(max-width:720px){.ah-league-table td:last-child{min-width:0}}
+
+.ah-date-range{margin:20px 0;padding:20px 24px;border:1px solid #6bd4c355;border-radius:12px;background:#17232f66}
+.ah-date-range-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.ah-date-range h2{margin:0 0 4px}.ah-date-range .ah-caption{margin:0}
+.ah-date-presets{display:flex;gap:6px}.ah-date-presets button{min-width:44px;min-height:36px;padding:6px 12px;border:1px solid #53637088;border-radius:6px;color:inherit;background:transparent;font:inherit;font-size:12px}
+.ah-date-presets button:hover{background:#53637033}.ah-date-presets button[aria-pressed=true]{border-color:#6bd4c3;background:#6bd4c319;color:#6bd4c3}
+.ah-date-fields{display:flex;align-items:flex-end;gap:14px;margin:18px 0 6px}.ah-date-fields label{display:flex;flex-direction:column;gap:7px;flex:1;max-width:260px;color:#b8c8d4}
+.asset-history .ah-date-fields select{margin-left:0;min-height:44px;width:100%;font:inherit;font-size:14px;font-variant-numeric:tabular-nums}
+.ah-date-arrow{align-self:flex-end;padding-bottom:13px;color:#6bd4c3}
+.ah-date-slider{position:relative;height:44px;margin:4px 10px 0;touch-action:pan-y;cursor:pointer}
+.ah-date-rail,.ah-date-selection{position:absolute;top:20px;height:4px;border-radius:3px;pointer-events:none}.ah-date-rail{left:0;right:0;background:#53637099}.ah-date-selection{background:#6bd4c3}
+.asset-history .ah-date-slider input[type=range]{position:absolute;top:0;left:-10px;width:calc(100% + 20px);height:44px;padding:0;margin:0;border:0;appearance:none;-webkit-appearance:none;background:transparent;pointer-events:none;outline:none}
+.ah-date-slider input::-webkit-slider-runnable-track{height:4px;background:transparent}.ah-date-slider input::-moz-range-track{height:4px;background:transparent}
+.ah-date-slider input::-webkit-slider-thumb{pointer-events:auto;appearance:none;-webkit-appearance:none;width:20px;height:28px;margin-top:-12px;border:2px solid #6bd4c3;border-radius:7px;background:#17232f;cursor:ew-resize;box-shadow:0 0 0 4px #17232f44}
+.ah-date-slider input::-moz-range-thumb{pointer-events:auto;width:16px;height:24px;border:2px solid #6bd4c3;border-radius:7px;background:#17232f;cursor:ew-resize;box-shadow:0 0 0 4px #17232f44}
+.ah-date-slider input:focus-visible::-webkit-slider-thumb{background:#6bd4c3;box-shadow:0 0 0 4px #6bd4c344}.ah-date-slider input:focus-visible::-moz-range-thumb{background:#6bd4c3;box-shadow:0 0 0 4px #6bd4c344}
+.ah-date-end{z-index:2}.ah-date-extent{display:flex;justify-content:space-between;gap:12px;font-size:11px;opacity:.65;font-variant-numeric:tabular-nums}
+@media(max-width:720px){.ah-date-range{padding:16px}.ah-date-range-heading{gap:12px}.ah-date-fields{gap:10px}.ah-date-fields label{min-width:0}.asset-history .ah-date-fields select{padding:9px 6px;font-size:13px}.ah-date-extent{font-size:10px}}

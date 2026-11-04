@@ -154,6 +154,53 @@ def evidence_weight(minutes, scale):
     return float(minutes/(minutes+scale))
 
 
+def development_weight(minutes, scale, remaining_seasons):
+    """Retain fitted NBA reliability; release the last prior by year four.
+
+    The empirical minute-based rule is unchanged before the last development
+    season. During that final season its remaining prior mass runs down with
+    the same season exposures used by the asset model, reaching exactly zero.
+    """
+    if not math.isfinite(remaining_seasons) or remaining_seasons < 0:
+        raise ValueError('Invalid remaining development exposure')
+    weight=evidence_weight(minutes, scale)
+    return weight if remaining_seasons>=1. else 1.-(1.-weight)*remaining_seasons
+
+
+def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
+                          nba, nba_cost, nba_weights, nba_weight, exposures):
+    """One padded stock: mature pick prior blended into the live player quote.
+
+    Each linked NBA career is priced before averaging. The draft component
+    uses its original mature production expectation, with the actual rookie
+    service/cost paths retained for contract attribution. The prior vanishes
+    by the fourth year, so the result becomes the ordinary rolling quote.
+    """
+    pw, nw = np.asarray(prior_weights, float), np.asarray(nba_weights, float)
+    pw, nw = pw / pw.sum(), nw / nw.sum()
+    endpoint_values = np.asarray(endpoint_values, float)
+    if endpoint_values.shape != pw.shape or not np.isfinite(endpoint_values).all():
+        raise ValueError('Missing linked mature production payoffs')
+    if not 0 <= nba_weight <= 1:
+        raise ValueError('Invalid NBA learning weight')
+    e = np.asarray(exposures, float)
+    p = np.concatenate([prior, nba]); c = np.concatenate([prior_cost, nba_cost])
+    w = np.concatenate([(1-nba_weight)*pw, nba_weight*nw])
+    result = summarize(p, c, w, e)
+    financial = .8 * ((p-c)*e).sum(axis=1)
+    live_production = path_quotes(nba, nba_cost, e) - financial[len(pw):]
+    production = np.concatenate([endpoint_values, live_production])
+    quotes = production + financial
+    result['draft_prior_adjustment'] = float(w@quotes) - result['mean']
+    result['mean'] = float(w@quotes)
+    result['production_quote'] = float(w@production)
+    result.update(zip(('p10','p50','p90'), weighted_quantile(quotes,w)))
+    result.update(zip(('production_p10','production_p50','production_p90'), weighted_quantile(production,w)))
+    result['draft_prior_production'] = float(pw@endpoint_values)
+    result['nba_production_quote'] = float(nw@live_production)
+    return result
+
+
 def fit_reliability(cases, cutoff, scales=(25., 50., 100., 250., 500., 1000., 2000., 4000., 8000., 16000.)):
     """Fit reliability to the shared completed endpoint labels at this cutoff."""
     train = [r for r in cases if r['label_end'] <= cutoff]
@@ -167,4 +214,5 @@ def fit_reliability(cases, cutoff, scales=(25., 50., 100., 250., 500., 1000., 20
     mse, scale = min(scores)
     return dict(scale=scale, n=len(train), cutoff=cutoff, rmse=math.sqrt(mse),
                 latest_label=max(r['label_end'] for r in train))
+
 

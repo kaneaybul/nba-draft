@@ -70,7 +70,8 @@ def report(repo):
                 baselines[key]=grade['original_expectation']
                 assert grade['contract_effect']==0.
                 if s['date']<=grade['endpoint']:
-                    assert abs(d['peak_production']-grade['value']-d['development_window_basis'])<.01
+                    assert abs(d['peak_production']-grade['value'])<.01
+                    assert 'development_window_basis'not in d
                 c=d.get('path_calibration',{})
                 if c.get('status')=='priced':
                     assert c.get('endpoint_stock_policy')==PICK_POLICY
@@ -81,7 +82,7 @@ def report(repo):
                 if grade.get('own_production_value')is not None and grade.get('own_mean_path_value')is not None:
                     if grade['own_production_value']-grade['own_mean_path_value']>1.:counts['own_endpoint_path_premium_quotes']+=1
                 if grade['completed']:
-                    assert abs(grade['value']-grade['own_mean_path_value'])<.01
+                    assert grade.get('assessment_date')<=grade['endpoint']
                     counts['frozen_completed_endpoint_quotes']+=1
                 elif grade['nba_weight']==0.:
                     assert abs(grade['gain'])<.01
@@ -103,4 +104,5 @@ def report(repo):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());a=p.parse_args();report(a.repo.resolve())
+
 
