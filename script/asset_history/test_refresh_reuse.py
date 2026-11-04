@@ -9,6 +9,18 @@ from source_signature import source_signature
 
 
 class PublishedInputReuse(unittest.TestCase):
+    def test_method_rebuild_keeps_the_published_day_after_midnight_fetch(self):
+        with tempfile.TemporaryDirectory()as folder:
+            root=Path(folder);args=self.fixture(root)
+            (data_root(root)/'manifest.json').unlink()
+            args.use_published_inputs=True
+            (root/'raw/live/player_pool.json').write_text('{"generated_at":"2026-11-02T01:00:00Z"}')
+            prior={t:{'2026-11-01':{}}for t in TEAMS}
+            with patch('refresh.legacy_snapshots',return_value=prior),patch('refresh.subprocess.run',return_value=SimpleNamespace(returncode=1))as compute:
+                with self.assertRaisesRegex(ValueError,'Player refresh failed'):main(args)
+                command=compute.call_args.args[0]
+                self.assertEqual(command[command.index('--as-of')+1],'2026-11-01')
+
     def test_unchanged_validated_inputs_can_be_reused_across_midnight_without_redating(self):
         with tempfile.TemporaryDirectory()as folder:
             args=self.fixture(Path(folder));args.allow_reconstructed=False
@@ -55,4 +67,5 @@ class PublishedInputReuse(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
 

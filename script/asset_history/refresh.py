@@ -20,6 +20,15 @@ def main(args):
     materialize(repo)
     out=data_root(repo);new_version=not(out/'manifest.json').exists()
     pool=json.loads((repo/'raw/live/player_pool.json').read_text());asof=pool['generated_at'][:10]
+    published_inputs=getattr(args,'use_published_inputs',False)
+    if published_inputs:
+        if not new_version:raise ValueError('Published-input replay is restricted to a new method version')
+        prior=legacy_snapshots(repo)
+        dates={max(points)for points in prior.values()}
+        if len(dates)!=1:raise ValueError('Method-only replay requires one common published observation')
+        # Raw files can be fetched after UTC midnight while describing the
+        # prior basketball day. A method rebuild retains that saved date.
+        asof=dates.pop()
     status=out/'refresh_status.json'
     if not args.reseed and not new_version and status.exists():
         saved=json.loads(status.read_text())
@@ -33,11 +42,7 @@ def main(args):
         raise ValueError('The source refresh is not from today; retaining the last validated history')
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
-    published_inputs=getattr(args,'use_published_inputs',False)
     if published_inputs:
-        if not new_version:raise ValueError('Published-input replay is restricted to a new method version')
-        prior=legacy_snapshots(repo)
-        if any(max(points)!=asof for points in prior.values()):raise ValueError('Method-only replay must match the last validated league observation')
         command+=['--use-published-inputs','--skip-contract-refresh']
     if args.reseed or new_version:command.append('--reseed')
     log_path=work/'player_refresh.log'
