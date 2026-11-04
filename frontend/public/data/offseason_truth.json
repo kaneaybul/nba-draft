@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-04T12:53:55.878Z",
+  "generated_at": "2026-11-04T20:29:12.682Z",
   "source_policy": "Public sources first: RealGM roster/transaction corrections, local databallr contract salaries, Basketball-Reference contract option markers, Spotrac as validation only.",
   "notes": [
     "This file is a frontend/offseason truth overlay; impact projections remain intact.",
@@ -24,8 +24,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203999-Nikola Jokic": {
       "key": "2026-203999-Nikola Jokic",
@@ -43,8 +43,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-202695-Kawhi Leonard": {
       "key": "2026-202695-Kawhi Leonard",
@@ -63,7 +63,7 @@
       "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "free_agent_status": null
     },
     "2026-1628983-Shai Gilgeous-Alexander": {
       "key": "2026-1628983-Shai Gilgeous-Alexander",
@@ -113,7 +113,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 49500000,
+      "guaranteed_salary": 49488300,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -170,7 +170,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 41250000,
+      "guaranteed_salary": 41240250,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -195,8 +195,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630595-Cade Cunningham": {
       "key": "2026-1630595-Cade Cunningham",
@@ -271,8 +271,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-202710-Jimmy Butler III": {
       "key": "2026-202710-Jimmy Butler III",
@@ -303,7 +303,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 49500000,
+      "guaranteed_salary": 49488300,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -404,7 +404,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-201142-Kevin Durant": {
@@ -474,7 +474,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 28500000,
+      "guaranteed_salary": 23148148,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -556,8 +556,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628374-Lauri Markkanen": {
       "key": "2026-1628374-Lauri Markkanen",
@@ -651,8 +651,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631114-Jalen Williams": {
       "key": "2026-1631114-Jalen Williams",
@@ -664,7 +664,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 41250000,
+      "guaranteed_salary": 41240250,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -709,7 +709,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1642264-Stephon Castle": {
       "key": "2026-1642264-Stephon Castle",
@@ -727,8 +727,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628368-DeAaron Fox": {
       "key": "2026-1628368-DeAaron Fox",
@@ -740,13 +740,13 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 49500000,
+      "guaranteed_salary": 49800000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-204001-Kristaps Porzingis": {
@@ -756,14 +756,14 @@
       "year": 2026,
       "current_roster_team": "GSW",
       "rights_team": "GSW",
-      "bird_rights": "Bird",
-      "cap_hold": 46097561,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 20000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
@@ -889,14 +889,14 @@
       "year": 2026,
       "current_roster_team": "DET",
       "rights_team": "DET",
-      "bird_rights": "Bird",
-      "cap_hold": 35371514,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 40160643,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "rookie-scale-exception",
       "free_agent_status": "RFA"
@@ -917,8 +917,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630596-Evan Mobley": {
       "key": "2026-1630596-Evan Mobley",
@@ -936,8 +936,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203932-Aaron Gordon": {
       "key": "2026-203932-Aaron Gordon",
@@ -949,13 +949,13 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 31978037,
+      "guaranteed_salary": 33658037,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1627783-Pascal Siakam": {
@@ -1012,8 +1012,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642349-Ajay Mitchell": {
       "key": "2026-1642349-Ajay Mitchell",
@@ -1051,7 +1051,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1629008-Michael Porter Jr.": {
       "key": "2026-1629008-Michael Porter Jr.",
@@ -1088,8 +1088,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630559-Austin Reaves": {
       "key": "2026-1630559-Austin Reaves",
@@ -1101,7 +1101,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 14898786,
+      "guaranteed_salary": 41240250,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -1126,8 +1126,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "cap-space",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641706-Brandon Miller": {
       "key": "2026-1641706-Brandon Miller",
@@ -1146,7 +1146,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1628991-Jaren Jackson Jr.": {
       "key": "2026-1628991-Jaren Jackson Jr.",
@@ -1221,8 +1221,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "cap-space",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1627751-Jakob Poeltl": {
       "key": "2026-1627751-Jakob Poeltl",
@@ -1240,7 +1240,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Bird Rights",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1630166-Deni Avdija": {
@@ -1259,8 +1259,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1627832-Fred VanVleet": {
       "key": "2026-1627832-Fred VanVleet",
@@ -1291,7 +1291,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 6250000,
+      "guaranteed_salary": 10000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -1335,7 +1335,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "bi-annual-exception",
+      "signed_using": "Bi-Annual",
       "free_agent_status": "UFA"
     },
     "2026-1628978-Donte DiVincenzo": {
@@ -1354,7 +1354,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-201950-Jrue Holiday": {
@@ -1373,8 +1373,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629057-Robert Williams III": {
       "key": "2026-1629057-Robert Williams III",
@@ -1383,17 +1383,17 @@
       "year": 2026,
       "current_roster_team": "POR",
       "rights_team": "POR",
-      "bird_rights": "Bird",
-      "cap_hold": 19928570,
-      "cap_hold_type": "UFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630572-Sandro Mamukelashvili": {
       "key": "2026-1630572-Sandro Mamukelashvili",
@@ -1405,14 +1405,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2801346,
+      "guaranteed_salary": 13000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630541-Moses Moody": {
       "key": "2026-1630541-Moses Moody",
@@ -1487,7 +1487,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1631217-Moussa Diabate": {
@@ -1576,14 +1576,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 27500000,
+      "guaranteed_salary": 27000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631221-Collin Gillespie": {
       "key": "2026-1631221-Collin Gillespie",
@@ -1595,11 +1595,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 10714286,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -1611,17 +1611,17 @@
       "year": 2026,
       "current_roster_team": "CHI",
       "rights_team": "CHI",
-      "bird_rights": "Bird",
-      "cap_hold": 30724137,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 21500000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-202699-Tobias Harris": {
       "key": "2026-202699-Tobias Harris",
@@ -1677,8 +1677,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629027-Trae Young": {
       "key": "2026-1629027-Trae Young",
@@ -1690,7 +1690,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 48967380,
+      "guaranteed_salary": 49488300,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -1734,8 +1734,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631094-Paolo Banchero": {
       "key": "2026-1631094-Paolo Banchero",
@@ -1747,7 +1747,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 41250000,
+      "guaranteed_salary": 41240250,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -1763,14 +1763,14 @@
       "year": 2026,
       "current_roster_team": "HOU",
       "rights_team": "HOU",
-      "bird_rights": "Bird",
-      "cap_hold": 21689955,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 14053356,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "rookie-scale-exception",
       "free_agent_status": "RFA"
@@ -1804,11 +1804,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 5864198,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -1823,14 +1823,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 13398000,
+      "guaranteed_salary": 35915403,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630540-Miles McBride": {
       "key": "2026-1630540-Miles McBride",
@@ -1924,8 +1924,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629632-Coby White": {
       "key": "2026-1629632-Coby White",
@@ -1934,14 +1934,14 @@
       "year": 2026,
       "current_roster_team": "CHA",
       "rights_team": "CHA",
-      "bird_rights": "Bird",
-      "cap_hold": 21309458,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 26811593,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
@@ -1962,7 +1962,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1628404-Josh Hart": {
@@ -1991,14 +1991,14 @@
       "year": 2026,
       "current_roster_team": "ATL",
       "rights_team": "ATL",
-      "bird_rights": "Bird",
-      "cap_hold": 45999999,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 21000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
@@ -2013,7 +2013,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 16100000,
+      "guaranteed_salary": 16120000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -2051,7 +2051,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 3451779,
+      "guaranteed_salary": 6064000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -2133,8 +2133,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629661-Cameron Johnson": {
       "key": "2026-1629661-Cameron Johnson",
@@ -2152,8 +2152,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630530-Trey Murphy III": {
       "key": "2026-1630530-Trey Murphy III",
@@ -2184,11 +2184,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 3943679,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -2210,7 +2210,7 @@
       "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "free_agent_status": null
     },
     "2026-1641764-Brandin Podziemski": {
       "key": "2026-1641764-Brandin Podziemski",
@@ -2229,7 +2229,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1630529-Herbert Jones": {
       "key": "2026-1630529-Herbert Jones",
@@ -2257,17 +2257,17 @@
       "year": 2026,
       "current_roster_team": "LAL",
       "rights_team": "LAL",
-      "bird_rights": "Bird",
-      "cap_hold": 19514917,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 30108821,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203500-Steven Adams": {
       "key": "2026-203500-Steven Adams",
@@ -2336,7 +2336,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 4500000,
+      "guaranteed_salary": 4439656,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -2361,8 +2361,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641739-Toumani Camara": {
       "key": "2026-1641739-Toumani Camara",
@@ -2380,7 +2380,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "second-round-exception",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1630573-Sam Hauser": {
@@ -2418,7 +2418,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1630568-Luka Garza": {
@@ -2447,17 +2447,17 @@
       "year": 2026,
       "current_roster_team": "LAL",
       "rights_team": "LAL",
-      "bird_rights": "Bird",
-      "cap_hold": 17325000,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631119-Jaylin Williams": {
       "key": "2026-1631119-Jaylin Williams",
@@ -2507,7 +2507,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 14500000,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -2526,11 +2526,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -2542,17 +2542,17 @@
       "year": 2026,
       "current_roster_team": "PHI",
       "rights_team": "PHI",
-      "bird_rights": "Bird",
-      "cap_hold": 10828627,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 9000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630551-Justin Champagnie": {
       "key": "2026-1630551-Justin Champagnie",
@@ -2570,7 +2570,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1630581-Josh Giddey": {
@@ -2608,8 +2608,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628415-Dillon Brooks": {
       "key": "2026-1628415-Dillon Brooks",
@@ -2628,7 +2628,7 @@
       "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "free_agent_status": null
     },
     "2026-1629684-Grant Williams": {
       "key": "2026-1629684-Grant Williams",
@@ -2760,8 +2760,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203944-Julius Randle": {
       "key": "2026-203944-Julius Randle",
@@ -2855,7 +2855,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1628436-Luke Kornet": {
@@ -2874,8 +2874,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630167-Obi Toppin": {
       "key": "2026-1630167-Obi Toppin",
@@ -3026,8 +3026,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631169-Josh Minott": {
       "key": "2026-1631169-Josh Minott",
@@ -3039,7 +3039,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2584539,
+      "guaranteed_salary": 4500000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -3064,7 +3064,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1630200-Tre Jones": {
@@ -3102,7 +3102,7 @@
       "roster_status_source": "ESPN Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-203994-Jusuf Nurkic": {
@@ -3112,14 +3112,14 @@
       "year": 2026,
       "current_roster_team": "UTA",
       "rights_team": "UTA",
-      "bird_rights": "Bird",
-      "cap_hold": 29062500,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 11458333,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
@@ -3140,8 +3140,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630174-Aaron Nesmith": {
       "key": "2026-1630174-Aaron Nesmith",
@@ -3197,8 +3197,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630558-Davion Mitchell": {
       "key": "2026-1630558-Davion Mitchell",
@@ -3226,14 +3226,14 @@
       "year": 2026,
       "current_roster_team": "MIA",
       "rights_team": "MIA",
-      "bird_rights": "Bird",
-      "cap_hold": 12461538,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Early Bird Rights",
       "free_agent_status": "UFA"
@@ -3255,7 +3255,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "second-round-exception",
-      "free_agent_status": "UFA"
+      "free_agent_status": null
     },
     "2026-204456-T.J. McConnell": {
       "key": "2026-204456-T.J. McConnell",
@@ -3283,14 +3283,14 @@
       "year": 2026,
       "current_roster_team": "DET",
       "rights_team": "DET",
-      "bird_rights": "Bird",
-      "cap_hold": 26986607,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 9507042,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
@@ -3362,11 +3362,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -3387,8 +3387,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631099-Keegan Murray": {
       "key": "2026-1631099-Keegan Murray",
@@ -3406,7 +3406,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1641710-Anthony Black": {
@@ -3435,17 +3435,17 @@
       "year": 2026,
       "current_roster_team": "CLE",
       "rights_team": "CLE",
-      "bird_rights": "Bird",
-      "cap_hold": 18090863,
-      "cap_hold_type": "RFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1626167-Myles Turner": {
       "key": "2026-1626167-Myles Turner",
@@ -3502,7 +3502,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "second-round-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1628449-Chris Boucher": {
       "key": "2026-1628449-Chris Boucher",
@@ -3537,8 +3537,8 @@
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Player Option",
-      "contract_status_source": "databallr contract export",
+      "contract_status": "Signed",
+      "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
     },
@@ -3558,8 +3558,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "second-round-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629021-Moritz Wagner": {
       "key": "2026-1629021-Moritz Wagner",
@@ -3596,7 +3596,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-203939-Dwight Powell": {
@@ -3606,17 +3606,17 @@
       "year": 2026,
       "current_roster_team": "DAL",
       "rights_team": "DAL",
-      "bird_rights": "Bird",
-      "cap_hold": 6000000,
-      "cap_hold_type": "UFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631101-Shaedon Sharpe": {
       "key": "2026-1631101-Shaedon Sharpe",
@@ -3634,7 +3634,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1629020-Jarred Vanderbilt": {
@@ -3685,14 +3685,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 9000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "room-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-201143-Al Horford": {
       "key": "2026-201143-Al Horford",
@@ -3704,13 +3704,13 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 5969250,
+      "guaranteed_salary": 6822000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "taxpayer-mid-level-exception",
+      "signed_using": "Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1629637-Jaxson Hayes": {
@@ -3721,7 +3721,7 @@
       "current_roster_team": "UTA",
       "rights_team": "UTA",
       "bird_rights": "Bird",
-      "cap_hold": 7828620,
+      "cap_hold": 7858998,
       "cap_hold_type": "UFA Bird cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
@@ -3780,11 +3780,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 5490967,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -3805,7 +3805,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1642366-Quinten Post": {
@@ -3815,17 +3815,17 @@
       "year": 2026,
       "current_roster_team": "MEM",
       "rights_team": "MEM",
-      "bird_rights": "Bird",
-      "cap_hold": 8770332,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 9000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630643-Jay Huff": {
       "key": "2026-1630643-Jay Huff",
@@ -3843,7 +3843,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1630314-Brandon Williams": {
@@ -3856,14 +3856,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631248-Baylor Scheierman": {
       "key": "2026-1631248-Baylor Scheierman",
@@ -3894,14 +3894,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 18000000,
+      "guaranteed_salary": 17500000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642285-Cam Spencer": {
       "key": "2026-1642285-Cam Spencer",
@@ -3929,17 +3929,17 @@
       "year": 2026,
       "current_roster_team": "SAS",
       "rights_team": "SAS",
-      "bird_rights": "Bird",
-      "cap_hold": 28500000,
-      "cap_hold_type": "UFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630230-Naji Marshall": {
       "key": "2026-1630230-Naji Marshall",
@@ -3957,8 +3957,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629012-Collin Sexton": {
       "key": "2026-1629012-Collin Sexton",
@@ -3995,7 +3995,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1626162-Kelly Oubre Jr.": {
@@ -4024,14 +4024,14 @@
       "year": 2026,
       "current_roster_team": "CHI",
       "rights_team": "CHI",
-      "bird_rights": "Bird",
-      "cap_hold": 27120744,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 8500000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
@@ -4090,8 +4090,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629026-Kenrich Williams": {
       "key": "2026-1629026-Kenrich Williams",
@@ -4103,7 +4103,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 7163000,
+      "guaranteed_salary": 5000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -4128,7 +4128,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1631109-Mark Williams": {
@@ -4138,14 +4138,14 @@
       "year": 2026,
       "current_roster_team": "PHX",
       "rights_team": "PHX",
-      "bird_rights": "Bird",
-      "cap_hold": 15691328,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 11728395,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "rookie-scale-exception",
       "free_agent_status": "RFA"
@@ -4299,8 +4299,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630182-Josh Green": {
       "key": "2026-1630182-Josh Green",
@@ -4356,7 +4356,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1642273-Kyshawn George": {
@@ -4394,8 +4394,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630533-Ziaire Williams": {
       "key": "2026-1630533-Ziaire Williams",
@@ -4407,14 +4407,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 6250000,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629652-Luguentz Dort": {
       "key": "2026-1629652-Luguentz Dort",
@@ -4426,7 +4426,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 17722222,
+      "guaranteed_salary": 18222222,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -4442,17 +4442,17 @@
       "year": 2026,
       "current_roster_team": "ORL",
       "rights_team": "ORL",
-      "bird_rights": "Bird",
-      "cap_hold": 32222222,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203992-Bogdan Bogdanovic": {
       "key": "2026-203992-Bogdan Bogdanovic",
@@ -4489,7 +4489,7 @@
       "roster_status_source": "contract team fallback for roster miss",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "taxpayer-mid-level-exception",
+      "signed_using": "Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1628370-Malik Monk": {
@@ -4508,8 +4508,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Early Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642346-Ryan Dunn": {
       "key": "2026-1642346-Ryan Dunn",
@@ -4546,8 +4546,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629723-John Konchar": {
       "key": "2026-1629723-John Konchar",
@@ -4603,8 +4603,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631260-AJ Green": {
       "key": "2026-1631260-AJ Green",
@@ -4660,7 +4660,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1631230-Dominick Barlow": {
@@ -4679,7 +4679,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "taxpayer-mid-level-exception",
+      "signed_using": "Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1631246-Vince Williams Jr.": {
@@ -4711,11 +4711,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 14100000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -4746,14 +4746,14 @@
       "year": 2026,
       "current_roster_team": "MIN",
       "rights_team": "MIN",
-      "bird_rights": "Bird",
-      "cap_hold": 12136689,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 19310345,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Early Bird Rights",
       "free_agent_status": "UFA"
@@ -4768,7 +4768,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 9028038,
+      "guaranteed_salary": 9224300,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -4776,6 +4776,25 @@
       "contract_status_source": null,
       "signed_using": "Bird Rights",
       "free_agent_status": "UFA"
+    },
+    "2026-1627732-Ben Simmons": {
+      "key": "2026-1627732-Ben Simmons",
+      "nba_id": 1627732,
+      "player_name": "Ben Simmons",
+      "year": 2026,
+      "current_roster_team": "SAC",
+      "rights_team": "SAC",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 0,
+      "dead_cap": 0,
+      "waived_date": null,
+      "roster_status_source": "Spotrac Active Roster",
+      "contract_status": "UFA",
+      "contract_status_source": null,
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641718-Keyonte George": {
       "key": "2026-1641718-Keyonte George",
@@ -4794,7 +4813,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1629312-Haywood Highsmith": {
       "key": "2026-1629312-Haywood Highsmith",
@@ -4831,8 +4850,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-202685-Jonas Valanciunas": {
       "key": "2026-202685-Jonas Valanciunas",
@@ -4850,8 +4869,8 @@
       "roster_status_source": "contract team fallback for roster miss",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203083-Andre Drummond": {
       "key": "2026-203083-Andre Drummond",
@@ -4888,7 +4907,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1628418-Thomas Bryant": {
@@ -4907,8 +4926,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-202691-Klay Thompson": {
       "key": "2026-202691-Klay Thompson",
@@ -4920,14 +4939,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 17460317,
+      "guaranteed_salary": 5600000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642914-Javon Small": {
       "key": "2026-1642914-Javon Small",
@@ -4983,8 +5002,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641757-Jordan Miller": {
       "key": "2026-1641757-Jordan Miller",
@@ -4996,12 +5015,12 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2497812,
+      "guaranteed_salary": 5300000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "contract_status": "Signed",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "RFA"
     },
@@ -5069,16 +5088,16 @@
       "year": 2026,
       "current_roster_team": "WAS",
       "rights_team": "WAS",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150917,
+      "bird_rights": "Bird",
+      "cap_hold": 9560696,
+      "cap_hold_type": "RFA Bird cap hold",
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "contract_status": "RFA",
+      "contract_status_source": null,
+      "signed_using": null,
       "free_agent_status": "RFA"
     },
     "2026-1642864-Hugo Gonzalez": {
@@ -5116,8 +5135,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-201942-DeMar DeRozan": {
       "key": "2026-201942-DeMar DeRozan",
@@ -5135,8 +5154,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1629060-Rui Hachimura": {
       "key": "2026-1629060-Rui Hachimura",
@@ -5145,17 +5164,17 @@
       "year": 2026,
       "current_roster_team": "LAC",
       "rights_team": "LAC",
-      "bird_rights": "Bird",
-      "cap_hold": 27388889,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 14000000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642856-Egor Demin": {
       "key": "2026-1642856-Egor Demin",
@@ -5221,14 +5240,14 @@
       "year": 2026,
       "current_roster_team": "MIN",
       "rights_team": "MIN",
-      "bird_rights": "Bird",
-      "cap_hold": 8056077,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 3086420,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "RFA"
@@ -5243,13 +5262,13 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 5621700,
+      "guaranteed_salary": 6424800,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-201567-Kevin Love": {
@@ -5344,7 +5363,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1642450-Daniss Jenkins": {
@@ -5363,7 +5382,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "bi-annual-exception",
+      "signed_using": "Bi-Annual",
       "free_agent_status": "RFA"
     },
     "2026-1631107-Nikola Jovic": {
@@ -5395,14 +5414,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 6065000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628988-Aaron Holiday": {
       "key": "2026-1628988-Aaron Holiday",
@@ -5439,7 +5458,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1630703-Scoot Henderson": {
@@ -5458,8 +5477,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642883-Sion James": {
       "key": "2026-1642883-Sion James",
@@ -5547,14 +5566,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 13953489,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "qualifying-offer",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628963-Marvin Bagley III": {
       "key": "2026-1628963-Marvin Bagley III",
@@ -5572,8 +5591,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641737-Adem Bona": {
       "key": "2026-1641737-Adem Bona",
@@ -5648,8 +5667,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "second-round-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642852-Derik Queen": {
       "key": "2026-1642852-Derik Queen",
@@ -5686,8 +5705,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203114-Khris Middleton": {
       "key": "2026-203114-Khris Middleton",
@@ -5696,17 +5715,17 @@
       "year": 2026,
       "current_roster_team": "WAS",
       "rights_team": "WAS",
-      "bird_rights": "Bird",
-      "cap_hold": 52629629,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 5591122,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631321-Sidy Cissoko": {
       "key": "2026-1631321-Sidy Cissoko",
@@ -5724,8 +5743,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630171-Isaac Okoro": {
       "key": "2026-1630171-Isaac Okoro",
@@ -5781,8 +5800,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630560-Cam Thomas": {
       "key": "2026-1630560-Cam Thomas",
@@ -5813,7 +5832,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2584539,
+      "guaranteed_salary": 2150917,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -5851,13 +5870,13 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150917,
+      "guaranteed_salary": 2622139,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Minimum",
+      "signed_using": null,
       "free_agent_status": "RFA"
     },
     "2026-1631108-Max Christie": {
@@ -5876,8 +5895,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Early Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631199-Ron Harper Jr.": {
       "key": "2026-1631199-Ron Harper Jr.",
@@ -5889,14 +5908,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2584539,
+      "guaranteed_salary": 3150752,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": "RFA"
     },
     "2026-1642874-Danny Wolf": {
       "key": "2026-1642874-Danny Wolf",
@@ -5933,8 +5952,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641854-Craig Porter Jr.": {
       "key": "2026-1641854-Craig Porter Jr.",
@@ -5952,8 +5971,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641730-Noah Clowney": {
       "key": "2026-1641730-Noah Clowney",
@@ -6047,8 +6066,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1627777-Georges Niang": {
       "key": "2026-1627777-Georges Niang",
@@ -6066,7 +6085,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1631255-Karlo Matkovic": {
@@ -6142,8 +6161,8 @@
       "roster_status_source": "NBA.com league roster missing player",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628420-Monte Morris": {
       "key": "2026-1628420-Monte Morris",
@@ -6199,8 +6218,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Player Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642866-Joan Beringer": {
       "key": "2026-1642866-Joan Beringer",
@@ -6237,8 +6256,8 @@
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642928-Dylan Cardwell": {
       "key": "2026-1642928-Dylan Cardwell",
@@ -6250,14 +6269,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150917,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Signed",
+      "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642363-Nique Clifford": {
       "key": "2026-1642363-Nique Clifford",
@@ -6275,8 +6294,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203482-Kelly Olynyk": {
       "key": "2026-203482-Kelly Olynyk",
@@ -6285,17 +6304,17 @@
       "year": 2026,
       "current_roster_team": "FA",
       "rights_team": "SAS",
-      "bird_rights": "Bird",
-      "cap_hold": 20167683,
-      "cap_hold_type": "UFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641989-Elijah Harkless": {
       "key": "2026-1641989-Elijah Harkless",
@@ -6326,11 +6345,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -6416,18 +6435,18 @@
       "nba_id": 1631207,
       "player_name": "Dalen Terry",
       "year": 2026,
-      "current_roster_team": "PHI",
+      "current_roster_team": "FA",
       "rights_team": "PHI",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2584539,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "UFA",
+      "contract_status_source": null,
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1642277-Johnny Furphy": {
@@ -6465,8 +6484,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631288-Jamal Cain": {
       "key": "2026-1631288-Jamal Cain",
@@ -6482,8 +6501,8 @@
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "contract_status": "Signed",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
     },
@@ -6492,18 +6511,18 @@
       "nba_id": 1630165,
       "player_name": "Killian Hayes",
       "year": 2026,
-      "current_roster_team": "SAC",
+      "current_roster_team": "FA",
       "rights_team": "SAC",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 3018158,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Cap Hold",
-      "contract_status": "Signed",
+      "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-201587-Nicolas Batum": {
@@ -6535,11 +6554,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -6608,17 +6627,17 @@
       "year": 2026,
       "current_roster_team": "DEN",
       "rights_team": "DEN",
-      "bird_rights": "Bird",
-      "cap_hold": 6327241,
-      "cap_hold_type": "RFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631093-Jaden Ivey": {
       "key": "2026-1631093-Jaden Ivey",
@@ -6725,14 +6744,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "free_agent_status": null
     },
     "2026-1642352-Keshad Johnson": {
       "key": "2026-1642352-Keshad Johnson",
@@ -6741,17 +6760,17 @@
       "year": 2026,
       "current_roster_team": "MIA",
       "rights_team": "MIA",
-      "bird_rights": "Bird",
-      "cap_hold": 4888443,
-      "cap_hold_type": "RFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": "Minimum",
-      "free_agent_status": "RFA"
+      "free_agent_status": "UFA"
     },
     "2026-1630531-Jaden Springer": {
       "key": "2026-1630531-Jaden Springer",
@@ -6788,8 +6807,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-203914-Gary Harris": {
       "key": "2026-203914-Gary Harris",
@@ -6845,8 +6864,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1631216-Caleb Houstan": {
       "key": "2026-1631216-Caleb Houstan",
@@ -6856,7 +6875,7 @@
       "current_roster_team": "FA",
       "rights_team": "ATL",
       "bird_rights": "Bird",
-      "cap_hold": 4465882,
+      "cap_hold": 4474605,
       "cap_hold_type": "RFA Bird cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
@@ -6959,8 +6978,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "second-round-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630557-Corey Kispert": {
       "key": "2026-1630557-Corey Kispert",
@@ -7016,8 +7035,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1626204-Larry Nance Jr.": {
       "key": "2026-1626204-Larry Nance Jr.",
@@ -7029,14 +7048,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642382-Branden Carlson": {
       "key": "2026-1642382-Branden Carlson",
@@ -7073,7 +7092,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1630256-JaeSean Tate": {
@@ -7086,11 +7105,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -7143,14 +7162,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 10001494,
+      "guaranteed_salary": 10001493,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "cap-space",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1626192-Pat Connaughton": {
       "key": "2026-1626192-Pat Connaughton",
@@ -7166,8 +7185,8 @@
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "contract_status": "Signed",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
     },
@@ -7181,7 +7200,7 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 3881960,
+      "guaranteed_salary": 15200000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
@@ -7200,14 +7219,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150918,
+      "guaranteed_salary": 2150917,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "second-round-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642869-Noah Penda": {
       "key": "2026-1642869-Noah Penda",
@@ -7263,24 +7282,24 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630625-Dalano Banton": {
       "key": "2026-1630625-Dalano Banton",
       "nba_id": 1630625,
       "player_name": "Dalano Banton",
       "year": 2026,
-      "current_roster_team": "BOS",
+      "current_roster_team": "FA",
       "rights_team": "BOS",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2801346,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Signed",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": null
@@ -7409,14 +7428,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150917,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "contract_status": "UFA",
+      "contract_status_source": null,
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1626179-Terry Rozier": {
       "key": "2026-1626179-Terry Rozier",
@@ -7461,17 +7480,17 @@
       "nba_id": 1631120,
       "player_name": "JD Davison",
       "year": 2026,
-      "current_roster_team": "HOU",
+      "current_roster_team": "FA",
       "rights_team": "HOU",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2584539,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "UFA",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
     },
@@ -7489,8 +7508,8 @@
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "contract_status": "Signed",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "RFA"
     },
@@ -7529,8 +7548,8 @@
       "roster_status_source": "NBA.com league roster missing player",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642877-Micah Peavy": {
       "key": "2026-1642877-Micah Peavy",
@@ -7567,8 +7586,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641738-Kobe Brown": {
       "key": "2026-1641738-Kobe Brown",
@@ -7624,27 +7643,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "RFA",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "RFA"
-    },
-    "2026-1631116-Patrick Baldwin Jr.": {
-      "key": "2026-1631116-Patrick Baldwin Jr.",
-      "nba_id": 1631116,
-      "player_name": "Patrick Baldwin Jr.",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "SAC",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "Spotrac Cap Hold",
-      "contract_status": "UFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": null
     },
     "2026-1642863-Khaman Maluach": {
       "key": "2026-1642863-Khaman Maluach",
@@ -7681,7 +7681,7 @@
       "roster_status_source": "ESPN Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
+      "signed_using": "Non-Taxpayer MLE",
       "free_agent_status": "UFA"
     },
     "2026-1631213-Tyrese Martin": {
@@ -7732,14 +7732,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2801346,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "ESPN Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642862-Liam McNeeley": {
       "key": "2026-1642862-Liam McNeeley",
@@ -7814,8 +7814,8 @@
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641869-Malachi Smith": {
       "key": "2026-1641869-Malachi Smith",
@@ -7827,33 +7827,14 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150917,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
-    },
-    "2026-1627746-Skal Labissiere": {
-      "key": "2026-1627746-Skal Labissiere",
-      "nba_id": 1627746,
-      "player_name": "Skal Labissiere",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "WAS",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "NBA.com league roster missing player",
+      "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "free_agent_status": null
     },
     "2026-1631223-David Roddy": {
       "key": "2026-1631223-David Roddy",
@@ -7909,26 +7890,7 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "second-round-exception",
-      "free_agent_status": "RFA"
-    },
-    "2026-1628365-Markelle Fultz": {
-      "key": "2026-1628365-Markelle Fultz",
-      "nba_id": 1628365,
-      "player_name": "Markelle Fultz",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "TOR",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "NBA.com league roster missing player",
-      "contract_status": "UFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1630619-Moussa Cisse": {
@@ -7976,17 +7938,17 @@
       "year": 2026,
       "current_roster_team": "PHX",
       "rights_team": "PHX",
-      "bird_rights": "Bird",
-      "cap_hold": 4340025,
-      "cap_hold_type": "RFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": null,
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1642860-Will Riley": {
       "key": "2026-1642860-Will Riley",
@@ -8061,8 +8023,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630545-Terrence Shannon Jr.": {
       "key": "2026-1630545-Terrence Shannon Jr.",
@@ -8100,7 +8062,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": "UFA"
     },
     "2026-1642848-Tre Johnson": {
       "key": "2026-1642848-Tre Johnson",
@@ -8137,8 +8099,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1628398-Kyle Kuzma": {
       "key": "2026-1628398-Kyle Kuzma",
@@ -8188,11 +8150,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 3876529,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "ESPN Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -8213,8 +8175,8 @@
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630610-DeJon Jarreau": {
       "key": "2026-1630610-DeJon Jarreau",
@@ -8251,8 +8213,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "second-round-exception",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630639-A.J. Lawson": {
       "key": "2026-1630639-A.J. Lawson",
@@ -8270,8 +8232,8 @@
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642967-John Poulakidas": {
       "key": "2026-1642967-John Poulakidas",
@@ -8299,17 +8261,17 @@
       "year": 2026,
       "current_roster_team": "MIA",
       "rights_team": "MIA",
-      "bird_rights": "Bird",
-      "cap_hold": 7500000,
-      "cap_hold_type": "UFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Early Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642859-Jase Richardson": {
       "key": "2026-1642859-Jase Richardson",
@@ -8337,17 +8299,17 @@
       "year": 2026,
       "current_roster_team": "UTA",
       "rights_team": "UTA",
-      "bird_rights": "Bird",
-      "cap_hold": 4033611,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 3506659,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
-      "free_agent_status": "RFA"
+      "free_agent_status": null
     },
     "2026-1631103-Malaki Branham": {
       "key": "2026-1631103-Malaki Branham",
@@ -8385,25 +8347,6 @@
       "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
-    },
-    "2026-1629641-Romeo Langford": {
-      "key": "2026-1629641-Romeo Langford",
-      "nba_id": 1629641,
-      "player_name": "Romeo Langford",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "NYK",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "NBA.com league roster missing player",
-      "contract_status": "UFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
       "free_agent_status": "UFA"
     },
     "2026-1642950-Lachlan Olbrich": {
@@ -8546,17 +8489,17 @@
       "year": 2026,
       "current_roster_team": "ATL",
       "rights_team": "ATL",
-      "bird_rights": "Bird",
-      "cap_hold": 5554193,
-      "cap_hold_type": "RFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "RFA"
+      "signed_using": "Non-Taxpayer MLE",
+      "free_agent_status": "UFA"
     },
     "2026-1630828-Alex Antetokounmpo": {
       "key": "2026-1630828-Alex Antetokounmpo",
@@ -8631,8 +8574,8 @@
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630811-Keaton Wallace": {
       "key": "2026-1630811-Keaton Wallace",
@@ -8663,13 +8606,13 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
+      "signed_using": null,
       "free_agent_status": null
     },
     "2026-1642354-KJ Simpson": {
@@ -8726,24 +8669,24 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": null,
-      "free_agent_status": null
+      "signed_using": "rookie-scale-exception",
+      "free_agent_status": "RFA"
     },
     "2026-1631250-Pete Nance": {
       "key": "2026-1631250-Pete Nance",
       "nba_id": 1631250,
       "player_name": "Pete Nance",
       "year": 2026,
-      "current_roster_team": "MIL",
+      "current_roster_team": "FA",
       "rights_team": "MIL",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2497812,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Signed",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": "room-mid-level-exception",
       "free_agent_status": "UFA"
@@ -8758,11 +8701,11 @@
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 2449421,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
@@ -8802,8 +8745,8 @@
       "roster_status_source": "NBA.com league roster missing player",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642267-Bub Carrington": {
       "key": "2026-1642267-Bub Carrington",
@@ -8824,6 +8767,25 @@
       "signed_using": "rookie-scale-exception",
       "free_agent_status": "RFA"
     },
+    "2026-1626209-Mario Hezonja": {
+      "key": "2026-1626209-Mario Hezonja",
+      "nba_id": 1626209,
+      "player_name": "Mario Hezonja",
+      "year": 2026,
+      "current_roster_team": "CLE",
+      "rights_team": "CLE",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 0,
+      "dead_cap": 0,
+      "waived_date": null,
+      "roster_status_source": "Spotrac Active Roster",
+      "contract_status": "UFA",
+      "contract_status_source": null,
+      "signed_using": null,
+      "free_agent_status": null
+    },
     "2026-1630544-Tre Mann": {
       "key": "2026-1630544-Tre Mann",
       "nba_id": 1630544,
@@ -8840,8 +8802,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Bird Rights",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1630587-Isaiah Livers": {
       "key": "2026-1630587-Isaiah Livers",
@@ -8976,25 +8938,6 @@
       "signed_using": null,
       "free_agent_status": null
     },
-    "2026-202066-Garrett Temple": {
-      "key": "2026-202066-Garrett Temple",
-      "nba_id": 202066,
-      "player_name": "Garrett Temple",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "TOR",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "Spotrac Cap Hold",
-      "contract_status": "UFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
-    },
     "2026-1642484-RayJ Dennis": {
       "key": "2026-1642484-RayJ Dennis",
       "nba_id": 1642484,
@@ -9068,8 +9011,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "non-taxpayer-mid-level-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642502-Malevy Leons": {
       "key": "2026-1642502-Malevy Leons",
@@ -9164,7 +9107,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": "UFA"
     },
     "2026-1630172-Patrick Williams": {
       "key": "2026-1630172-Patrick Williams",
@@ -9190,17 +9133,17 @@
       "nba_id": 1643016,
       "player_name": "Bez Mbeng",
       "year": 2026,
-      "current_roster_team": "UTA",
+      "current_roster_team": "FA",
       "rights_team": "UTA",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2150917,
+      "bird_rights": "Bird",
+      "cap_hold": 1561797,
+      "cap_hold_type": "RFA Bird cap hold",
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "RFA",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "RFA"
     },
@@ -9211,17 +9154,17 @@
       "year": 2026,
       "current_roster_team": "MIL",
       "rights_team": "MIL",
-      "bird_rights": "Bird",
-      "cap_hold": 16677205,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 5750000,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": "UFA"
     },
     "2026-1630574-Ariel Hukporti": {
       "key": "2026-1630574-Ariel Hukporti",
@@ -9230,17 +9173,17 @@
       "year": 2026,
       "current_roster_team": "PHI",
       "rights_team": "PHI",
-      "bird_rights": "Bird",
-      "cap_hold": 4888443,
-      "cap_hold_type": "RFA Bird cap hold",
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
       "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": "Minimum",
-      "free_agent_status": "RFA"
+      "free_agent_status": "UFA"
     },
     "2026-1631132-Christian Koloko": {
       "key": "2026-1631132-Christian Koloko",
@@ -9363,14 +9306,14 @@
       "year": 2026,
       "current_roster_team": "NYK",
       "rights_team": "NYK",
-      "bird_rights": "Bird",
-      "cap_hold": 3804897,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
+      "bird_rights": "None",
+      "cap_hold": 0,
+      "cap_hold_type": "No retained cap hold",
+      "guaranteed_salary": 2622139,
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
+      "contract_status": "Signed",
       "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "RFA"
@@ -9437,16 +9380,16 @@
       "nba_id": 1641723,
       "player_name": "Kobe Bufkin",
       "year": 2026,
-      "current_roster_team": "LAL",
+      "current_roster_team": "FA",
       "rights_team": "LAL",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2497812,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Signed",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "UFA",
       "contract_status_source": null,
       "signed_using": null,
       "free_agent_status": null
@@ -9532,19 +9475,19 @@
       "nba_id": 1631104,
       "player_name": "Blake Wesley",
       "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "POR",
+      "current_roster_team": "LAC",
+      "rights_team": "LAC",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
+      "guaranteed_salary": 14077,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "NBA.com league roster missing player",
-      "contract_status": "UFA",
+      "roster_status_source": "contract team fallback for roster miss",
+      "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-204060-Joe Ingles": {
       "key": "2026-204060-Joe Ingles",
@@ -9608,17 +9551,17 @@
       "nba_id": 1641733,
       "player_name": "Nick Smith Jr.",
       "year": 2026,
-      "current_roster_team": "LAL",
+      "current_roster_team": "FA",
       "rights_team": "LAL",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2497812,
+      "guaranteed_salary": 0,
       "dead_cap": 0,
       "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "roster_status_source": "NBA.com league roster missing player",
+      "contract_status": "UFA",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "UFA"
     },
@@ -9698,25 +9641,6 @@
       "signed_using": "second-round-exception",
       "free_agent_status": "UFA"
     },
-    "2026-1630296-Braxton Key": {
-      "key": "2026-1630296-Braxton Key",
-      "nba_id": 1630296,
-      "player_name": "Braxton Key",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "TOR",
-      "bird_rights": "Bird",
-      "cap_hold": 128018,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "NBA.com league roster missing player",
-      "contract_status": "RFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
-    },
     "2026-1642262-Cody Williams": {
       "key": "2026-1642262-Cody Williams",
       "nba_id": 1642262,
@@ -9734,7 +9658,7 @@
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
       "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "free_agent_status": "UFA"
     },
     "2026-1642962-Drake Powell": {
       "key": "2026-1642962-Drake Powell",
@@ -9774,32 +9698,13 @@
       "signed_using": "rookie-scale-exception",
       "free_agent_status": "RFA"
     },
-    "2026-1630164-James Wiseman": {
-      "key": "2026-1630164-James Wiseman",
-      "nba_id": 1630164,
-      "player_name": "James Wiseman",
-      "year": 2026,
-      "current_roster_team": "NYK",
-      "rights_team": "NYK",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "UFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
-    },
     "2026-1631166-Drew Timme": {
       "key": "2026-1631166-Drew Timme",
       "nba_id": 1631166,
       "player_name": "Drew Timme",
       "year": 2026,
       "current_roster_team": "FA",
-      "rights_team": "BKN",
+      "rights_team": "PHX",
       "bird_rights": "None",
       "cap_hold": 0,
       "cap_hold_type": "No retained cap hold",
@@ -9811,25 +9716,6 @@
       "contract_status_source": null,
       "signed_using": null,
       "free_agent_status": null
-    },
-    "2026-1642403-Isaac Jones": {
-      "key": "2026-1642403-Isaac Jones",
-      "nba_id": 1642403,
-      "player_name": "Isaac Jones",
-      "year": 2026,
-      "current_roster_team": "DET",
-      "rights_team": "DET",
-      "bird_rights": "Bird",
-      "cap_hold": 4888443,
-      "cap_hold_type": "RFA Bird cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "RFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
     },
     "2026-1641712-Rayan Rupert": {
       "key": "2026-1641712-Rayan Rupert",
@@ -9847,27 +9733,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
+      "signed_using": null,
       "free_agent_status": null
-    },
-    "2026-1629610-DaQuan Jeffries": {
-      "key": "2026-1629610-DaQuan Jeffries",
-      "nba_id": 1629610,
-      "player_name": "DaQuan Jeffries",
-      "year": 2026,
-      "current_roster_team": "FA",
-      "rights_team": "SAC",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 0,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "NBA.com league roster missing player",
-      "contract_status": "UFA",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
     },
     "2026-1642873-Amari Williams": {
       "key": "2026-1642873-Amari Williams",
@@ -9883,8 +9750,8 @@
       "dead_cap": 0,
       "waived_date": null,
       "roster_status_source": "Spotrac Active Roster",
-      "contract_status": "Team Option",
-      "contract_status_source": "databallr contract export",
+      "contract_status": "Signed",
+      "contract_status_source": null,
       "signed_using": "Minimum",
       "free_agent_status": "RFA"
     },
@@ -9961,8 +9828,8 @@
       "roster_status_source": "Spotrac Active Roster",
       "contract_status": "Signed",
       "contract_status_source": null,
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1641778-Leaky Black": {
       "key": "2026-1641778-Leaky Black",
@@ -10056,27 +9923,8 @@
       "roster_status_source": "ESPN Active Roster",
       "contract_status": "Team Option",
       "contract_status_source": "Basketball-Reference option cell class",
-      "signed_using": "rookie-scale-exception",
-      "free_agent_status": "RFA"
-    },
-    "2026-201959-Taj Gibson": {
-      "key": "2026-201959-Taj Gibson",
-      "nba_id": 201959,
-      "player_name": "Taj Gibson",
-      "year": 2026,
-      "current_roster_team": "MEM",
-      "rights_team": "MEM",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 3815861,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Signed",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     },
     "2026-1642964-Brooks Barnhizer": {
       "key": "2026-1642964-Brooks Barnhizer",
@@ -10135,25 +9983,6 @@
       "signed_using": "Hardship",
       "free_agent_status": null
     },
-    "2026-1631338-Mouhamadou Gueye": {
-      "key": "2026-1631338-Mouhamadou Gueye",
-      "nba_id": 1631338,
-      "player_name": "Mouhamadou Gueye",
-      "year": 2026,
-      "current_roster_team": "CHI",
-      "rights_team": "CHI",
-      "bird_rights": "None",
-      "cap_hold": 0,
-      "cap_hold_type": "No retained cap hold",
-      "guaranteed_salary": 2411090,
-      "dead_cap": 0,
-      "waived_date": null,
-      "roster_status_source": "contract team fallback for roster miss",
-      "contract_status": "Signed",
-      "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "RFA"
-    },
     "2026-202687-Bismack Biyombo": {
       "key": "2026-202687-Bismack Biyombo",
       "nba_id": 202687,
@@ -10170,24 +9999,24 @@
       "roster_status_source": "Spotrac Cap Hold",
       "contract_status": "UFA",
       "contract_status_source": null,
-      "signed_using": "Minimum",
-      "free_agent_status": "UFA"
+      "signed_using": null,
+      "free_agent_status": null
     }
   },
   "team_caps": [
     {
       "year": 2026,
       "team": "ATL",
-      "active_salary": 145369655,
-      "guaranteed_salary": 145369655,
+      "active_salary": 181185917,
+      "guaranteed_salary": 181185917,
       "dead_cap": 0,
-      "cap_holds": 10206567,
+      "cap_holds": 10215290,
       "roster_charges": 0,
-      "practical_cap_space": 9423778,
-      "maximum_cap_space": 19630345,
-      "tax_room": 56280345,
-      "first_apron_room": 63645345,
-      "second_apron_room": 76316345,
+      "practical_cap_space": -26401207,
+      "maximum_cap_space": -16185917,
+      "tax_room": 20464083,
+      "first_apron_room": 27829083,
+      "second_apron_room": 40500083,
       "active_roster_count": 14,
       "hold_count": 2,
       "cap_validation_delta": null,
@@ -10196,16 +10025,16 @@
     {
       "year": 2026,
       "team": "BKN",
-      "active_salary": 124634377,
-      "guaranteed_salary": 124634377,
+      "active_salary": 139299838,
+      "guaranteed_salary": 139299838,
       "dead_cap": 0,
       "cap_holds": 21438556,
       "roster_charges": 0,
-      "practical_cap_space": 18927067,
-      "maximum_cap_space": 40365623,
-      "tax_room": 77015623,
-      "first_apron_room": 84380623,
-      "second_apron_room": 97051623,
+      "practical_cap_space": 4261606,
+      "maximum_cap_space": 25700162,
+      "tax_room": 62350162,
+      "first_apron_room": 69715162,
+      "second_apron_room": 82386162,
       "active_roster_count": 14,
       "hold_count": 2,
       "cap_validation_delta": null,
@@ -10214,17 +10043,17 @@
     {
       "year": 2026,
       "team": "BOS",
-      "active_salary": 187784995,
-      "guaranteed_salary": 187784995,
+      "active_salary": 185549862,
+      "guaranteed_salary": 185549862,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -22784995,
-      "maximum_cap_space": -22784995,
-      "tax_room": 13865005,
-      "first_apron_room": 21230005,
-      "second_apron_room": 33901005,
-      "active_roster_count": 16,
+      "practical_cap_space": -20549862,
+      "maximum_cap_space": -20549862,
+      "tax_room": 16100138,
+      "first_apron_room": 23465138,
+      "second_apron_room": 36136138,
+      "active_roster_count": 15,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10232,16 +10061,16 @@
     {
       "year": 2026,
       "team": "CHA",
-      "active_salary": 129211461,
-      "guaranteed_salary": 129211461,
+      "active_salary": 156023054,
+      "guaranteed_salary": 156023054,
       "dead_cap": 0,
       "cap_holds": 12405083,
       "roster_charges": 0,
-      "practical_cap_space": 23383456,
-      "maximum_cap_space": 35788539,
-      "tax_room": 72438539,
-      "first_apron_room": 79803539,
-      "second_apron_room": 92474539,
+      "practical_cap_space": -3428137,
+      "maximum_cap_space": 8976946,
+      "tax_room": 45626946,
+      "first_apron_room": 52991946,
+      "second_apron_room": 65662946,
       "active_roster_count": 15,
       "hold_count": 1,
       "cap_validation_delta": null,
@@ -10250,19 +10079,19 @@
     {
       "year": 2026,
       "team": "CHI",
-      "active_salary": 129666529,
-      "guaranteed_salary": 129666529,
+      "active_salary": 157255439,
+      "guaranteed_salary": 157255439,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": 35333471,
-      "maximum_cap_space": 35333471,
-      "tax_room": 71983471,
-      "first_apron_room": 79348471,
-      "second_apron_room": 92019471,
-      "active_roster_count": 14,
+      "practical_cap_space": 7744561,
+      "maximum_cap_space": 7744561,
+      "tax_room": 44394561,
+      "first_apron_room": 51759561,
+      "second_apron_room": 64430561,
+      "active_roster_count": 13,
       "hold_count": 0,
-      "cap_validation_delta": -34652008,
+      "cap_validation_delta": -62240918,
       "validation_source": "Spotrac Bulls 2026-27 cap-space benchmark"
     },
     {
@@ -10272,13 +10101,13 @@
       "guaranteed_salary": 190316050,
       "dead_cap": 0,
       "cap_holds": 0,
-      "roster_charges": 1378978,
-      "practical_cap_space": -26695028,
-      "maximum_cap_space": -26695028,
+      "roster_charges": 0,
+      "practical_cap_space": -25316050,
+      "maximum_cap_space": -25316050,
       "tax_room": 11333950,
       "first_apron_room": 18698950,
       "second_apron_room": 31369950,
-      "active_roster_count": 11,
+      "active_roster_count": 12,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10286,16 +10115,16 @@
     {
       "year": 2026,
       "team": "DAL",
-      "active_salary": 169410305,
-      "guaranteed_salary": 169410305,
+      "active_salary": 169410304,
+      "guaranteed_salary": 169410304,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -4410305,
-      "maximum_cap_space": -4410305,
-      "tax_room": 32239695,
-      "first_apron_room": 39604695,
-      "second_apron_room": 52275695,
+      "practical_cap_space": -4410304,
+      "maximum_cap_space": -4410304,
+      "tax_room": 32239696,
+      "first_apron_room": 39604696,
+      "second_apron_room": 52275696,
       "active_roster_count": 14,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10304,16 +10133,16 @@
     {
       "year": 2026,
       "team": "DEN",
-      "active_salary": 244745950,
-      "guaranteed_salary": 244745950,
+      "active_salary": 244275033,
+      "guaranteed_salary": 244275033,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -79745950,
-      "maximum_cap_space": -79745950,
-      "tax_room": -43095950,
-      "first_apron_room": -35730950,
-      "second_apron_room": -23059950,
+      "practical_cap_space": -79275033,
+      "maximum_cap_space": -79275033,
+      "tax_room": -42625033,
+      "first_apron_room": -35260033,
+      "second_apron_room": -22589033,
       "active_roster_count": 15,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10322,17 +10151,17 @@
     {
       "year": 2026,
       "team": "DET",
-      "active_salary": 115589673,
-      "guaranteed_salary": 115589673,
+      "active_salary": 169201037,
+      "guaranteed_salary": 169201037,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": 49410327,
-      "maximum_cap_space": 49410327,
-      "tax_room": 86060327,
-      "first_apron_room": 93425327,
-      "second_apron_room": 106096327,
-      "active_roster_count": 16,
+      "practical_cap_space": -4201037,
+      "maximum_cap_space": -4201037,
+      "tax_room": 32448963,
+      "first_apron_room": 39813963,
+      "second_apron_room": 52484963,
+      "active_roster_count": 15,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10340,16 +10169,16 @@
     {
       "year": 2026,
       "team": "GSW",
-      "active_salary": 181479537,
-      "guaranteed_salary": 181479537,
+      "active_salary": 212292771,
+      "guaranteed_salary": 212292771,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -16479537,
-      "maximum_cap_space": -16479537,
-      "tax_room": 20170463,
-      "first_apron_room": 27535463,
-      "second_apron_room": 40206463,
+      "practical_cap_space": -47292771,
+      "maximum_cap_space": -47292771,
+      "tax_room": -10642771,
+      "first_apron_room": -3277771,
+      "second_apron_room": 9393229,
       "active_roster_count": 16,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10358,17 +10187,17 @@
     {
       "year": 2026,
       "team": "HOU",
-      "active_salary": 197991985,
-      "guaranteed_salary": 197991985,
+      "active_salary": 211910223,
+      "guaranteed_salary": 211910223,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -32991985,
-      "maximum_cap_space": -32991985,
-      "tax_room": 3658015,
-      "first_apron_room": 11023015,
-      "second_apron_room": 23694015,
-      "active_roster_count": 15,
+      "practical_cap_space": -46910223,
+      "maximum_cap_space": -46910223,
+      "tax_room": -10260223,
+      "first_apron_room": -2895223,
+      "second_apron_room": 9775777,
+      "active_roster_count": 14,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10376,16 +10205,16 @@
     {
       "year": 2026,
       "team": "IND",
-      "active_salary": 200592572,
-      "guaranteed_salary": 200592572,
+      "active_salary": 203041993,
+      "guaranteed_salary": 203041993,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -35592572,
-      "maximum_cap_space": -35592572,
-      "tax_room": 1057428,
-      "first_apron_room": 8422428,
-      "second_apron_room": 21093428,
+      "practical_cap_space": -38041993,
+      "maximum_cap_space": -38041993,
+      "tax_room": -1391993,
+      "first_apron_room": 5973007,
+      "second_apron_room": 18644007,
       "active_roster_count": 16,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10394,17 +10223,17 @@
     {
       "year": 2026,
       "team": "LAC",
-      "active_salary": 162042892,
-      "guaranteed_salary": 162042892,
+      "active_salary": 180133479,
+      "guaranteed_salary": 180133479,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": 2957108,
-      "maximum_cap_space": 2957108,
-      "tax_room": 39607108,
-      "first_apron_room": 46972108,
-      "second_apron_room": 59643108,
-      "active_roster_count": 16,
+      "practical_cap_space": -15133479,
+      "maximum_cap_space": -15133479,
+      "tax_room": 21516521,
+      "first_apron_room": 28881521,
+      "second_apron_room": 41552521,
+      "active_roster_count": 17,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10412,17 +10241,17 @@
     {
       "year": 2026,
       "team": "LAL",
-      "active_salary": 119522595,
-      "guaranteed_salary": 119522595,
+      "active_salary": 193766541,
+      "guaranteed_salary": 193766541,
       "dead_cap": 0,
       "cap_holds": 16500000,
       "roster_charges": 0,
-      "practical_cap_space": 28977405,
-      "maximum_cap_space": 45477405,
-      "tax_room": 82127405,
-      "first_apron_room": 89492405,
-      "second_apron_room": 102163405,
-      "active_roster_count": 17,
+      "practical_cap_space": -45266541,
+      "maximum_cap_space": -28766541,
+      "tax_room": 7883459,
+      "first_apron_room": 15248459,
+      "second_apron_room": 27919459,
+      "active_roster_count": 15,
       "hold_count": 1,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10430,17 +10259,17 @@
     {
       "year": 2026,
       "team": "MEM",
-      "active_salary": 118611830,
-      "guaranteed_salary": 118611830,
+      "active_salary": 123795969,
+      "guaranteed_salary": 123795969,
       "dead_cap": 0,
       "cap_holds": 4581982,
       "roster_charges": 0,
-      "practical_cap_space": 41806188,
-      "maximum_cap_space": 46388170,
-      "tax_room": 83038170,
-      "first_apron_room": 90403170,
-      "second_apron_room": 103074170,
-      "active_roster_count": 19,
+      "practical_cap_space": 36622049,
+      "maximum_cap_space": 41204031,
+      "tax_room": 77854031,
+      "first_apron_room": 85219031,
+      "second_apron_room": 97890031,
+      "active_roster_count": 18,
       "hold_count": 2,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10448,16 +10277,16 @@
     {
       "year": 2026,
       "team": "MIA",
-      "active_salary": 206173290,
-      "guaranteed_salary": 206173290,
+      "active_salary": 204831493,
+      "guaranteed_salary": 204831493,
       "dead_cap": 0,
       "cap_holds": 39964547,
       "roster_charges": 0,
-      "practical_cap_space": -81137837,
-      "maximum_cap_space": -41173290,
-      "tax_room": -4523290,
-      "first_apron_room": 2841710,
-      "second_apron_room": 15512710,
+      "practical_cap_space": -79796040,
+      "maximum_cap_space": -39831493,
+      "tax_room": -3181493,
+      "first_apron_room": 4183507,
+      "second_apron_room": 16854507,
       "active_roster_count": 14,
       "hold_count": 1,
       "cap_validation_delta": null,
@@ -10466,17 +10295,17 @@
     {
       "year": 2026,
       "team": "MIL",
-      "active_salary": 146308702,
-      "guaranteed_salary": 146308702,
+      "active_salary": 160878930,
+      "guaranteed_salary": 160878930,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": 18691298,
-      "maximum_cap_space": 18691298,
-      "tax_room": 55341298,
-      "first_apron_room": 62706298,
-      "second_apron_room": 75377298,
-      "active_roster_count": 18,
+      "practical_cap_space": 4121070,
+      "maximum_cap_space": 4121070,
+      "tax_room": 40771070,
+      "first_apron_room": 48136070,
+      "second_apron_room": 60807070,
+      "active_roster_count": 17,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10484,16 +10313,16 @@
     {
       "year": 2026,
       "team": "MIN",
-      "active_salary": 202458584,
-      "guaranteed_salary": 202458584,
+      "active_salary": 227304770,
+      "guaranteed_salary": 227304770,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -37458584,
-      "maximum_cap_space": -37458584,
-      "tax_room": -808584,
-      "first_apron_room": 6556416,
-      "second_apron_room": 19227416,
+      "practical_cap_space": -62304770,
+      "maximum_cap_space": -62304770,
+      "tax_room": -25654770,
+      "first_apron_room": -18289770,
+      "second_apron_room": -5618770,
       "active_roster_count": 12,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10502,16 +10331,16 @@
     {
       "year": 2026,
       "team": "NOP",
-      "active_salary": 185196445,
-      "guaranteed_salary": 185196445,
+      "active_salary": 188721049,
+      "guaranteed_salary": 188721049,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -20196445,
-      "maximum_cap_space": -20196445,
-      "tax_room": 16453555,
-      "first_apron_room": 23818555,
-      "second_apron_room": 36489555,
+      "practical_cap_space": -23721049,
+      "maximum_cap_space": -23721049,
+      "tax_room": 12928951,
+      "first_apron_room": 20293951,
+      "second_apron_room": 32964951,
       "active_roster_count": 16,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10520,17 +10349,17 @@
     {
       "year": 2026,
       "team": "NYK",
-      "active_salary": 205460628,
-      "guaranteed_salary": 205460628,
+      "active_salary": 215962811,
+      "guaranteed_salary": 215962811,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -40460628,
-      "maximum_cap_space": -40460628,
-      "tax_room": -3810628,
-      "first_apron_room": 3554372,
-      "second_apron_room": 16225372,
-      "active_roster_count": 15,
+      "practical_cap_space": -50962811,
+      "maximum_cap_space": -50962811,
+      "tax_room": -14312811,
+      "first_apron_room": -6947811,
+      "second_apron_room": 5723189,
+      "active_roster_count": 14,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10538,16 +10367,16 @@
     {
       "year": 2026,
       "team": "OKC",
-      "active_salary": 200987364,
-      "guaranteed_salary": 200987364,
+      "active_salary": 193453012,
+      "guaranteed_salary": 193453012,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 1378978,
-      "practical_cap_space": -37366342,
-      "maximum_cap_space": -37366342,
-      "tax_room": 662636,
-      "first_apron_room": 8027636,
-      "second_apron_room": 20698636,
+      "practical_cap_space": -29831990,
+      "maximum_cap_space": -29831990,
+      "tax_room": 8196988,
+      "first_apron_room": 15561988,
+      "second_apron_room": 28232988,
       "active_roster_count": 11,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10556,16 +10385,16 @@
     {
       "year": 2026,
       "team": "ORL",
-      "active_salary": 217026808,
-      "guaranteed_salary": 217026808,
+      "active_salary": 209865321,
+      "guaranteed_salary": 209865321,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -52026808,
-      "maximum_cap_space": -52026808,
-      "tax_room": -15376808,
-      "first_apron_room": -8011808,
-      "second_apron_room": 4659192,
+      "practical_cap_space": -44865321,
+      "maximum_cap_space": -44865321,
+      "tax_room": -8215321,
+      "first_apron_room": -850321,
+      "second_apron_room": 11820679,
       "active_roster_count": 14,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10574,17 +10403,17 @@
     {
       "year": 2026,
       "team": "PHI",
-      "active_salary": 202411819,
-      "guaranteed_salary": 202411819,
+      "active_salary": 208827280,
+      "guaranteed_salary": 208827280,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -37411819,
-      "maximum_cap_space": -37411819,
-      "tax_room": -761819,
-      "first_apron_room": 6603181,
-      "second_apron_room": 19274181,
-      "active_roster_count": 16,
+      "practical_cap_space": -43827280,
+      "maximum_cap_space": -43827280,
+      "tax_room": -7177280,
+      "first_apron_room": 187720,
+      "second_apron_room": 12858720,
+      "active_roster_count": 15,
       "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
@@ -10592,16 +10421,16 @@
     {
       "year": 2026,
       "team": "PHX",
-      "active_salary": 160706411,
-      "guaranteed_salary": 160706411,
+      "active_salary": 189013290,
+      "guaranteed_salary": 189013290,
       "dead_cap": 0,
       "cap_holds": 5121235,
       "roster_charges": 0,
-      "practical_cap_space": -827646,
-      "maximum_cap_space": 4293589,
-      "tax_room": 40943589,
-      "first_apron_room": 48308589,
-      "second_apron_room": 60979589,
+      "practical_cap_space": -29134525,
+      "maximum_cap_space": -24013290,
+      "tax_room": 12636710,
+      "first_apron_room": 20001710,
+      "second_apron_room": 32672710,
       "active_roster_count": 18,
       "hold_count": 1,
       "cap_validation_delta": null,
@@ -10610,16 +10439,16 @@
     {
       "year": 2026,
       "team": "POR",
-      "active_salary": 175375220,
-      "guaranteed_salary": 175375220,
+      "active_salary": 197892623,
+      "guaranteed_salary": 197892623,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -10375220,
-      "maximum_cap_space": -10375220,
-      "tax_room": 26274780,
-      "first_apron_room": 33639780,
-      "second_apron_room": 46310780,
+      "practical_cap_space": -32892623,
+      "maximum_cap_space": -32892623,
+      "tax_room": 3757377,
+      "first_apron_room": 11122377,
+      "second_apron_room": 23793377,
       "active_roster_count": 15,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10628,16 +10457,16 @@
     {
       "year": 2026,
       "team": "SAC",
-      "active_salary": 176557729,
-      "guaranteed_salary": 176557729,
+      "active_salary": 171388653,
+      "guaranteed_salary": 171388653,
       "dead_cap": 0,
       "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -11557729,
-      "maximum_cap_space": -11557729,
-      "tax_room": 25092271,
-      "first_apron_room": 32457271,
-      "second_apron_room": 45128271,
+      "practical_cap_space": -6388653,
+      "maximum_cap_space": -6388653,
+      "tax_room": 30261347,
+      "first_apron_room": 37626347,
+      "second_apron_room": 50297347,
       "active_roster_count": 13,
       "hold_count": 0,
       "cap_validation_delta": null,
@@ -10646,70 +10475,70 @@
     {
       "year": 2026,
       "team": "SAS",
-      "active_salary": 153468566,
-      "guaranteed_salary": 153468566,
+      "active_salary": 152768566,
+      "guaranteed_salary": 152768566,
       "dead_cap": 0,
-      "cap_holds": 20167683,
+      "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -8636249,
-      "maximum_cap_space": 11531434,
-      "tax_room": 48181434,
-      "first_apron_room": 55546434,
-      "second_apron_room": 68217434,
+      "practical_cap_space": 12231434,
+      "maximum_cap_space": 12231434,
+      "tax_room": 48881434,
+      "first_apron_room": 56246434,
+      "second_apron_room": 68917434,
       "active_roster_count": 12,
-      "hold_count": 1,
+      "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
     },
     {
       "year": 2026,
       "team": "TOR",
-      "active_salary": 193281785,
-      "guaranteed_salary": 193281785,
+      "active_salary": 191130868,
+      "guaranteed_salary": 191130868,
       "dead_cap": 0,
-      "cap_holds": 128018,
+      "cap_holds": 0,
       "roster_charges": 0,
-      "practical_cap_space": -28409803,
-      "maximum_cap_space": -28281785,
-      "tax_room": 8368215,
-      "first_apron_room": 15733215,
-      "second_apron_room": 28404215,
+      "practical_cap_space": -26130868,
+      "maximum_cap_space": -26130868,
+      "tax_room": 10519132,
+      "first_apron_room": 17884132,
+      "second_apron_room": 30555132,
       "active_roster_count": 13,
-      "hold_count": 1,
+      "hold_count": 0,
       "cap_validation_delta": null,
       "validation_source": null
     },
     {
       "year": 2026,
       "team": "UTA",
-      "active_salary": 148671285,
-      "guaranteed_salary": 148671285,
+      "active_salary": 163934781,
+      "guaranteed_salary": 163934781,
       "dead_cap": 0,
-      "cap_holds": 6225000,
+      "cap_holds": 7786797,
       "roster_charges": 0,
-      "practical_cap_space": 10103715,
-      "maximum_cap_space": 16328715,
-      "tax_room": 52978715,
-      "first_apron_room": 60343715,
-      "second_apron_room": 73014715,
-      "active_roster_count": 17,
-      "hold_count": 1,
+      "practical_cap_space": -6721578,
+      "maximum_cap_space": 1065219,
+      "tax_room": 37715219,
+      "first_apron_room": 45080219,
+      "second_apron_room": 57751219,
+      "active_roster_count": 16,
+      "hold_count": 2,
       "cap_validation_delta": null,
       "validation_source": null
     },
     {
       "year": 2026,
       "team": "WAS",
-      "active_salary": 179273229,
-      "guaranteed_salary": 179273229,
+      "active_salary": 185683775,
+      "guaranteed_salary": 185683775,
       "dead_cap": 0,
       "cap_holds": 1561797,
       "roster_charges": 0,
-      "practical_cap_space": -15835026,
-      "maximum_cap_space": -14273229,
-      "tax_room": 22376771,
-      "first_apron_room": 29741771,
-      "second_apron_room": 42412771,
+      "practical_cap_space": -22245572,
+      "maximum_cap_space": -20683775,
+      "tax_room": 15966225,
+      "first_apron_room": 23331225,
+      "second_apron_room": 36002225,
       "active_roster_count": 16,
       "hold_count": 1,
       "cap_validation_delta": null,

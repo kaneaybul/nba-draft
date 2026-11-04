@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-11-04T12:52:35Z",
+  "checked_at": "2026-11-04T20:27:15Z",
   "seasons": {
     "2027": {
       "year": 2027,
-      "status": "cached",
-      "reason": "cannot open URL 'https://www.basketball-reference.com/leagues/NBA_2027_play-by-play.html'",
+      "status": "fresh",
+      "reason": "",
       "rows": 448,
       "source": "https://www.basketball-reference.com/leagues/NBA_2027_play-by-play.html"
     }
