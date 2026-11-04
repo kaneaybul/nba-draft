@@ -43,6 +43,15 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: script/asset_history/requirements.txt
+      - name: Resolve the active asset history version
+        run: |
+          python3 - <<'PY'
+          import os,sys
+          sys.path.insert(0,'script/asset_history')
+          from model_version import DATA_VERSION
+          with open(os.environ['GITHUB_ENV'],'a') as target:
+              target.write('ASSET_DATA_VERSION='+DATA_VERSION+'\n')
+          PY
       - run: python3 -m pip install -r script/asset_history/requirements.txt
       - run: python3 script/asset_history/materialize.py --repo .
       - name: Check valuation and publication rules
@@ -76,9 +85,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "$PORTFOLIO_OUTCOME" = success ]; then
-            git add frontend/public/data/asset_history/v8 processed/asset_history processed/contracts
+            git add frontend/public/data/asset_history/${{ env.ASSET_DATA_VERSION }} frontend/public/data/asset_valuations/${{ env.ASSET_DATA_VERSION }} frontend/public/data/asset_valuation.json processed/asset_history processed/contracts
           else
-            git add frontend/public/data/asset_history/v8/refresh_status.json
+            git add frontend/public/data/asset_history/${{ env.ASSET_DATA_VERSION }}/refresh_status.json
           fi
           if ! git diff --cached --quiet; then
             # Preserve expensive validated results even if a later push fails.
@@ -116,7 +125,7 @@ jobs:
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json
             ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/league_ownership/roster_refresh_source.json
             processed/asset_history/contracts/refresh_audit.json
-            frontend/public/data/asset_history/v8/refresh_status.json
+            frontend/public/data/asset_history/${{ env.ASSET_DATA_VERSION }}/refresh_status.json
           if-no-files-found: ignore
           retention-days: 14
       - name: Report a retained observation
