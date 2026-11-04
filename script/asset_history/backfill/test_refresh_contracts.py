@@ -1,9 +1,29 @@
 import json,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
-from refresh_contracts import refresh
+from refresh_contracts import refresh,retain_usable_agreements
 
 class RefreshContracts(unittest.TestCase):
+ def test_unreviewed_same_deal_revision_keeps_usable_terms_and_retries(self):
+  with tempfile.TemporaryDirectory()as folder:
+   root=Path(folder);pp,ep,seed=self.setup_files(root)
+   old=seed[0];old.update(source='https://www.salaryswish.com/players/one',signing_team='BOS',contract_type='ROOKIE SCALE EXTENSION',expiry_season=2032,schedule_complete=True,stated_total=209000000)
+   (root/'contract_agreements.json').write_text(json.dumps(seed))
+   fresh={**old,'schedule_complete':False,'max_salary_asof_review_required':True,'max_salary_asof_formula_verified':False,'amount_terms_fixed_from':'2027-07-01','stated_total':229659024,'salaries':[dict(year=2028,amount=44000000)]}
+   with patch('refresh_contracts.fetch_one',return_value=dict(nba_id=1,player_name='One',status='available',agreements=[fresh])):
+    report=refresh(root,pp,ep,'2026-10-26',rotation_limit=0)
+   stored=json.loads((root/'contract_agreements.json').read_text())
+   self.assertIn(old,stored);self.assertNotIn(fresh,stored)
+   self.assertEqual(report['pending_player_ids'],[1]);self.assertEqual(report['failed_mandatory_player_ids'],[])
+   self.assertEqual(report['retained_agreements'][0]['rejected_stated_total'],229659024)
+   self.assertEqual(json.loads((root/'refresh_state.json').read_text())['last_checked']['1'],'2026-10-25')
+ def test_new_deal_or_verified_correction_is_never_replaced_with_old_terms(self):
+  old=dict(nba_id=1,player_name='One',known_from='2026-10-19',source='primary',signing_team='CHA',contract_type='EXTENSION',expiry_season=2032,schedule_complete=True)
+  fresh={**old,'schedule_complete':False,'max_salary_asof_review_required':True,'max_salary_asof_formula_verified':False,'amount_terms_fixed_from':'2027-07-01'}
+  for change in ({'known_from':'2026-11-01'},{'nba_id':2},{'source':'another'},{'signing_team':'UTA'},{'max_salary_asof_formula_verified':True},{'schedule_complete':True}):
+   with self.subTest(change=change):
+    updated={**fresh,**change};rows,retained=retain_usable_agreements([old],[updated],'2026-11-04')
+    self.assertEqual(rows,[updated]);self.assertEqual(retained,[])
  def test_first_daily_refresh_checks_transactions_since_saved_player_state(self):
   with tempfile.TemporaryDirectory()as folder:
    root=Path(folder);pp,ep,seed=self.setup_files(root)
@@ -72,3 +92,4 @@ class RefreshContracts(unittest.TestCase):
    self.assertEqual(json.loads((root/'contract_agreements.json').read_text()),seed)
 
 if __name__=='__main__':unittest.main()
+

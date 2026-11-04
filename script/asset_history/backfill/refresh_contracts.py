@@ -33,6 +33,31 @@ def atomic_json(path, value):
     temp=path.with_suffix('.tmp');temp.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n');temp.replace(path)
 
 
+def retain_usable_agreements(previous, fresh, cutoff):
+    """An unreviewed scrape of the same deal cannot erase validated terms.
+
+    This does not bridge a new signing, a different team/source, or a newly
+    verified formula. Those changes still need their own usable evidence.
+    """
+    retained=[];out=[]
+    for agreement in fresh:
+        prior=next((a for a in previous if all(a.get(k)==agreement.get(k) for k in
+            ('nba_id','known_from','source','signing_team','contract_type','expiry_season'))
+            and a.get('source') and a.get('schedule_complete') is True and a['known_from']<=cutoff),None)
+        unresolved=(agreement.get('schedule_complete') is not True and
+                    agreement.get('max_salary_asof_review_required') is True and
+                    agreement.get('max_salary_asof_formula_verified') is not True and
+                    cutoff<agreement.get('amount_terms_fixed_from',''))
+        if prior and unresolved:
+            out.append(prior)
+            retained.append(dict(nba_id=agreement['nba_id'],player_name=agreement['player_name'],
+                known_from=agreement['known_from'],source=agreement['source'],
+                reason='Same-agreement scrape introduced an unreviewed future maximum; retained last validated schedule and queued source review',
+                rejected_stated_total=agreement.get('stated_total'),retained_stated_total=prior.get('stated_total')))
+        else:out.append(agreement)
+    return out,retained
+
+
 def source_identity(row, profiles=None):
     """A source profile is a contract key when an NBA identifier is unavailable."""
     name=row.get('player_name',row.get('name',''))
@@ -150,7 +175,10 @@ def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, wo
             results.append(result)
     successful={int(r['nba_id']):r for r in results if r['status']=='available'}
     merged=[a for a in agreements if int(a['nba_id'])not in successful]
-    merged.extend(a for r in successful.values()for a in r['agreements'])
+    retained_agreements=[]
+    for pid,result in successful.items():
+        usable,retained=retain_usable_agreements([a for a in agreements if int(a['nba_id'])==pid],result['agreements'],cutoff)
+        merged.extend(usable);retained_agreements.extend(retained)
     # Primary-source supplements are preserved unless a real original table supersedes them.
     supplement_path=Path(__file__).with_name('supplemental_contract_agreements.json')
     supplements=json.loads(supplement_path.read_text())if supplement_path.exists()else[]
@@ -161,13 +189,16 @@ def refresh(contracts_dir, pool_path, events_path, cutoff, rotation_limit=20, wo
     failed=[int(r['nba_id'])for r in results if r['status']!='available']
     unresolved_options={int(p['nba_id'])for e in option_events for p in e['players']
                         if int(p['nba_id'])in players and not option_verified(e,int(p['nba_id']),merged,cutoff)}
-    pending=sorted((mandatory-set(successful))|unresolved_options)
-    for pid in successful:last_checked[str(pid)]=cutoff
+    failed_required=(mandatory-set(successful))|unresolved_options
+    retained_ids={int(r['nba_id'])for r in retained_agreements}
+    pending=sorted(failed_required|retained_ids)
+    for pid in set(successful)-retained_ids:last_checked[str(pid)]=cutoff
     audit=dict(cutoff=cutoff,generated_at=datetime.now(timezone.utc).isoformat(),
         mandatory_player_ids=sorted(mandatory),rotation_players=len(optional),
         available_players=len(successful),pending_player_ids=pending,
         optional_source_failures=sorted(set(failed)-mandatory),
-        failed_mandatory_player_ids=pending,
+        failed_mandatory_player_ids=sorted(failed_required),
+        retained_agreements=retained_agreements,
         unverified_option_player_ids=sorted(unresolved_options),
         all_original_agreements=len(merged),
         discovery=discovery,
@@ -187,3 +218,4 @@ def main():
     if report['failed_mandatory_player_ids']or report['discovery']['unidentified_owned_players']:raise SystemExit('New/changed contracts or owned identities remain unverified; retain last good snapshot')
 
 if __name__=='__main__':main()
+
