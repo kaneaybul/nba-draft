@@ -87,7 +87,10 @@ def write(repo,data):
     target=out/'current.json'
     # Source checks and build timestamps alone must not trigger another
     # player rebuild. Changed ownership or terms do require a new export.
-    stable=lambda d:{k:v for k,v in d.items()if k not in('generated_at','source_refresh')}
+    def stable(d):
+        result={k:v for k,v in d.items()if k not in('generated_at','source_refresh')}
+        result['players']=[{k:v for k,v in p.items()if k!='ownership_source'}for p in d['players']]
+        return result
     if target.exists() and (out/'current.csv').exists() and stable(read_json(target))==stable(data):
         print(json.dumps(dict(**data['coverage'],unchanged=True)))
         return
