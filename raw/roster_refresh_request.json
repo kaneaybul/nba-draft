@@ -1,4 +1,4 @@
 {
-  "requested_at": "2026-11-04T14:15:00Z",
-  "reason": "User requested contract refresh for salary, cap, and trade views; refresh multi-year Databallr exports and attempt fresh Spotrac sources."
+  "requested_at": "2026-11-04T14:24:36.365Z",
+  "reason": "Retry requested contract refresh with season-alignment and empty salary-fallback fixes."
 }
