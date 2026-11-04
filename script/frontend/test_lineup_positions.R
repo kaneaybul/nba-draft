@@ -218,6 +218,8 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
   lineups <- read_export("team_lineups")
   contract_path <- "processed/livedata/impactrefresh/contracts_2026_spotrac.csv"
   salary_column <- "salary_y1"
+  shared_contract_path <- "processed/contracts/current.csv"
+  if(file.exists(shared_contract_path)) contract_path <- shared_contract_path
   if (!file.exists(contract_path) || file.info(contract_path)$size <= 4) {
     contract_path <- "processed/livedata/impactrefresh/contracts_2027_current.csv"
     salary_column <- "salary_y0"
@@ -225,7 +227,8 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
   if (file.exists(contract_path) && file.info(contract_path)$size > 4) {
     contracts <- read.csv(contract_path, stringsAsFactors = FALSE)
     current <- players[players$year == 2027L & !is.na(players$pool_status) & players$pool_status == "roster", , drop = FALSE]
-    match_idx <- match(current$nba_id, contracts$nba_id)
+    source_ids <- ifelse(is.finite(current$source_nba_id),current$source_nba_id,current$nba_id)
+    match_idx <- match(source_ids, contracts$nba_id)
     expected_salary <- contracts[[salary_column]][match_idx]
     known <- is.finite(current$nba_id) & !is.na(match_idx) & is.finite(expected_salary) & expected_salary > 0
     bad <- known & (!is.finite(current$contract) | abs(current$contract - expected_salary) >= 1)
@@ -273,4 +276,5 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
 }
 
 message("Lineup positional and contract-season regressions passed.")
+
 

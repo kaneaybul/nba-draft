@@ -105,10 +105,16 @@ jobs:
           python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
           python3 script/data/refresh_injury_outlook.py
 
+      - name: Refresh the complete shared signed-agreement book
+        run: python3 script/frontend/refresh_shared_contracts.py --repo .
+
       - name: Export roster-dependent frontend data
         run: |
           node script/frontend/test_cap_roster_fallback.mjs
           Rscript script/frontend/export_frontend_data.R
+          node script/frontend/build_cap_tracker_spotrac_data.mjs
+          node script/frontend/build_static_data_manifest.mjs
+          node script/frontend/test_shared_contracts.mjs --require-export
 
       - name: Verify positional lineups and contract-season alignment
         run: Rscript script/frontend/test_lineup_positions.R
@@ -142,6 +148,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/public/data
+          git add processed/contracts processed/asset_history/contracts
           git add processed/livedata/impactrefresh/contracts_*_current.csv
           git add processed/livedata/impactrefresh/contracts_by_year.csv
           git add processed/livedata/impactrefresh/current_rosters_2026.csv
@@ -162,3 +169,4 @@ jobs:
             processed/livedata/impactrefresh/contracts_by_year.csv
             processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv
           retention-days: 7
+

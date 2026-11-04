@@ -1,8 +1,12 @@
-import { baseYearCompensationOutgoingSalary, capTrackerHardCap, evaluateTradeMachine, tradeBonusAmount, tradeTeamContextFromCapTracker } from "./tradeMachine";
-import type { CapTrackerContractRow, CapTrackerData, CapTrackerPick, CapTrackerSeason, CapTrackerTeamSeason } from "./types";
+import { tradeSalaryForPlayer, baseYearCompensationOutgoingSalary, capTrackerHardCap, evaluateTradeMachine, tradeBonusAmount, tradeTeamContextFromCapTracker } from "./tradeMachine";
+import type { PlayerImpact, CapTrackerContractRow, CapTrackerData, CapTrackerPick, CapTrackerSeason, CapTrackerTeamSeason } from "./types";
 import type { TradeMachineAsset, TradeMachineSide, TradeMachineTeamContext } from "./tradeMachine";
 
 export function runTradeMachineRegressionTests(): string[] {
+  const twoWay = { contract: 678882, contract_cap_salary: 0 } as PlayerImpact;
+  if(tradeSalaryForPlayer(twoWay)!==0) throw new Error("Two-way cash pay must not enter cap salary matching");
+  const regular = { contract: 2000000, contract_cap_salary: 1800000 } as PlayerImpact;
+  if(tradeSalaryForPlayer(regular)!==1800000) throw new Error("Trade matching must use the verified cap salary");
   return [
     capRoomAbsorptionClearsWithoutMatchingSalary(),
     balancedTradeValueIsModelAccepted(),
@@ -2057,3 +2061,4 @@ function cash(id: string, amount: number): TradeMachineAsset {
 function expect(condition: boolean, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
+

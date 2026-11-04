@@ -35,6 +35,7 @@ export type StaticDataManifest = {
 };
 
 export type PlayerImpact = {
+  contract_cap_salary?: number | null;
   asset_valuation?: {
     date: string;
     value: number;
@@ -1067,4 +1068,5 @@ export type AppData = {
   capTracker?: CapTrackerData;
   capReview?: CapReviewData;
 };
+
 

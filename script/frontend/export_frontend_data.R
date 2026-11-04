@@ -2763,6 +2763,8 @@ option_note_exercised_for_year <- function(contracts, impact_year) {
 }
 
 spotrac_contract_path <- function(base_dir, contract_year = NULL) {
+  shared_path <- file.path(base_dir, "processed", "contracts", "current.csv")
+  if(file.exists(shared_path)) return(shared_path)
   contract_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh")
   if (!is.null(contract_year) && is.finite(contract_year)) {
     path <- file.path(contract_dir, paste0("contracts_", as.integer(contract_year), "_spotrac.csv"))
@@ -2855,7 +2857,7 @@ overlay_spotrac_contracts <- function(contracts, spotrac) {
       value <- spotrac[[col]][[i]]
       if (!is.na(value) && nzchar(trimws(as.character(value)))) contracts[[col]][[idx]] <- value
     }
-    if ("source" %in% names(contracts)) contracts$source[[idx]] <- "Spotrac roster table"
+    if ("source" %in% names(contracts)) contracts$source[[idx]] <- if("source" %in% names(spotrac)) as.character(spotrac$source[[i]]) else "Spotrac roster table"
     for (salary_col in salary_cols) {
       horizon <- sub("^salary_y", "", salary_col)
       status_col <- paste0("contract_status_y", horizon)
@@ -5349,5 +5351,6 @@ message("Rows: players=", nrow(players), ", teams=", nrow(teams), ", draft=", nr
 if (!identical(tolower(Sys.getenv("FRONTEND_REFRESH_SUPPRESS_EXPORT_SUMMARY", "false")), "true")) {
   print_frontend_timing_summary(base_dir)
 }
+
 
 

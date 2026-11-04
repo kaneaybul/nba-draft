@@ -3,6 +3,12 @@ from contracts import parse_contracts,slug,option_adjustments
 
 HTML='''<div class="sw_playerContract"><h6 class="sw_playerContract__title">VETERAN EXTENSION</h6><div class="sw_playerContract__meta"><div>Length: 1 - 2 years</div><div>Value: $22,000,000</div><div>Cap %: 25.00</div><div>Signing Team: BOS</div><div>Signing Date: August 7, 2021</div></div><table><tbody><tr><td>2022-23</td><td></td><td></td><td>$10,000,000</td><td>$10,000,000</td><td>$10,000,000</td></tr><tr><td>2023-24</td><td>Player</td><td>No (Jun 30, 2023)</td><td>$12,000,000</td><td>$12,000,000 (+8%)</td><td>$12,000,000</td></tr></tbody></table></div>'''
 class ContractTests(unittest.TestCase):
+ def test_old_declined_option_cannot_erase_a_signed_replacement(self):
+  old=dict(nba_id=1,player_name='Example',known_from='2021-08-17',source='original',salaries=[dict(year=2027,kind='player_option',option_used_current_diagnostic='No (Sep 20, 2024)')])
+  replacement=dict(nba_id=1,player_name='Example',known_from='2024-09-19',source='replacement',salaries=[dict(year=2027,kind='salary')])
+  self.assertEqual(option_adjustments([old,replacement]),[])
+  replacement['known_from']='2024-09-21'
+  self.assertEqual(option_adjustments([old,replacement])[0]['remove_years'],[2027])
  def test_original_dates_rows_options(self):
   a,issues=parse_contracts(HTML,'Example',1,'https://source');a=a[0]
   self.assertFalse(issues);self.assertEqual(a['known_from'],'2021-08-07');self.assertTrue(a['schedule_complete']);self.assertEqual(a['expiry_season'],2024);self.assertEqual(a['annual_salary_total'],22000000)
@@ -33,3 +39,4 @@ class ContractTests(unittest.TestCase):
  def test_slug_punctuation(self):
   self.assertEqual(slug("De'Aaron Fox"),'deaaron-fox');self.assertEqual(slug('Shai Gilgeous-Alexander'),'shai-gilgeousalexander');self.assertEqual(slug('Jaren Jackson Jr.'),'jaren-jacksonjr')
 if __name__=='__main__':unittest.main()
+

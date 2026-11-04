@@ -85,11 +85,41 @@ apply_live_player_pool <- function(rows,history,base_dir) {
   path <- file.path(base_dir,'raw/live/player_pool.json')
   if(!file.exists(path)) stop('Daily player registry is required')
   registry <- jsonlite::fromJSON(path,simplifyVector=FALSE)
+  shared_path <- file.path(base_dir,'processed/contracts/current.json')
+  shared <- if(file.exists(shared_path)) jsonlite::fromJSON(shared_path,simplifyVector=FALSE) else NULL
+  shared_by_id <- list()
+  shared_record <- function(pid) {
+    if(length(pid)!=1L || is.na(pid)) return(NULL)
+    shared_by_id[[as.character(pid)]]
+  }
+  if(!is.null(shared)) {
+    stopifnot(isTRUE(shared$complete),shared$coverage$priced_players==length(shared$players),length(shared$coverage$missing_players)==0L)
+    if(shared$as_of > substr(registry$generated_at,1,10)) stop('Shared contracts are newer than the current roster capture')
+    registry$source <- paste('Dated signed-agreement ownership ledger',shared$as_of)
+    shared_by_id <- setNames(shared$players,vapply(shared$players,function(p)as.character(p$nba_id),character(1)))
+    seen <- character()
+    for(j in seq_along(registry$players)) {
+      entry <- registry$players[[j]];id <- as.character(pool_scalar(entry$nba_id,NA_real_));signed <- shared_record(id)
+      if(!is.null(signed)) {
+        entry$pool_status <- 'roster';entry$team <- signed$team;entry$salary <- signed$current_salary
+        entry$contract_status <- signed$current_status;entry$inactive_confirmed <- FALSE
+        entry$note <- paste('Dated signed-contract ownership verified',shared$as_of)
+        seen <- c(seen,id)
+      } else if(identical(entry$pool_status,'roster')) {
+        entry$pool_status <- 'inactive';entry$team <- 'FA';entry$inactive_confirmed <- TRUE
+        entry$note <- paste('No active signed agreement in complete dated ownership ledger',shared$as_of)
+      }
+      registry$players[[j]] <- entry
+    }
+    if(length(setdiff(names(shared_by_id),seen))) stop('Signed contract identity is absent from the player registry')
+  }
   season <- registry$season
   stopifnot(all(rows$year==season),registry$teams_checked==30)
   for(k in pool_character_fields) if(!k %in% names(rows)) rows[[k]] <- NA_character_
   rows$pool_review_pending <- FALSE;rows$source_nba_id <- NA_real_
   providers <- jsonlite::fromJSON(file.path(base_dir,'raw/live/ratings.json'))$players
+  rows$contract_cap_salary <- NA_real_
+  rows$contract_source <- NA_character_
   contract_path <- file.path(base_dir,'processed/livedata/impactrefresh/contracts_2026_spotrac.csv')
   salary_column <- 'salary_y1'
   if(!file.exists(contract_path) || file.info(contract_path)$size <= 4) {
@@ -97,6 +127,10 @@ apply_live_player_pool <- function(rows,history,base_dir) {
     salary_column <- 'salary_y0'
   }
   contracts <- if(file.exists(contract_path) && file.info(contract_path)$size > 4) read.csv(contract_path,check.names=FALSE) else data.frame()
+  canonical_csv <- file.path(base_dir,'processed/contracts/current.csv')
+  if(file.exists(canonical_csv)) {
+    contracts <- read.csv(canonical_csv,check.names=FALSE);salary_column <- 'salary_y1'
+  }
   for(p in registry$players) {
     if(p$pool_status=='draft') next
     if(!p$app_nba_id %in% rows$nba_id) rows <- rbind(rows,new_pool_player(rows,p,history,season,providers))
@@ -121,6 +155,17 @@ apply_live_player_pool <- function(rows,history,base_dir) {
     if(!active) rows$contract[i] <- NA_real_ else if(!is.na(known_contract)&&is.finite(contracts[[salary_column]][known_contract])&&contracts[[salary_column]][known_contract]>0) {
       rows$contract[i] <- contracts[[salary_column]][known_contract]
     } else if(!is.finite(rows$contract[i])&&!is.null(p$salary)&&is.finite(p$salary)&&p$salary>0) rows$contract[i] <- p$salary
+    signed <- shared_record(pool_scalar(p$nba_id,NA_real_))
+    if(active && !is.null(signed)) {
+      rows$contract[i] <- signed$current_salary
+      cell <- Filter(function(c)c$year==season,signed$cells)[[1]]
+      rows$contract_cap_salary[i] <- cell$cap_amount
+      rows$contract_source[i] <- signed$source
+      for(h in 1:5) {
+        future <- Filter(function(c)c$year==season+h,signed$cells)[[1]]
+        rows[[paste0('projection_contract_y',h)]][i] <- if(is.null(future$amount)) NA_real_ else future$amount
+      }
+    }
     status <- pool_scalar(p$contract_status,'Signed')
     if(active && status %in% c('UFA','RFA','Rookie FA')) status <- 'Signed'
     rows$contract_status[i] <- if(active) status else 'UFA'
@@ -172,5 +217,6 @@ season_pool_scores <- function(rows,base_dir) {
   if('trade_value' %in% names(rows) && 'value' %in% names(rows)) rows$trade_value <- round(rows$value*(.45+rows$score/170),0)
   rows
 }
+
 
 

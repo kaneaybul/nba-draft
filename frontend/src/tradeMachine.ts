@@ -414,7 +414,8 @@ export function tradeMachineTeamSalary(row: CapTrackerTeamSeason): number {
 }
 
 export function tradeSalaryForPlayer(player: PlayerImpact): number {
-  return finiteNumber(player.contract)
+  return finiteNumber(player.contract_cap_salary)
+    ?? finiteNumber(player.contract)
     ?? finiteNumber(player.projection_effective_contract_y1)
     ?? finiteNumber(player.projection_contract_y1)
     ?? finiteNumber(player.guaranteed_salary)
@@ -2748,3 +2749,4 @@ function moneyLabel(value: number): string {
   if (abs >= 1_000) return `$${Math.round(value / 1_000)}K`;
   return `$${Math.round(value)}`;
 }
+

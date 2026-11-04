@@ -1,3 +1,4 @@
+import { mergeSharedContracts, capCells } from './shared_contracts.mjs';
 import { retainCachedCapTeams } from "./cap_roster_fallback.mjs";
 import fs from "node:fs";
 import path from "node:path";
@@ -77,6 +78,7 @@ const TEAM_ABBR = {
 };
 
 export function buildSpotracCapTrackerData() {
+  const shared = readJson(path.join(root,"processed/contracts/current.json"),null);
   const spotracRows = readCsvFile(spotracWidePath);
   if (!spotracRows.length) {
     throw new Error(`Missing Spotrac scrape rows at ${spotracWidePath}`);
@@ -94,13 +96,15 @@ export function buildSpotracCapTrackerData() {
     ...buildContractRows(spotracRows, teamMeta, guaranteeOverrides, databallrContractMeta),
     ...buildProjectedRookieContractRows(impactPlayers)
   ].sort(contractRowSort);
+  if(shared) contractRows = mergeSharedContracts(shared,contractRows,YEARS,canonicalContractRowId,normalizeName).sort(contractRowSort);
   let deadMoney = buildDeadMoneyRows(spotracRows);
-  let teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, spotracRows);
+  if(shared) deadMoney=deadMoney.map(r=>({...r,source_quality:"cached"}));
+  let teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, shared ? spotracRows.filter(r=>r.entity_type!=="roster_charge") : spotracRows);
   const fallbackTeams = [...new Set([
     ...spotracRows.filter((row) => row.source_url?.startsWith("https://site.api.espn.com/")).map((row) => cleanTeam(row.team_abbr || TEAM_ABBR[row.team])),
     ...readCsvFile(spotracAuditPath).filter((row) => row.status === "fresh_espn_roster_after_spotrac_error").map((row) => TEAM_ABBR[row.team] || cleanTeam(row.team))
   ])];
-  const retained = retainCachedCapTeams({ teams: fallbackTeams, previous: readJson(outPath, null), years: YEARS,
+  const retained = retainCachedCapTeams({ teams: shared ? [] : fallbackTeams, previous: readJson(outPath, null), years: YEARS,
     contracts: contractRows, deadMoney, teamSeasons });
   contractRows = retained.contracts;
   deadMoney = retained.deadMoney;
@@ -115,20 +119,24 @@ export function buildSpotracCapTrackerData() {
     ...retained.fallbacks.map((row) => `${row.team}: roster refreshed from ESPN; cap figures are cached as of ${row.cached_as_of}.`),
     ...buildAuditWarnings(),
     ...projectedSystemLevelWarnings(seasons),
-    "Guarantee percentages are not scraped from Spotrac hover-only tooltips; normal active salary cells are treated as fully on-book salary unless ref/cap_tracker_guarantees.csv overrides them.",
-    "Spotrac option/non-guaranteed color classes are not yet available in the persisted scrape, so v1 maps only text-visible option/non-guarantee labels."
+    shared ? "Known guarantees use the signed agreement table; missing guarantee terms remain unavailable. Two-way pay is displayed and excluded from cap payroll." : "Guarantee percentages are not scraped from Spotrac hover-only tooltips; normal active salary cells are treated as fully on-book salary unless ref/cap_tracker_guarantees.csv overrides them.",
+    shared ? "Player payroll is recomputed from current signed terms. Cap-hold, dead-money and override-only rights sources are retained separately." : "Spotrac option/non-guaranteed color classes are not yet available in the persisted scrape, so v1 maps only text-visible option/non-guarantee labels."
   ];
 
   const payload = {
     schema_version: CAP_TRACKER_SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
     cap_fallbacks: retained.fallbacks,
-    source_policy: "Spotrac-first cap tracker v1: pending transactions, active roster, cap holds, and visible money cells come from Spotrac multi-year team pages. Databallr contract metadata is retained for CBA rule inference and QA, but does not override displayed salary rows.",
+    contract_coverage: shared?.coverage ?? null,
+    contract_as_of: shared?.as_of ?? null,
+    cached_cap_components: shared ? ["Cap-hold estimates", "Dead-money source rows", "Exception and pick-right overrides"] : [],
+    source_policy: shared ? "Shared agreement ledger: all signed player salaries, options and guarantees use the same dated terms as Player Impact. Team payroll is recomputed, with two-way salaries excluded from cap charges. Cap holds, dead money and override-only rights retain their dated source." : "Spotrac-first cap tracker v1: pending transactions, active roster, cap holds, and visible money cells come from Spotrac multi-year team pages. Databallr contract metadata is retained for CBA rule inference and QA, but does not override displayed salary rows.",
     notes: [
+      ...(shared ? ["All current signed player contracts use the complete dated agreement ledger. Cap holds and dead-money source rows remain separately identified as retained estimates."] : []),
       "Season years use NBA season end year: 2027 is 2026-27, 2028 is 2027-28, and so on.",
       "The Spotrac-powered tracker starts at 2026-27 and intentionally drops the prior 2025-26 tracker season.",
       "Guarantee percentages are hover-only on Spotrac and are not captured at scale in v1.",
-      "Databallr contract metadata is preserved for CBA rule inference, but Spotrac remains the displayed salary source.",
+      shared ? "Displayed player pay and known options use the complete shared signed-agreement ledger." : "Databallr contract metadata is preserved for CBA rule inference, but Spotrac remains the displayed salary source.",
       "Manual guarantee, pick, and exception override CSVs remain available for targeted additions."
     ],
     seasons,
@@ -150,8 +158,8 @@ export function buildSpotracCapTrackerData() {
     warnings,
     source_audit: [
       ...retained.fallbacks.map((row) => ({ label: `${row.team} cap snapshot`, detail: `${row.reason} As of ${row.cached_as_of}.`, quality: "cached" })),
-      { label: "Primary cap source", detail: "Spotrac all-team scrape: Pending Transactions, Active Roster, and Cap Hold sections.", quality: "spotrac" },
-      { label: "Guarantees", detail: "Manual override only; Spotrac hover-only guarantee percentages are not scraped in v1.", quality: "unavailable" },
+      { label: "Player contract source", detail: shared ? `Complete dated agreement ledger: ${shared.players.length} signed players, as of ${shared.as_of}.` : "Spotrac all-team scrape: Pending Transactions, Active Roster, and Cap Hold sections.", quality: shared ? "contract" : "spotrac" },
+      { label: "Guarantees", detail: shared ? "Signed agreement guarantees when known; unknown terms remain unavailable." : "Manual override only; Spotrac hover-only guarantee percentages are not scraped in v1.", quality: shared ? "contract" : "unavailable" },
       { label: "Dead money", detail: "Supported by this builder when Spotrac dead-money rows are present in the normalized input; current scrape does not include a persisted dead-money section.", quality: "unavailable" },
       { label: "Projected rookie scale", detail: "Consensus/mock first-round rookies are added from impact_players.json with salaries seeded from ref/cap_tracker_rookie_scale.csv.", quality: "projected" },
       { label: "Contract metadata", detail: "Databallr contract_type, signed_using, and free-agent status are retained for trade-machine CBA rule inference only.", quality: "contract" },
@@ -513,7 +521,7 @@ function buildTeamSeasons(teamsMeta, seasons, contractRows, deadRows, spotracRow
     for (const year of YEARS) {
       const season = seasonByYear.get(year);
       const teamContracts = contractRows.filter((row) => row.team === team.team);
-      const cells = teamContracts.map((row) => row.cells.find((cell) => cell.year === year)).filter(Boolean);
+      const cells = capCells(teamContracts,year);
       const guaranteed = sum(cells.filter((cell) => cell.kind === "guaranteed" || cell.kind === "partial_guarantee").map((cell) => cell.amount));
       const optionSalary = sum(cells.filter((cell) => cell.kind === "player_option" || cell.kind === "team_option").map((cell) => cell.amount));
       const nonGuaranteed = sum(cells.filter((cell) => cell.kind === "non_guaranteed").map((cell) => cell.amount));
@@ -804,7 +812,7 @@ function validatePayload(payload) {
     rowsByTeam.get(row.team).push(row);
   }
   for (const teamSeason of payload.team_seasons) {
-    const cells = (rowsByTeam.get(teamSeason.team) ?? []).map((row) => row.cells.find((cell) => cell.year === teamSeason.year)).filter(Boolean);
+    const cells = capCells(rowsByTeam.get(teamSeason.team) ?? [],teamSeason.year);
     const salary = sum(cells.filter((cell) => ["guaranteed", "partial_guarantee", "player_option", "team_option", "non_guaranteed"].includes(cell.kind)).map((cell) => cell.amount));
     const holds = sum(cells.filter((cell) => cell.kind === "cap_hold").map((cell) => cell.amount));
     if (salary !== teamSeason.salary_on_books || holds !== teamSeason.cap_holds) {
@@ -963,4 +971,5 @@ function sum(values) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   buildSpotracCapTrackerData();
 }
+
 

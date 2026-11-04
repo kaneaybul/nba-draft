@@ -64,6 +64,7 @@ jobs:
           node ../script/frontend/test_data_refresh.mjs
           npm run test:asset-value
           node ../script/frontend/test_asset_surface_consistency.mjs
+          node ../script/frontend/test_shared_contracts.mjs --require-export
           npm run test:cap-tracker
           npm run test:trade-machine
           npm run test:trade-suggestions
@@ -77,3 +78,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy frontend/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}
+

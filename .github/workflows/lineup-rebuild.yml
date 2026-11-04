@@ -142,6 +142,9 @@ jobs:
       - name: Rebuild projections from cached rosters and fresh injuries
         run: |
           Rscript script/frontend/export_frontend_data.R
+          node script/frontend/build_cap_tracker_spotrac_data.mjs
+          node script/frontend/build_static_data_manifest.mjs
+          node script/frontend/test_shared_contracts.mjs --require-export
           if [ -f "$RUNNER_TEMP/minutes-before/source_hashes.json" ]; then
             python3 script/frontend/compare_minutes.py --before "$RUNNER_TEMP/minutes-before"
           fi
@@ -202,3 +205,4 @@ jobs:
             frontend/public/data/v2/impact_players/2027.json
             frontend/public/data/cap_tracker.json
           retention-days: 7
+

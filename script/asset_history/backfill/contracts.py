@@ -237,6 +237,11 @@ def option_adjustments(agreements):
    except ValueError:
     try:dt=datetime.strptime(m.group(2),'%B %d, %Y').date().isoformat()
     except ValueError:continue
+   # The option belongs to this original agreement. A replacement already
+   # signed for that season must not be erased by the old option's label.
+   replacement=any(b['nba_id']==a['nba_id'] and a['known_from']<b['known_from']<=dt
+       and any(int(c['year'])==int(s['year'])for c in b['salaries'])for b in agreements)
+   if replacement:continue
    out.append(dict(player_name=a['player_name'],nba_id=a['nba_id'],known_from=dt,remove_years=[s['year']] if m.group(1)=='No' else [],exercise_years=[s['year']] if m.group(1)=='Yes' else [],source=a['source'],quality='dated_option_resolution_from_contract_history'))
  return out
 
@@ -252,3 +257,4 @@ def write_outputs(results,players,output):
 
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--sources',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limit',type=int);p.add_argument('--workers',type=int,default=4);p.add_argument('--refresh',action='store_true');p.add_argument('--live-pool',type=Path);a=p.parse_args();build(a.sources,a.output,a.limit,a.workers,a.refresh,a.live_pool)
+

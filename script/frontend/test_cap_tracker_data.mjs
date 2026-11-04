@@ -89,8 +89,8 @@ function testGeneratedPayloadInvariants() {
   assert.equal(payload.validation_summary.duplicate_team_seasons, 0);
   assert.equal(payload.validation_summary.duplicate_dead_money_rows, 0);
   assert.equal(payload.team_seasons.filter((row) => row.room_if_renounced > 0 && row.status_band_renounced !== "Cap Space").length, 0);
-  assert.match(payload.source_policy, /Spotrac-first/);
-  assert.equal(payload.source_audit.some((row) => row.quality === "spotrac"), true);
+  assert.match(payload.source_policy, payload.contract_coverage ? /Shared agreement ledger/ : /Spotrac-first/);
+  assert.equal(payload.source_audit.some((row) => row.quality === (payload.contract_coverage ? "contract" : "spotrac")), true);
 
   const dallasRows = payload.contracts.filter((row) => row.team === "DAL");
   assert.ok(dallasRows.length >= 20, "Dallas should retain active roster plus cap-hold rows from Spotrac");
@@ -115,3 +115,4 @@ function testGeneratedPayloadInvariants() {
 function duplicateCount(values) {
   return new Set(values.filter((value, index) => values.indexOf(value) !== index)).size;
 }
+
