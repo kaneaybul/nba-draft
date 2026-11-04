@@ -63,6 +63,7 @@ jobs:
         if: steps.portfolios.outcome == 'success'
         run: |
           npm ci
+          python3 ../script/frontend/build_shared_contracts.py --repo ..
           python3 ../script/frontend/build_asset_value_data.py --repo ..
           npm run test:asset-value
           npm run build
@@ -75,7 +76,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "$PORTFOLIO_OUTCOME" = success ]; then
-            git add frontend/public/data/asset_history/v8 processed/asset_history
+            git add frontend/public/data/asset_history/v8 processed/asset_history processed/contracts
           else
             git add frontend/public/data/asset_history/v8/refresh_status.json
           fi

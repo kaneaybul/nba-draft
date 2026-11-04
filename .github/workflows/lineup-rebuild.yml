@@ -12,6 +12,7 @@ on:
       # Generated outputs are excluded, so bot data commits cannot loop.
       - raw/live/matchup_snapshot.json
       - raw/live_refresh_request.json
+      - processed/contracts/current.json
       - script/data/live_positions.py
       - script/data/live_switch.py
       - script/data/refresh_live_skill_stats.py

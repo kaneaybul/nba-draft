@@ -84,6 +84,13 @@ def build(repo,agreements=None,capture=None):
 
 def write(repo,data):
     out=repo/'processed/contracts';out.mkdir(exist_ok=True,parents=True)
+    target=out/'current.json'
+    # Source checks and build timestamps alone must not trigger another
+    # player rebuild. Changed ownership or terms do require a new export.
+    stable=lambda d:{k:v for k,v in d.items()if k not in('generated_at','source_refresh')}
+    if target.exists() and (out/'current.csv').exists() and stable(read_json(target))==stable(data):
+        print(json.dumps(dict(**data['coverage'],unchanged=True)))
+        return
     (out/'current.json').write_text(json.dumps(data,separators=(',',':'),allow_nan=False))
     year=data['season'];rows=[]
     for player in data['players']:
