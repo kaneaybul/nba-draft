@@ -82,7 +82,9 @@ jobs:
           if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
 
       - name: Verify minutes blend and injury accounting before collection
-        run: Rscript script/frontend/test_live_minutes.R
+        run: |
+          Rscript script/frontend/test_contract_source_years.R
+          Rscript script/frontend/test_live_minutes.R
 
       - name: Refresh player membership from rosters and transactions
         run: |
