@@ -68,7 +68,9 @@ jobs:
         env:
           DATABALLR_END_YEAR: "2027"
           DATABALLR_CONTRACT_END_SEASON: "2026"
-        run: Rscript script/data/pull_contracts_databallr.R
+        run: |
+          Rscript script/frontend/test_contract_source_years.R
+          Rscript script/data/pull_contracts_databallr.R
 
       - name: Stage a verified fresh Spotrac snapshot if supplied
         run: python3 script/data/prepare_spotrac_snapshot.py raw/cap_sources/spotrac/current_snapshot.json.xz "$SPOTRAC_HTML_SNAPSHOT_DIR"
