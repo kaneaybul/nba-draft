@@ -151,3 +151,14 @@ jobs:
           git add processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/benchmark_summary.json
           bash script/frontend/publish_refresh.sh "Refresh current NBA rosters and injury outlook"
 
+
+      - name: Preserve collected contract exports and source audits
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-refresh-sources
+          path: |
+            processed/livedata/impactrefresh/contracts_*_current.csv
+            processed/livedata/impactrefresh/contracts_by_year.csv
+            processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv
+          retention-days: 7
