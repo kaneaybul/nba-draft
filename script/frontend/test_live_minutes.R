@@ -20,6 +20,28 @@ stopifnot(all(a$minutes_source=='Expected EPM'),all(a$minutes_input_mpg==30),abs
 other <- p;other$total <- rev(seq(-10,10,length.out=8))
 b <- model$apply_live_minute_inputs(other,root)
 stopifnot(identical(a$Minutes,b$Minutes)) # Our talent ranking cannot choose the coach's rotation.
+# Veteran role evidence replaces provider MPG only with a valid model prior.
+v <- p;v$yoe <- c(1,2,3,4,0,NA,5,6)
+v$p_mpg <- c(20,20,20,20,20,20,NA,20)
+vf <- feed;vf$players$epm_mpg <- 40
+vs <- stats;vs$players$games <- c(0,5,10,40,10,10,10,10)
+vs$players$minutes <- vs$players$games*30
+jsonlite::write_json(vf,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE)
+jsonlite::write_json(vs,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
+vb <- model$apply_live_minute_inputs(v,root)
+stopifnot(max(abs(vb$minutes_input_mpg[c(1:4,8)]-c(20,70/3,25,28,25)))<1e-10,
+ max(abs(vb$minutes_mpg_current_weight[1:4]-c(0,1/3,.5,.8)))<1e-10,
+ all(vb$minutes_input_mpg[5:7]==40), # Rookie, unknown experience, missing prior.
+ abs(sum(vb$Minutes)-19680)<1e-6)
+vagain <- model$apply_live_minute_inputs(vb,root)
+stopifnot(identical(vb$minutes_input_mpg,vagain$minutes_input_mpg),
+ identical(vb$minutes_mpg_prior,vagain$minutes_mpg_prior))
+vf$players$epm_mpg <- 10;vf$players$darko_mpg <- 12
+jsonlite::write_json(vf,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE)
+vshift <- model$apply_live_minute_inputs(v,root)
+stopifnot(identical(vb$minutes_input_mpg[c(1:4,8)],vshift$minutes_input_mpg[c(1:4,8)]))
+jsonlite::write_json(feed,file.path(root,'raw/live/ratings.json'),auto_unbox=TRUE)
+jsonlite::write_json(stats,file.path(root,'raw/live/skill_stats.json'),auto_unbox=TRUE)
 # Historical GP is the participation rate. Actual appearances, including zero
 # appearances during an injury, must not become a second future-availability update.
 gp_inputs <- p;gp_inputs$games <- c(rep(40.1,3),rep(82,5))
@@ -120,6 +142,11 @@ if('--require-export' %in% commandArgs(TRUE)) {
   pub <- jsonlite::fromJSON('frontend/public/data/v2/impact_players/2027.json')
   stopifnot('minutes_gp_prior' %in% names(pub),all(is.finite(pub$minutes_gp_prior)))
   roster <- pub$pool_status=='roster'
+  blended <- pub$minutes_source=='Career MPG + season MPG (10-game prior)'
+  w <- pub$minutes_actual_games[blended]/(10+pub$minutes_actual_games[blended])
+  observed <- ifelse(pub$minutes_actual_games[blended]>0,pub$minutes_actual_mpg[blended],0)
+  stopifnot(all(abs(pub$minutes_mpg_current_weight[blended]-w)<1e-10),
+    all(abs(pub$minutes_input_mpg[blended]-pmin(48,pmax(0,(1-w)*pub$minutes_mpg_prior[blended]+w*observed)))<1e-8))
   expected <- ifelse(roster & pub$minutes_input_mpg>0,pub$minutes_gp_prior/82,0)
   stopifnot(all(abs(pub$minutes_play_probability-expected)<1e-10))
   stopifnot(all(!is.na(pub$minutes_source)),all(abs(pub$Minutes-pub$minutes_actual-pub$minutes_remaining)<.11),
@@ -133,4 +160,3 @@ if('--require-export' %in% commandArgs(TRUE)) {
 }
 unlink(root,recursive=TRUE)
 cat('Provider MPG hierarchy, trained GP participation, repeatability, dated injury recovery, completed minutes and team budgets passed\n')
-

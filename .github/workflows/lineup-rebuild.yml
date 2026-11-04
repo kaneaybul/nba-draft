@@ -81,6 +81,9 @@ jobs:
           still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
           if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
 
+      - name: Verify minutes blend and injury accounting before collection
+        run: Rscript script/frontend/test_live_minutes.R
+
       - name: Refresh player membership from rosters and transactions
         run: |
           python3 script/frontend/test_publish_refresh.py
@@ -187,6 +190,3 @@ jobs:
           git add raw/bref_position_estimates.csv raw/bref_position_estimates_by_year
           git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
           bash script/frontend/publish_refresh.sh "Refresh expected NBA ratings, injuries and completed results"
-
-
-
