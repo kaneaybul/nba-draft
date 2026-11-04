@@ -79,3 +79,9 @@ calibration. Reuse requires matching dated runtime inputs, producer code, injury
 and contract sources, observation date, and every saved output digest. Calibration
 and attribution rerun; ordinary incremental daily refreshes do not use this cache.
 Published closed histories require a new method version for corrections.
+
+
+Documented endpoint input exclusions remain unavailable instead of receiving a
+fabricated zero or a guessed rating. The release report lists every affected
+player/date and checks the exclusion against the training-data audit. Other
+missing or failed appraisals still fail validation.
