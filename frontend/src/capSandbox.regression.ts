@@ -3,6 +3,7 @@ import type { CapSandboxScenario, CapTrackerContractCell, CapTrackerContractRow,
 
 export function runCapSandboxRegressionTests(): string[] {
   return [
+    verifiedCapChargesAndTwoWayExemptionsArePreserved(),
     waivingPartialGuaranteeAddsOnlyGuaranteedDeadMoney(),
     waivingZeroGuaranteeContractAddsNoDeadMoney(),
     renouncingHoldRecalculatesRoomAndRosterCharges(),
@@ -10,6 +11,22 @@ export function runCapSandboxRegressionTests(): string[] {
     exceptionsMoveBetweenRetainedAndRoomPaths(),
     existingDeadMoneyIsNotDoubleCounted()
   ];
+}
+
+function verifiedCapChargesAndTwoWayExemptionsArePreserved(): string {
+  const tracker=fixtureTracker([
+    playerRow("standard", "Standard", cell(2027,3_000_000,"non_guaranteed",{cap_amount:2_000_000,counts_against_cap:true,guaranteed_amount:1_000_000})),
+    playerRow("two-way", "Two Way", cell(2027,678_882,"guaranteed",{cap_amount:0,counts_against_cap:false,guaranteed_amount:678_882}))
+  ]);
+  const base=deriveSandbox(tracker,"ABC",null);
+  const season=base.teamSeasons.find(r=>r.year===2027)!;
+  expect(season.salary_on_books===2_000_000,"payroll must use the verified cap charge and exclude two-way pay");
+  expect(season.roster_count===1,"two-way pay must not consume a standard roster slot");
+  expect(base.contracts.find(r=>r.id==="two-way")!.cells[0].amount===678_882,"the contract view must retain actual two-way pay");
+  const waived=deriveSandbox(tracker,"ABC",withDecision("ABC","standard",2027,"waive_before_guarantee"));
+  const waivedSeason=waived.teamSeasons.find(r=>r.year===2027)!;
+  expect(waivedSeason.salary_on_books===0 && waivedSeason.dead_money===1_000_000,"waivers must replace the former cap charge with guaranteed dead money");
+  return "verified cap charges, two-way exemptions and waiver recalculation stay consistent";
 }
 
 function waivingPartialGuaranteeAddsOnlyGuaranteedDeadMoney(): string {

@@ -616,6 +616,8 @@ export type CapTrackerContractCell = {
   status: string;
   source: CapTrackerMoneySource;
   source_url?: string | null;
+  cap_amount?: number | null;
+  counts_against_cap?: boolean;
   label?: string | null;
   note?: string | null;
   guaranteed_amount?: number | null;

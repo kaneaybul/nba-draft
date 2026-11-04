@@ -114,10 +114,11 @@ function applyCellDecision(row: CapTrackerContractRow, cell: CapTrackerContractC
   if (action === "renounce" && cell.kind === "cap_hold") return removedCell(cell, "Renounced hold", "Hold renounced in sandbox");
   if (action === "decline" && (cell.kind === "team_option" || cell.kind === "player_option")) return optionDeclinedCell(row, cell, tracker);
   if (action === "waive_before_guarantee" && (cell.kind === "non_guaranteed" || cell.kind === "partial_guarantee")) {
-    const dead = Math.max(0, Math.round(cell.guaranteed_amount ?? 0));
+    const dead = Math.max(0, Math.round(Math.min(cell.cap_amount ?? cell.amount, cell.guaranteed_amount ?? 0)));
     return {
       ...cell,
       amount: dead,
+      cap_amount: dead,
       kind: dead > 0 ? "dead" : "empty",
       status: dead > 0 ? "Sandbox dead money" : "Waived",
       source: "override",
@@ -135,6 +136,8 @@ function optionDeclinedCell(row: CapTrackerContractRow, cell: CapTrackerContract
   return {
     ...cell,
     amount: hold,
+    cap_amount: hold,
+    counts_against_cap: true,
     kind: "cap_hold",
     status: "UFA",
     source: "estimated",
@@ -152,13 +155,18 @@ function estimateOptionHold(row: CapTrackerContractRow, cell: CapTrackerContract
 }
 
 function removedCell(cell: CapTrackerContractCell, status: string, note: string): CapTrackerContractCell {
-  return { ...cell, amount: 0, kind: "empty", status, source: "override", label: null, note };
+  return { ...cell, amount: 0, cap_amount: 0, kind: "empty", status, source: "override", label: null, note };
 }
 
 function recomputeTeamSeason(base: CapTrackerTeamSeason, season: CapTrackerSeason | undefined, rows: CapTrackerContractRow[], baseDeadRows: Array<{ amount: number }>): SandboxTeamSeason {
   const cellsWithRows = rows
     .map((row) => ({ row, cell: row.cells.find((cell) => cell.year === base.year) }))
-    .filter((item): item is { row: CapTrackerContractRow; cell: CapTrackerContractCell } => Boolean(item.cell));
+    .filter((item): item is { row: CapTrackerContractRow; cell: CapTrackerContractCell } => Boolean(item.cell) && item.cell?.counts_against_cap !== false)
+    .map(({row,cell}) => {
+      const amount=cell.cap_amount ?? cell.amount;
+      const guaranteed=cell.guaranteed_amount == null ? null : Math.min(amount,cell.guaranteed_amount);
+      return {row,cell:{...cell,amount,guaranteed_amount:guaranteed,unguaranteed_amount:guaranteed == null ? cell.unguaranteed_amount : Math.max(0,amount-guaranteed)}};
+    });
   const cells = cellsWithRows.map((item) => item.cell);
   const guaranteed = sum(cells.filter((cell) => cell.kind === "guaranteed" || cell.kind === "partial_guarantee").map((cell) => cell.amount));
   const optionSalary = sum(cells.filter((cell) => cell.kind === "player_option" || cell.kind === "team_option").map((cell) => cell.amount));
