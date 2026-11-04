@@ -2,6 +2,7 @@ name: Verify asset minutes integration
 on:
   pull_request:
     paths:
+      - script/frontend/role_minutes_policy.json
       - script/asset_history/**
       - .github/workflows/asset-minutes-check.yml
 permissions:

@@ -6,6 +6,13 @@ model$TEAM_PROJECTION_PLAYER_LIMIT <- 10L
 source('script/frontend/injury_projections.R',local=model)
 source('script/frontend/live_minutes.R',local=model)
 root <- tempfile('minute-fixture-');dir.create(file.path(root,'raw/live'),recursive=TRUE)
+dir.create(file.path(root,'script/frontend'),recursive=TRUE)
+file.copy('script/frontend/role_minutes_policy.json',file.path(root,'script/frontend/role_minutes_policy.json'))
+policy <- jsonlite::fromJSON('script/frontend/role_minutes_policy.json')
+cases <- policy$parity_cases
+stopifnot(max(abs(pmin(policy$maximum_baseline_mpg,
+ (policy$prior_appearances*cases$prior+cases$minutes)/(policy$prior_appearances+cases$games))-cases$mpg))<1e-10,
+ max(abs(cases$games/(policy$prior_appearances+cases$games)-cases$weight))<1e-10)
 p <- data.frame(nba_id=1:8,player_name=paste('Player',1:8),year=2027,team='UTA',team_projection_base='UTA',
  pool_status='roster',availability_status='projected',projection_roster_status='signed',contract_status='Signed',
  position=rep(c('PG','SG','SF','C'),2),games=82,Minutes=2460,p_mpg=30,total=1,offense=.5,defense=.5,
@@ -31,7 +38,7 @@ jsonlite::write_json(vs,file.path(root,'raw/live/skill_stats.json'),auto_unbox=T
 vb <- model$apply_live_minute_inputs(v,root)
 stopifnot(max(abs(vb$minutes_input_mpg[c(1:4,8)]-c(20,70/3,25,28,25)))<1e-10,
  max(abs(vb$minutes_mpg_current_weight[1:4]-c(0,1/3,.5,.8)))<1e-10,
- all(vb$minutes_input_mpg[5:7]==40), # Rookie, unknown experience, missing prior.
+ all(vb$minutes_input_mpg[5:7]==policy$maximum_baseline_mpg), # Same baseline cap for every policy.
  abs(sum(vb$Minutes)-19680)<1e-6)
 vagain <- model$apply_live_minute_inputs(vb,root)
 stopifnot(identical(vb$minutes_input_mpg,vagain$minutes_input_mpg),
@@ -160,3 +167,4 @@ if('--require-export' %in% commandArgs(TRUE)) {
 }
 unlink(root,recursive=TRUE)
 cat('Provider MPG hierarchy, trained GP participation, repeatability, dated injury recovery, completed minutes and team budgets passed\n')
+

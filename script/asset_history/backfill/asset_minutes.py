@@ -1,18 +1,22 @@
 """Conditional-MPG adapter; canonical attendance, injuries and roster rules stay intact."""
-import inspect,linecache,textwrap,math
-POLICY='veteran-conditional-mpg-ten-appearance-prior-v1'
+import inspect,linecache,textwrap,math,json
+from pathlib import Path
+SETTINGS=json.loads((Path(__file__).resolve().parents[2]/'frontend/role_minutes_policy.json').read_text())
+POLICY=SETTINGS['policy']
+PRIOR_APPEARANCES=float(SETTINGS['prior_appearances'])
+MAXIMUM_BASELINE_MPG=float(SETTINGS['maximum_baseline_mpg'])
 
 def blend_mpg(prior,games,minutes):
     if not all(math.isfinite(v)for v in (prior,games,minutes))or min(prior,games,minutes)<0:
         raise ValueError('Invalid role evidence')
-    return min(38.,(10*prior+minutes)/(10+games)),games/(10+games)
+    return min(MAXIMUM_BASELINE_MPG,(PRIOR_APPEARANCES*prior+minutes)/(PRIOR_APPEARANCES+games)),games/(PRIOR_APPEARANCES+games)
 
 def rewrite_prepare(source):
     text=textwrap.dedent(source)
     needle="                if provider_target is not None:\n"
     replacement="""                if returning_role:
                     mpg,w_mpg=_blend_role_mpg(anchor['mpg'],observed_g,observed_m)
-                    k_mpg=10.
+                    k_mpg=_role_prior_appearances
                     actual_method='actual_conditional_MPG_ten_appearance_model_prior'
                 elif provider_target is not None:
 """
@@ -32,7 +36,7 @@ def install(role_module):
     # The existing daily-clock adapter inspects this function a second time.
     filename='<canonical-asset-minutes-'+POLICY+'>'
     linecache.cache[filename]=(len(text),None,text.splitlines(True),filename)
-    helpers={'_blend_role_mpg':blend_mpg,'_role_minutes_policy':POLICY}
+    helpers={'_blend_role_mpg':blend_mpg,'_role_minutes_policy':POLICY,'_role_prior_appearances':PRIOR_APPEARANCES}
     previous={k:role_module.__dict__.get(k)for k in helpers}
     role_module.__dict__.update(helpers)
     scope=dict(role_module.__dict__)

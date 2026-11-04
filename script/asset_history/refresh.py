@@ -81,22 +81,7 @@ def main(args):
         dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
         repriced=reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
         candidates=reconstruct(player_data,picks,legacy,events,asof,source_dates(repo,asof),repriced)
-        if getattr(args,'preserve_unsupported',False):
-            # This release audits 2022+ draft cohorts. Preserve earlier player
-            # marks verbatim rather than imply a newly validated endpoint model.
-            from assemble import bridge
-            previous={}
-            for snapshot in candidates:
-                team=snapshot['team'];day=snapshot['date']
-                old={a['id']:a for a in legacy[team][day]['assets']if a['kind']=='player'}
-                for i,asset in enumerate(snapshot['assets']):
-                    if asset['kind']=='player' and (int(float(asset.get('details',{}).get('draft_year')or 0))<2022 or not asset.get('details',{}).get('draft_slot')) and asset['id']in old:
-                        import copy
-                        snapshot['assets'][i]=copy.deepcopy(old[asset['id']])
-                snapshot['total']=sum(a['value']for a in snapshot['assets'])
-                snapshot.pop('bridge',None)
-                if team in previous:snapshot['bridge']=bridge(previous[team],snapshot)
-                previous[team]=snapshot
+
     else:
         player_data=[s for s in player_data if s['date']==asof]
         candidates=assemble(player_data,{asof:picks},events,'reconstructed'if args.allow_reconstructed else'published',source_dates(repo,asof),previous)
@@ -122,11 +107,12 @@ def main(args):
     return audit
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');p.add_argument('--preserve-unsupported',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');a=p.parse_args()
     try:print(json.dumps(main(a)))
     except Exception as exc:
         out=data_root(a.repo.resolve())
         atomic(out/'refresh_status.json',{'status':'retained_last_good','recorded_at':datetime.now(timezone.utc).isoformat(),'reason':str(exc)[:600]})
         raise
+
 
 

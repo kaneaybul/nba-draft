@@ -42,10 +42,14 @@ def report(repo):
             new_players={a['id']:a for a in s['assets']if a['kind']=='player'}
             assert set(new_players)==set(old_players),'Method-only replay changed ownership'
             for pid,a in new_players.items():
-                d=a.get('details',{});draft=int(float(d.get('draft_year')or 0))
+                d=a.get('details',{})
+                from backfill.asset_minutes import POLICY as MINUTES_POLICY
+                assert d.get('role_minutes_policy')==MINUTES_POLICY,'Player bypassed the current minutes policy'
+                draft=int(float(d.get('draft_year')or 0))
                 if draft<2022 or not d.get('draft_slot'):
-                    assert abs(a['value']-old_players[pid]['value'])<.01
-                    counts['preserved_unsupported_player_observations']+=1
+                    from backfill.asset_minutes import POLICY as MINUTES_POLICY
+                    assert d.get('role_minutes_policy')==MINUTES_POLICY,'Older cohort bypassed current minutes policy'
+                    counts['recomputed_older_cohort_player_observations']+=1
                     continue
                 grade=d.get('draft_development',{})
                 if grade.get('status')!='priced' and d.get('asset_type')in ('unsigned_draft_right','dormant_draft_right') and s['date']>f'{draft+4}-07-31':
@@ -90,7 +94,7 @@ def report(repo):
         label_selection_premium_mean=float(np.mean(premiums)),label_selection_premium_max=float(max(premiums)),
         endpoint_revision_training_paths=len(data['endpoint_errors']),learning_holdouts={k:v for k,v in data['report'].items()if k!='holdouts'},
         teams=differences,unavailable_endpoint_observations=unavailable,limitations=['Indexed old-chat excerpts were retrievable; a complete verbatim transcript was unavailable.',
-        'Supported endpoint cohort scope is 2022+; earlier player marks are preserved.',
+        'Endpoint draft attribution supports 2022+ cohorts; all earlier cohort rolling quotes are recomputed with the same current minutes policy.',
         'Documented missing endpoint ratings remain explicitly unavailable, never zero; affected observations are listed.',
         'Endpoint uncertainty is learned from revisions to assessed forecasts before year four; mature-player pricing is retained.'])
     atomic(repo/'processed/asset_history/methodology_review.json',result)

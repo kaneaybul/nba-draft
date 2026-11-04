@@ -43,6 +43,9 @@ allocate_live_rotation <- function(players,availability=rep(1,nrow(players))) {
 }
 
 apply_live_minute_inputs <- function(rows,base_dir) {
+  policy <- jsonlite::fromJSON(file.path(base_dir,'script/frontend/role_minutes_policy.json'))
+  prior_appearances <- policy$prior_appearances
+  baseline_cap <- policy$maximum_baseline_mpg
   feed <- jsonlite::fromJSON(file.path(base_dir,'raw/live/ratings.json'))
   stats_feed <- jsonlite::fromJSON(file.path(base_dir,'raw/live/skill_stats.json'))
   stats <- stats_feed$players
@@ -69,14 +72,14 @@ apply_live_minute_inputs <- function(rows,base_dir) {
   rows$minutes_actual_mpg <- ifelse(rows$minutes_actual_games>0,rows$minutes_actual/rows$minutes_actual_games,NA_real_)
   valid <- function(x) is.finite(x)&x>=0&x<=48
   fallback <- ifelse(valid(rows$p_mpg),rows$p_mpg,ifelse(rows$games>0,rows$Minutes/rows$games,0))
-  rows$minutes_input_mpg <- pmax(0,pmin(48,fallback))
+  rows$minutes_input_mpg <- pmax(0,pmin(baseline_cap,fallback))
   rows$minutes_source <- 'Career MPG model'
   observed <- rows$minutes_actual_games>=2 & is.finite(rows$minutes_actual_mpg)
-  rows$minutes_input_mpg[observed] <- pmin(48,rows$minutes_actual_mpg[observed]);rows$minutes_source[observed] <- 'Actual MPG fallback'
+  rows$minutes_input_mpg[observed] <- pmin(baseline_cap,rows$minutes_actual_mpg[observed]);rows$minutes_source[observed] <- 'Actual MPG fallback'
   darko <- valid(rows$minutes_darko_mpg)
-  rows$minutes_input_mpg[darko] <- rows$minutes_darko_mpg[darko];rows$minutes_source[darko] <- 'DARKO'
+  rows$minutes_input_mpg[darko] <- pmin(baseline_cap,rows$minutes_darko_mpg[darko]);rows$minutes_source[darko] <- 'DARKO'
   epm <- valid(rows$minutes_epm_mpg)
-  rows$minutes_input_mpg[epm] <- rows$minutes_epm_mpg[epm];rows$minutes_source[epm] <- 'Expected EPM'
+  rows$minutes_input_mpg[epm] <- pmin(baseline_cap,rows$minutes_epm_mpg[epm]);rows$minutes_source[epm] <- 'Expected EPM'
   # The ten-appearance prior was selected on 2024-25 and tested on 2025-26
   # remaining-season conditional MPG. Rookies/unknown model priors retain
   # the provider hierarchy: the backtest did not cover them.
@@ -86,10 +89,10 @@ apply_live_minute_inputs <- function(rows,base_dir) {
   rows$minutes_mpg_prior_captured <- 1
   n <- pmax(0,rows$minutes_actual_games)
   n[!is.finite(n) | !is.finite(rows$minutes_actual_mpg)] <- 0
-  weight <- n/(10+n)
+  weight <- n/(prior_appearances+n)
   rows$minutes_mpg_current_weight <- ifelse(blend,weight,0)
   actual_mpg <- ifelse(n>0,rows$minutes_actual_mpg,0)
-  rows$minutes_input_mpg[blend] <- pmin(48,pmax(0,
+  rows$minutes_input_mpg[blend] <- pmin(baseline_cap,pmax(0,
     (1-weight[blend])*mpg_prior[blend]+weight[blend]*actual_mpg[blend]))
   rows$minutes_source[blend] <- 'Career MPG + season MPG (10-game prior)'
   roster <- rows$pool_status=='roster' & !is.na(rows$pool_status)
@@ -101,7 +104,7 @@ apply_live_minute_inputs <- function(rows,base_dir) {
   rows$minutes_play_probability <- ifelse(roster & rows$minutes_input_mpg>0,probability,0)
   rows$minutes_expected_mpg <- rows$minutes_input_mpg*rows$minutes_play_probability
   for(idx in split(which(roster),rows$team_projection_base[roster])) {
-    rows$minutes_expected_mpg[idx] <- balance_live_minutes(rows$minutes_expected_mpg[idx],48*rows$minutes_play_probability[idx])
+    rows$minutes_expected_mpg[idx] <- balance_live_minutes(rows$minutes_expected_mpg[idx],baseline_cap*rows$minutes_play_probability[idx])
   }
   rows$minutes_healthy_mpg <- ifelse(rows$minutes_play_probability>0,rows$minutes_expected_mpg/rows$minutes_play_probability,0)
   rows$lineup_original_minutes <- rows$Minutes

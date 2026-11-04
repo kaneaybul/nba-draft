@@ -2,9 +2,13 @@ import ast,inspect,os,sys,types,unittest,importlib.util
 from pathlib import Path
 from datetime import date,timedelta
 import pandas as pd
-from asset_minutes import blend_mpg,install,POLICY
+from asset_minutes import blend_mpg,install,POLICY,SETTINGS
 
 class Check(unittest.TestCase):
+ def test_shared_frontend_policy_and_edge_cases(self):
+  for row in SETTINGS['parity_cases']:
+   mpg,weight=blend_mpg(row['prior'],row['games'],row['minutes'])
+   self.assertAlmostEqual(mpg,row['mpg']);self.assertAlmostEqual(weight,row['weight'])
  def test_weights_and_zero_sample(self):
   for n,expected in [(0,20),(5,70/3),(10,25),(40,28)]:
    mpg,w=blend_mpg(20,n,30*n);self.assertAlmostEqual(mpg,expected);self.assertAlmostEqual(w,n/(10+n))
