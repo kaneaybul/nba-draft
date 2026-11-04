@@ -2783,7 +2783,7 @@ normalize_spotrac_contract_status <- function(status, amount) {
 
 read_spotrac_contracts <- function(base_dir, contract_year = NULL) {
   path <- spotrac_contract_path(base_dir, contract_year)
-  if (is.na(path) || !file.exists(path)) return(data.frame())
+  if (is.na(path) || !file.exists(path) || file.info(path)$size <= 4) return(data.frame())
   x <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
   if (!all(c("nba_id", "player_name", "team") %in% names(x))) return(data.frame())
   if (!("rank" %in% names(x))) x$rank <- seq_len(nrow(x))
