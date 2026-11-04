@@ -31,9 +31,9 @@ def setup(ctx,repo):
         if last>=json.loads((repo/'raw/live/results.json').read_text())['generated_at'][:10]:
             ratings,record=current_forecast(repo,last)
             ctx['inputs']['ratings'][last]=ratings;ctx['inputs']['standings'][last]=record
-        fresh,catalog,unknown=new_pick_actions(ctx['events'],ctx['catalog'],last,min(display_years(last,ctx['orders']['draft_completion_dates'],announced_draft_months=ctx['orders'].get('announced_draft_months'))))
-        if unknown:raise ValueError('Unreviewed new pick terms prevent attribution')
-        ctx['actions']+=fresh;ctx['catalog']+=catalog
+    fresh,catalog,unknown=new_pick_actions(ctx['events'],ctx['catalog'],last,min(display_years(last,ctx['orders']['draft_completion_dates'],announced_draft_months=ctx['orders'].get('announced_draft_months'))))
+    if unknown:raise ValueError('Unreviewed new pick terms prevent attribution')
+    ctx['actions']+=fresh;ctx['catalog']+=catalog
     # Direct trade parties, not an observer affected indirectly by a rule.
     trade_dates=defaultdict(set)
     for e in ctx['events']:

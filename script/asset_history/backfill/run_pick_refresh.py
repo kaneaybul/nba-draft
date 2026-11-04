@@ -73,6 +73,8 @@ def run(repo,runtime,asof,output,draws=10000,model_path=None):
     result=value_portfolio(asof,view,sim,model,years)
     result['assumptions'].append('Daily team-strength forecasts extend the last reconstructed rating using changes in the app’s team projections, preserving the source basis at the October2026 transition.')
     result['source_fingerprint']=hashlib.sha256(json.dumps([ratings,standing,view],sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    from pick_forecast_capture import capture
+    capture(inputs/'forecast_inputs.json',asof,ratings,standing)
     output.write_text(json.dumps(result,separators=(',',':'),allow_nan=False))
     return result
 

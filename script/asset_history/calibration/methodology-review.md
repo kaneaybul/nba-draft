@@ -85,3 +85,9 @@ Documented endpoint input exclusions remain unavailable instead of receiving a
 fabricated zero or a guessed rating. The release report lists every affected
 player/date and checks the exclusion against the training-data audit. Other
 missing or failed appraisals still fail validation.
+
+Daily pick forecasts are retained by observation date so later live feeds cannot
+change a published historical replay. The November 3, 2026 forecast was restored
+from the exact reviewed release inputs at commit
+9f3184a0cc074fca82e7e0dacb3067adca875848. Subsequent successful refreshes retain
+their dated ratings and standings alongside the historical pick inputs.
