@@ -1,0 +1,33 @@
+name: Verify asset minutes integration
+on:
+  pull_request:
+    paths:
+      - script/asset_history/**
+      - .github/workflows/asset-minutes-check.yml
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - name: Inspect canonical role interface
+        run: |
+          python3 - <<'PY'
+          import sys,zipfile
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history/backfill')
+          from runtime_archive import resolved_archive
+          with resolved_archive(Path('processed/asset_history/canonical_runtime_seed.zip')) as archive:
+              with zipfile.ZipFile(archive) as z:
+                  for name in ['role_smoothing.py','integrate_monthly.py']:
+                      content=z.read('monthly_reconstruction/projections/'+name).decode()
+                      print('CANONICAL_SOURCE_BEGIN',name,flush=True)
+                      print(content,flush=True)
+                      print('CANONICAL_SOURCE_END',name,flush=True)
+          PY
