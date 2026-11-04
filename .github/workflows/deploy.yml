@@ -53,6 +53,9 @@ jobs:
           fi
           python3 ../script/frontend/test_asset_value_data.py
           python3 ../script/frontend/build_asset_value_data.py --repo ..
+          node ../script/frontend/build_cap_tracker_spotrac_data.mjs
+          node ../script/frontend/build_static_data_manifest.mjs
+          node -e 'const d=require("./public/data/cap_tracker.json"); console.log("Cap tracker regenerated; cached teams:",d.cap_fallbacks.length)'
           npm run validate:data
         working-directory: frontend
 
@@ -61,6 +64,7 @@ jobs:
           node ../script/frontend/test_data_refresh.mjs
           npm run test:asset-value
           node ../script/frontend/test_asset_surface_consistency.mjs
+          npm run test:cap-tracker
           npm run test:trade-machine
           npm run test:trade-suggestions
           npm run build
