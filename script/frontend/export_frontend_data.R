@@ -2802,6 +2802,28 @@ read_spotrac_contracts <- function(base_dir, contract_year = NULL) {
     status_col <- paste0("contract_status_y", horizon)
     x[[status_col]] <- normalize_spotrac_contract_status(x[[status_col]], x[[salary_col]])
   }
+  # Salary horizons are relative to their source season, not the filename
+  # selected by the caller. Keep cached Spotrac terms on their actual years
+  # when a newly refreshed Databallr export advances to the next season.
+  if (!is.null(contract_year) && is.finite(contract_year) && nrow(x)) {
+    original <- x
+    source_year <- suppressWarnings(as.integer(original$source_contract_year))
+    for (salary_col in salary_cols) {
+      horizon <- as.integer(sub("^salary_y", "", salary_col))
+      status_col <- paste0("contract_status_y", horizon)
+      x[[salary_col]] <- vapply(seq_len(nrow(x)), function(i) {
+        source_col <- paste0("salary_y", as.integer(contract_year) + horizon - source_year[[i]])
+        if (is.na(source_year[[i]]) || !(source_col %in% names(original))) return(NA_real_)
+        suppressWarnings(as.numeric(original[[source_col]][[i]]))
+      }, numeric(1))
+      x[[status_col]] <- vapply(seq_len(nrow(x)), function(i) {
+        source_col <- paste0("contract_status_y", as.integer(contract_year) + horizon - source_year[[i]])
+        if (is.na(source_year[[i]]) || !(source_col %in% names(original))) return(NA_character_)
+        as.character(original[[source_col]][[i]])
+      }, character(1))
+    }
+    x$source_contract_year <- as.integer(contract_year)
+  }
   x
 }
 
