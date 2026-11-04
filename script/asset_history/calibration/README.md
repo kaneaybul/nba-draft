@@ -1,6 +1,7 @@
 # Young-player path valuation
 
-The current release is v8 (shared minutes and dated app quotes): [career-path methodology review](methodology-review.md).
+The current release is v8: [consistent history window](consistency-release.md).
+The valuation specification is documented in the [career-path methodology review](methodology-review.md).
 The v5 and v6 documents below describe archived policies.
 Its shared production prior and reliability weights are trained on the year-four
 production endpoint. The v4 implementation described below is retained as the

@@ -10,6 +10,13 @@ from model_version import data_root
 from versioned_rebuild import legacy_snapshots,reconstruct,reprice_historical_picks
 from source_signature import source_signature
 
+def require_uniform_minutes_policy(snapshots):
+    from backfill.asset_minutes import POLICY
+    for snapshot in snapshots:
+        for asset in snapshot['assets']:
+            if asset['kind']=='player'and asset.get('details',{}).get('role_minutes_policy')!=POLICY:
+                raise ValueError('Mixed minutes policies in the history window; publish a complete new valuation version')
+
 def source_dates(repo,asof):
     ratings=json.loads((repo/'raw/live/ratings.json').read_text());skill=json.loads((repo/'raw/live/skill_stats.json').read_text())
     epm=(date.fromisoformat(ratings['epm_as_of'])-timedelta(days=1)).isoformat()
@@ -91,6 +98,10 @@ def main(args):
         player_data=[s for s in player_data if s['date']==asof]
         candidates=assemble(player_data,{asof:picks},events,'reconstructed'if args.allow_reconstructed else'published',source_dates(repo,asof),previous)
     (work/'portfolio_candidates.json').write_text(json.dumps({'snapshots':candidates},separators=(',',':'),allow_nan=False))
+    require_uniform_minutes_policy(candidates)
+    if not new_version:
+        for team in TEAMS:
+            require_uniform_minutes_policy(json.loads((out/'teams'/f'{team}.json').read_text())['snapshots'])
     if legacy_pick_totals is not None:
         for s in candidates:
             if s['date']==asof:s['method_comparison']={'v4_same_source_pick_total':legacy_pick_totals[s['team']]}

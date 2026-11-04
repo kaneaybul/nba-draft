@@ -2,13 +2,20 @@ import json,tempfile,unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-from refresh import main
+from refresh import main,require_uniform_minutes_policy
 from model_version import METHOD,data_root
 from publish import TEAMS
 from source_signature import source_signature
 
 
 class PublishedInputReuse(unittest.TestCase):
+    def test_a_daily_update_cannot_mix_new_minutes_with_old_historical_prices(self):
+        from backfill.asset_minutes import POLICY
+        snapshot={'assets':[{'kind':'player','details':{'role_minutes_policy':POLICY}}]}
+        require_uniform_minutes_policy([snapshot])
+        snapshot['assets'][0]['details']['role_minutes_policy']='old-policy'
+        with self.assertRaisesRegex(ValueError,'complete new valuation version'):
+            require_uniform_minutes_policy([snapshot])
     def test_method_rebuild_keeps_the_published_day_after_midnight_fetch(self):
         with tempfile.TemporaryDirectory()as folder:
             root=Path(folder);args=self.fixture(root)

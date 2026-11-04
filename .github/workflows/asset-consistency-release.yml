@@ -46,8 +46,19 @@ jobs:
           from run_player_refresh import unpack
           unpack(Path('processed/asset_history/canonical_runtime_seed.zip'),Path(os.environ['RUNNER_TEMP'])/'consistent-assets/runtime')
           PY
+      - uses: actions/cache/restore@v4
+        id: annual_checkpoint
+        with:
+          path: ${{ runner.temp }}/consistent-assets/annual_projection_checkpoint
+          key: consistent-asset-projections-v8-${{ github.sha }}
+          restore-keys: consistent-asset-projections-v8-
       - name: Recompute every player and pick in the Asset History window
         run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/consistent-assets/runtime"
+      - uses: actions/cache/save@v4
+        if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/consistent-assets/annual_projection_checkpoint
+          key: consistent-asset-projections-v8-${{ github.sha }}
       - name: Validate all dates, teams and minutes provenance
         run: |
           python3 script/asset_history/calibration/review_release.py --repo .
@@ -57,10 +68,20 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.3.2'
+      - name: Verify and republish Impact minutes from the existing source inputs
+        run: |
+          Rscript -e 'repos <- Sys.getenv("RSPM", "https://cloud.r-project.org"); install.packages(c("jsonlite","rvest","mgcv"), repos=repos)'
+          Rscript script/frontend/test_live_minutes.R
+          Rscript script/frontend/export_frontend_data.R
+          python3 script/frontend/build_asset_value_data.py --repo .
       - name: Verify every frontend value surface
         working-directory: frontend
         run: |
-          npm ci
           node ../script/frontend/test_data_refresh.mjs
           node ../script/frontend/test_asset_surface_consistency.mjs
           npm run test:asset-value
@@ -69,18 +90,11 @@ jobs:
           npm run validate:data
           ASSET_HISTORY_FRONTEND=. node ../script/frontend/test_asset_history_visuals.mjs
           npm run build
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.3.2'
-      - name: Verify the shared Impact and asset minutes policy
-        run: |
-          Rscript -e 'install.packages("jsonlite", repos="https://cloud.r-project.org")'
-          Rscript script/frontend/test_live_minutes.R
       - name: Commit the fully validated data to the release branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/public/data/asset_history/v8 processed/asset_history
+          git add frontend/public/data processed/asset_history
           if ! git diff --cached --quiet; then
             git commit -m 'Publish consistent minutes and valuations across the asset history window'
             git push origin HEAD:codex/consistent-asset-window
@@ -95,6 +109,11 @@ jobs:
             ${{ runner.temp }}/consistent-assets/player_refresh.log
             ${{ runner.temp }}/consistent-assets/players/*.log
             ${{ runner.temp }}/consistent-assets/players/path_pricing_coverage.json
+            ${{ runner.temp }}/consistent-assets/players/player_candidates.json
+            ${{ runner.temp }}/consistent-assets/players/*/monthly_annual_values.csv
+            ${{ runner.temp }}/consistent-assets/players/*/monthly_player_values.csv
+            ${{ runner.temp }}/consistent-assets/players/*/league_player_coverage.json
+            ${{ runner.temp }}/consistent-assets/players/player_state_staged
             processed/asset_history/methodology_review.json
             processed/asset_history/attribution_validation.json
             frontend/public/data/asset_history/v8/refresh_status.json

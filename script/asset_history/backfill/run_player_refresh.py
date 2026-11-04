@@ -41,6 +41,8 @@ def stage_state(previous,state,asof,reseed=False):
         if earlier.exists():
             (state/'prior_day').mkdir(exist_ok=True)
             shutil.copyfile(earlier,state/'prior_day/latest_inputs.json.gz')
+    archived=previous/'archived_inputs'
+    if archived.exists():shutil.copytree(archived,state/'archived_inputs',dirs_exist_ok=True)
     # Retry keeps the same before-update checkpoint; a new day stores current
     # persistent inputs as the next before-update checkpoint.
     if latest and not reseed:
@@ -122,6 +124,14 @@ def restore_published_availability(runtime,captured,asof):
     monthly=runtime/'monthly_reconstruction'
     (monthly/'daily_input_audit.json').write_text(json.dumps(audit))
     (monthly/'injuries/current_availability.json').write_text(json.dumps(injury))
+
+def require_published_observations(runtime,repo,asof):
+    from model_version import LEGACY_VERSION,data_root
+    manifest=json.loads((data_root(repo,LEGACY_VERSION)/'manifest.json').read_text())
+    expected={r['date']for team in manifest['teams']for r in team['points']if r['date']<=asof}
+    rows=json.loads((runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json').read_text())
+    missing=expected-{r['cutoff_date']for r in rows}
+    if missing:raise ValueError('Missing saved published observations before reconstruction: '+', '.join(sorted(missing)))
 
 def export(output,asof=None,calibrator=None):
     snapshots=[]
@@ -273,6 +283,7 @@ def run(args):
         if failed or report.get('discovery',{}).get('unidentified_owned_players'):raise ValueError('Unverified new/changed contracts or unresolved owned identities; retaining last good asset observations')
     if getattr(args,'use_published_inputs',False):
         restore_published_availability(runtime,captured,args.as_of)
+        require_published_observations(runtime,repo,args.as_of)
         # Recompute SKILL from the restored observations; a later live feed is
         # neither needed nor permitted during a source-identical replay.
         sys.path.insert(0,str(runtime/'monthly_reconstruction/skill'))
