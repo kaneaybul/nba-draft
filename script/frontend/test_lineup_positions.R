@@ -217,13 +217,19 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists("frontend/public
   players <- read_export("impact_players")
   lineups <- read_export("team_lineups")
   contract_path <- "processed/livedata/impactrefresh/contracts_2026_spotrac.csv"
-  if (file.exists(contract_path)) {
+  salary_column <- "salary_y1"
+  if (!file.exists(contract_path) || file.info(contract_path)$size <= 4) {
+    contract_path <- "processed/livedata/impactrefresh/contracts_2027_current.csv"
+    salary_column <- "salary_y0"
+  }
+  if (file.exists(contract_path) && file.info(contract_path)$size > 4) {
     contracts <- read.csv(contract_path, stringsAsFactors = FALSE)
     current <- players[players$year == 2027L & players$roster_truth_team != "FA", , drop = FALSE]
     match_idx <- match(current$nba_id, contracts$nba_id)
-    known <- !is.na(match_idx) & is.finite(contracts$salary_y1[match_idx]) & contracts$salary_y1[match_idx] > 0
-    stopifnot(all(is.finite(current$contract[known])), all(abs(current$contract[known] - contracts$salary_y1[match_idx[known]]) < 1))
-    message("2026-27 salaries match the fresh Spotrac contract season: ", sum(known), " players.")
+    expected_salary <- contracts[[salary_column]][match_idx]
+    known <- !is.na(match_idx) & is.finite(expected_salary) & expected_salary > 0
+    stopifnot(sum(known) > 0L, all(is.finite(current$contract[known])), all(abs(current$contract[known] - expected_salary[known]) < 1))
+    message("2026-27 salaries match the available contract source: ", sum(known), " players.")
   }
   scenario_pools <- setNames(lapply(unique(lineups$scenario_id), function(scenario) {
     assigned <- model$assign_team_projection_scenario(players, scenario)
