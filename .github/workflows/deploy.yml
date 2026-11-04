@@ -58,6 +58,7 @@ jobs:
 
       - name: Build frontend
         run: |
+          node ../script/frontend/test_data_refresh.mjs
           npm run test:asset-value
           npm run test:trade-machine
           npm run test:trade-suggestions
