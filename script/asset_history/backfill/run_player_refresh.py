@@ -173,6 +173,9 @@ def export(output,asof=None,calibrator=None):
                 details['raw_annual_production']=[dict(season=int(r['season']),
                     production=float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))for r in raw_path
                     if r.get('annual_production')not in(None,'')and r.get('salary_cap_scenario')not in(None,'')]
+                if calibrator is not None and raw_path:
+                    from aging import basis as aging_basis
+                    details['aging_basis']=aging_basis(row,raw_path,calibrator)
                 value=float(row['app_style_four_year_asset_quote_with_draft_prior'])
                 if calibrator is not None:
                     if hasattr(calibrator,'legacy'):

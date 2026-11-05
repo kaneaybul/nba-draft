@@ -50,7 +50,7 @@ def main(args):
         if saved.get('status')=='success'and saved.get('method')==METHOD and saved.get('observation_date')==asof and saved.get('source_signature')==source_signature(repo):
             manifest=json.loads((out/'manifest.json').read_text())
             attribution_path=out/'attribution/manifest.json'
-            attribution_ok=attribution_path.exists() and json.loads(attribution_path.read_text()).get('latest')==asof and json.loads(attribution_path.read_text()).get('method')=='shared-draft-attribution-v4'
+            attribution_ok=attribution_path.exists() and json.loads(attribution_path.read_text()).get('latest')==asof and json.loads(attribution_path.read_text()).get('method')=='age-separated-attribution-v5'
             if attribution_ok and len(manifest.get('teams',[]))==30 and all(t.get('latest')==asof for t in manifest['teams']):
                 return {**saved,'reused_identical_published_inputs':True}
     if asof!=datetime.now(timezone.utc).date().isoformat() and not args.allow_reconstructed:

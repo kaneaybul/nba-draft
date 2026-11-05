@@ -12,7 +12,7 @@ export type AttributionAnalysis = {
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 export const signedMoney = (value: number) => `${value >= 50000 ? '+' : ''}${money(value)}`;
 export const categoryLabels = {
-  player: 'Player Development & Aging', draft: 'Draft Value Added / Destroyed', trades: 'Trades',
+  aging: 'Aging', player: 'Player Development', draft: 'Draftee Development', trades: 'Trades',
   contracts: 'Contract Management', fa: 'FA Signings', own_picks: 'Own Pick Revaluation',
   acquired_picks: 'Acquired Pick Revaluation', lottery: 'Lottery Luck',
   automatic: 'Automatic Pick Additions',
@@ -31,7 +31,7 @@ export type AttributionInterval = {
 };
 export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
-  if (ledger.method !== 'shared-draft-attribution-v4' || ledger.valuation_method !== valuationMethod || start > end) return null;
+  if (ledger.method !== 'age-separated-attribution-v5' || ledger.valuation_method !== valuationMethod || start > end) return null;
   const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
   if (start !== end && (!rows.length || rows[0].start !== start || rows[rows.length - 1].end !== end)) return null;
   const categories = Object.fromEntries(Object.keys(categoryLabels).map(key => [key, 0]));
