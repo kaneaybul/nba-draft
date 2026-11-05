@@ -37,6 +37,13 @@ def rewrite_prepare(source):
         if text.count(expression) != 1:
             raise ValueError('Canonical roster role allocation interface changed')
         text = text.replace(expression, expression.replace(" for yy,v", " if yy==target_year else v for yy,v"))
+    rollover = "        posterior[evidence_year]={'games':g,'mpg':mpg}"
+    if text.count(rollover) != 1:
+        raise ValueError('Canonical season rollover interface changed')
+    text = text.replace(rollover, rollover + """
+        if target_year>evidence_year:
+            posterior=_apply_direct_forecast(posterior,getattr(self,'direct_future_minutes',{}),
+                pid,evidence_year,evidence_year,True)""")
     marker = "        info=pending[ident];st=info['state'];st['posterior']=info['path'];self.states[ident]=st"
     if text.count(marker) != 1:
         raise ValueError('Canonical role persistence interface changed')
