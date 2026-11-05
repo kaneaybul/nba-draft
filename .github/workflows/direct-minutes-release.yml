@@ -42,6 +42,18 @@ jobs:
       - name: Validate attribution and build the explorer
         run: |
           python3 script/asset_history/validate_attribution.py --repo .
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('frontend/public/data/asset_history')
+          for old in sorted((root/'v9/teams').glob('*.json')):
+              before = json.loads(old.read_text())['snapshots']
+              after = json.loads((root/'v10/teams'/old.name).read_text())['snapshots']
+              assert [s['date'] for s in before] == [s['date'] for s in after], old.name
+              for a,b in zip(before,after):
+                  picks = lambda s: {x['id']: x['value'] for x in s['assets'] if x['kind']=='pick'}
+                  assert picks(a) == picks(b), (old.name, a['date'])
+          PY
           python3 script/frontend/build_shared_contracts.py --repo .
           python3 script/frontend/build_asset_value_data.py --repo .
           cd frontend
