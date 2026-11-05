@@ -29,7 +29,7 @@ def player_quote(asset,day):
             if abs(adjustment-calibration['contract_adjustment_sum'])>.01:raise ValueError('Expected annual contract costs do not reconcile')
             if abs(calibration['mean']-value)>.01:raise ValueError('Expected scenario quote does not reconcile')
         if abs(quote-value)>.01:raise ValueError('Annual path disagrees with the published player quote')
-    grade=details.get('draft_development',{})
+    grade=details.get('draft_development')or{}
     if grade.get('status')=='priced' and day<=grade.get('endpoint',''):
         if abs(grade['value']-details['peak_production'])>.01:
             raise ValueError('Draft appraisal differs from the shared player quote')

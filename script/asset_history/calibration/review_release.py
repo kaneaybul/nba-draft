@@ -36,7 +36,7 @@ def report(repo):
     for team in TEAMS:
         for snapshot in json.loads((data_root(repo)/'teams'/f'{team}.json').read_text())['snapshots']:
             for asset in snapshot['assets']:
-                grade=asset.get('details',{}).get('draft_development',{})
+                grade=asset.get('details',{}).get('draft_development')or{}
                 if grade.get('status')=='priced' and grade.get('completed') and snapshot['date']<=grade['endpoint']:
                     final_assessments.add((asset['id'],grade['endpoint']))
     baselines={};counts=Counter();differences=[];unavailable=[]
@@ -58,7 +58,7 @@ def report(repo):
                     assert d.get('role_minutes_policy')==MINUTES_POLICY,'Older cohort bypassed current minutes policy'
                     counts['recomputed_older_cohort_player_observations']+=1
                     continue
-                grade=d.get('draft_development',{})
+                grade=d.get('draft_development')or{}
                 if documented_unobserved_endpoint(pid,s['date'],grade,final_assessments):
                     counts['unobserved_year_four_assessments']+=1
                     unavailable.append(dict(team=team,date=s['date'],player=a['name'],reason=grade['reason']))

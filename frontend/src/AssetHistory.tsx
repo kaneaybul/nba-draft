@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './assetHistory.css';
 import { aggregateAttribution, LeagueComparison, Waterfall, signedMoney, type AttributionLedger, type RankingMetric } from './AssetHistoryCharts';
 import { AssetHistoryDateRange, normalizeHistoryRange, type HistoryDateRange } from './AssetHistoryDateRange';
@@ -14,6 +14,7 @@ export function AssetHistoryWorkspace(){
  const [revision,setRevision]=useState(0);
  const [rankingMetric,setRankingMetric]=useState<RankingMetric>('change');
  const [dateRange,setDateRange]=useState<HistoryDateRange>({start:'2024-02-29',end:''});
+ const latestObserved=useRef('');
  const [ledgers,setLedgers]=useState<Record<string,AttributionLedger>>({});
  const [leagueLoading,setLeagueLoading]=useState(false);
  const ledger=ledgers[team];
@@ -40,7 +41,7 @@ export function AssetHistoryWorkspace(){
  },[historyVersion,manifest,revision]);
  const path=manifest?.teams.find(t=>t.team===team)?.path;
  useEffect(()=>{setFile(null);setQuery('');setError('');},[team]);
- useEffect(()=>{if(!path)return;const c=new AbortController();read<TeamFile>(path,c.signal).then(x=>{setFile(x);setDateRange(range=>normalizeHistoryRange(x.snapshots.map(s=>s.date),range));setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[path,manifest?.generated_at]);
+ useEffect(()=>{if(!path)return;const c=new AbortController();read<TeamFile>(path,c.signal).then(x=>{const dates=x.snapshots.map(s=>s.date);const previousLatest=latestObserved.current;setFile(x);setDateRange(range=>normalizeHistoryRange(dates,range,previousLatest));latestObserved.current=dates[dates.length-1]??'';setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[path,manifest?.generated_at]);
  const points=file?.team===team?file.snapshots:[];const dates=points.map(s=>s.date);const range=normalizeHistoryRange(dates,dateRange);const index=points.findIndex(s=>s.date===range.end);const current=points[index];
  const values=points.map(s=>s.total);const low=Math.min(...values),high=Math.max(...values);const pad=Math.max((high-low)*.12,1e6);const min=low-pad,max=high+pad;
  const first=points.length?Date.parse(points[0].date):0,last=points.length?Date.parse(points[points.length-1]!.date):1;

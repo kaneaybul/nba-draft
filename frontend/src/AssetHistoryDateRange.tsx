@@ -7,11 +7,12 @@ export const formatHistoryDate = (date: string) => new Intl.DateTimeFormat('en-U
 
 // Snap to an actual observation. A missing endpoint must not silently expand
 // the comparison to the beginning of the history when teams or dates change.
-export function normalizeHistoryRange(dates: string[], range: HistoryDateRange): HistoryDateRange {
+export function normalizeHistoryRange(dates: string[], range: HistoryDateRange, previousLatest = ''): HistoryDateRange {
   if (!dates.length) return { start: '', end: '' };
   const floor = (date: string) => dates.filter(d => d <= date).pop() ?? dates[0];
-  const end = range.end ? floor(range.end) : dates[dates.length - 1];
-  const start = range.start ? floor(range.start) : dates[0];
+  const followingLatest = previousLatest !== '' && range.end === previousLatest;
+  const end = followingLatest || !range.end ? dates[dates.length - 1] : floor(range.end);
+  const start = followingLatest && range.start === previousLatest ? end : range.start ? floor(range.start) : dates[0];
   return { start: start > end ? end : start, end };
 }
 
