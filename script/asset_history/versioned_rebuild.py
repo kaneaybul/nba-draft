@@ -34,7 +34,7 @@ def reconstruct(players,current_picks,legacy,events,asof,current_sources,histori
         for snapshot in batch:
             snapshot['valuation_revision']={'method':METHOD,'prior_method':'peak4-payroll-0.8-'+LEGACY_VERSION,
                 'nba_forecast_weight':'Young players: completed and current observed NBA minutes; first-season draft prior retained',
-                'path_valuation':'Endpoint-trained linked production paths for picks and young players; contracts priced afterward; veteran policy retained'}
+                'path_valuation':'Direct future-season games and MPG forecasts from completed seasons, with gradual updates from verified appearances'}
             previous[snapshot['team']]=snapshot
         out.extend(batch)
     return out
