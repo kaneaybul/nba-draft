@@ -1,1 +1,1 @@
-{"status":"success","method":"peak4-payroll-0.8-v9","observation_date":"2026-11-04","recorded_at":"2026-11-05T05:40:40.625759+00:00","teams":30,"source_signature":"ba4cc30d671020d72656630136dc1abccac78a30ea252dc3abdd0625591c8cee","validation":"Completed aging release; all prices unchanged and all 53100 date ranges reconciled"}
+{"status":"retained_last_good","recorded_at":"2026-11-05T14:28:34.842871+00:00","reason":"The source refresh is not from today; retaining the last validated history"}
