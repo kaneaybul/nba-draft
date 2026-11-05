@@ -303,6 +303,8 @@ def run(args):
         extend(runtime,repo,args.as_of)
     injuries=output/'combined_injury_episodes.json'
     injury_history(runtime,state,repo/'processed/asset_history/injuries/major_injury_additions.json',injuries)
+    from future_minutes import train as train_future_minutes
+    train_future_minutes(runtime,repo,output)
     calibration=output/f'calibration_{args.as_of}.json'
     script=Path(__file__).with_name('league_player_values.py')
     def compute(team):
