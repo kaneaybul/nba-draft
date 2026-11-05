@@ -32,8 +32,10 @@ jobs:
         run: |
           python3 -m unittest discover -s script/asset_history -p 'test_*.py'
           python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
-      - name: Rebuild from validated inputs
-        run: python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/direct-minutes" --reseed --allow-reconstructed --use-published-inputs
+      - name: Replay the latest validated observation
+        run: |
+          python3 -c 'import json; print("Replaying", json.load(open("processed/asset_history/player_state/UTA.json"))["as_of"])'
+          python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/direct-minutes" --reseed --allow-reconstructed --use-published-inputs
       - uses: actions/setup-node@v4
         with:
           node-version: 20
