@@ -13,7 +13,7 @@ export function AssetHistoryWorkspace(){
  const [manifest,setManifest]=useState<Manifest|null>(null),[file,setFile]=useState<TeamFile|null>(null),[team,setTeam]=useState('UTA'),[error,setError]=useState(''),[query,setQuery]=useState(''),[kind,setKind]=useState('all');
  const [revision,setRevision]=useState(0);
  const [rankingMetric,setRankingMetric]=useState<RankingMetric>('change');
- const [dateRange,setDateRange]=useState<HistoryDateRange>({start:'2024-02-29',end:''});
+ const [dateRange,setDateRange]=useState<HistoryDateRange>({start:'',end:''});
  const latestObserved=useRef('');
  const [ledgers,setLedgers]=useState<Record<string,AttributionLedger>>({});
  const [leagueLoading,setLeagueLoading]=useState(false);
