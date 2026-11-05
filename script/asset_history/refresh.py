@@ -71,15 +71,16 @@ def main(args):
     from run_pick_refresh import run as refresh_picks
     staged_model=players/'player_state_staged/endpoint_pick_model.json'
     if not staged_model.exists():raise ValueError('Missing endpoint-trained shared pick model')
-    picks=refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,staged_model,use_published_inputs=published_inputs)
-    legacy_pick_totals=None
-    if new_version:
-        old_model=json.loads(staged_model.read_text())
-        for k in ('production_policy','stock_policy','endpoint_records','endpoint_training_through'):old_model.pop(k,None)
-        old_path=work/'legacy_pick_model.json';old_path.write_text(json.dumps(old_model))
-        old_picks=refresh_picks(repo,runtime,asof,work/'legacy_pick_candidates.json',args.draws,old_path,use_published_inputs=published_inputs)
-        if old_picks['source_fingerprint']!=picks['source_fingerprint']:raise ValueError('Method comparison needs identical pick sources')
-        legacy_pick_totals={t:sum(a['value']for a in old_picks['teams'][t])for t in TEAMS}
+    if new_version and published_inputs:
+        picks = {
+            'complete': True,
+            'teams': {team: [asset for asset in prior[team][asof]['assets']
+                             if asset['kind'] == 'pick'] for team in TEAMS},
+            'assumptions': prior[TEAMS[0]][asof].get('assumptions', []),
+        }
+    else:
+        picks = refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,
+                              staged_model,use_published_inputs=published_inputs)
     player_data=json.loads((players/'player_candidates.json').read_text())['snapshots']
     if published_inputs:
         latest={s['team']:s for s in player_data if s['date']==asof}
@@ -99,7 +100,7 @@ def main(args):
     if new_version:
         legacy=legacy_snapshots(repo)
         dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
-        repriced=reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
+        repriced=None if published_inputs else reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
         sources=published_source_dates(prior,asof)if published_inputs else source_dates(repo,asof)
         candidates=reconstruct(player_data,picks,legacy,events,asof,sources,repriced)
 
@@ -111,9 +112,6 @@ def main(args):
     if not new_version:
         for team in TEAMS:
             require_uniform_minutes_policy(json.loads((out/'teams'/f'{team}.json').read_text())['snapshots'])
-    if legacy_pick_totals is not None:
-        for s in candidates:
-            if s['date']==asof:s['method_comparison']={'v4_same_source_pick_total':legacy_pick_totals[s['team']]}
     # publish validates the entire batch before it touches the public inventory.
     manifest=publish(candidates,out,require_league=not new_version)
     atomic(repo/'processed/asset_history/picks/trained_pick_model.json',json.loads(staged_model.read_text()))
