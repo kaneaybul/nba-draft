@@ -279,6 +279,10 @@ def run(args):
     restore_minutes=install_asset_minutes(role_smoothing)
     restore_clock=install_clocks(model,role_smoothing,src,canonical,args.team)
     roles=role_smoothing.RoleSmoother(src)
+    from future_minutes import FORECAST_FILE
+    future_minutes_file=canonical/FORECAST_FILE
+    if future_minutes_file.exists():
+        roles.direct_future_minutes=json.loads(future_minutes_file.read_text())
     observations=json.loads((args.skill_dir/'monthly_skill_observations.json').read_text())
     roles.obs={(r['date'],int(r['nba_id'])):r for r in observations}
     anchors=pd.read_csv(canonical/'monthly_reconstruction/league_ownership/monthly_role_anchors.csv')
