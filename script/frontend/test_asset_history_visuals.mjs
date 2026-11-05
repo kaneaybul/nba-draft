@@ -85,6 +85,9 @@ assert.match(completeMarkup,/Waterfall categories unavailable: ATL/);
 assert.match(completeMarkup,/aria-sort="descending"/);
 assert.match(completeMarkup,/Full league table/);
 assert.match(completeMarkup,/Contract Management/);
+assert.match(completeMarkup,/Draftee Development/);
+assert.match(completeMarkup,/Aging/);
+assert.doesNotMatch(completeMarkup,/Player Development &amp; Aging|Draft Value Added/);
 const categoryMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'v5',selectedTeam:'UTA',metric:'contracts',onSelect:()=>{}});
 assert.match(categoryMarkup,/1\. UTA, Contract Management: \$0M/);
 assert.match(categoryMarkup,/League combined · Contract Management/);
@@ -111,7 +114,7 @@ if(existsSync(resolve(data,'manifest.json'))){
   }
   for(const r of actualRows)assert.ok(Math.abs(Object.values(r.categories).reduce((a,b)=>a+b,0)-r.change)<.01);
  }
- console.log('Published league checks passed: 30 teams, all nine waterfall categories, four date ranges.');
+ console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
 

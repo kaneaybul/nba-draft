@@ -85,6 +85,19 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),-10.)
 
+    def test_age_split_preserves_draftee_result_and_total_production_change(self):
+        points=[dict(date='2026-01-31',assets=[self.player('Rookie',100.),self.player('Veteran',100.,endpoint=False)]),
+                dict(date='2026-02-28',assets=[self.player('Rookie',90.),self.player('Veteran',90.,endpoint=False)])]
+        ctx=self.context(points)
+        ctx['aging_curve']['(Intercept)']=-1.
+        rows=player_bridge('UTA',ctx)['attribution']
+        sums={key:sum(r['value']for r in rows if r['category']==key)for key in ('aging','player','draft','contracts')}
+        self.assertLess(sums['aging'],0.)
+        self.assertAlmostEqual(sums['draft'],-10.)
+        self.assertAlmostEqual(sums['player']+sums['aging'],-10.)
+        self.assertAlmostEqual(sums['contracts'],0.)
+        self.assertFalse(any(r['category']=='aging'and r['player']=='Rookie'for r in rows))
+
     def test_unsigned_quote_flag_still_receives_complete_basis_metadata(self):
         asset=self.player('Rookie',100.,endpoint=False,financial=10.)
         asset['details'].update(endpoint_stock_policy=STOCK_POLICY,
