@@ -1,0 +1,76 @@
+name: Rebuild aging attribution
+on:
+  push:
+    branches: [codex/separate-aging-development]
+    paths:
+      - script/asset_history/**
+      - script/frontend/test_asset_history_visuals.mjs
+      - frontend/src/AssetHistory*.tsx
+      - .github/workflows/asset-aging-release.yml
+permissions:
+  contents: write
+concurrency:
+  group: aging-attribution-release
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      VITE_PUBLIC_READ_ONLY: 'true'
+      FRONTEND_MAX_STATIC_ASSET_BYTES: '26214400'
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: '8388608'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - name: Test attribution and existing valuation behavior
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+      - name: Reproduce original annual inputs for aging attribution
+        run: |
+          python3 script/asset_history/materialize.py --repo .
+          ASOF=$(python3 -c "import json; print(json.load(open('processed/asset_history/player_state/UTA.json'))['as_of'])")
+          python3 script/asset_history/backfill/run_player_refresh.py --repo "$GITHUB_WORKSPACE" --runtime-dir "$RUNNER_TEMP/aging/runtime" --output "$RUNNER_TEMP/aging/players" --state-dir "$GITHUB_WORKSPACE/processed/asset_history/player_state" --as-of "$ASOF" --reseed --skip-contract-refresh --use-published-inputs > "$RUNNER_TEMP/aging-player-refresh.log" 2>&1
+      - name: Split aging while preserving every published asset value
+        run: |
+          python3 script/asset_history/release_aging.py --repo . --runtime "$RUNNER_TEMP/aging/runtime" --candidates "$RUNNER_TEMP/aging/players/player_candidates.json"
+          python3 script/asset_history/validate_attribution.py --repo .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Validate all team rankings and build
+        working-directory: frontend
+        run: |
+          ASSET_HISTORY_FRONTEND=. node ../script/frontend/test_asset_history_visuals.mjs
+          npm run test:asset-value
+          npm run build
+      - name: Save validated aging dataset to the change branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f frontend/public/data/asset_history/v9/attribution/*.json frontend/public/data/asset_history/v9/teams/*.json.gz processed/asset_history/aging_validation.json processed/asset_history/attribution_validation.json
+          git commit -m "Publish validated age and development attribution for all teams"
+          git push origin HEAD:codex/separate-aging-development
+      - name: Preserve diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aging-attribution-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/aging-player-refresh.log
+            ${{ runner.temp }}/aging/players/*.log
+            processed/asset_history/aging_validation.json
+            processed/asset_history/attribution_validation.json

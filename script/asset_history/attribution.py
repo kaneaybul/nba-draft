@@ -10,12 +10,13 @@ from concurrent.futures import ProcessPoolExecutor,as_completed
 from multiprocessing import get_context
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
+from aging import load_curve
 from attribution_players import player_bridge,clock,parts,market_reference,name_key
 from model_version import data_root,METHOD
 import attribution_picks as picks
 
-ATTRIBUTION_METHOD='shared-draft-attribution-v4'
-LABELS={'player':'Player Development & Aging','draft':'Draft Value Added / Destroyed','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','automatic':'Automatic Pick Additions'}
+ATTRIBUTION_METHOD='age-separated-attribution-v5'
+LABELS={'aging':'Aging','player':'Player Development','draft':'Draftee Development','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','automatic':'Automatic Pick Additions'}
 NAMES=dict(zip('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split(),['Atlanta Hawks','Brooklyn Nets','Boston Celtics','Charlotte Hornets','Chicago Bulls','Cleveland Cavaliers','Dallas Mavericks','Denver Nuggets','Detroit Pistons','Golden State Warriors','Houston Rockets','Indiana Pacers','Los Angeles Clippers','Los Angeles Lakers','Memphis Grizzlies','Miami Heat','Milwaukee Bucks','Minnesota Timberwolves','New Orleans Pelicans','New York Knicks','Oklahoma City Thunder','Orlando Magic','Philadelphia 76ers','Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Toronto Raptors','Utah Jazz','Washington Wizards']))
 
 def read(path):return json.loads(Path(path).read_text())
@@ -65,7 +66,7 @@ def context(repo,runtime):
     spec=importlib.util.spec_from_file_location('attribution_expected_contracts',runtime/'monthly_reconstruction/projections/expected_contracts.py');mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
     # The existing reviewed Utah trade ledger supplies missing dated roster evidence.
     spec=importlib.util.spec_from_file_location('attribution_reviewed_trades',runtime/'curated_ledger_v3.py');ledger=importlib.util.module_from_spec(spec);spec.loader.exec_module(ledger)
-    return dict(teams=list(NAMES),names=NAMES,histories=histories,dates=dates,league=league,owners=owners,events=events,drafts=drafts,contracts=contracts,caps=caps,market=mod.ExpectedContracts(caps),reviewed_trades=ledger.TRADES,reviewed_routes=review['routes'])
+    return dict(aging_curve=load_curve(runtime/'monthly_reconstruction/projections/app_sources/career_projection_selected_terms.csv'),teams=list(NAMES),names=NAMES,histories=histories,dates=dates,league=league,owners=owners,events=events,drafts=drafts,contracts=contracts,caps=caps,market=mod.ExpectedContracts(caps),reviewed_trades=ledger.TRADES,reviewed_routes=review['routes'])
 
 def correct_transfers(players,ctx):
     """Same source-side transfer price, including receipts waived within a month."""

@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import date,timedelta
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from quote_window import quote_window
+from aging import expected_aging
 from endpoint_stock import active as endpoint_active
 from league_player_values import agreements_at
 CAP=164961000.
@@ -159,7 +160,10 @@ def player_bridge(team,ctx):
             clock_details.append(dict(start=start,end=end,player=a['name'],asset_id=aid,
                                       total=production+financial,production=production,
                                       financial=financial,tail_carry=cf.get('tail_carry',[]),production_category=production_category(a,end)))
-            attribute(a,production_category(a,end),'Production window and aging',production)
+            category=production_category(a,end)
+            aging=expected_aging(a,start,end,ctx['aging_curve']) if category=='player' else 0.
+            attribute(a,'aging','Expected change from age curve',aging)
+            attribute(a,category,'Change beyond expected aging' if category=='player' else 'Draftee production window change',production-aging)
             attribute(a,'contracts','Remaining contract-year mix',financial)
         def revalue(a,before,before_peak,isnew=False):
             aid=a['id'];key=name_key(a['name']);total=a['value']-before
@@ -248,6 +252,6 @@ def player_bridge(team,ctx):
     payload=dict(totals=dict(totals),derived_totals=derived,intervals=intervals,details=details,
                  clock_details=clock_details,fa_entries=fa_entries,attribution=attribution,endpoint_attribution=endpoint_attribution,
                  contracts=contract_rows,draft_tracking=list(draft_tracking.values()),warnings=warnings,
-                 method='shared-draft-attribution-v4; one padded player production value through year four; contracts remain separate')
+                 method='age-separated-attribution-v5; one padded player production value through year four; contracts remain separate')
     return payload
 

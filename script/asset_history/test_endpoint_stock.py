@@ -4,6 +4,7 @@ import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from endpoint_stock import promote,promote_asset,freeze_draft_results,STOCK_POLICY
 from attribution_players import player_bridge,clock
+from aging import POLICY as AGING_POLICY
 from calibration.endpoint_model import pick_components,EndpointModel,production_quotes
 from calibration.path_model import ResidualPool,summarize,weighted_quantile
 from calibration.endpoint_paths import EndpointRevisionPool
@@ -31,6 +32,7 @@ class EndpointStockTests(unittest.TestCase):
         grade_value=production if grade_value is None else grade_value
         d=dict(peak_production=production,contract_adjustment=financial,draft_year=draft,
                annual_values=[dict(season=2027+i,production=production/4,asset=production/4+financial/4,exposure=1.)for i in range(4)])
+        d['aging_basis']={'policy':AGING_POLICY,'status':'priced','annual':[dict(season=2027+i,age=30.,experience=10.,dollars_per_total=1.,total=1.)for i in range(4)]}
         if endpoint:d.update(endpoint_stock_policy=STOCK_POLICY,rolling_production_quote=production,
             development_window_basis=production-grade_value,
             draft_development=dict(status='priced',method='year-four-assessed-production-paths-v3',value=grade_value,original_expectation=100.,gain=grade_value-100.,endpoint=f'{draft+4}-07-31'))
@@ -38,7 +40,7 @@ class EndpointStockTests(unittest.TestCase):
 
     def context(self,points):
         h={p['date']:p for p in points}
-        return dict(histories={'UTA':h},league={},owners={},events=[],contracts=[],caps={2027:(164961000.,200000000.)},market=None,
+        return dict(aging_curve={'(Intercept)':0.,'age_peak_distance':0.,'age_peak_distance_sq':0.,'yoe':0.},histories={'UTA':h},league={},owners={},events=[],contracts=[],caps={2027:(164961000.,200000000.)},market=None,
                     drafts={'rookie':dict(team='UTA',year=2023)},reviewed_trades=[])
 
     def test_clock_alone_does_not_regrade_a_padded_draftee(self):
