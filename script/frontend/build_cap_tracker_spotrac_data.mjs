@@ -135,7 +135,8 @@ export function buildSpotracCapTrackerData() {
   const payload = {
     schema_version: CAP_TRACKER_SCHEMA_VERSION,
     generated_at: new Date().toISOString(),
-    cap_fallbacks: retained.fallbacks,
+    cap_fallbacks: shared ? [] : retained.fallbacks,
+    cap_component_fallbacks: shared ? retained.fallbacks : [],
     contract_coverage: shared?.coverage ?? null,
     contract_as_of: shared?.as_of ?? null,
     cached_cap_components: shared ? ["Cap-hold estimates", "Dead-money source rows", "Exception and pick-right overrides"] : [],
