@@ -1,8 +1,9 @@
-"""Conditional-MPG adapter; canonical attendance, injuries and roster rules stay intact."""
+"""Keep current rotation updates separate from direct future forecasts."""
 import inspect,linecache,textwrap,math,json
 from pathlib import Path
+from future_minutes import apply_forecast
 SETTINGS=json.loads((Path(__file__).resolve().parents[2]/'frontend/role_minutes_policy.json').read_text())
-POLICY=SETTINGS['policy']
+POLICY=SETTINGS['policy']+'+direct-future-seasons-v1'
 PRIOR_APPEARANCES=float(SETTINGS['prior_appearances'])
 MAXIMUM_BASELINE_MPG=float(SETTINGS['maximum_baseline_mpg'])
 
@@ -28,7 +29,44 @@ def rewrite_prepare(source):
     old="'role_evidence_mode':'provider_expected_MIN_gated_by_new_regular_team_opportunities'"
     if text.count(old)!=1:raise ValueError('Canonical role diagnostic interface changed')
     text=text.replace(old,"'role_evidence_mode':_role_minutes_policy if returning_role else 'provider_expected_MIN_gated_by_new_regular_team_opportunities'")
-    return text
+    # Apply team rotation changes only to the season being allocated.
+    for expression in (
+        "base={yy:{'games':clamp(v['games']+dg,0,82),'mpg':clamp(v['mpg']+dm,0,38)} for yy,v in base.items()}",
+        "info['path']={yy:{'games':clamp(v['games']+dg,0,82),'mpg':clamp(v['mpg']+dm,0,38)} for yy,v in info['path'].items()}",
+    ):
+        if text.count(expression) != 1:
+            raise ValueError('Canonical roster role allocation interface changed')
+        text = text.replace(expression, expression.replace(" for yy,v", " if yy==target_year else v for yy,v"))
+    rollover = "        posterior[evidence_year]={'games':g,'mpg':mpg}"
+    if text.count(rollover) != 1:
+        raise ValueError('Canonical season rollover interface changed')
+    text = text.replace(rollover, rollover + """
+        if target_year>evidence_year:
+            posterior=_apply_direct_forecast(posterior,getattr(self,'direct_future_minutes',{}),
+                pid,evidence_year,evidence_year,True)""")
+    marker = "        info=pending[ident];st=info['state'];st['posterior']=info['path'];self.states[ident]=st"
+    if text.count(marker) != 1:
+        raise ValueError('Canonical role persistence interface changed')
+    replacement = """        info=pending[ident];st=info['state']
+        forecasts=getattr(self,'direct_future_minutes',{})
+        if forecasts and not info['unobserved_camp']:
+            diagnostic=info['diagnostic']
+            evidence=st.get('direct_role_evidence')
+            if evidence is None or evidence['season']!=current_year:
+                evidence={'season':current_year,'games':0.,'minutes':0.}
+            observed=diagnostic['actual_cumulative_games']
+            if diagnostic['actual_source_season']==current_year and observed>=evidence['games']:
+                evidence={'season':current_year,'games':observed,
+                          'minutes':diagnostic['actual_cumulative_minutes']}
+            st['direct_role_evidence']=evidence
+            info['path']=_apply_direct_forecast(info['path'],forecasts,diagnostic['nba_id'],
+                current_year,target_year,dt>self.src.reg_end[current_year],
+                evidence['games'],evidence['minutes'])
+            for yy,v in info['path'].items():
+                if self.signed_two_way(asset,yy,current_year,cutoff):
+                    v['games']=min(50,v['games'])
+        st['posterior']=info['path'];self.states[ident]=st"""
+    return text.replace(marker,replacement)
 
 def install(role_module):
     original=role_module.RoleSmoother.prepare
@@ -36,7 +74,8 @@ def install(role_module):
     # The existing daily-clock adapter inspects this function a second time.
     filename='<canonical-asset-minutes-'+POLICY+'>'
     linecache.cache[filename]=(len(text),None,text.splitlines(True),filename)
-    helpers={'_blend_role_mpg':blend_mpg,'_role_minutes_policy':POLICY,'_role_prior_appearances':PRIOR_APPEARANCES}
+    helpers={'_blend_role_mpg':blend_mpg,'_role_minutes_policy':POLICY,'_role_prior_appearances':PRIOR_APPEARANCES,
+             '_apply_direct_forecast':apply_forecast}
     previous={k:role_module.__dict__.get(k)for k in helpers}
     role_module.__dict__.update(helpers)
     scope=dict(role_module.__dict__)
@@ -48,3 +87,4 @@ def install(role_module):
             if value is None:role_module.__dict__.pop(key,None)
             else:role_module.__dict__[key]=value
     return restore
+

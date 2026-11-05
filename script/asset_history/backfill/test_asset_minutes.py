@@ -29,7 +29,7 @@ class Check(unittest.TestCase):
    @staticmethod
    def signed_two_way(*a):return False
   Role.prepare=scope['prepare'];module=types.ModuleType('fixture_role');module.__dict__.update(scope);module.RoleSmoother=Role
-  def run(target,returning=True,injured=False,patched=False):
+  def run(target,returning=True,injured=False,patched=False,direct=False):
    restore=install(module)if patched else lambda:None
    if patched:
     # The daily clock adapter recompiles this source with module globals.
@@ -45,6 +45,10 @@ class Check(unittest.TestCase):
        pairs={'2026-10-24':pd.DataFrame(columns=['nba_id','key'])},annual=annual,injuries=injuries)
     r.seed=lambda *a:({y:{'games':60.,'mpg':20.}for y in range(2027,2039)},'app_completed_season_career_role_prior')
     r.actual=lambda *a:({'games':5.,'minutes':150.,'data_cutoff':'2026-10-24'},'verified')
+    if direct:
+     r.direct_future_minutes={'2026':{'1':{
+      '2027':{'games':60.,'mpg':20.},'2028':{'games':55.,'mpg':19.},
+      '2029':{'games':50.,'mpg':18.}}}}
     r.weights=lambda y:(20.,20.);r.rotation_minutes={('2026-10-24',1):target};r.provider_minutes={}
     # A deterministic existing career path makes movement attributable only to
     # the role input; ratings, contracts, dates and attendance are identical.
@@ -60,6 +64,12 @@ class Check(unittest.TestCase):
   self.assertEqual(new,new_high);self.assertEqual(old['posterior_annual_games'],diag['posterior_annual_games'])
   self.assertEqual(diag['role_evidence_mode'],POLICY)
   self.assertNotEqual(new[2028]['mpg'],low[2028]['mpg'])
+  direct,_=run(10,patched=True,direct=True)
+  self.assertEqual(direct,run(30,patched=True,direct=True)[0])
+  self.assertAlmostEqual(direct[2027]['mpg'],70/3)
+  self.assertEqual(direct[2028]['games'],55)
+  self.assertAlmostEqual(direct[2028]['mpg'],19+.5*5/82*5/15*10)
+  self.assertAlmostEqual(direct[2029]['mpg'],18+.5*5/82*5/15*10/2)
   # Same production/contract pricing as annualAssetValue/fourYearAssetQuote.
   def quote(path):
    rows=[(v['games']*v['mpg']*10000,5000000)for y,v in sorted(path.items())if 2027<=y<=2030]
@@ -69,3 +79,4 @@ class Check(unittest.TestCase):
   for returning,injured in [(False,False),(True,True)]:
    self.assertEqual(run(10,returning,injured)[0],run(10,returning,injured,True)[0])
 if __name__=='__main__':unittest.main()
+
