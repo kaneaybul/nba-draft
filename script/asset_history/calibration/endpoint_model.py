@@ -12,7 +12,7 @@ from .historical import name_key
 from .path_model import slot_weights, evidence_weight, fit_reliability, path_quotes
 
 POLICY = 'year-four-assessed-production-paths-v3'
-PICK_POLICY = 'year-four-endpoint-picks-rolling-players-v3'
+PICK_POLICY = 'year-four-endpoint-picks-shared-players-v4'
 
 
 def production_quotes(paths):
@@ -249,4 +249,5 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
             if audit is not None:audit.update(method='flat_last_positive_raw_rate',anchor_season=anchor)
             return [raw[y] if y in raw else raw[anchor] for y in years]
     return [raw[y] if y in raw else scale*level(y) for y in years]
+
 

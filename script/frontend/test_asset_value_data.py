@@ -12,9 +12,9 @@ class PublishedAppValues(unittest.TestCase):
 
     def seed(self,root):
         version=root/'script/asset_history/model_version.py';version.parent.mkdir(parents=True)
-        version.write_text("DATA_VERSION='v8'\nLEGACY_VERSION='v7'\nMETHOD='peak4-payroll-0.8-v8'\n")
-        public=root/'frontend/public/data/asset_history/v8';(public/'teams').mkdir(parents=True)
-        manifest={'method':'peak4-payroll-0.8-v8','generated_at':'2026-11-01T14:00:00Z',
+        version.write_text("DATA_VERSION='v9'\nLEGACY_VERSION='v8'\nMETHOD='peak4-payroll-0.8-v9'\n")
+        public=root/'frontend/public/data/asset_history/v9';(public/'teams').mkdir(parents=True)
+        manifest={'method':'peak4-payroll-0.8-v9','generated_at':'2026-11-01T14:00:00Z',
                   'teams':[{'team':team,'status':'available','latest':'2026-11-01'}for team in TEAMS]}
         (public/'manifest.json').write_text(json.dumps(manifest))
         for i,team in enumerate(TEAMS):
@@ -23,7 +23,7 @@ class PublishedAppValues(unittest.TestCase):
                     {'id':f'pick:{team}:2028:1','kind':'pick','physical_origin':team,'draft_year':2028,'round':1,'value':30.}]
             (public/'teams'/f'{team}.json').write_text(json.dumps({'snapshots':[{'date':'2026-11-01','assets':assets}]}))
         model=root/'processed/asset_history/picks/trained_pick_model.json';model.parent.mkdir(parents=True)
-        model.write_text(json.dumps({'production_policy':'year-four-assessed-production-paths-v3','stock_policy':'year-four-endpoint-picks-rolling-players-v3','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
+        model.write_text(json.dumps({'production_policy':'year-four-assessed-production-paths-v3','stock_policy':'year-four-endpoint-picks-shared-players-v4','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
         return public
 
     def test_preserves_published_quotes_and_the_complete_annual_path(self):
@@ -56,7 +56,7 @@ class PublishedAppValues(unittest.TestCase):
                     annual['season']-=2;annual['production']*=2;annual['asset']*=2
                 data['snapshots'].insert(0,past);path.write_text(json.dumps(data))
             current=build(root)
-            historical=json.loads((root/'frontend/public/data/asset_valuations/v8/2025.json').read_text())
+            historical=json.loads((root/'frontend/public/data/asset_valuations/v9/2025.json').read_text())
             self.assertEqual(historical['players']['1']['value'],224.)
             self.assertEqual(historical['players']['1']['date'],'2025-06-30')
             self.assertEqual(current['players']['1']['value'],112.)
@@ -70,18 +70,18 @@ class PublishedAppValues(unittest.TestCase):
             path.write_text(json.dumps(data))
             with self.assertRaisesRegex(ValueError,'same-date league seasons'):build(root)
 
-    def test_endpoint_appraisal_cannot_replace_rolling_quote_or_its_distribution(self):
+    def test_draft_appraisal_matches_shared_player_production_and_preserves_distribution(self):
         with tempfile.TemporaryDirectory()as directory:
             root=Path(directory);public=self.seed(root);path=public/'teams/ATL.json';data=json.loads(path.read_text())
             asset=data['snapshots'][0]['assets'][0];asset['value']=132.
-            grade=dict(status='priced',value=190.,original_expectation=160.,gain=30.,contract_effect=0.)
+            grade=dict(status='priced',endpoint='2027-07-31',value=100.,original_expectation=160.,gain=-60.,contract_effect=0.)
             asset['details'].update(peak_production=100.,contract_adjustment=32.,draft_development=grade,
-                development_window_basis=-90.,endpoint_stock_policy='year-four-endpoint-picks-rolling-players-v3',
+                endpoint_stock_policy='year-four-endpoint-picks-shared-players-v4',
                 path_calibration=dict(status='priced',mean=132.,mean_path_quote=112.,production_quote=100.,
                     contract_adjustment_sum=32.,p10=20.,p50=100.,p90=200.,nba_weight=.95))
             path.write_text(json.dumps(data));quote=build(root)['players']['1']
             self.assertEqual(quote['value'],132.)
-            self.assertEqual(quote['draft_development']['value'],190.)
+            self.assertEqual(quote['draft_development']['value'],100.)
             self.assertEqual(quote['distribution']['p90'],200.)
 
     def test_annual_path_must_reconcile_with_the_published_quote(self):

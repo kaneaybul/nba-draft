@@ -16,7 +16,9 @@ def validate(repo):
             for asset in snapshot['assets']:
                 d=asset.get('details',{})
                 if endpoint_active(d):
-                    assert abs(d['peak_production']-d['draft_development']['value']-d['development_window_basis'])<.01,('Rolling / endpoint basis identity',team,asset['name'])
+                    if snapshot['date']<=d['draft_development']['endpoint']:
+                        assert abs(d['peak_production']-d['draft_development']['value'])<.01,('Shared padded draft/player identity',team,asset['name'])
+                    assert 'development_window_basis'not in d,('Obsolete draft basis',team,asset['name'])
                     assert d['draft_development']['method']=='year-four-assessed-production-paths-v3'
                     assert abs(asset['value']-d['peak_production']-d['contract_adjustment'])<.01,('Contract split',team,asset['name'])
         intervals=book['intervals'];assert len(intervals)==len(history)-1
@@ -42,3 +44,4 @@ def validate(repo):
     return dict(teams=len(books),intervals=interval_count,selectable_periods=ranges,max_reconciliation_error=largest,trade_conservation='passed',lottery_conservation='passed',corrected_jazz_benchmark='passed' if golden.get('method')==METHOD else 'archived benchmark preserved; rolling / endpoint identity validated separately')
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());args=p.parse_args();print(json.dumps(validate(args.repo.resolve()),indent=2))
+

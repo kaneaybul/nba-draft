@@ -2,7 +2,7 @@ import copy,sys,unittest
 from pathlib import Path
 import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
-from endpoint_stock import promote,promote_asset,STOCK_POLICY
+from endpoint_stock import promote,promote_asset,freeze_draft_results,STOCK_POLICY
 from attribution_players import player_bridge,clock
 from calibration.endpoint_model import pick_components,EndpointModel,production_quotes
 from calibration.path_model import ResidualPool,summarize,weighted_quantile
@@ -41,21 +41,21 @@ class EndpointStockTests(unittest.TestCase):
         return dict(histories={'UTA':h},league={},owners={},events=[],contracts=[],caps={2027:(164961000.,200000000.)},market=None,
                     drafts={'rookie':dict(team='UTA',year=2023)},reviewed_trades=[])
 
-    def test_daily_stock_retains_the_rolling_window(self):
+    def test_clock_alone_does_not_regrade_a_padded_draftee(self):
         a=self.player('Rookie',100.,grade_value=130.)
         a['details']['annual_values']=[dict(season=2027+i,production=p,asset=p,exposure=1.)for i,p in enumerate([40.,30.,20.,10.])]
         a['value']=140.;a['details']['peak_production']=140.
         frozen=clock(a,{2027:.4,2028:1.,2029:1.,2030:1.,2031:.6})
-        self.assertAlmostEqual(frozen['peak'],2*(.4*40+30+.6*20))
+        self.assertAlmostEqual(frozen['peak'],140.)
         self.assertNotEqual(frozen['peak'],130.)
 
-    def test_draft_result_and_basis_each_telescope_once(self):
+    def test_shared_draft_changes_telescope_once_without_a_basis_adjustment(self):
         dates=['2026-01-31','2026-02-28','2026-03-31','2026-04-30']
         points=[dict(date=day,assets=[self.player('Rookie',p,financial=-10.,grade_value=e)])
                 for day,p,e in zip(dates,[100.,110.,120.,130.],[100.,90.,80.,70.])]
         rows=player_bridge('UTA',self.context(points))['attribution']
-        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),-30.)
-        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='timing'),60.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),30.)
+        self.assertFalse(any(r['category']=='timing'for r in rows))
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows),30.)
 
@@ -64,7 +64,8 @@ class EndpointStockTests(unittest.TestCase):
         asset['details']['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.,nba_weight=1.)
         promote_asset(asset,'2027-07-31');promote_asset(asset,'2027-07-31')
         self.assertEqual(asset['value'],80.)
-        self.assertEqual(asset['details']['development_window_basis'],-30.)
+        self.assertNotIn('development_window_basis',asset['details'])
+        self.assertEqual(asset['details']['draft_development']['value'],100.)
         self.assertEqual(asset['details']['peak_production'],100.)
 
     def test_waiver_separates_endpoint_basis_and_financial_claim(self):
@@ -72,7 +73,7 @@ class EndpointStockTests(unittest.TestCase):
         points=[dict(date='2026-01-31',assets=[other,self.player('Rookie',70.,financial=-10.,grade_value=90.)]),
                 dict(date='2026-02-28',assets=[other])]
         rows=player_bridge('UTA',self.context(points))['attribution']
-        for category,want in [('draft',-90.),('timing',20.),('contracts',10.)]:
+        for category,want in [('draft',-70.),('contracts',10.)]:
             self.assertAlmostEqual(sum(r['value']for r in rows if r['category']==category),want)
 
     def test_unsupported_cohort_is_not_labeled_endpoint_draft_value(self):
@@ -88,14 +89,31 @@ class EndpointStockTests(unittest.TestCase):
             draft_development=dict(status='priced',endpoint='2027-07-31',value=100.,original_expectation=100.,gain=0.))
         promote_asset(asset,'2026-11-03');promote_asset(asset,'2026-11-03')
         self.assertEqual(asset['value'],110.)
-        self.assertEqual(asset['details']['development_window_basis'],0.)
+        self.assertNotIn('development_window_basis',asset['details'])
 
     def test_salary_cannot_change_endpoint_gain_or_daily_production(self):
         d=self.player('Rookie',100.,endpoint=False,financial=-20.)['details']
         d['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.)
         self.assertEqual(promote(d,80.,'2026-11-03'),80.)
-        self.assertEqual(d['draft_development']['gain'],30.)
+        self.assertEqual(d['draft_development']['gain'],0.)
         self.assertEqual(d['contract_adjustment'],-20.)
+
+    def test_year_four_grade_freezes_across_a_transfer_and_daily_refresh(self):
+        early=self.player('Rookie',100.,draft=2022,grade_value=999.)
+        final=self.player('Rookie',150.,draft=2022,grade_value=999.)
+        later=self.player('Rookie',200.,draft=2022,grade_value=999.)
+        final['details']['draft_development']['completed']=True
+        rows=[dict(team='UTA',date='2026-06-30',assets=[early]),
+              dict(team='BOS',date='2026-07-31',assets=[final]),
+              dict(team='BOS',date='2026-08-31',assets=[later])]
+        saved=freeze_draft_results(rows)
+        self.assertEqual(final['details']['draft_development']['value'],150.)
+        self.assertEqual(later['details']['draft_development']['value'],150.)
+        self.assertEqual(later['value'],200.)
+        daily=self.player('Rookie',220.,draft=2022,grade_value=999.)
+        freeze_draft_results([dict(date='2026-09-30',assets=[daily])],saved)
+        self.assertEqual(daily['details']['draft_development']['gain'],50.)
+        self.assertEqual(daily['value'],220.)
 
     def revision_pool(self):
         feature=[22.,0.,1.,2.]
@@ -144,3 +162,4 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(weighted_quantile([10.,1e9],[1.,0.]),[10.,10.,10.])
 
 if __name__=='__main__':unittest.main()
+

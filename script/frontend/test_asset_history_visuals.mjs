@@ -13,6 +13,15 @@ const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
 const { Waterfall, LeagueComparison, aggregateAttribution, categoryLabels, leagueRows, leagueMetricValue, rankLeague } = module.exports;
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
+const rangeSource=readFileSync(resolve(frontend,'src/AssetHistoryDateRange.tsx'),'utf8');
+const rangeCompiled=ts.transpileModule(rangeSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText;
+const rangeModule={exports:{}};
+new Function('require','module','exports',rangeCompiled)(require,rangeModule,rangeModule.exports);
+const {normalizeHistoryRange}=rangeModule.exports;
+const refreshedDates=['2026-06-30','2026-10-31','2026-11-05'];
+assert.deepEqual(normalizeHistoryRange(refreshedDates,{start:'2026-06-30',end:'2026-11-04'},'2026-11-04'),{start:'2026-06-30',end:'2026-11-05'},'Latest selection follows the replacement daily snapshot');
+assert.deepEqual(normalizeHistoryRange(refreshedDates,{start:'2026-06-30',end:'2026-10-31'},'2026-11-04'),{start:'2026-06-30',end:'2026-10-31'},'Historical end dates stay fixed');
+assert.deepEqual(normalizeHistoryRange(refreshedDates,{start:'2026-11-04',end:'2026-11-04'},'2026-11-04'),{start:'2026-11-05',end:'2026-11-05'},'A zero-length latest range remains zero-length');
 const changes = [{key:'gain',label:'Gain',value:30e6},{key:'loss',label:'Loss',value:-60e6}];
 const waterfall = render(Waterfall, {opening:100e6,closing:70e6,changes});
 assert.match(waterfall, /Asset value changed from \$100M to \$70M/);
@@ -33,11 +42,11 @@ assert.match(league, /1\. BOS, Value change: \+\$20M/);
 assert.match(league, /2\. UTA, Value change: −\$30M/);
 assert.match(league, /Missing matching observations: MIA, ATL/);
 assert.match(league, /−\$10M/);
-const keys=['player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','pick_rules','automatic','timing'];
+const keys=['player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','automatic'];
 const row=(start,end,opening,closing,key)=>({start,end,opening,closing,categories:Object.fromEntries(keys.map(k=>[k,k===key?closing-opening:0])),components:Object.fromEntries(keys.map(k=>[k,{movement:k===key?closing-opening:0}])),contributors:Object.fromEntries(keys.map(k=>[k,k===key?[{player:'Test player',value:closing-opening}]:[]])),reconciliation_error:0});
-const ledger={team:'BOS',method:'rolling-endpoint-attribution-v3',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
+const ledger={team:'BOS',method:'shared-draft-attribution-v4',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
 const combined=aggregateAttribution(ledger,'a','c',100,110,'v5');
-assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,11);
+assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,9);
 assert.equal(aggregateAttribution(ledger,'a','c',100,111,'v5'),null,'Never show a chart that does not match canonical totals');
 assert.equal(aggregateAttribution({...ledger,method:'holdings-fallback'},'a','c',100,110,'v5'),null,'Only one attribution method is accepted');
 assert.equal(aggregateAttribution({...ledger,intervals:[ledger.intervals[1]]},'a','c',100,110,'v5'),null,'Do not bridge missing periods with another method');
@@ -102,7 +111,7 @@ if(existsSync(resolve(data,'manifest.json'))){
   }
   for(const r of actualRows)assert.ok(Math.abs(Object.values(r.categories).reduce((a,b)=>a+b,0)-r.change)<.01);
  }
- console.log('Published league checks passed: 30 teams, all eleven waterfall categories, four date ranges.');
+ console.log('Published league checks passed: 30 teams, all nine waterfall categories, four date ranges.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
 

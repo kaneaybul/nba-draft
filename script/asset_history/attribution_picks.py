@@ -63,7 +63,7 @@ def interval(pair):
         if key not in cache:cache[key]=value_portfolio(end,v,sim,c['model'],sorted(ys))['teams']
         return cache[key]
     def totals(p):return {t:sum(a['value']for a in p[t])for t in c['teams']}
-    oldrepr=price(oldv,oldys);horizon=totals(price(oldv,newys-oldys));before=totals(price(oldv,union));out={};legal=[];contributions=[]
+    oldrepr=price(oldv,oldys);horizon=totals(price(oldv,newys-oldys));before_assets=price(oldv,union);before=totals(before_assets);out={};legal=[];contributions=[]
     for team in c['teams']:
         old={a['id']:a for a in c['histories'][team][start]['assets']if a['kind']=='pick'};new={a['id']:a for a in oldrepr[team]};changes=Counter(horizon_entry=horizon[team])
         for aid in old.keys()|new.keys():
@@ -77,12 +77,22 @@ def interval(pair):
     for day in dates:
         v=view(day)
         if v['rules']==prior['rules']and v.get('economic_claims')==prior.get('economic_claims'):continue
-        after=totals(price(v,union))
+        after_assets=price(v,union);after=totals(after_assets)
         for team in c['teams']:
-            delta=after[team]-before[team];category='trade_picks'if team in c['trade_dates'][day]else'external_legal'
-            out[team][category]+=delta
-            if abs(delta)>.000001:legal.append(dict(date=day,team=team,category=category,value=delta))
-        before=after;prior=v
+            if team in c['trade_dates'][day]:
+                delta=after[team]-before[team]
+                out[team]['trade_picks']+=delta
+                if abs(delta)>.000001:legal.append(dict(date=day,team=team,category='trade_picks',value=delta))
+            else:
+                # Keep the economic claim's physical origin through protection,
+                # conveyance and forfeiture. Signed offsets must not be netted
+                # into an unexplained portfolio-wide "rights" residual.
+                for own,category in [(True,'own_pick_revaluation'),(False,'acquired_pick_revaluation')]:
+                    def subtotal(rows):return sum(a['value']for a in rows if (a['physical_origin']==team)==own)
+                    delta=subtotal(after_assets[team])-subtotal(before_assets[team])
+                    out[team][category]+=delta
+                    if abs(delta)>.000001:legal.append(dict(date=day,team=team,category=category,value=delta))
+        before_assets=after_assets;before=after;prior=v
     retired=price(newv,oldys-newys);retired_totals=totals(retired);cur=totals(price(newv,newys));errors={}
     for team in c['teams']:
         out[team]['draft_pick_retirement']=-retired_totals[team]
@@ -122,3 +132,4 @@ def lottery(row):
         teams[team]=dict(own=sums['own'],acquired=sums['acquired'])
     if abs(sum(sum(v.values())for v in teams.values()))>.01:raise ValueError('Lottery luck does not conserve league value')
     return dict(date=row['known_from'],year=y,teams=teams,contributions=details)
+

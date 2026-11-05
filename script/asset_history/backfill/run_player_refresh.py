@@ -189,7 +189,7 @@ def export(output,asof=None,calibrator=None):
                             if path.get('draft_development'):details['draft_development']=path['draft_development']
                             if path.get('endpoint_stock_policy'):details['endpoint_stock_policy']=path['endpoint_stock_policy']
                         if path['status']=='priced':
-                            for key in ('rolling_production_quote','endpoint_stock_policy','development_window_basis'):
+                            for key in ('endpoint_stock_policy',):
                                 if key in path:details[key]=path[key]
                             details['baseline_quote']=value
                             details['baseline_draft_maturity_weight']=details['draft_maturity_weight']
@@ -199,7 +199,7 @@ def export(output,asof=None,calibrator=None):
                             details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
                             details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
                     if row.get('asset_type')!='unsigned_draft_right' and pid is not None:
-                        details['draft_development']=calibrator.draft_evaluation(row,raw_path)
+                        details['draft_development']=calibrator.draft_evaluation(row,raw_path,path)
                 assets.append({'id':ident,'kind':'player','name':row['player_name'],'value':float(row['app_style_four_year_asset_quote_with_draft_prior']),'exposure':float(row['app_priced_season_equivalents']),
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
@@ -210,6 +210,12 @@ def export(output,asof=None,calibrator=None):
               'assets':assets,'player_subtotal':sum(a['value']for a in assets),'unpriced_players':unpriced,
               'coverage':{'ownership':True,'contracts':c['contracts_complete'],'skill':c['skill_complete'],'injury_review':c['injury_review_complete']},
               'player_coverage':c,'scope':'Player service quotes only. Join separately valued legal draft-pick inventory before publication.'})
+    from endpoint_stock import freeze_draft_results
+    checkpoint=output/'player_state_staged/final_draft_results.json'
+    saved=json.loads(checkpoint.read_text())if checkpoint.exists()else{}
+    saved=freeze_draft_results(snapshots,saved)
+    checkpoint.parent.mkdir(parents=True,exist_ok=True)
+    checkpoint.write_text(json.dumps(saved,separators=(',',':'),allow_nan=False))
     owned={}
     for snapshot in snapshots:
         for asset in snapshot['assets']:
@@ -331,4 +337,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--runtime-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--state-dir',type=Path,required=True);p.add_argument('--as-of',required=True)
     p.add_argument('--workers',type=int,default=3);p.add_argument('--reseed',action='store_true');p.add_argument('--prepared-runtime',action='store_true');p.add_argument('--roster-html',type=Path);p.add_argument('--skip-contract-refresh',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
     a=p.parse_args();print(json.dumps(run(a)))
+
 
