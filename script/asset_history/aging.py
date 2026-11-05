@@ -41,8 +41,13 @@ def basis(row, annual, calibrator):
     """Retain the original annual scorer's dollar sensitivity, without repricing."""
     if not annual or row.get('asset_type') in ('unsigned_draft_right', 'dormant_draft_right', 'dormant_retention_right'):
         return {'policy': POLICY, 'status': 'no_active_production'}
-    pid = int(float(row.get('source_nba_id') or row['ledger_nba_id']))
-    source_year = int(float(annual[0]['source_profile_season']))
+    if all(r.get('latent_total') in (None, '') and r.get('forecast_annual_minutes') in (None, '') for r in annual):
+        return {'policy': POLICY, 'status': 'no_active_production'}
+    raw_pid = row.get('source_nba_id') or row.get('ledger_nba_id')
+    pid = int(float(raw_pid)) if raw_pid not in (None, '') else None
+    source = annual[0].get('source_profile_season')
+    cutoff = row['cutoff_date'] if source in (None, '') else None
+    source_year = int(float(source)) if source not in (None, '') else int(cutoff[:4])+(int(cutoff[5:7])>=7)
     known = [(y, age) for (y, p), age in calibrator.ages.items() if p == pid and y <= source_year]
     if not known:
         # Match the scorer's explicit limited-history age prior; expose it.

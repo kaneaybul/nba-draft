@@ -15,7 +15,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     env:
       OPENBLAS_NUM_THREADS: '1'
       VITE_PUBLIC_READ_ONLY: 'true'
@@ -33,11 +33,21 @@ jobs:
         run: |
           python3 -m unittest discover -s script/asset_history -p 'test_*.py'
           python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/aging/annual_projection_checkpoint
+          key: aging-annual-v1-${{ github.sha }}
+          restore-keys: aging-annual-v1-
       - name: Reproduce original annual inputs for aging attribution
         run: |
           python3 script/asset_history/materialize.py --repo .
           ASOF=$(python3 -c "import json; print(json.load(open('processed/asset_history/player_state/UTA.json'))['as_of'])")
-          python3 script/asset_history/backfill/run_player_refresh.py --repo "$GITHUB_WORKSPACE" --runtime-dir "$RUNNER_TEMP/aging/runtime" --output "$RUNNER_TEMP/aging/players" --state-dir "$GITHUB_WORKSPACE/processed/asset_history/player_state" --as-of "$ASOF" --reseed --skip-contract-refresh --use-published-inputs > "$RUNNER_TEMP/aging-player-refresh.log" 2>&1
+          python3 script/asset_history/backfill/run_player_refresh.py --repo "$GITHUB_WORKSPACE" --runtime-dir "$RUNNER_TEMP/aging/runtime" --output "$RUNNER_TEMP/aging/players" --state-dir "$GITHUB_WORKSPACE/processed/asset_history/player_state" --as-of "$ASOF" --reseed --skip-contract-refresh --use-published-inputs 2>&1 | tee "$RUNNER_TEMP/aging-player-refresh.log"
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: ${{ runner.temp }}/aging/annual_projection_checkpoint
+          key: aging-annual-v1-${{ github.sha }}
       - name: Split aging while preserving every published asset value
         run: |
           python3 script/asset_history/release_aging.py --repo . --runtime "$RUNNER_TEMP/aging/runtime" --candidates "$RUNNER_TEMP/aging/players/player_candidates.json"
