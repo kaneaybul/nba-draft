@@ -58,6 +58,7 @@ jobs:
           for source in root.rglob('*'):
               if not source.is_file():continue
               rel=source.relative_to(root).as_posix()
+              if rel.startswith('processed/asset_history/player_state/archived_inputs/'):continue
               if rel in exact or rel.startswith(prefixes):
                   assert not source.is_symlink()
                   assert rel.endswith(('.json','.json.gz'))
