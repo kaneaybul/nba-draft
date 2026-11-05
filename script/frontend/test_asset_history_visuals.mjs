@@ -55,6 +55,10 @@ assert.equal(aggregateAttribution(ledger,'a','a',100,100,'v5').change,0);
 assert.equal(aggregateAttribution({...ledger,valuation_method:'v4'},'a','c',100,110,'v5'),null);
 const malformed=structuredClone(ledger);malformed.intervals[0].components.draft.movement=15;
 assert.equal(aggregateAttribution(malformed,'a','c',100,110,'v5'),null,'Category details must reconcile');
+const waived={...ledger,trade_waivers:[{player:'Test player',acquired:'a',waived:'b',dead_cap:100,source:'https://example.com'}]};
+assert.deepEqual(aggregateAttribution(waived,'a','b',100,120,'v5').tradeWaivers,waived.trade_waivers);
+assert.deepEqual(aggregateAttribution(waived,'b','c',120,110,'v5').tradeWaivers,[]);
+assert.deepEqual(aggregateAttribution(ledger,'a','b',100,120,'v5').tradeWaivers,[]);
 
 // Category amounts must come from the same reconciled range as each waterfall.
 const teams = [

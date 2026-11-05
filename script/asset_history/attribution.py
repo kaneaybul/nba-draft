@@ -19,6 +19,45 @@ ATTRIBUTION_METHOD='age-separated-attribution-v5'
 LABELS={'aging':'Aging','player':'Player Development','draft':'Draftee Development','trades':'Trades','contracts':'Contract Management','fa':'FA Signings','own_picks':'Own Pick Revaluation','acquired_picks':'Acquired Pick Revaluation','lottery':'Lottery Luck','automatic':'Automatic Pick Additions'}
 NAMES=dict(zip('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split(),['Atlanta Hawks','Brooklyn Nets','Boston Celtics','Charlotte Hornets','Chicago Bulls','Cleveland Cavaliers','Dallas Mavericks','Denver Nuggets','Detroit Pistons','Golden State Warriors','Houston Rockets','Indiana Pacers','Los Angeles Clippers','Los Angeles Lakers','Memphis Grizzlies','Miami Heat','Milwaukee Bucks','Minnesota Timberwolves','New Orleans Pelicans','New York Knicks','Oklahoma City Thunder','Orlando Magic','Philadelphia 76ers','Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Toronto Raptors','Utah Jazz','Washington Wizards']))
 
+# Review the receiving team's trade and waiver as one episode. The reported
+# dead cap is context for the deal and does not change the asset snapshots.
+TRADE_WAIVERS = {
+    ('UTA', 'player:nba:1628366'): dict(
+        player='Lonzo Ball', acquired='2026-02-05', waived='2026-02-05',
+        dead_cap=10_000_000, source='https://www.salaryswish.com/players/lonzo-ball',
+    ),
+    ('UTA', 'player:nba:1630240'): dict(
+        player='Saben Lee', acquired='2022-09-22', waived='2022-10-09',
+        dead_cap=1_752_638, source='https://www.salaryswish.com/players/saben-lee',
+    ),
+}
+TRADE_WAIVER_COMPONENTS = {
+    ('trades', 'Incoming player'): 'Trade receipt',
+    ('trades', 'Intermediate acquired player absent at month-end'): 'Trade receipt',
+    ('trades', 'Intermediate player receipt before loss of control'): 'Trade receipt',
+    ('contracts', 'Intermediate loss of contract control'): 'Waiver',
+    ('contracts', 'Waiver or expiry of contract control'): 'Waiver',
+    ('contracts', 'Existing contract and continuation revaluation'): 'Contract and continuation forecast',
+    ('contracts', 'Remaining contract-year mix'): 'Contract and continuation forecast',
+    ('aging', 'Expected change from age curve'): 'Production forecast',
+    ('player', 'Change beyond expected aging'): 'Production forecast',
+    ('player', 'Player production forecast changes'): 'Production forecast',
+}
+TRADE_WAIVER_NONTRANSFER_COMPONENTS = {
+    f'{deal["player"]} · {label}' for deal in TRADE_WAIVERS.values()
+    for (category, _), label in TRADE_WAIVER_COMPONENTS.items() if category != 'trades'
+}
+
+
+def attribute_trade_waiver(team, row):
+    deal = TRADE_WAIVERS.get((team, row['asset_id']))
+    if deal and row['start'] < deal['waived'] and deal['acquired'] <= row['end']:
+        label = TRADE_WAIVER_COMPONENTS.get((row['category'], row['component']))
+        if label:
+            return dict(row, category='trades', component=f'{deal["player"]} · {label}')
+    return row
+
+
 def read(path):return json.loads(Path(path).read_text())
 def digest(value):return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 def atomic(path,value):
@@ -173,7 +212,10 @@ def assemble(ctx,players,pick_rows,lotteries):
             start,end=raw['start'],raw['end'];pair=start,end;q=pick_by_pair[pair]['changes'][team];changes=raw['changes'];old=ctx['histories'][team][start];new=ctx['histories'][team][end]
             attributed=[r for r in p['attribution']if(r['start'],r['end'])==pair]
             components={k:Counter()for k in LABELS};contributors={k:Counter()for k in LABELS}
-            for r in attributed:components[r['category']][r['component']]+=r['value'];contributors[r['category']][r['player']]+=r['value']
+            for row in attributed:
+                r = attribute_trade_waiver(team, row)
+                components[r['category']][r['component']] += r['value']
+                contributors[r['category']][r['player']] += r['value']
             conversion=changes.get('draft_player_entry',0)+q.get('draft_pick_retirement',0)-transfers[team][pair]
             # The retired right carries the fixed draft endpoint expectation.
             # Split conversion into observed production bases and financial terms.
@@ -213,6 +255,9 @@ def assemble(ctx,players,pick_rows,lotteries):
             if abs(error)>.01:raise ValueError(('Portfolio does not reconcile',team,start,end,error,categories))
             interval_rows.append(dict(start=start,end=end,opening=old['total'],closing=new['total'],categories=categories,components={k:dict(v)for k,v in components.items()},contributors={k:[dict(player=n,value=v)for n,v in sorted(rows.items(),key=lambda z:abs(z[1]),reverse=True)if abs(v)>.000001]for k,rows in contributors.items()},reconciliation_error=error))
         result[team]=dict(team=team,method=ATTRIBUTION_METHOD,valuation_method=METHOD,intervals=interval_rows,source_signature=digest([(d,s['total'])for d,s in ctx['histories'][team].items()]))
+        waivers = [deal for (owner, _), deal in TRADE_WAIVERS.items() if owner == team]
+        if waivers:
+            result[team]['trade_waivers'] = waivers
     return result
 
 def run(repo,runtime,workers=3):

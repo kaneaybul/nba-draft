@@ -2,7 +2,7 @@
 import argparse,json
 from pathlib import Path
 from collections import Counter
-from attribution import LABELS,NAMES,ATTRIBUTION_METHOD
+from attribution import LABELS,NAMES,ATTRIBUTION_METHOD,TRADE_WAIVER_NONTRANSFER_COMPONENTS
 from model_version import data_root,METHOD
 from endpoint_stock import active as endpoint_active
 
@@ -29,7 +29,11 @@ def validate(repo):
             assert i==0 or intervals[i-1]['end']==row['start'],'Gap in attribution'
             for key,value in row['categories'].items():assert abs(sum(row['components'][key].values())-value)<.01
             error=row['opening']+sum(row['categories'].values())-row['closing'];largest=max(largest,abs(error));assert abs(error)<.01
-            net_trades[row['end']]+=row['categories']['trades'];net_lottery[row['end']]+=row['categories']['lottery'];interval_count+=1
+            # Waivers and forecasts affect the deal's value without transferring
+            # an asset to another team. Only actual transfers must cancel out.
+            net_trades[row['end']] += sum(value for label, value in row['components']['trades'].items()
+                                          if label not in TRADE_WAIVER_NONTRANSFER_COMPONENTS)
+            net_lottery[row['end']]+=row['categories']['lottery'];interval_count+=1
         for first in range(len(intervals)):
             running=Counter()
             for last in range(first,len(intervals)):

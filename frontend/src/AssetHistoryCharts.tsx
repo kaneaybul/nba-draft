@@ -3,10 +3,12 @@ import { useMemo, useState } from 'react';
 export type Change = { key: string; label: string; value: number };
 export type HistoryPoint = { date: string; total: number; players: number; picks: number; reporting_cap: number; vintage: string };
 export type LeagueTeam = { team: string; points?: HistoryPoint[] };
+type TradeWaiver = { player: string; acquired: string; waived: string; dead_cap: number; source: string };
 export type AttributionAnalysis = {
   start: string; end: string; opening: number; closing: number; change: number;
   categories: Record<string, number>; components: Record<string, Record<string, number>>;
   contributors: Record<string, { player: string; value: number }[]>;
+  tradeWaivers: TradeWaiver[];
   validation: { reconciliation_error: number };
 };
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
@@ -29,7 +31,7 @@ export type AttributionInterval = {
   contributors: Record<string, { player: string; value: number }[]>;
   reconciliation_error: number;
 };
-export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[] };
+export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
   if (ledger.method !== 'age-separated-attribution-v5' || ledger.valuation_method !== valuationMethod || start > end) return null;
   const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
@@ -55,7 +57,8 @@ export function aggregateAttribution(ledger: AttributionLedger, start: string, e
   }
   const error = opening + Object.values(categories).reduce((a, b) => a + b, 0) - closing;
   if (Math.abs(value - closing) > .01 || Math.abs(error) > .01) return null;
-  return { start, end, opening, closing, change: closing - opening, categories, components,
+  const tradeWaivers = ledger.trade_waivers?.filter(deal => start < deal.waived && deal.waived <= end) ?? [];
+  return { start, end, opening, closing, change: closing - opening, categories, components, tradeWaivers,
     contributors: Object.fromEntries(Object.entries(contributions).map(([key, people]) => [key, Object.entries(people).map(([player, value]) => ({ player, value })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value))])), validation: { reconciliation_error: error } };
 }
 
@@ -100,6 +103,18 @@ export function Waterfall({ opening, closing, changes, analysis }: {
     <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabel(row.key) ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
     {picked && <section className="ah-drilldown"><h3>{categoryLabel(picked.key) ?? picked.label}</h3>
       {analysis.components[picked.key] && <ul>{Object.entries(analysis.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
+      {picked.key === 'trades' && analysis.tradeWaivers.length > 0 && <>
+        <h4>Reported dead cap</h4>
+        <p className="ah-caption">Cap charges are separate from the asset value totals.</p>
+        <ul>{analysis.tradeWaivers.map(deal => (
+          <li key={deal.player}>
+            <span>{deal.player}</span>
+            <strong><a href={deal.source} target="_blank" rel="noreferrer">
+              {deal.dead_cap.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+            </a></strong>
+          </li>
+        ))}</ul>
+      </>}
       {!!analysis.contributors[picked.key]?.length && <><h4>Largest contributors</h4><ul>{analysis.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
     </section>}
   </>;

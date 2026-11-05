@@ -1,4 +1,5 @@
 import unittest
+from attribution import TRADE_WAIVER_NONTRANSFER_COMPONENTS, attribute_trade_waiver
 from attribution_players import clock,parts,production_bucket
 from quote_window import quote_window
 
@@ -21,4 +22,29 @@ class AttributionTests(unittest.TestCase):
         self.assertAlmostEqual(moved['value'],expected['quote']+5)
         self.assertAlmostEqual(moved['peak'],expected['production_quote']+5)
         self.assertEqual(moved['tail_carry'],[2031])
+
+    def test_lonzo_receipt_and_waiver_offset_under_trades(self):
+        row = dict(asset_id='player:nba:1628366', start='2026-01-31', end='2026-02-28',
+                   category='trades', component='Intermediate acquired player absent at month-end', value=34.1)
+        reversal = dict(row, category='contracts', component='Intermediate loss of contract control', value=-34.1)
+        receipt, waiver = [attribute_trade_waiver('UTA', entry) for entry in (row, reversal)]
+        self.assertEqual([r['category'] for r in (receipt, waiver)], ['trades', 'trades'])
+        self.assertAlmostEqual(receipt['value'] + waiver['value'], 0.)
+        self.assertNotIn(receipt['component'], TRADE_WAIVER_NONTRANSFER_COMPONENTS)
+        self.assertIn(waiver['component'], TRADE_WAIVER_NONTRANSFER_COMPONENTS)
+        self.assertIs(attribute_trade_waiver('CLE', row), row)
+
+    def test_saben_reclassification_spans_both_observation_intervals(self):
+        revalue = dict(asset_id='player:nba:1630240', start='2022-08-31', end='2022-09-30',
+                       category='player', component='Player production forecast changes', value=13.2)
+        release = dict(revalue, start='2022-09-30', end='2022-10-31', category='contracts',
+                       component='Waiver or expiry of contract control', value=-29.4)
+        for entry, label in [(revalue, 'Production forecast'), (release, 'Waiver')]:
+            moved = attribute_trade_waiver('UTA', entry)
+            self.assertEqual(moved, dict(entry, category='trades', component=f'Saben Lee · {label}'))
+        unrelated = dict(release, asset_id='player:nba:202355')
+        later = dict(release, start='2022-10-31', end='2022-11-30')
+        self.assertIs(attribute_trade_waiver('UTA', unrelated), unrelated)
+        self.assertIs(attribute_trade_waiver('UTA', later), later)
+
 if __name__=='__main__':unittest.main()
