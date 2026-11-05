@@ -8,7 +8,7 @@ export function retainCachedCapTeams({ teams, previous, years, contracts, deadMo
     if (!years.every((year) => priorRows.some((row) => row.year === year)) || !Array.isArray(previous?.contracts)) {
       throw new Error(`${team}: no complete previous cap snapshot; refusing to publish an empty salary ledger.`);
     }
-    const prior = previous.cap_fallbacks?.find((row) => row.team === team);
+    const prior = previous.cap_fallbacks?.find((row) => row.team === team) ?? previous.cap_component_fallbacks?.find((row) => row.team === team);
     fallbacks.push({ team, cached_as_of: prior?.cached_as_of ?? previous.generated_at,
       reason: "Spotrac unavailable; roster refreshed from ESPN; salary and cap figures retain the last verified snapshot." });
   }
