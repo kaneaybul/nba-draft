@@ -96,15 +96,24 @@ export function buildSpotracCapTrackerData() {
     ...buildContractRows(spotracRows, teamMeta, guaranteeOverrides, databallrContractMeta),
     ...buildProjectedRookieContractRows(impactPlayers)
   ].sort(contractRowSort);
-  if(shared) contractRows = mergeSharedContracts(shared,contractRows,YEARS,canonicalContractRowId,normalizeName).sort(contractRowSort);
-  let deadMoney = buildDeadMoneyRows(spotracRows);
-  if(shared) deadMoney=deadMoney.map(r=>({...r,source_quality:"cached"}));
-  let teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, shared ? spotracRows.filter(r=>r.entity_type!=="roster_charge") : spotracRows);
   const fallbackTeams = [...new Set([
     ...spotracRows.filter((row) => row.source_url?.startsWith("https://site.api.espn.com/")).map((row) => cleanTeam(row.team_abbr || TEAM_ABBR[row.team])),
     ...readCsvFile(spotracAuditPath).filter((row) => row.status === "fresh_espn_roster_after_spotrac_error").map((row) => TEAM_ABBR[row.team] || cleanTeam(row.team))
   ])];
-  const retained = retainCachedCapTeams({ teams: shared ? [] : fallbackTeams, previous: readJson(outPath, null), years: YEARS,
+  const previous = readJson(outPath, null);
+  let deadMoney = buildDeadMoneyRows(spotracRows);
+  // ESPN verifies membership only. Seed missing cap components from the last
+  // verified book before replacing every signed salary with shared terms.
+  const cached = shared ? retainCachedCapTeams({ teams: fallbackTeams, previous, years: YEARS,
+    contracts: contractRows, deadMoney, teamSeasons: [] }) : null;
+  if (shared) {
+    contractRows = mergeSharedContracts(shared, cached.contracts, YEARS, canonicalContractRowId, normalizeName).sort(contractRowSort);
+    deadMoney = cached.deadMoney.map(r => ({...r, source_quality: "cached"}));
+  }
+  let teamSeasons = buildTeamSeasons(teamMeta, seasons, contractRows, deadMoney, shared ? spotracRows.filter(r=>r.entity_type!=="roster_charge") : spotracRows);
+  const retained = shared ? { contracts: contractRows, deadMoney, teamSeasons,
+    fallbacks: cached.fallbacks.map(row => ({...row, reason: "Spotrac unavailable; roster refreshed from ESPN; signed salaries refreshed from the shared agreement ledger; cap holds and dead money retain their dated sources."}))
+  } : retainCachedCapTeams({ teams: fallbackTeams, previous, years: YEARS,
     contracts: contractRows, deadMoney, teamSeasons });
   contractRows = retained.contracts;
   deadMoney = retained.deadMoney;
@@ -116,7 +125,7 @@ export function buildSpotracCapTrackerData() {
   const discrepancyRows = buildDataballrDiscrepancies(contractRows, databallrRows);
 
   const warnings = [
-    ...retained.fallbacks.map((row) => `${row.team}: roster refreshed from ESPN; cap figures are cached as of ${row.cached_as_of}.`),
+    ...retained.fallbacks.map((row) => `${row.team}: ${row.reason} Retained source date: ${row.cached_as_of}.`),
     ...buildAuditWarnings(),
     ...projectedSystemLevelWarnings(seasons),
     shared ? "Known guarantees use the signed agreement table; missing guarantee terms remain unavailable. Two-way pay is displayed and excluded from cap payroll." : "Guarantee percentages are not scraped from Spotrac hover-only tooltips; normal active salary cells are treated as fully on-book salary unless ref/cap_tracker_guarantees.csv overrides them.",
