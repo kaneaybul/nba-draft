@@ -85,4 +85,12 @@ jobs:
           columns <- c("player", "big_board_rank", "model_rank", grep("^FINAL_", names(expected), value = TRUE))
           stopifnot(isTRUE(all.equal(actual[columns], expected[columns], tolerance = 1e-9)))
           RS
+      - name: Validate and score a collected draft snapshot
+        run: |
+          snapshot=raw/draft_preview_2027_inputs.csv
+          if [ -f "$snapshot" ]; then
+            python3 script/draft/refresh_2027_stats.py processed/draft/draft_consensus_projection_ranks_2027.csv \
+              "$RUNNER_TEMP/draft-inputs.csv" --snapshot "$snapshot"
+            Rscript script/draft/score_2027_preview.R "$RUNNER_TEMP/draft-inputs.csv" "$RUNNER_TEMP/draft-scores.csv"
+          fi
 
