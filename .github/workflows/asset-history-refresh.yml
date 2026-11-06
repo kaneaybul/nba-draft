@@ -10,6 +10,11 @@ on:
       - .github/workflows/asset-history-refresh.yml
       - raw/asset_history_refresh_request.json
   workflow_dispatch:
+    inputs:
+      refresh_contracts:
+        description: Pull updated contract terms for this manual run
+        type: boolean
+        default: false
   workflow_run:
     workflows:
       - Rebuild lineup projections
@@ -61,7 +66,14 @@ jobs:
       - name: Produce and validate all 30 portfolios
         id: portfolios
         continue-on-error: true
-        run: python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/asset-history"
+        env:
+          REFRESH_CONTRACTS: ${{ inputs.refresh_contracts }}
+        run: |
+          options=(--skip-contract-refresh)
+          if [ "$REFRESH_CONTRACTS" = true ]; then
+            options=()
+          fi
+          python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/asset-history" "${options[@]}"
       - uses: actions/setup-node@v4
         if: steps.portfolios.outcome == 'success'
         with:
