@@ -47,7 +47,7 @@ def main(args):
         # prior basketball day. A method rebuild retains that saved date.
         asof=dates.pop()
     status=out/'refresh_status.json'
-    if skip_contract_refresh and not args.reseed and not new_version and status.exists():
+    if not getattr(args,'force_contract_refresh',False) and not args.reseed and not new_version and status.exists():
         saved=json.loads(status.read_text())
         if saved.get('status')=='success'and saved.get('method')==METHOD and saved.get('observation_date')==asof and saved.get('source_signature')==source_signature(repo):
             manifest=json.loads((out/'manifest.json').read_text())
@@ -134,7 +134,11 @@ def main(args):
     return audit
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');p.add_argument('--skip-contract-refresh',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
+    contracts=p.add_mutually_exclusive_group()
+    contracts.add_argument('--skip-contract-refresh',action='store_true')
+    contracts.add_argument('--force-contract-refresh',action='store_true')
+    a=p.parse_args()
     try:print(json.dumps(main(a)))
     except Exception as exc:
         out=data_root(a.repo.resolve())

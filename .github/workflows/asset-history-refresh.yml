@@ -71,7 +71,7 @@ jobs:
         run: |
           options=(--skip-contract-refresh)
           if [ "$REFRESH_CONTRACTS" = true ]; then
-            options=()
+            options=(--force-contract-refresh)
           fi
           python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/asset-history" "${options[@]}"
       - uses: actions/setup-node@v4

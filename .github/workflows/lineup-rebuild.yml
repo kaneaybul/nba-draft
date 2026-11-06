@@ -143,11 +143,13 @@ jobs:
           fi
 
       - name: Refresh the 2027 draft board
+        id: draft
         continue-on-error: true
         timeout-minutes: 5
         run: |
           draft_dir=processed/draft
-          stage=$(mktemp -d)
+          stage="$RUNNER_TEMP/draft-preview"
+          mkdir -p "$stage"
           python3 -m venv "$stage/venv"
           "$stage/venv/bin/python" -m pip install --quiet lxml
           "$stage/venv/bin/python" script/draft/refresh_2027_stats.py \
@@ -159,8 +161,13 @@ jobs:
           sudo apt-get install --no-install-recommends -y r-base-core r-cran-data.table r-cran-ranger r-cran-glmnet
           env -u R_HOME -u R_LIBS_USER -u R_LIBS_SITE /usr/bin/Rscript --vanilla \
             script/draft/score_2027_preview.R "$stage/inputs.csv" "$stage/scores.csv"
-          cp "$stage/inputs.csv" "$draft_dir/draft_consensus_projection_ranks_2027.csv"
-          cp "$stage/scores.csv" "$draft_dir/draft_skill_preview_2027.csv"
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+
+      - name: Use validated draft inputs and scores in the export
+        if: steps.draft.outputs.ready == 'true'
+        run: |
+          cp "$RUNNER_TEMP/draft-preview/inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv
+          cp "$RUNNER_TEMP/draft-preview/scores.csv" processed/draft/draft_skill_preview_2027.csv
 
       - name: Rebuild projections from cached rosters and fresh injuries
         run: |
