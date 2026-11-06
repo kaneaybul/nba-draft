@@ -254,7 +254,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
     # The producer supplies the dated production-pricing coefficient, not salary.
     coefficient = float(first['scale_budget_scenario'])/float(first['salary_cap_scenario'])*164961000.*30/float(first['league_timin'])
     replacement = float(first['replacement'])
-    anchors = [y for y in raw if y in path and raw[y] > 0]
+    anchors = raw.keys() & path.keys()
     direct={}
     if runtime is not None and (runtime/'direct_future_minutes.json').exists():
         table=direct_forecasts(runtime/'direct_future_minutes.json')
@@ -263,18 +263,17 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
         role=direct.get(str(y))
         minutes=role['games']*role['mpg'] if role else path[y].minutes
         return (path[y].total-replacement)*minutes*coefficient
-    scale = 1.
-    if audit is not None:audit['method']='own_career_model_extension'
+    if audit is not None:
+        audit['method'] = 'own_career_model_extension'
+    offset = 0.
     if anchors:
         anchor = max(anchors)
-        if level(anchor) > 0:
-            scale = raw[anchor]/level(anchor)
-        else:
-            # Retain the positive published level when a multiplicative career
-            # extension has a zero denominator. This bounded carry is explicit;
-            # a failed growth anchor must not silently erase known production.
-            if audit is not None:audit.update(method='flat_last_positive_raw_rate',anchor_season=anchor)
-            return [raw[y] if y in raw else raw[anchor] for y in years]
-    return [raw[y] if y in raw else scale*level(y) for y in years]
-
-
+        # Production is a signed amount above replacement. Near that baseline,
+        # a ratio of the two projections can magnify tiny disagreements into
+        # enormous future rates. Align levels and retain the model's dollar
+        # changes from the latest shared season, including zero/negative marks.
+        offset = raw[anchor] - level(anchor)
+        if audit is not None:
+            audit.update(method='level_aligned_career_extension', anchor_season=anchor,
+                         anchor_offset=offset)
+    return [raw[y] if y in raw else level(y) + offset for y in years]
