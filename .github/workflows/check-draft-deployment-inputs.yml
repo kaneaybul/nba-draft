@@ -1,44 +1,62 @@
-name: Check draft deployment inputs
+name: Build 2027 draft release
 on:
   push:
     branches: [codex/deploy-2027-draft]
+    paths: [.github/workflows/check-draft-deployment-inputs.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  check:
+  build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          sparse-checkout: |
-            processed/contracts
-            raw/live
-            frontend/public/data/v2/impact_players
-      - name: Compare contract book to the current Impact roster
+          node-version: 20
+      - name: Install export dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends r-base-core r-cran-jsonlite r-cran-data.table r-cran-mgcv r-cran-ranger r-cran-readr r-cran-rpart r-cran-rvest r-cran-xml2
+      - name: Regenerate frontend data from the current saved snapshots
+        run: |
+          Rscript script/frontend/export_frontend_data.R
+          node script/frontend/build_cap_tracker_spotrac_data.mjs
+          node script/frontend/build_static_data_manifest.mjs
+          node script/frontend/test_shared_contracts.mjs --require-export
+      - name: Verify draft preview and keep the relevant frontend outputs
         run: |
           python3 - <<'PY'
-          import json
+          import csv,json
           from pathlib import Path
-          def load(path):
-              return json.loads(Path(path).read_text())
-          book = load('processed/contracts/current.json')
-          players = load(f'frontend/public/data/v2/impact_players/{book["season"]}.json')
-          pool = load('raw/live/player_pool.json')
-          def key(row):
-              return row.get('source_nba_id') or row.get('nba_id')
-          a = {key(r):r for r in players if r['pool_status']=='roster'}
-          b = {key(r):r for r in book['players']}
-          print('Roster and contract book:',len(a),len(b),book.get('as_of'))
-          for pid in sorted(a.keys() ^ b.keys()):
-              source = b.get(pid) or a.get(pid)
-              print(pid,source['player_name'],'contract only' if pid in b else 'Impact only',
-                    {k:source.get(k) for k in ('team','position','current_salary','contract_type','known_from','source')})
-              print('Impact rows:',[(r.get('nba_id'),r.get('team'),r.get('pool_status'),r.get('contract')) for r in players if key(r)==pid])
-              print('Pool:',[(r.get('app_nba_id'),r.get('team'),r.get('pool_status'),r.get('note')) for r in pool['players'] if key(r)==pid])
-          for pid in sorted(a.keys() & b.keys()):
-              row,contract=a[pid],b[pid]
-              current=next(c for c in contract['cells'] if c['year']==book['season'])
-              diff=[k for k,x,y in [('salary',row.get('contract'),contract.get('current_salary')),('cap',row.get('contract_cap_salary'),current['cap_amount'])] if x!=y]
-              diff += [str(c['year']) for c in contract['cells'] if book['season'] < c['year'] <= book['season']+5 and c.get('amount') is not None and row.get(f"projection_contract_y{c['year']-book['season']}")!=c['amount']]
-              if diff: print('Salary diff:', pid, row['player_name'],diff)
+          root = Path('frontend/public/data')
+          draft = [r for r in json.loads((root/'draft_prospects.json').read_text()) if r['draft_year']==2027]
+          expected = {r['player']:r for r in csv.DictReader(open('processed/draft/draft_skill_preview_2027.csv')) if r['model_rank']}
+          assert len(draft)==42 and {r['player'] for r in draft}==expected.keys()
+          for r in draft:
+              e = expected[r['player']]
+              assert r['rank_in_class']==int(e['model_rank']) and r['pick_proxy']==int(e['big_board_rank']) and r['scv_draft']==3
+              assert abs(r['TOTAL_pred']-float(e['FINAL_TOTAL_pred'])) < 1e-4
+          active = json.loads((root/'v2/impact_players/2027.json').read_text())
+          mc = next(r for r in active if r['nba_id']==1641755)
+          assert (mc['team'],mc['pool_status'],mc['contract'],mc['contract_cap_salary'])==('TOR','roster',678882,0),mc
+          print('Validated all 42 draft model rows and the Toronto two-way agreement.')
           PY
+          git status --short
+          git add frontend/public/data/draft_prospects.json frontend/public/data/v2/impact_players/2027.json frontend/public/data/v2/team_projections/2027.json frontend/public/data/v2/team_lineups/2027.json frontend/public/data/v2/team_schedules/2027.json frontend/public/data/cap_tracker.json
+          git restore --worktree frontend/public/data
+          rm -f frontend/public/data/impact_players.json
+          node script/frontend/build_static_data_manifest.mjs
+          node script/frontend/test_shared_contracts.mjs --require-export
+          node script/frontend/validate_frontend_data.mjs
+          git add frontend/public/data/manifest.json frontend/public/data/impact_player_history.json
+          git diff --cached --stat
+      - name: Publish validated outputs to the release branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Export 2027 draft projections and synchronize the current roster'
+          git push origin HEAD:refs/heads/codex/deploy-2027-draft
