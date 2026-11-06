@@ -167,24 +167,40 @@ def price_day(ctx, day, quote_date, prior, day_actions, groups, deals, ratings_d
         legal = active_rules(ctx['baseline'], applied, day)
         return value_portfolio(day, legal, sim, ctx['model'], years)['teams']
 
-    before = price(prior)
-    additions = []
+    errors = []
+
+    def try_price(applied):
+        try:
+            return price(applied)
+        except (ValueError, KeyError) as error:
+            if not errors:
+                errors.append(str(error))
+            return None
+
+    before = try_price(prior)
+    additions = defaultdict(list)
+    missing = set()
     applied = list(prior)
     # Preserve reviewed ordering when deals on the same day affect the same right.
     for key, chunk in groupby(day_actions, key=lambda a: groups.get(a['event_id'])):
         chunk = list(chunk)
         applied.extend(chunk)
-        after = price(applied)
-        if key:
+        after = try_price(applied)
+        if key and (before is None or after is None):
+            missing.add(key)
+        elif key:
+            day_pieces = additions[key]
             changes = defaultdict(list)
             for team, piece in portfolio_changes(before, after, deals[key]['teams']):
                 changes[team].append(piece)
             rules = [a['rule'] for a in chunk if a['kind'] == 'add_rule']
             for team in deals[key]['teams']:
                 for piece in group_pick_claims(changes[team], rules, team, day):
-                    additions.append((key, team, dict(piece, basis_date=quote_date)))
+                    day_pieces.append((team, dict(piece, basis_date=quote_date)))
         before = after
-    return additions
+    if errors:
+        print(f'Incomplete trade pick replay on {day} using {quote_date}: {errors[0]}', flush=True)
+    return {key: pieces for key, pieces in additions.items() if key not in missing}
 
 
 def pick_estimates(ctx, deals, actions_by_day):
@@ -197,24 +213,25 @@ def pick_estimates(ctx, deals, actions_by_day):
         groups = actions_by_day.get(day, {})
         if groups and ctx['dates'][0] < day <= ctx['dates'][-1]:
             closing = ctx['dates'][bisect_left(ctx['dates'], day)]
+            missing = set(groups.values())
             for quote_date in dict.fromkeys((day, closing)):
-                if quote_date < ratings_dates[0]:
-                    continue
+                if not missing or quote_date < ratings_dates[0]:
+                    break
                 try:
                     additions = price_day(ctx, day, quote_date, prior, day_actions, groups, deals, ratings_dates)
                 except (ValueError, KeyError) as error:
-                    print(f'Trade pick estimate unavailable on {day} using {quote_date}: {error}', flush=True)
+                    print(f'Trade pick forecast unavailable on {day} using {quote_date}: {error}', flush=True)
                     continue
-                for key, team, piece in additions:
-                    add_piece(deals[key], team, piece)
-                break
-            else:
-                for action in day_actions:
-                    key = groups.get(action['event_id'])
-                    if key and action['kind'] == 'add_rule':
-                        for team in deals[key]['teams']:
-                            for piece in group_pick_claims([], [action['rule']], team, day):
-                                add_piece(deals[key], team, dict(piece, value=None))
+                for key in missing.intersection(additions):
+                    for team, piece in additions[key]:
+                        add_piece(deals[key], team, piece)
+                missing.difference_update(additions)
+            for action in day_actions:
+                key = groups.get(action['event_id'])
+                if key in missing and action['kind'] == 'add_rule':
+                    for team in deals[key]['teams']:
+                        for piece in group_pick_claims([], [action['rule']], team, day):
+                            add_piece(deals[key], team, dict(piece, value=None))
         prior.extend(day_actions)
 
 
