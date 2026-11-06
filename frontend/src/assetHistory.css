@@ -25,3 +25,12 @@
 .ah-date-slider input:focus-visible::-webkit-slider-thumb{background:#6bd4c3;box-shadow:0 0 0 4px #6bd4c344}.ah-date-slider input:focus-visible::-moz-range-thumb{background:#6bd4c3;box-shadow:0 0 0 4px #6bd4c344}
 .ah-date-end{z-index:2}.ah-date-extent{display:flex;justify-content:space-between;gap:12px;font-size:11px;opacity:.65;font-variant-numeric:tabular-nums}
 @media(max-width:720px){.ah-date-range{padding:16px}.ah-date-range-heading{gap:12px}.ah-date-fields{gap:10px}.ah-date-fields label{min-width:0}.asset-history .ah-date-fields select{padding:9px 6px;font-size:13px}.ah-date-extent{font-size:10px}}
+
+.ah-trade-list{display:grid;gap:8px}
+.ah-trade-deal{border:1px solid #53637088;border-radius:8px;padding:10px 12px}
+.ah-trade-deal summary{cursor:pointer;line-height:1.7}
+.ah-trade-deal summary strong{float:right;margin-left:10px}
+.ah-trade-pieces{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px 18px;margin-top:8px}
+.ah-trade-pieces h4{margin:4px 0}
+.ah-trade-pieces li strong{white-space:nowrap}
+.ah-trade-source{display:inline-block;font-size:12px;margin-top:8px}

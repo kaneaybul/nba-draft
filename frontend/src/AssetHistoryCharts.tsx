@@ -4,11 +4,14 @@ export type Change = { key: string; label: string; value: number };
 export type HistoryPoint = { date: string; total: number; players: number; picks: number; reporting_cap: number; vintage: string };
 export type LeagueTeam = { team: string; points?: HistoryPoint[] };
 type TradeWaiver = { player: string; acquired: string; waived: string; dead_cap: number; source: string };
+type TradePiece = { id: string; name: string; direction: 'in' | 'out' | 'terms'; value: number | null; basis_date?: string | null };
+type TradeDeal = { id: string; date: string; source: string; counterparties: string[]; pieces: TradePiece[]; net: number };
 export type AttributionAnalysis = {
   start: string; end: string; opening: number; closing: number; change: number;
   categories: Record<string, number>; components: Record<string, Record<string, number>>;
   contributors: Record<string, { player: string; value: number }[]>;
   tradeWaivers: TradeWaiver[];
+  tradeDeals?: TradeDeal[];
   validation: { reconciliation_error: number };
 };
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
@@ -31,7 +34,7 @@ export type AttributionInterval = {
   contributors: Record<string, { player: string; value: number }[]>;
   reconciliation_error: number;
 };
-export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[] };
+export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[]; trade_deals?: TradeDeal[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
   if (ledger.method !== 'forecast-based-attribution-v7' || ledger.valuation_method !== valuationMethod || start > end) return null;
   const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
@@ -58,8 +61,48 @@ export function aggregateAttribution(ledger: AttributionLedger, start: string, e
   const error = opening + Object.values(categories).reduce((a, b) => a + b, 0) - closing;
   if (Math.abs(value - closing) > .01 || Math.abs(error) > .01) return null;
   const tradeWaivers = ledger.trade_waivers?.filter(deal => start < deal.waived && deal.waived <= end) ?? [];
-  return { start, end, opening, closing, change: closing - opening, categories, components, tradeWaivers,
+  const tradeDeals = ledger.trade_deals?.filter(deal => start < deal.date && deal.date <= end);
+  return { start, end, opening, closing, change: closing - opening, categories, components, tradeWaivers, tradeDeals,
     contributors: Object.fromEntries(Object.entries(contributions).map(([key, people]) => [key, Object.entries(people).map(([player, value]) => ({ player, value })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value))])), validation: { reconciliation_error: error } };
+}
+
+export function TradeBreakdown({ deals }: { deals: TradeDeal[] }) {
+  if (!deals.length) return <p>No dated deals in this range.</p>;
+  return <>
+    <h4>Deals in this range</h4>
+    <p className="ah-caption">Deal estimates use pre-trade player quotes and reviewed pick terms. When a pick needs a later historical mark, its date appears beside the value. The waterfall uses period marks. Cash and trade exceptions carry no asset value.</p>
+    <div className="ah-trade-list">
+      {deals.map((deal, index) => {
+        const incomplete = deal.pieces.some(piece => piece.value === null);
+        const hasPrices = deal.pieces.some(piece => piece.value !== null);
+        return <details key={`${deal.date}-${deal.id}`} className="ah-trade-deal" open={index === 0}>
+          <summary>
+            <span>{deal.date} · {deal.counterparties.join(', ')}</span>
+            <strong className={deal.net >= 0 ? 'ah-positive' : 'ah-negative'}>
+              {hasPrices ? `${incomplete ? 'Priced net' : 'Net'} ${signedMoney(deal.net)}` : 'Value unavailable'}
+            </strong>
+          </summary>
+          <div className="ah-trade-pieces">
+            {([['in', 'Incoming'], ['out', 'Outgoing'], ['terms', 'Rights changes']] as const).map(([direction, label]) => {
+              const pieces = deal.pieces.filter(piece => piece.direction === direction)
+                .sort((a, b) => Number(a.value === null) - Number(b.value === null) || Math.abs(b.value ?? 0) - Math.abs(a.value ?? 0));
+              if (direction === 'terms' && !pieces.length) return null;
+              return <div key={direction}>
+                <h4>{label}</h4>
+                {pieces.length ? <ul>{pieces.map((piece, i) => <li key={`${piece.id}-${i}`}>
+                  <span title={piece.basis_date ? `Quote as of ${piece.basis_date}` : undefined}>{piece.name}
+                    {piece.basis_date && piece.basis_date > deal.date && <small> · {piece.basis_date} mark</small>}
+                  </span>
+                  <strong>{piece.value === null ? 'Unpriced' : signedMoney(piece.value)}</strong>
+                </li>)}</ul> : <p className="ah-caption">No modeled assets</p>}
+              </div>;
+            })}
+          </div>
+          {deal.source.startsWith('https://') && <a className="ah-trade-source" href={deal.source} target="_blank" rel="noreferrer">Transaction source</a>}
+        </details>;
+      })}
+    </div>
+  </>;
 }
 
 export function Waterfall({ opening, closing, changes, analysis }: {
@@ -102,7 +145,8 @@ export function Waterfall({ opening, closing, changes, analysis }: {
     </div>
     <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabel(row.key) ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
     {picked && <section className="ah-drilldown"><h3>{categoryLabel(picked.key) ?? picked.label}</h3>
-      {analysis.components[picked.key] && <ul>{Object.entries(analysis.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
+      {picked.key === 'trades' && analysis.tradeDeals ? <TradeBreakdown deals={analysis.tradeDeals}/> :
+        analysis.components[picked.key] && <ul>{Object.entries(analysis.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
       {picked.key === 'trades' && analysis.tradeWaivers.length > 0 && <>
         <h4>Reported dead cap</h4>
         <p className="ah-caption">Cap charges are separate from the asset value totals.</p>
@@ -115,7 +159,7 @@ export function Waterfall({ opening, closing, changes, analysis }: {
           </li>
         ))}</ul>
       </>}
-      {!!analysis.contributors[picked.key]?.length && <><h4>Largest contributors</h4><ul>{analysis.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
+      {(picked.key !== 'trades' || !analysis.tradeDeals) && !!analysis.contributors[picked.key]?.length && <><h4>Largest contributors</h4><ul>{analysis.contributors[picked.key].map(row => <li key={row.player}><span>{row.player}</span><strong>{signedMoney(row.value)}</strong></li>)}</ul></>}
     </section>}
   </>;
 }
@@ -175,4 +219,3 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
     <p className="ah-caption">Category rankings use the same waterfall amounts and selected dates. The categories sum to value change.</p>
   </section>;
 }
-

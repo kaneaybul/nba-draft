@@ -11,7 +11,7 @@ const source = readFileSync(resolve(frontend, 'src/AssetHistoryCharts.tsx'), 'ut
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2020 } }).outputText;
 const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
-const { Waterfall, LeagueComparison, aggregateAttribution, categoryLabels, leagueRows, leagueMetricValue, rankLeague } = module.exports;
+const { Waterfall, TradeBreakdown, LeagueComparison, aggregateAttribution, categoryLabels, leagueRows, leagueMetricValue, rankLeague } = module.exports;
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
 const rangeSource=readFileSync(resolve(frontend,'src/AssetHistoryDateRange.tsx'),'utf8');
 const rangeCompiled=ts.transpileModule(rangeSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText;
@@ -60,6 +60,18 @@ assert.deepEqual(aggregateAttribution(waived,'a','b',100,120,'v5').tradeWaivers,
 assert.deepEqual(aggregateAttribution(waived,'b','c',120,110,'v5').tradeWaivers,[]);
 assert.deepEqual(aggregateAttribution(ledger,'a','b',100,120,'v5').tradeWaivers,[]);
 
+const trade = { id:'deal-1', date:'b', source:'https://example.com', counterparties:['LAL'], net:27e6, pieces:[
+ {id:'low', name:'Reserve', direction:'in', value:2e6},
+ {id:'pick', name:'2029 LAL first-round pick', direction:'in', value:30e6},
+ {id:'sent', name:'Veteran', direction:'out', value:-5e6},
+] };
+const traded = {...ledger, trade_deals:[trade, {...trade, id:'deal-2', date:'c'}]};
+assert.deepEqual(aggregateAttribution(traded,'a','b',100,120,'v5').tradeDeals,[trade]);
+assert.deepEqual(aggregateAttribution(traded,'b','c',120,110,'v5').tradeDeals.map(x=>x.id),['deal-2']);
+const dealMarkup = render(TradeBreakdown, {deals:[trade]});
+assert.match(dealMarkup,/Net \+\$27M/);
+assert.match(dealMarkup,/Incoming.*2029 LAL first-round pick.*Reserve.*Outgoing.*Veteran/);
+
 // Category amounts must come from the same reconciled range as each waterfall.
 const teams = [
  {team:'BOS',points:[point('a',100),point('b',120),point('c',110)]},
@@ -104,6 +116,17 @@ const data = resolve(frontend,`public/data/asset_history/${version}`);
 if(existsSync(resolve(data,'manifest.json'))){
  const manifest=JSON.parse(readFileSync(resolve(data,'manifest.json'),'utf8'));
  const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
+ for (const book of Object.values(books)) {
+  const dealIds = new Set();
+  for (const deal of book.trade_deals ?? []) {
+   const key = deal.date + deal.id;
+   assert.ok(!dealIds.has(key), `Duplicate trade ${book.team} ${key}`);
+   dealIds.add(key);
+   assert.ok(deal.pieces.length > 0 && deal.counterparties.length > 0);
+   assert.ok(Math.abs(deal.pieces.reduce((sum, p) => sum + (p.value ?? 0), 0) - deal.net) < .01);
+   assert.ok(deal.pieces.every(p => p.value === null || Number.isFinite(p.value)));
+  }
+ }
  const dates=manifest.teams[0].points.map(p=>p.date), end=dates.at(-1), cap=manifest.teams[0].points.at(-1).reporting_cap;
  for(const start of [dates[0],'2024-02-29',dates.at(-2),end]){
   const actualRows=leagueRows(manifest.teams,books,start,end,cap,manifest.method);
@@ -121,5 +144,3 @@ if(existsSync(resolve(data,'manifest.json'))){
  console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
-
-
