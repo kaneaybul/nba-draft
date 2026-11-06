@@ -11,6 +11,7 @@ from multiprocessing import get_context
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from attribution_players import AGING_COMPONENT,player_bridge,clock,parts,market_reference,name_key
+from endpoint_stock import active as endpoint_active
 from model_version import data_root,METHOD,ATTRIBUTION_METHOD
 import attribution_picks as picks
 
@@ -114,6 +115,21 @@ def correct_transfers(players,ctx):
         for k,v in raw.items():
             p['totals'][k]=p['totals'].get(k,0)+v;it=by_interval[team][key];it['changes'][k]=it['changes'].get(k,0)+v
         p['attribution'].append(dict(start=row['start'],end=row['end'],player=row['player'],asset_id=row['asset_id'],category=category,component=component,value=value))
+    def loss_of_control(team,row,value,component):
+        # A prospect traded and waived between snapshots still carries the
+        # original development clock. Losing that production belongs to the
+        # receiving team's Draftee Development, just as for an observed waiver.
+        asset=ctx['league'].get((row['start'],row['asset_id']))
+        d=asset.get('details',{})if asset else {}
+        grade=d.get('draft_development',{})
+        production=0.
+        if endpoint_active(d)and row['end']<=grade.get('endpoint',''):
+            annual=next((a['details']['annual_values']for a in ctx['histories'][team][row['end']]['assets']
+                         if a['kind']=='player'and a.get('details',{}).get('annual_values')),None)
+            if annual:
+                production=clock(asset,{int(r['season']):r['exposure']for r in annual})['peak']
+                add(team,row,'draft','Loss of acquired draftee before year four',-production,{})
+        add(team,row,'contracts',component,-value+production,{'waiver_expiry_boundary':-value})
     legs=defaultdict(list)
     for team,p in players.items():
         for row in p['attribution']:
@@ -128,7 +144,7 @@ def correct_transfers(players,ctx):
             if reviewed and reviewed[-1]['to_team']!=target:
                 intermediate=reviewed[-1]['to_team'];value=a['value']
                 add(intermediate,a,'trades','Intermediate player receipt before loss of control',value,{'trade_players':value})
-                add(intermediate,a,'contracts','Intermediate loss of contract control',-value,{'waiver_expiry_boundary':-value})
+                loss_of_control(intermediate,a,value,'Intermediate loss of contract control')
                 import copy
                 asset=copy.deepcopy(ctx['league'][start,aid]);annual=next(z['details']['annual_values']for z in ctx['histories'][source][end]['assets']if z['kind']=='player'and z.get('details',{}).get('annual_values'));ex={int(r['season']):r['exposure']for r in annual};cf=clock(asset,ex)
                 path={int(r['season']):r for r in asset['details']['annual_values']};tail=path[max(path)];asset['details']['annual_values']=[dict(path.get(y,tail),season=y,exposure=e)for y,e in sorted(ex.items())];asset['value']=cf['value'];asset['details']['peak_production']=cf['peak'];ref=market_reference(asset,end,ctx['caps'],ctx['market'])
@@ -152,11 +168,11 @@ def correct_transfers(players,ctx):
             target=reviewed[-1]['to_team']if reviewed else targets[-1]if targets else None
             if target:
                 add(target,row,'trades','Intermediate acquired player absent at month-end',value,{'trade_players':value})
-                add(target,row,'contracts','Intermediate loss of contract control',-value,{'waiver_expiry_boundary':-value})
+                loss_of_control(target,row,value,'Intermediate loss of contract control')
                 corrections.append(dict(date=end,player=row['player'],from_team=source,to_team=target,kind='intermediate_transfer',value=value))
             elif not events:
                 add(source,row,'trades','Withdrawal of unverified transfer classification',value,{'trade_players':value})
-                add(source,row,'contracts','Loss of contract control',-value,{'waiver_expiry_boundary':-value})
+                loss_of_control(source,row,value,'Loss of contract control')
             else:raise ValueError(('Unresolved transfer destination',source,start,end,row['player']))
         elif incoming:
             target,row=incoming[0];value=row['value'];origin=ctx['owners'].get((start,aid))

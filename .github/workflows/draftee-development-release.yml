@@ -1,0 +1,109 @@
+name: Rebuild year-four draftee development
+on:
+  push:
+    branches: [codex/draftee-development]
+    paths:
+      - script/asset_history/**
+      - script/frontend/**
+      - frontend/src/**
+      - .github/workflows/draftee-development-release.yml
+permissions:
+  contents: write
+concurrency:
+  group: draftee-development-release
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      VITE_PUBLIC_READ_ONLY: 'true'
+      FRONTEND_MAX_STATIC_ASSET_BYTES: '26214400'
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: '8388608'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - name: Check endpoint, contract and transfer invariants
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+          python3 script/frontend/test_asset_value_data.py
+      - name: Open the published source observations
+        run: |
+          python3 script/asset_history/materialize.py --repo .
+          python3 - <<'PY'
+          import os,sys
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history/backfill')
+          from run_player_refresh import unpack
+          unpack(Path('processed/asset_history/canonical_runtime_seed.zip'),Path(os.environ['RUNNER_TEMP'])/'draftee-development/runtime')
+          PY
+      - uses: actions/cache/restore@v4
+        id: annual_checkpoint
+        with:
+          path: ${{ runner.temp }}/draftee-development/annual_projection_checkpoint
+          key: draftee-development-projections-v11-${{ github.sha }}
+          restore-keys: |
+            draftee-development-projections-v11-
+            shared-draft-projections-v9-
+            consistent-asset-projections-v8-
+      - name: Refit padding and rebuild all historical player and pick values
+        id: rebuild
+        run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/draftee-development/runtime" --rebuild-unpublished
+      - uses: actions/cache/save@v4
+        if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/draftee-development/annual_projection_checkpoint
+          key: draftee-development-projections-v11-${{ github.sha }}
+      - name: Validate historical attribution and shared values
+        run: |
+          python3 script/asset_history/calibration/review_release.py --repo .
+          python3 script/asset_history/review_draftee_development.py --repo .
+          python3 script/frontend/build_asset_value_data.py --repo .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Verify every value surface and build the app
+        working-directory: frontend
+        run: |
+          npm run test:asset-value
+          npm run test:trade-machine
+          npm run test:trade-suggestions
+          node ../script/frontend/test_asset_surface_consistency.mjs
+          ASSET_HISTORY_FRONTEND=. node ../script/frontend/test_asset_history_visuals.mjs
+          npm run shard:data
+          npm run validate:data
+          npm run build
+      - name: Save the validated version to the change branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f frontend/public/data/asset_history/v11 frontend/public/data/asset_valuations/v11 frontend/public/data/asset_valuation.json frontend/public/data/manifest.json processed/asset_history/player_state processed/asset_history/picks/trained_pick_model.json processed/asset_history/methodology_review.json processed/asset_history/attribution_validation.json processed/asset_history/draftee_development_validation.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish validated year-four draftee development and shared valuations'
+            git push origin HEAD:codex/draftee-development
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: draftee-development-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/draftee-development/player_refresh.log
+            ${{ runner.temp }}/draftee-development/players/*.log
+            ${{ runner.temp }}/draftee-development/players/path_pricing_coverage.json
+            ${{ runner.temp }}/draftee-development/players/path_calibration_status.json
+            processed/asset_history/methodology_review.json
+            processed/asset_history/attribution_validation.json
+            processed/asset_history/draftee_development_validation.json

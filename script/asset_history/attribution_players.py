@@ -112,8 +112,11 @@ def player_bridge(team,ctx):
                     found.append(dict(date=t['date'],parsed_status='reviewed_trade',text=t['label'],source=t['source']))
         return found
     def production_category(a,dt):
-        info=drafted.get(name_key(a['name']))
-        return production_bucket(info['year'],dt) if info and endpoint_active(a.get('details',{})) else 'player'
+        # The development clock belongs to the player, not the drafting team.
+        # A transfer changes who owns subsequent revisions, never their category.
+        d=a.get('details',{})
+        year=d.get('draft_year')
+        return production_bucket(int(float(year)),dt) if year and endpoint_active(d) else 'player'
     contract_names=defaultdict(list)
     for r in contracts:contract_names[name_key(r['player_name'])].append(r)
     def contract_change(a,start,end):
@@ -167,7 +170,15 @@ def player_bridge(team,ctx):
         def revalue(a,before,before_peak,isnew=False):
             aid=a['id'];key=name_key(a['name']);total=a['value']-before
             decision=None if isnew else contract_change(a,start,end)
-            extension=decision['value']if decision else 0.;extension_p=decision['production_component']if decision else 0.
+            extension_p=decision['production_component']if decision else 0.
+            # A padded endpoint is already contract-neutral. The ordinary
+            # continuation counterfactual must not subtract a production gain
+            # which was never added to that padded endpoint (e.g. two-way deals).
+            if endpoint_active(a.get('details',{})) and end<=a['details']['draft_development']['endpoint']:
+                extension=decision['value']-extension_p if decision else 0.
+                extension_p=0.
+            else:
+                extension=decision['value']if decision else 0.
             if decision:
                 rookie_terms=key in drafted and int(decision['date'][:4])==drafted[key]['year']and'EXTENSION'not in str(decision['type'])
                 category='rookie_contract_terms'if rookie_terms else'extensions_renewals'

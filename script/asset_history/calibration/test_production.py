@@ -15,7 +15,7 @@ def fixture():
     c.data={'signature':'fixture','training_through':2024};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths','unsigned_draft_right_existing_policy')}
     c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
     c.stats={(2024,7):1000.};c.ages={(2024,7):22.};c.experience={(2024,7):1.}
-    c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
+    c.bref={};c.observations={('2024-11-01',7):100.};c.observation_seasons={('2024-11-01',7):2025};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
     c.careers=[dict(key=str(i),slot=1,cohort=2016,stage=0,horizon=4,
                    production=p)for i,p in enumerate(([20,20,0,0],[0,0,20,20]))]
     c.endpoint=SimpleNamespace(prior=lambda *args:dict(paths=np.array([[20,20,0,0,10,10,10,10],[0,0,20,20,10,10,10,10]]),
@@ -23,9 +23,9 @@ def fixture():
     c.pick_curve[1]['quote']=112.
     c.residuals=ResidualPool([dict(key=str(i),origin=2020,horizon=4,feature=[22,0,2.7,1],residual=r)
         for i,r in enumerate(([10,10,-10,-10],[-10,-10,10,10]))])
-    c.endpoint_residuals=EndpointRevisionPool([dict(key=str(i),origin=2021,lead=3,label_end=2024,feature=[22,0,2.7,1],residual=r)
-        for i,r in enumerate(([10,10,-10,-10],[-10,-10,10,10]))])
-    c.contracts=None
+    c.endpoint_residuals=EndpointRevisionPool([dict(key=str(i),origin=2020,lead=lead,label_end=2020+lead,feature=[22,0,2.7,1],residual=r)
+        for lead in (1,2,3,4) for i,r in enumerate(([10,10,-10,-10],[-10,-10,10,10]))])
+    c.contracts=None;c.runtime=None;c.endpoint_states={}
     p=dict(draft_year='2023',draft_slot='1',player_name='Fixture',source_nba_id='7',cutoff_date='2024-11-01',
            healthy_current_total='0',healthy_forecast_annual_games='70',healthy_forecast_conditional_MPG='20')
     a=[dict(season=str(2025+i),league_reference_year='2024',exposure='1',annual_production='10',
@@ -36,6 +36,13 @@ def fixture():
 
 
 class ProductionQuotes(unittest.TestCase):
+    def setUp(self):
+        def endpoint(player,annual,draft,*args,**kwargs):
+            rates={int(r['season']):float(r['app_annual_quote_production_reporting_rate'])for r in annual}
+            return [rates.get(y,10.)for y in range(draft+5,draft+9)]
+        mock=patch('calibration.production.own_endpoint_path',side_effect=endpoint)
+        mock.start();self.addCleanup(mock.stop)
+
     def test_zero_growth_anchor_cannot_erase_positive_published_production(self):
         c,p,a=fixture()
         annual=[dict(season=2027+i,annual_production=10.,salary_cap_scenario=REPORTING_CAP,
@@ -100,11 +107,11 @@ class ProductionQuotes(unittest.TestCase):
 
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
-        self.assertAlmostEqual(result['mean'],83.5)
+        self.assertAlmostEqual(result['mean'],92.66666666666667)
         self.assertAlmostEqual(result['mean_path_quote'],56.)
         self.assertAlmostEqual(result['path_selection_premium'],30.)
-        self.assertAlmostEqual(result['draft_prior_adjustment'],-2.5)
-        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],83.5)
+        self.assertAlmostEqual(result['draft_prior_adjustment'],6.666666666666667)
+        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],92.66666666666667)
         self.assertAlmostEqual(sum((r['asset']-r['production'])*r['exposure']for r in result['annual_values']),result['contract_adjustment_sum'])
 
     def test_observed_minutes_update_reliability_and_veterans_keep_the_old_policy(self):
@@ -113,6 +120,14 @@ class ProductionQuotes(unittest.TestCase):
         self.assertGreater(c.quote(p,a)['nba_weight'],first['nba_weight'])
         p['draft_year']='2020'
         self.assertIsNone(c.quote(p,a))
+
+    def test_completed_season_minutes_are_not_counted_again_in_offseason(self):
+        c,p,a=fixture();c.observation_seasons[p['cutoff_date'],7]=2024
+        c.observations[p['cutoff_date'],7]=1000.
+        result=c.quote(p,a)
+        self.assertEqual(result['completed_minutes'],1000.)
+        self.assertEqual(result['current_observed_minutes'],0.)
+        self.assertAlmostEqual(result['nba_weight'],1000./1100.)
 
     def test_last_development_season_continuously_reaches_the_normal_quote(self):
         c,p,a=fixture()
@@ -126,13 +141,15 @@ class ProductionQuotes(unittest.TestCase):
         a[-1]['exposure']='1'
         self.assertIsNone(c.quote(p,a))
 
-    def test_first_season_has_no_extrapolated_minute_weight(self):
+    def test_first_season_updates_the_endpoint_with_verified_nba_evidence(self):
         c,p,a=fixture();p['draft_year']='2024';c.observations[p['cutoff_date'],7]=2000.
         for row in c.careers:row['stage']=0
         c.pick_curve[1]=dict(peak_production_quote=80.,cumulative_production_quote=40.)
         result=c.quote(p,a)
-        self.assertEqual(result['nba_weight'],0.)
-        self.assertEqual(result['current_observed_minutes'],0.)
+        self.assertGreater(result['nba_weight'],0.)
+        self.assertEqual(result['current_observed_minutes'],2000.)
+        c.observations[p['cutoff_date'],7]=0.
+        self.assertEqual(c.quote(p,a)['nba_weight'],0.)
 
     def test_known_absence_preserves_signed_cost(self):
         c,p,a=fixture();a[0].update(availability_overlay='0',annual_production='0',app_effective_contract='10')

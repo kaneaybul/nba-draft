@@ -44,7 +44,7 @@ assert.match(league, /Missing matching observations: MIA, ATL/);
 assert.match(league, /−\$10M/);
 const keys=['aging','player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','automatic'];
 const row=(start,end,opening,closing,key)=>({start,end,opening,closing,categories:Object.fromEntries(keys.map(k=>[k,k===key?closing-opening:0])),components:Object.fromEntries(keys.map(k=>[k,{movement:k===key?closing-opening:0}])),contributors:Object.fromEntries(keys.map(k=>[k,k===key?[{player:'Test player',value:closing-opening}]:[]])),reconciliation_error:0});
-const ledger={team:'BOS',method:'forecast-based-attribution-v6',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
+const ledger={team:'BOS',method:'forecast-based-attribution-v7',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
 const combined=aggregateAttribution(ledger,'a','c',100,110,'v5');
 assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,10);
 assert.equal(aggregateAttribution(ledger,'a','c',100,111,'v5'),null,'Never show a chart that does not match canonical totals');

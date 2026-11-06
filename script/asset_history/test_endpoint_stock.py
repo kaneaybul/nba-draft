@@ -1,9 +1,12 @@
 import copy,sys,unittest
 from pathlib import Path
 import numpy as np
+from types import SimpleNamespace
+from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from endpoint_stock import promote,promote_asset,freeze_draft_results,STOCK_POLICY
 from attribution_players import player_bridge,clock
+from attribution import correct_transfers
 from quote_window import quote_window
 from calibration.endpoint_model import pick_components,EndpointModel,production_quotes
 from calibration.path_model import ResidualPool,summarize,weighted_quantile
@@ -59,6 +62,71 @@ class EndpointStockTests(unittest.TestCase):
         self.assertFalse(any(r['category']=='timing'for r in rows))
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows),30.)
+
+    def test_acquired_draftee_keeps_development_category_and_original_clock(self):
+        points=[dict(date='2026-01-31',assets=[self.player('Rookie',65.)]),
+                dict(date='2026-02-28',assets=[self.player('Rookie',80.)])]
+        ctx=self.context(points);ctx['drafts']['rookie']['team']='BOS'
+        rows=player_bridge('UTA',ctx)['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),15.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),0.)
+        for p in points:
+            for a in p['assets']:a['details']['draft_year']=2021
+        rows=player_bridge('UTA',ctx)['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),15.)
+
+    def test_contract_transition_cannot_manufacture_offsetting_draft_loss(self):
+        points=[dict(date=day,assets=[self.player('Rookie',100.)])
+                for day in ('2026-01-31','2026-02-28')]
+        ctx=self.context(points)
+        ctx['contracts']=[dict(player_name='Rookie',known_from='2026-02-15',contract_type='TWO-WAY')]
+        ctx['market']=SimpleNamespace(expected=lambda *args:(1e9,None,None))
+        ctx['caps'][2026]=(154647000.,190000000.)
+        with patch('attribution_players.agreements_at',return_value=([],False,None)):
+            rows=player_bridge('UTA',ctx)['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),0.)
+
+    def test_trade_transfers_shared_price_and_splits_development_between_owners(self):
+        dates=['2026-01-31','2026-02-28','2026-03-31']
+        seller=[dict(date=d,assets=[self.player('Veteran',100.,endpoint=False,draft=2010)]+
+                    ([self.player('Rookie',p)]if p is not None else []))for d,p in zip(dates,[50.,65.,None])]
+        buyer=[dict(date=d,assets=[self.player('Other',100.,endpoint=False,draft=2010)]+
+                    ([self.player('Rookie',80.)]if d==dates[-1]else []))for d in dates]
+        ctx=self.context(seller);ctx['histories']['BOS']={p['date']:p for p in buyer}
+        ctx['events']=[dict(event_id='trade',date='2026-03-15',parsed_status='trade',
+                            text='Trade Rookie from UTA to BOS',players=[dict(name='Rookie')])]
+        for team,h in ctx['histories'].items():
+            for day,snapshot in h.items():
+                for a in snapshot['assets']:
+                    ctx['league'][day,a['id']]=a;ctx['owners'][day,a['id']]=team
+        totals={}
+        for team in ('UTA','BOS'):
+            rows=player_bridge(team,ctx)['attribution']
+            totals[team]={k:sum(r['value']for r in rows if r['category']==k)for k in ('draft','trades','player')}
+        self.assertEqual(totals['UTA'],dict(draft=15.,trades=-65.,player=0.))
+        self.assertEqual(totals['BOS'],dict(draft=15.,trades=65.,player=0.))
+
+    def test_traded_draftee_cut_before_next_snapshot_still_has_draft_loss(self):
+        dates=['2026-01-31','2026-02-28']
+        seller=[dict(date=d,assets=[self.player('Veteran',100.,endpoint=False,draft=2010)]+
+                    ([self.player('Rookie',65.,financial=-5.)]if d==dates[0]else []))for d in dates]
+        buyer=[dict(date=d,assets=[self.player('Other',100.,endpoint=False,draft=2010)])for d in dates]
+        ctx=self.context(seller);ctx['histories']['BOS']={p['date']:p for p in buyer}
+        ctx.update(dates=dates,names={'UTA':'Utah Jazz','BOS':'Boston Celtics'},
+            reviewed_routes=[dict(from_team='UTA',to_team='BOS',date=dates[-1],player='Rookie')])
+        ctx['events']=[dict(event_id='trade',date='2026-02-15',parsed_status='trade',
+                            text='Trade Rookie from UTA to BOS',players=[dict(name='Rookie')])]
+        for team,h in ctx['histories'].items():
+            for day,snapshot in h.items():
+                for a in snapshot['assets']:
+                    ctx['league'][day,a['id']]=a;ctx['owners'][day,a['id']]=team
+        players={team:player_bridge(team,ctx)for team in ('UTA','BOS')}
+        correct_transfers(players,ctx)
+        rows=players['BOS']['attribution']
+        totals={k:sum(r['value']for r in rows if r['category']==k)for k in ('trades','draft','contracts')}
+        self.assertEqual(totals,dict(trades=60.,draft=-65.,contracts=5.))
 
     def test_completed_endpoint_does_not_replace_daily_price(self):
         asset=self.player('Rookie',100.,endpoint=False,financial=-20.)

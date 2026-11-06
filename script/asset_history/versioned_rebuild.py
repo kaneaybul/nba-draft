@@ -33,7 +33,7 @@ def reconstruct(players,current_picks,legacy,events,asof,current_sources,histori
         batch=assemble(rows,{day:picks},events,vintage,sources,previous)
         for snapshot in batch:
             snapshot['valuation_revision']={'method':METHOD,'prior_method':'peak4-payroll-0.8-'+LEGACY_VERSION,
-                'nba_forecast_weight':'Young players: completed and current observed NBA minutes; first-season draft prior retained',
+                'nba_forecast_weight':'Year-four appraisal blended with original draft expectation using completed and current observed NBA minutes',
                 'path_valuation':'Direct future-season games and MPG forecasts from completed seasons, with gradual updates from verified appearances'}
             previous[snapshot['team']]=snapshot
         out.extend(batch)
@@ -65,5 +65,6 @@ def reprice_historical_picks(repo,model,dates,draws=10000):
         print('Repriced historical picks: '+day,flush=True)
         return day,value
     with ThreadPoolExecutor(max_workers=3)as pool:return dict(pool.map(one,dates))
+
 
 
