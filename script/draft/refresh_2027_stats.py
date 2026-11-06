@@ -13,9 +13,6 @@ from pathlib import Path
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
-from lxml import html
-
-
 SEASON = 2027
 TORVIK_SEASON = f"https://barttorvik.com/getadvstats.php?year={SEASON}&conyes=0&csv=1"
 TORVIK_GAMES = f"https://barttorvik.com/{SEASON}_all_advgames.json.gz"
@@ -129,6 +126,8 @@ def aggregate(rows):
 
 
 def international_stats(row):
+    from lxml import html
+
     url = row["stats_source_url"]
     if not url.startswith("https://basketball.realgm.com/player/"):
         raise ValueError("Missing verified RealGM profile")
@@ -152,13 +151,39 @@ def international_stats(row):
                                         "fta": "fta", "x3pa": "3pa", "def": "dreb"}.items()}}
 
 
-def refresh(input_path, output_path):
-    with input_path.open(encoding="utf-8", newline="") as source:
+def read_board(path):
+    with path.open(encoding="utf-8", newline="") as source:
         reader = csv.DictReader(source)
         columns, rows = reader.fieldnames, list(reader)
     if ([int(row["big_board_rank"]) for row in rows] != list(range(1, 46))
             or any(row["draft_year"] != str(SEASON) or row["scv_draft"] != "3" for row in rows)):
         raise ValueError("Expected the curated 2027 ESPN top 45 with shot creation set to 3")
+    return columns, rows
+
+
+def stage_snapshot(input_path, snapshot_path, output_path):
+    columns, previous = read_board(input_path)
+    snapshot_columns, current = read_board(snapshot_path)
+    if columns != snapshot_columns:
+        raise ValueError("Draft snapshot columns do not match the current board")
+    stats_fields = (set(BOX_COLUMNS) | set(SEASON_COLUMNS) | set(REALGM_BOX) | set(REALGM_RATES)
+                    | {"games", "minutes", "ppg", "torvik_id", "stats_team", "stats_leagues", "stats_status",
+                       "stats_source_url", "torvik_game_source_url", "last_game_in_pull", "fg_pct", "three_pct",
+                       "ft_pct", "rim_pct", "assisted_pct", "rim_assisted_pct", "threes_assisted_pct",
+                       "torvik_estimated_3pa_100", "torvik_estimated_rim_100"}
+                    | {field for field in columns if field.startswith("per36_")})
+    board_fields = set(columns) - stats_fields
+    for old, new in zip(previous, current):
+        if any(new[key] != old[key] for key in board_fields):
+            raise ValueError(f"Draft snapshot changes curated inputs for {old['player']}")
+        if (int(new["games"] or 0) < int(old["games"] or 0)
+                or new["last_game_in_pull"] < old["last_game_in_pull"]):
+            raise ValueError(f"Draft snapshot rolls back stats for {old['player']}")
+    output_path.write_bytes(snapshot_path.read_bytes())
+
+
+def refresh(input_path, output_path):
+    columns, rows = read_board(input_path)
     today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y%m%d")
     try:
         torvik = torvik_feeds(today)
@@ -198,5 +223,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--snapshot", type=Path, help="Validate and stage a collected snapshot without network access")
     args = parser.parse_args()
-    refresh(args.input, args.output)
+    if args.snapshot:
+        stage_snapshot(args.input, args.snapshot, args.output)
+    else:
+        refresh(args.input, args.output)

@@ -150,10 +150,13 @@ jobs:
           draft_dir=processed/draft
           stage="$RUNNER_TEMP/draft-preview"
           mkdir -p "$stage"
-          python3 -m venv "$stage/venv"
-          "$stage/venv/bin/python" -m pip install --quiet lxml
-          "$stage/venv/bin/python" script/draft/refresh_2027_stats.py \
-            "$draft_dir/draft_consensus_projection_ranks_2027.csv" "$stage/inputs.csv"
+          snapshot=raw/draft_preview_2027_inputs.csv
+          if [ ! -f "$snapshot" ]; then
+            echo 'No draft input snapshot available.'
+            exit 0
+          fi
+          python3 script/draft/refresh_2027_stats.py \
+            "$draft_dir/draft_consensus_projection_ranks_2027.csv" "$stage/inputs.csv" --snapshot "$snapshot"
           if cmp -s "$stage/inputs.csv" "$draft_dir/draft_consensus_projection_ranks_2027.csv"; then
             echo 'No new draft stats to score.'
             exit 0
