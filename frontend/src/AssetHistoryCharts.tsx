@@ -70,7 +70,7 @@ export function TradeBreakdown({ deals }: { deals: TradeDeal[] }) {
   if (!deals.length) return <p>No dated deals in this range.</p>;
   return <>
     <h4>Deals in this range</h4>
-    <p className="ah-caption">Estimated at the trade date using the last available player quotes and the pick terms known then. The waterfall uses period marks. Cash and trade exceptions carry no asset value.</p>
+    <p className="ah-caption">Deal estimates use pre-trade player quotes and reviewed pick terms. When a pick needs a later historical mark, its date appears beside the value. The waterfall uses period marks. Cash and trade exceptions carry no asset value.</p>
     <div className="ah-trade-list">
       {deals.map((deal, index) => {
         const incomplete = deal.pieces.some(piece => piece.value === null);
@@ -90,7 +90,9 @@ export function TradeBreakdown({ deals }: { deals: TradeDeal[] }) {
               return <div key={direction}>
                 <h4>{label}</h4>
                 {pieces.length ? <ul>{pieces.map((piece, i) => <li key={`${piece.id}-${i}`}>
-                  <span title={piece.basis_date ? `Quote as of ${piece.basis_date}` : undefined}>{piece.name}</span>
+                  <span title={piece.basis_date ? `Quote as of ${piece.basis_date}` : undefined}>{piece.name}
+                    {piece.basis_date && piece.basis_date > deal.date && <small> · {piece.basis_date} mark</small>}
+                  </span>
                   <strong>{piece.value === null ? 'Unpriced' : signedMoney(piece.value)}</strong>
                 </li>)}</ul> : <p className="ah-caption">No modeled assets</p>}
               </div>;

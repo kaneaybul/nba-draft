@@ -154,50 +154,68 @@ def group_pick_claims(pieces, rules, team, day):
     yield from (p for p in pieces if p['id'] not in consumed)
 
 
+def price_day(ctx, day, quote_date, prior, day_actions, groups, deals, ratings_dates):
+    cutoff = ratings_dates[bisect_right(ratings_dates, quote_date) - 1]
+    full = active_rules(ctx['baseline'], prior + day_actions, day)
+    # Keep a common draft order on both sides so value changes come from rights.
+    sim = simulate(quote_date, ctx['inputs']['ratings'][cutoff], ctx['inputs']['standings'][cutoff],
+                   full['rules'], ctx['orders']['orders'], ctx['inputs']['qualifiers'],
+                   5000, max(2033, int(day[:4]) + 7))
+    years = range(int(day[:4]), int(day[:4]) + 8)
+
+    def price(applied):
+        legal = active_rules(ctx['baseline'], applied, day)
+        return value_portfolio(day, legal, sim, ctx['model'], years)['teams']
+
+    before = price(prior)
+    additions = []
+    applied = list(prior)
+    # Preserve reviewed ordering when deals on the same day affect the same right.
+    for key, chunk in groupby(day_actions, key=lambda a: groups.get(a['event_id'])):
+        chunk = list(chunk)
+        applied.extend(chunk)
+        after = price(applied)
+        if key:
+            changes = defaultdict(list)
+            for team, piece in portfolio_changes(before, after, deals[key]['teams']):
+                changes[team].append(piece)
+            rules = [a['rule'] for a in chunk if a['kind'] == 'add_rule']
+            for team in deals[key]['teams']:
+                for piece in group_pick_claims(changes[team], rules, team, day):
+                    additions.append((key, team, dict(piece, basis_date=quote_date)))
+        before = after
+    return additions
+
+
 def pick_estimates(ctx, deals, actions_by_day):
-    """Replay each deal separately with the same information on both sides."""
+    """Replay each deal separately with a shared draft forecast on both sides."""
     actions = sorted(ctx['actions'], key=lambda a: (a['known_from'], a.get('order', 0)))
     ratings_dates = sorted(ctx['inputs']['ratings'])
     prior = []
     for day, group in groupby(actions, key=lambda a: a['known_from']):
         day_actions = list(group)
         groups = actions_by_day.get(day, {})
-        if not groups or day <= ctx['dates'][0] or day > ctx['dates'][-1]:
-            prior.extend(day_actions)
-            continue
-        cut = bisect_right(ratings_dates, day) - 1
-        if cut < 0:
-            prior.extend(day_actions)
-            continue
-        cutoff = ratings_dates[cut]
-        # Use a common simulated draft order so trade EV changes come from the rights.
-        full = active_rules(ctx['baseline'], prior + day_actions, day)
-        sim = simulate(day, ctx['inputs']['ratings'][cutoff], ctx['inputs']['standings'][cutoff],
-                       full['rules'], ctx['orders']['orders'], ctx['inputs']['qualifiers'],
-                       10000, max(2033, int(day[:4]) + 7))
-        years = range(int(day[:4]), int(day[:4]) + 8)
-
-        def price(applied):
-            legal = active_rules(ctx['baseline'], applied, day)
-            return value_portfolio(day, legal, sim, ctx['model'], years)['teams']
-
-        before = price(prior)
-        # Rules in an event are normally contiguous. Keeping their published
-        # order also handles same-day trades that depend on an earlier transfer.
-        for key, chunk in groupby(day_actions, key=lambda a: groups.get(a['event_id'])):
-            chunk = list(chunk)
-            prior.extend(chunk)
-            after = price(prior)
-            if key:
-                deal = deals[key]
-                changes = defaultdict(list)
-                for team, piece in portfolio_changes(before, after, deal['teams']):
-                    changes[team].append(piece)
-                rules = [a['rule'] for a in chunk if a['kind'] == 'add_rule']
-                for team in deal['teams']:
-                    for piece in group_pick_claims(changes[team], rules, team, day):
-                        add_piece(deal, team, piece)
-            before = after
+        if groups and ctx['dates'][0] < day <= ctx['dates'][-1]:
+            closing = ctx['dates'][bisect_left(ctx['dates'], day)]
+            for quote_date in dict.fromkeys((day, closing)):
+                if quote_date < ratings_dates[0]:
+                    continue
+                try:
+                    additions = price_day(ctx, day, quote_date, prior, day_actions, groups, deals, ratings_dates)
+                except (ValueError, KeyError) as error:
+                    print(f'Trade pick estimate unavailable on {day} using {quote_date}: {error}', flush=True)
+                    continue
+                for key, team, piece in additions:
+                    add_piece(deals[key], team, piece)
+                break
+            else:
+                for action in day_actions:
+                    key = groups.get(action['event_id'])
+                    if key and action['kind'] == 'add_rule':
+                        for team in deals[key]['teams']:
+                            for piece in group_pick_claims([], [action['rule']], team, day):
+                                add_piece(deals[key], team, dict(piece, value=None))
+        prior.extend(day_actions)
 
 
 def enrich_trade_details(ctx, ledgers):
@@ -283,7 +301,7 @@ def enrich_trade_details(ctx, ledgers):
                 year, slot = selected.get('draft_year'), selected.get('draft_slot')
                 if year and slot and int(float(year)) == int(day[:4]):
                     slot = int(float(slot))
-                    lottery = next((r for r in ctx['orders']['orders'] if int(r['year']) == int(year)
+                    lottery = next((r for r in ctx['orders']['orders'] if int(r['year']) == int(float(year))
                                     and r['kind'] == 'lottery' and r['known_from'] <= day), None)
                     first_count = sum(r['round'] == 1 for r in lottery['rows']) if lottery else 30
                     # If the same selection already appears as a priced pick
@@ -315,3 +333,4 @@ def enrich_trade_details(ctx, ledgers):
             ))
     for ledger in ledgers.values():
         ledger['trade_deals'].sort(key=lambda d: (d['date'], d['id']), reverse=True)
+    print(f"Built dated trade summaries for {len(ledgers)} teams", flush=True)

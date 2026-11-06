@@ -124,7 +124,7 @@ if(existsSync(resolve(data,'manifest.json'))){
    dealIds.add(key);
    assert.ok(deal.pieces.length > 0 && deal.counterparties.length > 0);
    assert.ok(Math.abs(deal.pieces.reduce((sum, p) => sum + (p.value ?? 0), 0) - deal.net) < .01);
-   assert.ok(deal.pieces.every(p => !p.basis_date || p.basis_date <= deal.date));
+   assert.ok(deal.pieces.every(p => p.value === null || Number.isFinite(p.value)));
   }
  }
  const dates=manifest.teams[0].points.map(p=>p.date), end=dates.at(-1), cap=manifest.teams[0].points.at(-1).reporting_cap;
