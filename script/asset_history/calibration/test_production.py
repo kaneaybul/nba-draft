@@ -52,8 +52,28 @@ class ProductionQuotes(unittest.TestCase):
         audit={}
         with patch.dict(sys.modules,{'valuation_engine':engine}):
             self.assertEqual(own_endpoint_path(p,annual,2024,{},None,audit),[10,10,10,10])
-        self.assertEqual(audit['method'],'flat_last_positive_raw_rate')
+        self.assertEqual(audit['method'],'level_aligned_career_extension')
         self.assertEqual(audit['extended_seasons'],[2032])
+
+    def test_near_replacement_anchor_preserves_dollar_growth(self):
+        _, player, _ = fixture()
+        # One published overlap near replacement. A multiplicative splice
+        # would turn a $10,000 disagreement into a 10,000× tail multiplier.
+        annual = [dict(season=2030, annual_production=10_000.,
+                       salary_cap_scenario=REPORTING_CAP, scale_budget_scenario=REPORTING_CAP,
+                       league_timin=REPORTING_CAP*30, replacement=0.)]
+        raw_levels = [1., 500_001., 1_000_001., 1_500_001.]
+        engine = SimpleNamespace(
+            AnnualState=lambda *args: SimpleNamespace(season=args[0]),
+            project_path=lambda state, history, n: [
+                SimpleNamespace(season=state.season+j, total=raw_levels[j], minutes=1.)
+                for j in range(n+1)],
+        )
+        with patch.dict(sys.modules, {'valuation_engine': engine}):
+            for published in (10_000., 0., -10_000.):
+                annual[0]['annual_production'] = published
+                rates = own_endpoint_path(player, annual, 2025, {}, None)
+                np.testing.assert_allclose(rates, [published+j*500_000. for j in range(4)])
 
     def test_endpoint_uses_raw_own_production_even_if_contract_choices_zero_asset_rates(self):
         annual=[dict(season=2028+i,annual_production=10*(i+1),salary_cap_scenario=REPORTING_CAP,
@@ -212,5 +232,3 @@ class ProductionQuotes(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
-
-

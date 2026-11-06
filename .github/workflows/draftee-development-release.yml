@@ -1,4 +1,4 @@
-name: Rebuild year-four draftee development
+name: Rebuild stable year-four asset projections
 on:
   push:
     branches: [codex/draftee-development]
@@ -48,8 +48,9 @@ jobs:
         id: annual_checkpoint
         with:
           path: ${{ runner.temp }}/draftee-development/annual_projection_checkpoint
-          key: draftee-development-projections-v11-${{ github.sha }}
+          key: draftee-development-projections-v12-${{ github.sha }}
           restore-keys: |
+            draftee-development-projections-v12-
             draftee-development-projections-v11-
             shared-draft-projections-v9-
             consistent-asset-projections-v8-
@@ -60,12 +61,32 @@ jobs:
         if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
         with:
           path: ${{ runner.temp }}/draftee-development/annual_projection_checkpoint
-          key: draftee-development-projections-v11-${{ github.sha }}
+          key: draftee-development-projections-v12-${{ github.sha }}
       - name: Validate historical attribution and shared values
         run: |
           python3 script/asset_history/calibration/review_release.py --repo .
           python3 script/asset_history/review_draftee_development.py --repo .
           python3 script/frontend/build_asset_value_data.py --repo .
+      - name: Check the Powell regression against the rebuilt snapshots
+        run: |
+          python3 - <<'PY'
+          import gzip, json
+          from pathlib import Path
+          root = Path('frontend/public/data/asset_history')
+          def snapshots(version):
+              path = root / version / 'teams' / 'BKN.json.gz'
+              with gzip.open(path, 'rt') as file:
+                  return json.load(file)['snapshots']
+          def marks(version):
+              return {
+                  row['date']: next(a['value'] for a in row['assets'] if a['name'] == 'Drake Powell')
+                  for row in snapshots(version) if row['date'] in ('2026-02-28', '2026-03-31', '2026-04-30')
+              }
+          old, new = marks('v11'), marks('v12')
+          assert len(new) == 3
+          assert abs(new['2026-03-31'] - new['2026-04-30']) < abs(old['2026-03-31'] - old['2026-04-30']) / 5
+          print(json.dumps({'Powell previous release': old, 'Powell corrected release': new}))
+          PY
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -89,9 +110,9 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f frontend/public/data/asset_history/v11 frontend/public/data/asset_valuations/v11 frontend/public/data/asset_valuation.json frontend/public/data/manifest.json processed/asset_history/player_state processed/asset_history/picks/trained_pick_model.json processed/asset_history/methodology_review.json processed/asset_history/attribution_validation.json processed/asset_history/draftee_development_validation.json
+          git add -f frontend/public/data/asset_history/v12 frontend/public/data/asset_valuations/v12 frontend/public/data/asset_valuation.json frontend/public/data/manifest.json processed/asset_history/player_state processed/asset_history/picks/trained_pick_model.json processed/asset_history/methodology_review.json processed/asset_history/attribution_validation.json processed/asset_history/draftee_development_validation.json
           if ! git diff --cached --quiet; then
-            git commit -m 'Publish validated year-four draftee development and shared valuations'
+            git commit -m 'Publish rebuilt asset history with stable career extensions'
             git push origin HEAD:codex/draftee-development
           fi
       - uses: actions/upload-artifact@v4
