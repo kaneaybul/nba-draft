@@ -39,7 +39,7 @@
     },
     {
       "dataset": "draft_prospects",
-      "rows": 493,
+      "rows": 535,
       "file": "draft_prospects.json"
     },
     {
@@ -85,7 +85,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-11-05T20:42:56.078Z",
+    "generated_at": "2026-11-06T01:06:38.584Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -102,6 +102,7 @@
       2016
     ],
     "draft_years": [
+      2027,
       2026,
       2025,
       2024,
@@ -213,8 +214,8 @@
             "year": 2027,
             "rows": 633,
             "file": "v2/impact_players/2027.json",
-            "bytes": 4419757,
-            "sha256": "b04dd743c9158a197a3b59e640c6d893fe8d82dcc88764ef26c05fb15f7336d0"
+            "bytes": 4422152,
+            "sha256": "5718cd90d33ad3ed186bb8d16d6b5ea19c6a1d983e3fdac3dc03876cb8c5a222"
           }
         ]
       },
@@ -535,8 +536,8 @@
         "strategy": "singleton",
         "rows": 6101,
         "file": "impact_player_history.json",
-        "bytes": 646866,
-        "sha256": "6bc16ed9ea086766a308f6bbaef8b5977679e70de6163331fb8ff1690e076c56"
+        "bytes": 646875,
+        "sha256": "53d3b0a2c2fbd53af0c9bc4e2a4e76176753b741475d7f8c32fcb64874c6e545"
       },
       "pick_assets": {
         "strategy": "singleton",
@@ -547,10 +548,10 @@
       },
       "draft_prospects": {
         "strategy": "singleton",
-        "rows": 493,
+        "rows": 535,
         "file": "draft_prospects.json",
-        "bytes": 3528644,
-        "sha256": "0eabc37a0e6315dbd176066c5d5d795e82403748fdf18e84a10eef8a31cd6e01"
+        "bytes": 3623380,
+        "sha256": "73f0485404f58f5032ac0b1e40ebe6dcf95e313ee6b83fc9d85d2746b32bc129"
       },
       "draft_tracker_board_summary": {
         "strategy": "singleton",
@@ -598,8 +599,8 @@
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
-        "bytes": 2167837,
-        "sha256": "72d39ce7e126ebac9a68d6f340fb3314d7cc909756e4a95435810254f0fbad2e"
+        "bytes": 2169654,
+        "sha256": "00fe636c0c8b70c26c0939fc18a5952c1e2eea1fd7f35d6c8893ca91df1227b4"
       },
       "cap_transaction_review": {
         "strategy": "singleton",

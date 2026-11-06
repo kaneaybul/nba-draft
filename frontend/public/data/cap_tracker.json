@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-05T20:42:56.022Z",
+  "generated_at": "2026-11-06T01:06:34.561Z",
   "cap_fallbacks": [],
   "cap_component_fallbacks": [
     {
@@ -155,8 +155,8 @@
     }
   ],
   "contract_coverage": {
-    "active_players": 523,
-    "priced_players": 523,
+    "active_players": 524,
+    "priced_players": 524,
     "missing_players": [],
     "teams": 30
   },
@@ -59343,6 +59343,69 @@
       "cached_as_of": "2026-11-04T22:06:31.566Z"
     },
     {
+      "id": "player-1641755",
+      "canonical_key": "player-1641755",
+      "nba_id": 1641755,
+      "player_name": "Kevin McCullar Jr.",
+      "team": "TOR",
+      "row_type": "player",
+      "position": "G",
+      "contract_type": "TWO-WAY CONTRACT",
+      "source": "https://www.salaryswish.com/players/kevin-mccullar-jr",
+      "source_quality": "contract",
+      "contract_as_of": "2026-11-05",
+      "contract_notes": "Signed agreement known from 2026-09-27; ownership verified 2026-11-05",
+      "is_two_way": true,
+      "cells": [
+        {
+          "year": 2027,
+          "amount": 678882,
+          "salary_rate": 678882,
+          "kind": "guaranteed",
+          "status": "Two-Way",
+          "guaranteed_amount": 91000,
+          "unguaranteed_amount": 587882,
+          "counts_against_cap": false,
+          "cap_amount": 0,
+          "source": "contract",
+          "source_quality": "contract",
+          "known_from": "2026-09-27",
+          "note": null,
+          "source_url": "https://www.salaryswish.com/players/kevin-mccullar-jr",
+          "guarantee_source": "contract"
+        },
+        {
+          "year": 2028,
+          "amount": null,
+          "kind": "empty",
+          "source": "unavailable",
+          "status": "UFA"
+        },
+        {
+          "year": 2029,
+          "amount": null,
+          "kind": "empty",
+          "source": "unavailable",
+          "status": "UFA"
+        },
+        {
+          "year": 2030,
+          "amount": null,
+          "kind": "empty",
+          "source": "unavailable",
+          "status": "UFA"
+        },
+        {
+          "year": 2031,
+          "amount": null,
+          "kind": "empty",
+          "source": "unavailable",
+          "status": "UFA"
+        }
+      ],
+      "cached_as_of": "2026-11-04T22:06:31.566Z"
+    },
+    {
       "id": "player-1641869",
       "canonical_key": "player-1641869",
       "nba_id": 1641869,
@@ -66839,7 +66902,7 @@
     },
     {
       "label": "Player contract source",
-      "detail": "Complete dated agreement ledger: 523 signed players, as of 2026-11-05.",
+      "detail": "Complete dated agreement ledger: 524 signed players, as of 2026-11-05.",
       "quality": "contract"
     },
     {
