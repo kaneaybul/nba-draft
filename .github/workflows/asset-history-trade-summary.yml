@@ -46,7 +46,7 @@ jobs:
       - name: Save validated trade summaries
         run: |
           version=$(python3 -c 'import sys; sys.path.insert(0,"script/asset_history"); from model_version import DATA_VERSION; print(DATA_VERSION)')
-          git add -f "frontend/public/data/asset_history/$version/attribution/"??.json
+          git add -f "frontend/public/data/asset_history/$version/attribution/"???.json
           if ! git diff --cached --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

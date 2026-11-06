@@ -330,7 +330,7 @@ def enrich_trade_details(ctx, ledgers):
                             continue
                     value = portfolio_quote(ctx['model'])(1 if slot <= first_count else 2, slot, 30-first_count, int(float(year)))
                     basis = day
-                    label += f' ({year} No. {slot})'
+                    label += f' ({int(float(year))} No. {slot})'
             for team, direction, sign in [(target, 'in', 1), (source, 'out', -1)]:
                 add_piece(deal, team, dict(id=aid or key, name=label, direction=direction,
                                           value=None if value is None else sign * value, basis_date=basis))
