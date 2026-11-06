@@ -11,6 +11,8 @@ on:
       - script/data/refresh_live_ratings.mjs
       - script/data/live_rating_dates.mjs
       - script/data/test_live_ratings.mjs
+      - script/draft/refresh_2027_stats.py
+      - script/draft/score_2027_preview.R
       - script/frontend/live_minutes.R
       - script/frontend/test_live_minutes.R
       - script/frontend/injury_projections.R
@@ -61,4 +63,26 @@ jobs:
 
       - name: Verify remaining-season minutes and injury accounting
         run: Rscript script/frontend/test_live_minutes.R
+
+  draft_preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install draft scoring dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y r-base-core r-cran-data.table r-cran-ranger r-cran-glmnet
+      - name: Reproduce the published draft preview on its saved inputs
+        run: |
+          draft_dir=processed/draft
+          Rscript script/draft/score_2027_preview.R \
+            "$draft_dir/draft_consensus_projection_ranks_2027.csv" "$RUNNER_TEMP/scores.csv"
+          Rscript - "$RUNNER_TEMP/scores.csv" "$draft_dir/draft_skill_preview_2027.csv" <<'RS'
+          paths <- commandArgs(trailingOnly = TRUE)
+          actual <- read.csv(paths[[1]])
+          expected <- read.csv(paths[[2]])
+          columns <- c("player", "big_board_rank", "model_rank", grep("^FINAL_", names(expected), value = TRUE))
+          stopifnot(isTRUE(all.equal(actual[columns], expected[columns], tolerance = 1e-9)))
+          RS
 

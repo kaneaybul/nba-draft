@@ -27,8 +27,9 @@ def published_source_dates(prior,asof):
 
 def source_dates(repo,asof):
     ratings=json.loads((repo/'raw/live/ratings.json').read_text());skill=json.loads((repo/'raw/live/skill_stats.json').read_text())
+    contracts=json.loads((repo/'processed/asset_history/contracts/refresh_audit.json').read_text())
     epm=(date.fromisoformat(ratings['epm_as_of'])-timedelta(days=1)).isoformat()
-    return {'ownership':asof,'contracts':asof,'epm':epm,'darko':ratings['darko_through'],'skill':skill['generated_at'][:10]}
+    return {'ownership':asof,'contracts':contracts['cutoff'],'epm':epm,'darko':ratings['darko_through'],'skill':skill['generated_at'][:10]}
 
 def main(args):
     repo=args.repo.resolve();work=args.work_dir.resolve();work.mkdir(parents=True,exist_ok=True)
@@ -36,6 +37,7 @@ def main(args):
     out=data_root(repo);new_version=not(out/'manifest.json').exists()
     pool=json.loads((repo/'raw/live/player_pool.json').read_text());asof=pool['generated_at'][:10]
     published_inputs=getattr(args,'use_published_inputs',False)
+    skip_contract_refresh=getattr(args,'skip_contract_refresh',False) or published_inputs
     if published_inputs:
         if not new_version:raise ValueError('Published-input replay is restricted to a new method version')
         prior=legacy_snapshots(repo)
@@ -45,7 +47,7 @@ def main(args):
         # prior basketball day. A method rebuild retains that saved date.
         asof=dates.pop()
     status=out/'refresh_status.json'
-    if not args.reseed and not new_version and status.exists():
+    if not getattr(args,'force_contract_refresh',False) and not args.reseed and not new_version and status.exists():
         saved=json.loads(status.read_text())
         if saved.get('status')=='success'and saved.get('method')==METHOD and saved.get('observation_date')==asof and saved.get('source_signature')==source_signature(repo):
             manifest=json.loads((out/'manifest.json').read_text())
@@ -57,8 +59,10 @@ def main(args):
         raise ValueError('The source refresh is not from today; retaining the last validated history')
     base=repo/'script/asset_history';state=repo/'processed/asset_history/player_state';runtime=work/'runtime';players=work/'players'
     command=[sys.executable,str(base/'backfill/run_player_refresh.py'),'--repo',str(repo),'--runtime-dir',str(runtime),'--output',str(players),'--state-dir',str(state),'--as-of',asof]
+    if skip_contract_refresh:
+        command.append('--skip-contract-refresh')
     if published_inputs:
-        command+=['--use-published-inputs','--skip-contract-refresh']
+        command.append('--use-published-inputs')
     if args.reseed or new_version:command.append('--reseed')
     log_path=work/'player_refresh.log'
     with log_path.open('w')as log:
@@ -130,7 +134,11 @@ def main(args):
     return audit
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--work-dir',type=Path,required=True);p.add_argument('--draws',type=int,default=10000);p.add_argument('--reseed',action='store_true');p.add_argument('--allow-reconstructed',action='store_true');p.add_argument('--use-published-inputs',action='store_true')
+    contracts=p.add_mutually_exclusive_group()
+    contracts.add_argument('--skip-contract-refresh',action='store_true')
+    contracts.add_argument('--force-contract-refresh',action='store_true')
+    a=p.parse_args()
     try:print(json.dumps(main(a)))
     except Exception as exc:
         out=data_root(a.repo.resolve())
