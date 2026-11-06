@@ -1,6 +1,6 @@
 import unittest
 from attribution import TRADE_WAIVER_NONTRANSFER_COMPONENTS, attribute_trade_waiver
-from attribution_players import clock,parts,production_bucket
+from attribution_players import AGING_COMPONENT,clock,parts,production_bucket
 from quote_window import quote_window
 
 class AttributionTests(unittest.TestCase):
@@ -39,7 +39,8 @@ class AttributionTests(unittest.TestCase):
                        category='player', component='Player production forecast changes', value=13.2)
         release = dict(revalue, start='2022-09-30', end='2022-10-31', category='contracts',
                        component='Waiver or expiry of contract control', value=-29.4)
-        for entry, label in [(revalue, 'Production forecast'), (release, 'Waiver')]:
+        aging = dict(release, category='aging', component=AGING_COMPONENT)
+        for entry, label in [(revalue, 'Production forecast'), (aging, 'Production forecast'), (release, 'Waiver')]:
             moved = attribute_trade_waiver('UTA', entry)
             self.assertEqual(moved, dict(entry, category='trades', component=f'Saben Lee · {label}'))
         unrelated = dict(release, asset_id='player:nba:202355')

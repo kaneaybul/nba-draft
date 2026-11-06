@@ -4,7 +4,7 @@ import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from endpoint_stock import promote,promote_asset,freeze_draft_results,STOCK_POLICY
 from attribution_players import player_bridge,clock
-from aging import POLICY as AGING_POLICY
+from quote_window import quote_window
 from calibration.endpoint_model import pick_components,EndpointModel,production_quotes
 from calibration.path_model import ResidualPool,summarize,weighted_quantile
 from calibration.endpoint_paths import EndpointRevisionPool
@@ -32,7 +32,6 @@ class EndpointStockTests(unittest.TestCase):
         grade_value=production if grade_value is None else grade_value
         d=dict(peak_production=production,contract_adjustment=financial,draft_year=draft,
                annual_values=[dict(season=2027+i,production=production/4,asset=production/4+financial/4,exposure=1.)for i in range(4)])
-        d['aging_basis']={'policy':AGING_POLICY,'status':'priced','annual':[dict(season=2027+i,age=30.,experience=10.,dollars_per_total=1.,total=1.)for i in range(4)]}
         if endpoint:d.update(endpoint_stock_policy=STOCK_POLICY,rolling_production_quote=production,
             development_window_basis=production-grade_value,
             draft_development=dict(status='priced',method='year-four-assessed-production-paths-v3',value=grade_value,original_expectation=100.,gain=grade_value-100.,endpoint=f'{draft+4}-07-31'))
@@ -40,7 +39,7 @@ class EndpointStockTests(unittest.TestCase):
 
     def context(self,points):
         h={p['date']:p for p in points}
-        return dict(aging_curve={'(Intercept)':0.,'age_peak_distance':0.,'age_peak_distance_sq':0.,'yoe':0.},histories={'UTA':h},league={},owners={},events=[],contracts=[],caps={2027:(164961000.,200000000.)},market=None,
+        return dict(histories={'UTA':h},league={},owners={},events=[],contracts=[],caps={2027:(164961000.,200000000.)},market=None,
                     drafts={'rookie':dict(team='UTA',year=2023)},reviewed_trades=[])
 
     def test_clock_alone_does_not_regrade_a_padded_draftee(self):
@@ -85,18 +84,27 @@ class EndpointStockTests(unittest.TestCase):
         self.assertEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),-10.)
 
-    def test_age_split_preserves_draftee_result_and_total_production_change(self):
-        points=[dict(date='2026-01-31',assets=[self.player('Rookie',100.),self.player('Veteran',100.,endpoint=False)]),
-                dict(date='2026-02-28',assets=[self.player('Rookie',90.),self.player('Veteran',90.,endpoint=False)])]
-        ctx=self.context(points)
-        ctx['aging_curve']['(Intercept)']=-1.
-        rows=player_bridge('UTA',ctx)['attribution']
-        sums={key:sum(r['value']for r in rows if r['category']==key)for key in ('aging','player','draft','contracts')}
-        self.assertLess(sums['aging'],0.)
-        self.assertAlmostEqual(sums['draft'],-10.)
-        self.assertAlmostEqual(sums['player']+sums['aging'],-10.)
-        self.assertAlmostEqual(sums['contracts'],0.)
-        self.assertFalse(any(r['category']=='aging'and r['player']=='Rookie'for r in rows))
+    def test_player_development_measures_revisions_to_the_opening_forecast(self):
+        def veteran(rates, exposures, annual_contract_adjustment):
+            assets = [rate + annual_contract_adjustment for rate in rates]
+            quote = quote_window(rates, assets, exposures)
+            player = self.player('Veteran', quote['production_quote'], endpoint=False,
+                                 financial=quote['contract_adjustment_sum'])
+            player['details']['annual_values'] = [
+                dict(season=2027+i, production=rate, asset=asset, exposure=exposure)
+                for i, (rate, asset, exposure) in enumerate(zip(rates, assets, exposures))
+            ]
+            return player
+
+        opening = dict(date='2026-10-31', assets=[veteran([40.,30.,20.,10.], [1.]*4, -2.)])
+        for revision in (-1., 0., 1.):
+            with self.subTest(revision=revision):
+                closing = dict(date='2026-11-30', assets=[veteran(
+                    [rate+revision for rate in [40.,30.,20.,10.,10.]], [.5,1.,1.,1.,.5], -3.)])
+                rows = player_bridge('UTA', self.context([opening, closing]))['attribution']
+                amounts = {key: sum(r['value'] for r in rows if r['category'] == key)
+                           for key in ('aging', 'player', 'draft', 'contracts')}
+                self.assertEqual(amounts, dict(aging=-20., player=4.*revision, draft=0., contracts=-4.))
 
     def test_unsigned_quote_flag_still_receives_complete_basis_metadata(self):
         asset=self.player('Rookie',100.,endpoint=False,financial=10.)
