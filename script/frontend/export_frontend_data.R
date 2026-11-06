@@ -5234,6 +5234,12 @@ impact_reference <- players[
   drop = FALSE
 ]
 draft <- with_frontend_timing(base_dir, "frontend_export", "build_draft_prospects", build_draft_prospects(base_dir, impact_reference, replacement_reference))
+source(file.path(base_dir, "script", "frontend", "draft_preview.R"), local = TRUE)
+draft_preview <- build_draft_preview(base_dir, impact_reference, replacement_reference, draft$draft_year)
+if (!is.null(draft_preview)) {
+  for (column in setdiff(names(draft), names(draft_preview))) draft_preview[[column]] <- NA
+  draft <- rbind(draft_preview[, names(draft), drop = FALSE], draft)
+}
 tracker <- with_frontend_timing(base_dir, "frontend_export", "build_draft_tracker", build_draft_tracker(base_dir))
 model_summary <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_summary", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_summary.csv")))
 model_details <- with_frontend_timing(base_dir, "frontend_export", "read_draft_model_feature_details", read_csv_required(file.path(base_dir, "processed", "draft", "draft_model_feature_details.csv")))
@@ -5356,6 +5362,7 @@ message("Rows: players=", nrow(players), ", teams=", nrow(teams), ", draft=", nr
 if (!identical(tolower(Sys.getenv("FRONTEND_REFRESH_SUPPRESS_EXPORT_SUMMARY", "false")), "true")) {
   print_frontend_timing_summary(base_dir)
 }
+
 
 
 
