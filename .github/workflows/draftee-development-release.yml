@@ -76,6 +76,7 @@ jobs:
       - name: Verify every value surface and build the app
         working-directory: frontend
         run: |
+          node ../script/frontend/test_data_refresh.mjs
           npm run test:asset-value
           npm run test:trade-machine
           npm run test:trade-suggestions
