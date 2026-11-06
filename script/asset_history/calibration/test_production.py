@@ -15,7 +15,7 @@ def fixture():
     c.data={'signature':'fixture','training_through':2024};c.rates={};c.events={k:0 for k in ('priced','insufficient_mature_career_paths','insufficient_completed_residual_paths','unsigned_draft_right_existing_policy')}
     c.rate=lambda cutoff:dict(n=60,scale=100.,latest_label=cutoff)
     c.stats={(2024,7):1000.};c.ages={(2024,7):22.};c.experience={(2024,7):1.}
-    c.bref={};c.observations={('2024-11-01',7):100.};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
+    c.bref={};c.observations={('2024-11-01',7):100.};c.observation_seasons={('2024-11-01',7):2025};c.agreements={7:[]};c.pick_curve={1:dict(peak_production_quote=80.,cumulative_production_quote=40.)}
     c.careers=[dict(key=str(i),slot=1,cohort=2016,stage=0,horizon=4,
                    production=p)for i,p in enumerate(([20,20,0,0],[0,0,20,20]))]
     c.endpoint=SimpleNamespace(prior=lambda *args:dict(paths=np.array([[20,20,0,0,10,10,10,10],[0,0,20,20,10,10,10,10]]),
@@ -120,6 +120,14 @@ class ProductionQuotes(unittest.TestCase):
         self.assertGreater(c.quote(p,a)['nba_weight'],first['nba_weight'])
         p['draft_year']='2020'
         self.assertIsNone(c.quote(p,a))
+
+    def test_completed_season_minutes_are_not_counted_again_in_offseason(self):
+        c,p,a=fixture();c.observation_seasons[p['cutoff_date'],7]=2024
+        c.observations[p['cutoff_date'],7]=1000.
+        result=c.quote(p,a)
+        self.assertEqual(result['completed_minutes'],1000.)
+        self.assertEqual(result['current_observed_minutes'],0.)
+        self.assertAlmostEqual(result['nba_weight'],1000./1100.)
 
     def test_last_development_season_continuously_reaches_the_normal_quote(self):
         c,p,a=fixture()

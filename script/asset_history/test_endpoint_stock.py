@@ -87,6 +87,26 @@ class EndpointStockTests(unittest.TestCase):
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),0.)
 
+    def test_trade_transfers_shared_price_and_splits_development_between_owners(self):
+        dates=['2026-01-31','2026-02-28','2026-03-31']
+        seller=[dict(date=d,assets=[self.player('Veteran',100.,endpoint=False,draft=2010)]+
+                    ([self.player('Rookie',p)]if p is not None else []))for d,p in zip(dates,[50.,65.,None])]
+        buyer=[dict(date=d,assets=[self.player('Other',100.,endpoint=False,draft=2010)]+
+                    ([self.player('Rookie',80.)]if d==dates[-1]else []))for d in dates]
+        ctx=self.context(seller);ctx['histories']['BOS']={p['date']:p for p in buyer}
+        ctx['events']=[dict(event_id='trade',date='2026-03-15',parsed_status='trade',
+                            text='Trade Rookie from UTA to BOS',players=[dict(name='Rookie')])]
+        for team,h in ctx['histories'].items():
+            for day,snapshot in h.items():
+                for a in snapshot['assets']:
+                    ctx['league'][day,a['id']]=a;ctx['owners'][day,a['id']]=team
+        totals={}
+        for team in ('UTA','BOS'):
+            rows=player_bridge(team,ctx)['attribution']
+            totals[team]={k:sum(r['value']for r in rows if r['category']==k)for k in ('draft','trades','player')}
+        self.assertEqual(totals['UTA'],dict(draft=15.,trades=-65.,player=0.))
+        self.assertEqual(totals['BOS'],dict(draft=15.,trades=65.,player=0.))
+
     def test_completed_endpoint_does_not_replace_daily_price(self):
         asset=self.player('Rookie',100.,endpoint=False,financial=-20.)
         asset['details']['draft_development']=dict(status='priced',endpoint='2027-07-31',value=130.,original_expectation=100.,gain=30.,nba_weight=1.)

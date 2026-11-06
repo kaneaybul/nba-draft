@@ -170,12 +170,12 @@ def development_weight(minutes, scale, remaining_seasons):
 def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
                           nba, nba_cost, nba_weights, nba_weight, exposures,
                           nba_endpoint_values=None, nba_endpoint_weights=None):
-    """One padded stock: mature pick prior blended into the live player quote.
+    """One padded stock: original prior blended with the updated Y4 appraisal.
 
     Each linked NBA career is priced before averaging. The draft component
-    uses its original mature production expectation, with the actual rookie
-    service/cost paths retained for contract attribution. The prior vanishes
-    by the fourth year, so the result becomes the ordinary rolling quote.
+    uses its original mature production expectation, with current service/cost
+    paths retained for contract attribution. Live callers supply the same fixed
+    endpoint for NBA evidence; omitting it retains the archived rolling blend.
     """
     pw, nw = np.asarray(prior_weights, float), np.asarray(nba_weights, float)
     pw, nw = pw / pw.sum(), nw / nw.sum()
@@ -208,6 +208,8 @@ def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
     production_weights=np.concatenate([(1-nba_weight)*pw,nba_weight*ow])
     result['draft_prior_adjustment'] = float(qw@quotes) - result['mean']
     result['mean'] = float(qw@quotes)
+    result['scenarios']=len(qw)
+    result['effective_scenarios']=float(1./(qw@qw))
     result['production_quote'] = float(production_weights@production)
     result.update(zip(('p10','p50','p90'), weighted_quantile(quotes,qw)))
     result.update(zip(('production_p10','production_p50','production_p90'), weighted_quantile(production,production_weights)))

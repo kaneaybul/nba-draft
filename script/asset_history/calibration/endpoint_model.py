@@ -6,7 +6,7 @@ Linked first-four-year service paths translate that prior to a daily rolling
 quote. Salaries are applied only after production has been projected.
 """
 from __future__ import annotations
-import math,json
+import math,json,csv
 from functools import lru_cache
 import numpy as np
 from .historical import name_key
@@ -159,7 +159,7 @@ def learning_cases(panel, records, errors=None, endpoint_errors=None):
     return cases, dict(target=POLICY, n=len(holdouts),
                        rmse=float(np.sqrt(np.mean(error**2))) if len(error) else None,
                        mae=float(np.mean(abs(error))) if len(error) else None,
-                       first_season_learning=False, holdouts=holdouts)
+                       training_stages=[1,2,3],first_season_weight_extrapolation=True,holdouts=holdouts)
 
 
 def pick_components(model, slot, costs, prior_model=None, draft_year=None):
@@ -217,6 +217,12 @@ def direct_forecasts(path):
     return json.loads(path.read_text())
 
 
+@lru_cache(maxsize=2)
+def rookie_ages(path):
+    return {name_key(r['player_name']):float(r['draft_age']) for r in csv.DictReader(path.open())
+            if r.get('draft_age') not in (None,'')}
+
+
 def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canonical=False):
     """Read raw production before contract choices; extend own missing years."""
     from valuation_engine import AnnualState, project_path
@@ -232,9 +238,15 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
     year = int(first['season'])
     pid = int(float(player.get('source_nba_id') or player['ledger_nba_id']))
     previous = states.get((year-1, pid))
+    age=previous.age+1 if previous else 22.
+    if previous is None and runtime is not None:
+        ages=runtime/'monthly_reconstruction/projections/rookie_priors.csv'
+        if ages.exists():
+            draft_age=rookie_ages(ages).get(name_key(player['player_name']))
+            if draft_age is not None:age=draft_age+.5+year-draft-1
     games = float(player['healthy_forecast_annual_games'])
     mpg = float(player.get('healthy_forecast_conditional_MPG') or 0)
-    state = AnnualState(year, previous.age+1 if previous else 22.,
+    state = AnnualState(year, age,
                         previous.yoe+1 if previous else year-draft,
                         float(player['healthy_current_total']), games, min(3300., games*mpg))
     history = [s for (y, p), s in states.items() if p == pid and y < year]

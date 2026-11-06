@@ -36,6 +36,7 @@ def prepare(runtime,repo,state,output):
     for name,path in inputs.items():(source/name).write_bytes(path.read_bytes())
     files=[annual,*inputs.values(),runtime/'app_model/processed/draft/draft_picks_all_classes.csv',
            runtime/'direct_future_minutes.json',
+           runtime/'monthly_reconstruction/projections/rookie_priors.csv',
            runtime/'monthly_reconstruction/projections/app_sources/career_projection_selected_terms.csv',
            runtime/'monthly_reconstruction/projections/valuation_engine.py',
            *[runtime/f'app_model/impact_{y}.json'for y in range(2016,last+1)],
@@ -98,10 +99,14 @@ class PathCalibrator:
             if r.get('minutes')in(None,''):continue
             k=(int(r['year']),name_key(r['player_name']))
             self.bref[k]=max(self.bref.get(k,0),float(r['minutes']))
-        self.observations={}
+        self.observations={};self.observation_seasons={}
         for r in json.loads((runtime/'monthly_reconstruction/skill/monthly_skill_observations.json').read_text()):
             if r.get('nba_id')is not None and r.get('minutes')is not None:
                 self.observations[r['date'],int(r['nba_id'])]=float(r['minutes'])
+                observed_at=r.get('source_cutoff')or r.get('data_cutoff')or r['date']
+                # Offseason samples carry the just-completed regular season;
+                # July's league-year rollover does not create new NBA evidence.
+                self.observation_seasons[r['date'],int(r['nba_id'])]=int(observed_at[:4])+(int(observed_at[5:7])>=10)
         self.caps={int(r['year']):(float(r['salary_cap']),float(r['scale_cap']))for r in
                    csv.DictReader((runtime/'app_model/processed/livedata/impactrefresh/salary_cap_assumptions.csv').open())}
         self.caps[2027]=(REPORTING_CAP,self.caps[2027][1])
@@ -216,7 +221,7 @@ class PathCalibrator:
         minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(int(draft)+1,cutoff+1))
         # The same endpoint estimate learns from verified NBA evidence, including
         # rookie minutes. A debut or trade alone supplies no new evidence.
-        observed=self.observations.get((dt,pid),0.)
+        observed=self.observations.get((dt,pid),0.) if self.observation_seasons.get((dt,pid))==cutoff+1 else 0.
         remaining=float(e[window].sum())
         weight=development_weight(minutes+observed,fitted['scale'],remaining) if fitted['n']>=30 else 0.
         cap_by_year={int(r['season']):float(r['salary_cap_scenario'])for r in annual}
