@@ -37,4 +37,20 @@ class SharedDevelopmentTests(unittest.TestCase):
         self.assertEqual(weights[-1],1.)
         self.assertEqual(development_weight(0.,1000.,0.),1.)
 
+    def test_on_pace_endpoint_is_not_regraded_by_early_career_service(self):
+        # Both endpoints say 100. Current-window service can be much lower;
+        # learning more should never manufacture a negative development grade.
+        for weight in (0.,.25,.75,1.):
+            q=summarize_development([[1.]*4],[[0.]*4],[1.],[100.],
+                [[5.]*4],[[0.]*4],[1.],weight,np.ones(4),[100.],[1.])
+            self.assertAlmostEqual(q['production_quote'],100.)
+            self.assertAlmostEqual(q['nba_production_quote'],100.)
+            self.assertAlmostEqual(q['current_window_production_quote'],20.)
+
+    def test_endpoint_and_service_uncertainty_preserve_both_means(self):
+        q=summarize_development([[1.]*4],[[0.]*4],[1.],[100.],
+            [[5.]*4,[10.]*4],[[2.]*4,[3.]*4],[.25,.75],.6,np.ones(4),[50.,150.],[.4,.6])
+        self.assertAlmostEqual(q['production_quote'],106.)
+        self.assertAlmostEqual(q['mean'],q['production_quote']+q['contract_adjustment_sum'])
+
 if __name__=='__main__':unittest.main()

@@ -35,6 +35,7 @@ def prepare(runtime,repo,state,output):
             'salary_cap_assumptions.csv':repo/'processed/livedata/impactrefresh/salary_cap_assumptions.csv'}
     for name,path in inputs.items():(source/name).write_bytes(path.read_bytes())
     files=[annual,*inputs.values(),runtime/'app_model/processed/draft/draft_picks_all_classes.csv',
+           runtime/'direct_future_minutes.json',
            runtime/'monthly_reconstruction/projections/app_sources/career_projection_selected_terms.csv',
            runtime/'monthly_reconstruction/projections/valuation_engine.py',
            *[runtime/f'app_model/impact_{y}.json'for y in range(2016,last+1)],
@@ -213,11 +214,11 @@ class PathCalibrator:
         for j,row in enumerate(annual):
             if window[j]:prior[:,j]=original_prior[:,int(row['season'])-int(draft)-1]*available[j]
         minutes=sum(self.stats.get((y,pid),self.bref.get((y,key),0.))for y in range(int(draft)+1,cutoff+1))
-        # The reliability fit has no first-season training cases. Keep that
-        # draft prior intact; update established young players as minutes accrue.
-        observed=self.observations.get((dt,pid),0.)if stage>=1 else 0.
+        # The same endpoint estimate learns from verified NBA evidence, including
+        # rookie minutes. A debut or trade alone supplies no new evidence.
+        observed=self.observations.get((dt,pid),0.)
         remaining=float(e[window].sum())
-        weight=0. if stage==0 else development_weight(minutes+observed,fitted['scale'],remaining)
+        weight=development_weight(minutes+observed,fitted['scale'],remaining) if fitted['n']>=30 else 0.
         cap_by_year={int(r['season']):float(r['salary_cap_scenario'])for r in annual}
         def cap(year,_):
             if year in cap_by_year:return cap_by_year[year]
@@ -248,7 +249,16 @@ class PathCalibrator:
             return p,c
         nba,nc=price(nba);prior,pc=price(prior)
         endpoint_values=production_quotes(endpoint_prior['paths'][:,4:8])
-        result=summarize_development(prior,pc,pw,endpoint_values,nba,nc,nw,weight,e)
+        endpoint_audit={}
+        if weight:
+            endpoint_mean=own_endpoint_path(player,annual,int(draft),self.endpoint_states,self.runtime,endpoint_audit,canonical=True)
+            ep,ew,ea=self.endpoint_residuals.scenarios(endpoint_mean,feature,cutoff,min(4.,remaining),key)
+            own_values=production_quotes(ep)
+            endpoint_audit.update(ea)
+        else:
+            own_values,ew=np.array([0.]),np.array([1.])
+            endpoint_audit.update(method='no NBA evidence; original draft expectation')
+        result=summarize_development(prior,pc,pw,endpoint_values,nba,nc,nw,weight,e,own_values,ew)
         result.update(status='priced',policy=POLICY,cutoff=cutoff,training_signature=self.data['signature'],
             nba_weight=weight,completed_minutes=minutes,current_observed_minutes=observed,
             learning_scale=fitted['scale'],learning_training_n=fitted['n'],
@@ -257,7 +267,8 @@ class PathCalibrator:
             learning_target=POLICY,
             uncertainty_scope='remaining original four-year draft-window seasons',
             remaining_development_exposure=remaining,
-            production_basis='shared padded player value; original mature pick prior fades into normal rolling NBA value')
+            endpoint_projection=endpoint_audit,
+            production_basis='original year-four expectation blended with updated year-four appraisal; same padded stock across owners')
         result['annual_values']=[dict(season=int(row['season']),exposure=float(row['exposure']),
             production=p,asset=1.8*p-.8*c)for row,p,c in zip(annual,result['annual_mean_production'],result['annual_mean_cost'])]
         self.events['priced']+=1

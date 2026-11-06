@@ -15,8 +15,8 @@ def build_endpoint_errors(panel):
         if origin<2017 or origin>=panel.last_year:continue
         key=panel.by_id[origin,pid]['key']
         if key in panel.ambiguous:continue
-        full=panel.forecast(origin,pid,min(3,panel.last_year-origin)+4)
-        for lead in range(1,min(3,panel.last_year-origin)+1):
+        full=panel.forecast(origin,pid,min(4,panel.last_year-origin)+4)
+        for lead in range(1,min(4,panel.last_year-origin)+1):
             end=origin+lead;endpoint=panel.states.get((end,pid))
             observed=panel.actual_stats.get((end,pid))or panel.bref.get((end,key))
             if endpoint is None and observed and float(observed.get('minutes')or 0)>0:continue
@@ -33,7 +33,7 @@ class EndpointRevisionPool:
 
     def scenarios(self,mean,feature,cutoff,lead,exclude=None):
         mean=np.asarray(mean,float)
-        if mean.shape!=(4,)or not np.isfinite(mean).all()or not 0<=lead<=3:
+        if mean.shape!=(4,)or not np.isfinite(mean).all()or not 0<=lead<=4:
             raise ValueError('Invalid assessed-endpoint forecast or development horizon')
         lower=int(math.floor(lead));upper=int(math.ceil(lead))
         choices=[(lower,1.)]if lower==upper else [(lower,upper-lead),(upper,lead-lower)]
@@ -57,3 +57,4 @@ class EndpointRevisionPool:
             remaining_development_years=float(lead),revision_horizons=counts,
             own_annual_mean_preserved=True,
             target='production appraisal assessed at year four; no later realized production')
+

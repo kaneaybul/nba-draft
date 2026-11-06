@@ -6,7 +6,8 @@ Linked first-four-year service paths translate that prior to a daily rolling
 quote. Salaries are applied only after production has been projected.
 """
 from __future__ import annotations
-import math
+import math,json
+from functools import lru_cache
 import numpy as np
 from .historical import name_key
 from .path_model import slot_weights, evidence_weight, fit_reliability, path_quotes
@@ -211,12 +212,19 @@ def build_pick_model(previous, records, cutoff):
     return model
 
 
-def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
+@lru_cache(maxsize=2)
+def direct_forecasts(path):
+    return json.loads(path.read_text())
+
+
+def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canonical=False):
     """Read raw production before contract choices; extend own missing years."""
     from valuation_engine import AnnualState, project_path
     years = list(range(draft+5, draft+9))
     raw = {int(r['season']): float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])
            for r in annual}
+    if canonical:
+        raw={int(r['season']):float(r['app_annual_quote_production_reporting_rate'])for r in annual}
     if audit is not None:audit.update(method='published_raw_production',extended_seasons=[y for y in years if y not in raw])
     if all(y in raw for y in years):
         return [raw[y] for y in years]
@@ -235,7 +243,14 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None):
     coefficient = float(first['scale_budget_scenario'])/float(first['salary_cap_scenario'])*164961000.*30/float(first['league_timin'])
     replacement = float(first['replacement'])
     anchors = [y for y in raw if y in path and raw[y] > 0]
-    level = lambda y: (path[y].total-replacement)*path[y].minutes*coefficient
+    direct={}
+    if runtime is not None and (runtime/'direct_future_minutes.json').exists():
+        table=direct_forecasts(runtime/'direct_future_minutes.json')
+        direct=table.get(str(first['league_reference_year']),{}).get(str(pid),{})
+    def level(y):
+        role=direct.get(str(y))
+        minutes=role['games']*role['mpg'] if role else path[y].minutes
+        return (path[y].total-replacement)*minutes*coefficient
     scale = 1.
     if audit is not None:audit['method']='own_career_model_extension'
     if anchors:

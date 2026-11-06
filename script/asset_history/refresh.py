@@ -75,7 +75,12 @@ def main(args):
     from run_pick_refresh import run as refresh_picks
     staged_model=players/'player_state_staged/endpoint_pick_model.json'
     if not staged_model.exists():raise ValueError('Missing endpoint-trained shared pick model')
-    if new_version and published_inputs:
+    model=json.loads(staged_model.read_text())
+    prior_model=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
+    reprice_needed=model.get('endpoint_records')!=prior_model.get('endpoint_records')
+    if new_version and published_inputs and reprice_needed:
+        picks=reprice_historical_picks(repo,model,[asof],args.draws)[asof]
+    elif new_version and published_inputs:
         picks = {
             'complete': True,
             'teams': {team: [asset for asset in prior[team][asof]['assets']
@@ -104,7 +109,7 @@ def main(args):
     if new_version:
         legacy=legacy_snapshots(repo)
         dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
-        repriced=None if published_inputs else reprice_historical_picks(repo,json.loads(staged_model.read_text()),dates,args.draws)
+        repriced=None if published_inputs and not reprice_needed else reprice_historical_picks(repo,model,dates,args.draws)
         sources=published_source_dates(prior,asof)if published_inputs else source_dates(repo,asof)
         candidates=reconstruct(player_data,picks,legacy,events,asof,sources,repriced)
 

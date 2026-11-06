@@ -34,6 +34,8 @@ def read_csv(path):
 class HistoricalPanel:
     def __init__(self, runtime, source, reporting_cap=164961000., impute_small_service=True, last_year=2026):
         self.runtime, self.source = Path(runtime), Path(source)
+        direct=self.runtime/'direct_future_minutes.json'
+        self.direct_minutes=json.loads(direct.read_text()) if direct.exists() else {}
         self.reporting_cap = reporting_cap
         self.last_year=int(last_year)
         self.impute_small_service = impute_small_service
@@ -194,9 +196,12 @@ class HistoricalPanel:
         base = self.by_id[year,pid]
         coefficient = self.coefficient[year]*({2020:75,2021:72}.get(year,82))/82
         production = []
+        direct=self.direct_minutes.get(str(year),{}).get(str(pid),{})
         for _ in range(horizon):
             nxt = project_next_state(current,history,coefficients)
-            production.append((nxt.total-base['replacement_total'])*nxt.minutes*coefficient)
+            role=direct.get(str(nxt.season))
+            minutes=role['games']*role['mpg'] if role else nxt.minutes
+            production.append((nxt.total-base['replacement_total'])*minutes*coefficient)
             history.append(current)
             current = nxt
         return production
@@ -255,4 +260,5 @@ def eligible_careers(rows, cutoff, stage=0, horizon=4):
                  production=r['production'][:horizon]) for r in rows
             if r['stage']==stage and r['horizon']>=horizon
             and r['cohort']+stage+horizon<=cutoff]
+
 

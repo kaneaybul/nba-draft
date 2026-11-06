@@ -168,7 +168,8 @@ def development_weight(minutes, scale, remaining_seasons):
 
 
 def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
-                          nba, nba_cost, nba_weights, nba_weight, exposures):
+                          nba, nba_cost, nba_weights, nba_weight, exposures,
+                          nba_endpoint_values=None, nba_endpoint_weights=None):
     """One padded stock: mature pick prior blended into the live player quote.
 
     Each linked NBA career is priced before averaging. The draft component
@@ -189,15 +190,30 @@ def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
     result = summarize(p, c, w, e)
     financial = .8 * ((p-c)*e).sum(axis=1)
     live_production = path_quotes(nba, nba_cost, e) - financial[len(pw):]
-    production = np.concatenate([endpoint_values, live_production])
-    quotes = production + financial
-    result['draft_prior_adjustment'] = float(w@quotes) - result['mean']
-    result['mean'] = float(w@quotes)
-    result['production_quote'] = float(w@production)
-    result.update(zip(('p10','p50','p90'), weighted_quantile(quotes,w)))
-    result.update(zip(('production_p10','production_p50','production_p90'), weighted_quantile(production,w)))
+    if nba_endpoint_values is None:
+        own,ow=live_production,nw
+        quotes=np.concatenate([endpoint_values+financial[:len(pw)],own+financial[len(pw):]])
+        qw=w
+    else:
+        own=np.asarray(nba_endpoint_values,float)
+        ow=np.asarray(nba_endpoint_weights,float);ow=ow/ow.sum()
+        if own.shape!=ow.shape or not np.isfinite(own).all():
+            raise ValueError('Invalid year-four appraisal scenarios')
+        # Endpoint revisions and current service-cost uncertainty have separate
+        # empirical pools. Preserve each marginal; do not invent paired careers.
+        quotes=np.concatenate([endpoint_values+financial[:len(pw)],
+            (own[:,None]+financial[len(pw):][None,:]).ravel()])
+        qw=np.concatenate([(1-nba_weight)*pw,nba_weight*(ow[:,None]*nw[None,:]).ravel()])
+    production=np.concatenate([endpoint_values,own])
+    production_weights=np.concatenate([(1-nba_weight)*pw,nba_weight*ow])
+    result['draft_prior_adjustment'] = float(qw@quotes) - result['mean']
+    result['mean'] = float(qw@quotes)
+    result['production_quote'] = float(production_weights@production)
+    result.update(zip(('p10','p50','p90'), weighted_quantile(quotes,qw)))
+    result.update(zip(('production_p10','production_p50','production_p90'), weighted_quantile(production,production_weights)))
     result['draft_prior_production'] = float(pw@endpoint_values)
-    result['nba_production_quote'] = float(nw@live_production)
+    result['nba_production_quote'] = float(ow@own)
+    result['current_window_production_quote'] = float(nw@live_production)
     return result
 
 

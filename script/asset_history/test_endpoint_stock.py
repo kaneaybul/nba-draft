@@ -1,6 +1,8 @@
 import copy,sys,unittest
 from pathlib import Path
 import numpy as np
+from types import SimpleNamespace
+from unittest.mock import patch
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from endpoint_stock import promote,promote_asset,freeze_draft_results,STOCK_POLICY
 from attribution_players import player_bridge,clock
@@ -59,6 +61,31 @@ class EndpointStockTests(unittest.TestCase):
         self.assertFalse(any(r['category']=='timing'for r in rows))
         self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),0.)
         self.assertAlmostEqual(sum(r['value']for r in rows),30.)
+
+    def test_acquired_draftee_keeps_development_category_and_original_clock(self):
+        points=[dict(date='2026-01-31',assets=[self.player('Rookie',65.)]),
+                dict(date='2026-02-28',assets=[self.player('Rookie',80.)])]
+        ctx=self.context(points);ctx['drafts']['rookie']['team']='BOS'
+        rows=player_bridge('UTA',ctx)['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),15.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),0.)
+        for p in points:
+            for a in p['assets']:a['details']['draft_year']=2021
+        rows=player_bridge('UTA',ctx)['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='player'),15.)
+
+    def test_contract_transition_cannot_manufacture_offsetting_draft_loss(self):
+        points=[dict(date=day,assets=[self.player('Rookie',100.)])
+                for day in ('2026-01-31','2026-02-28')]
+        ctx=self.context(points)
+        ctx['contracts']=[dict(player_name='Rookie',known_from='2026-02-15',contract_type='TWO-WAY')]
+        ctx['market']=SimpleNamespace(expected=lambda *args:(1e9,None,None))
+        ctx['caps'][2026]=(154647000.,190000000.)
+        with patch('attribution_players.agreements_at',return_value=([],False,None)):
+            rows=player_bridge('UTA',ctx)['attribution']
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='draft'),0.)
+        self.assertAlmostEqual(sum(r['value']for r in rows if r['category']=='contracts'),0.)
 
     def test_completed_endpoint_does_not_replace_daily_price(self):
         asset=self.player('Rookie',100.,endpoint=False,financial=-20.)
