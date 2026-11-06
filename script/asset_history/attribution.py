@@ -311,6 +311,8 @@ def run(repo,runtime,workers=3):
             for future in as_completed(futures):lotteries.append(future.result());print('Lottery attribution reconciled',flush=True)
         with gzip.open(path,'wt')as f:json.dump(dict(key=lottery_key,rows=lotteries),f,separators=(',',':'))
     result=assemble(ctx,players,rows,lotteries)
+    from attribution_trades import enrich_trade_details
+    enrich_trade_details(ctx, result)
     out=data_root(repo)/'attribution'
     # Stage every team first; publish only after the whole league validates.
     for team,data in result.items():atomic(out/(team+'.json'),data)
@@ -320,11 +322,25 @@ def run(repo,runtime,workers=3):
     print(json.dumps({k:v for k,v in report.items()if k!='player_transfer_corrections'}),flush=True)
     return report
 
+def refresh_trade_details(repo, runtime):
+    """Add deal detail to the validated period ledgers without repricing them."""
+    from attribution_trades import enrich_trade_details
+    ctx = context(repo, runtime)
+    picks.setup(ctx, repo)
+    out = data_root(repo) / 'attribution'
+    ledgers = {team: read(out / (team + '.json')) for team in ctx['teams']}
+    enrich_trade_details(ctx, ledgers)
+    for team, ledger in ledgers.items():
+        atomic(out / (team + '.json'), ledger)
+
+
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--repo',type=Path,default=Path.cwd());parser.add_argument('--runtime',type=Path);parser.add_argument('--work-dir',type=Path,default=Path('/tmp/nba-mece-attribution'));parser.add_argument('--workers',type=int,default=3);args=parser.parse_args();repo=args.repo.resolve();runtime=args.runtime
+    parser=argparse.ArgumentParser();parser.add_argument('--repo',type=Path,default=Path.cwd());parser.add_argument('--runtime',type=Path);parser.add_argument('--work-dir',type=Path,default=Path('/tmp/nba-mece-attribution'));parser.add_argument('--workers',type=int,default=3);parser.add_argument('--trade-details-only',action='store_true');args=parser.parse_args();repo=args.repo.resolve();runtime=args.runtime
     if runtime is None:
         from run_player_refresh import unpack
         runtime=args.work_dir/'runtime';unpack(repo/'processed/asset_history/canonical_runtime_seed.zip',runtime)
-    run(repo,runtime.resolve(),args.workers)
+    if args.trade_details_only:
+        refresh_trade_details(repo, runtime.resolve())
+    else:
+        run(repo,runtime.resolve(),args.workers)
 if __name__=='__main__':main()
-
