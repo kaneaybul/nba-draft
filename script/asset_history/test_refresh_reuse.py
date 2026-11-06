@@ -3,7 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from refresh import main,require_uniform_minutes_policy,published_source_dates
-from model_version import METHOD,data_root
+from model_version import ATTRIBUTION_METHOD,METHOD,data_root
 from publish import TEAMS
 from source_signature import source_signature
 
@@ -48,7 +48,7 @@ class PublishedInputReuse(unittest.TestCase):
         (raw/'player_pool.json').write_text(json.dumps({'generated_at':day+'T12:00:00Z'}))
         out=data_root(root);out.mkdir(parents=True)
         (out/'attribution').mkdir()
-        (out/'attribution/manifest.json').write_text(json.dumps({'latest':day,'method':'age-separated-attribution-v5'}))
+        (out/'attribution/manifest.json').write_text(json.dumps({'latest':day,'method':ATTRIBUTION_METHOD}))
         (out/'manifest.json').write_text(json.dumps({'teams':[dict(team=t,latest=day)for t in TEAMS]}))
         (out/'refresh_status.json').write_text(json.dumps(dict(status='success',method=METHOD,
             observation_date=day,source_signature=source_signature(root))))

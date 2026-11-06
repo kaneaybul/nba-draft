@@ -1,18 +1,15 @@
-"""Shared rolling-production player attribution, applied identically to every team.
-
-Fixed-endpoint draft outcomes and changes in the explicitly named rolling /
-endpoint production basis sum to rolling production changes. Costs stay financial.
-"""
+"""Attribute player production to the opening forecast and later revisions."""
 import json,sys,re,unicodedata
 from collections import Counter,defaultdict
 from pathlib import Path
 from datetime import date,timedelta
 sys.path.insert(0,str(Path(__file__).resolve().parent/'backfill'))
 from quote_window import quote_window
-from aging import expected_aging
 from endpoint_stock import active as endpoint_active
 from league_player_values import agreements_at
+from model_version import ATTRIBUTION_METHOD
 CAP=164961000.
+AGING_COMPONENT = 'Expected production change from prior forecast'
 def name_key(name):
     s=unicodedata.normalize('NFKD',str(name)).encode('ascii','ignore').decode().lower()
     s=re.sub(r'[.,]',' ',s).strip();s=re.sub(r'\s+(jr|sr|ii|iii|iv|v)$','',s).strip()
@@ -31,6 +28,7 @@ def parts(a):
     return peak,premium,annual
 
 def clock(a,exposures):
+    """Quote the opening forecast with the closing window's season weights."""
     peak,premium,annual=parts(a)
     if not annual:return dict(value=a['value'],peak=peak,rolling_peak=peak,method='no annual path; value held fixed')
     by={int(r['season']):r for r in annual};last=by[max(by)];p=[];v=[];e=[];tails=[]
@@ -161,9 +159,10 @@ def player_bridge(team,ctx):
                                       total=production+financial,production=production,
                                       financial=financial,tail_carry=cf.get('tail_carry',[]),production_category=production_category(a,end)))
             category=production_category(a,end)
-            aging=expected_aging(a,start,end,ctx['aging_curve']) if category=='player' else 0.
-            attribute(a,'aging','Expected change from age curve',aging)
-            attribute(a,category,'Change beyond expected aging' if category=='player' else 'Draftee production window change',production-aging)
+            if category == 'player':
+                attribute(a, 'aging', AGING_COMPONENT, production)
+            else:
+                attribute(a, 'draft', 'Draftee production window change', production)
             attribute(a,'contracts','Remaining contract-year mix',financial)
         def revalue(a,before,before_peak,isnew=False):
             aid=a['id'];key=name_key(a['name']);total=a['value']-before
@@ -252,6 +251,6 @@ def player_bridge(team,ctx):
     payload=dict(totals=dict(totals),derived_totals=derived,intervals=intervals,details=details,
                  clock_details=clock_details,fa_entries=fa_entries,attribution=attribution,endpoint_attribution=endpoint_attribution,
                  contracts=contract_rows,draft_tracking=list(draft_tracking.values()),warnings=warnings,
-                 method='age-separated-attribution-v5; one padded player production value through year four; contracts remain separate')
+                 method=f'{ATTRIBUTION_METHOD}; one padded player production value through year four; contracts remain separate')
     return payload
 

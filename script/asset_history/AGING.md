@@ -1,39 +1,21 @@
 # Aging and development attribution
 
-`age-separated-attribution-v5` splits the previous Player Development & Aging
-category into Aging and Player Development. Prices and portfolio totals do not
-change. Draft Value Added / Destroyed is now called Draftee Development.
+For each observation interval, advance the rolling four-season window using
+the opening snapshot's production forecast. This keeps the forecasted impact
+and playing time for each season, uses the closing window's season weights,
+and retains the opening uncertainty premium. If the window reaches a season
+past the opening path, carry the final forecasted annual rate forward.
 
-The age-only counterfactual uses the exact exported `target_delta_total` model
-used in the asset engine: intercept, age distance from 27, its square, and NBA
-experience. The recent-performance `delta_total` term is excluded. The curve is
-integrated over elapsed calendar years (days / 365.2425), advancing both age and
-experience, and retains the scorer's total-impact bounds of -8 to 12.
+Aging is the expected change between the opening production quote and that
+rolled quote. Player Development is the revised closing production quote
+minus the rolled quote, after allocating changes in contract terms and
+continuation to Contract Management. Revised impact, playing time and
+availability can all affect the residual.
 
-For each opening annual production rate, convert that expected rating change
-to dollars using its original forecast minutes, availability, scale budget,
-league denominator and reporting cap. Hold those inputs, the annual exposure
-weights and contracts fixed. Apply the existing best-two-season-equivalents
-production selector to the original and aged paths. Their difference is Aging.
-The opening path's uncertainty premium is held fixed. Financial continuation
-choices remain in Contract Management.
+Draftee Development keeps the padded comparison with original expectations
+through year four for the drafting team. Once the player leaves that window,
+the ordinary split applies. Transfers use the existing opening-forecast quote
+and book the expected interval change to the opening owner.
 
-Player Development is the remaining production change after subtracting Aging.
-It includes observed impact, role and availability revisions and other remaining
-production changes; it is not a causal estimate of coaching quality. The prior
-production-window component also remains in this residual rather than becoming
-a new waterfall category.
-
-Draftee Development preserves the original padded value-versus-expectation
-comparison through year four. Aging is not subtracted from that category. Once
-the player leaves that window, subsequent production changes split into Aging
-and Player Development. Transfers follow the existing monthly attribution
-convention: opening ownership receives the interval's clock/aging change before
-the source-priced transfer. Contracts and trade prices remain unchanged.
-
-`aging_basis` records each annual dollar sensitivity and the dated age source.
-Where no prior age is observed, the existing scorer's explicit age-22 prior is
-recorded. Missing aging metadata for active ordinary production is an error,
-never an implicit zero. The exporter adds the basis on every daily update.
-`release_aging.py` attaches it to existing history only after reproducing the
-original prices, then validates every contiguous date range for all 30 teams.
+The attribution changes how existing portfolio movements are categorized.
+Historical annual paths retain their recorded `aging_basis` metadata.
