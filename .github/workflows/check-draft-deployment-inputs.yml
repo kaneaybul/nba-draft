@@ -1,0 +1,44 @@
+name: Check draft deployment inputs
+on:
+  push:
+    branches: [codex/deploy-2027-draft]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            processed/contracts
+            raw/live
+            frontend/public/data/v2/impact_players
+      - name: Compare contract book to the current Impact roster
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def load(path):
+              return json.loads(Path(path).read_text())
+          book = load('processed/contracts/current.json')
+          players = load(f'frontend/public/data/v2/impact_players/{book["season"]}.json')
+          pool = load('raw/live/player_pool.json')
+          def key(row):
+              return row.get('source_nba_id') or row.get('nba_id')
+          a = {key(r):r for r in players if r['pool_status']=='roster'}
+          b = {key(r):r for r in book['players']}
+          print('Roster and contract book:',len(a),len(b),book.get('as_of'))
+          for pid in sorted(a.keys() ^ b.keys()):
+              source = b.get(pid) or a.get(pid)
+              print(pid,source['player_name'],'contract only' if pid in b else 'Impact only',
+                    {k:source.get(k) for k in ('team','position','current_salary','contract_type','known_from','source')})
+              print('Impact rows:',[(r.get('nba_id'),r.get('team'),r.get('pool_status'),r.get('contract')) for r in players if key(r)==pid])
+              print('Pool:',[(r.get('app_nba_id'),r.get('team'),r.get('pool_status'),r.get('note')) for r in pool['players'] if key(r)==pid])
+          for pid in sorted(a.keys() & b.keys()):
+              row,contract=a[pid],b[pid]
+              current=next(c for c in contract['cells'] if c['year']==book['season'])
+              diff=[k for k,x,y in [('salary',row.get('contract'),contract.get('current_salary')),('cap',row.get('contract_cap_salary'),current['cap_amount'])] if x!=y]
+              diff += [str(c['year']) for c in contract['cells'] if book['season'] < c['year'] <= book['season']+5 and c.get('amount') is not None and row.get(f"projection_contract_y{c['year']-book['season']}")!=c['amount']]
+              if diff: print('Salary diff:', pid, row['player_name'],diff)
+          PY
