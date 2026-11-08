@@ -10,6 +10,9 @@ done
 export CURRENT_ROSTER_YEAR
 CURRENT_ROSTER_YEAR="$(python3 -c 'import json; print(int(json.load(open("raw/live/skill_stats.json"))["season"])-1)')"
 export VITE_PUBLIC_READ_ONLY=true
+# Match the previous runner's UTC observation date. Individual game and injury
+# rules keep their explicit NBA Eastern timezone inside the existing models.
+export TZ=UTC
 export FRONTEND_MAX_STATIC_ASSET_BYTES=26214400
 export FRONTEND_MAX_INITIAL_PAYLOAD_BYTES=8388608
 work="${NBA_REFRESH_WORK_DIR:-$(mktemp -d -t nba-work-refresh-XXXXXX)}"

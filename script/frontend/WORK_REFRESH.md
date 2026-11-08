@@ -22,6 +22,8 @@ NBA_REFRESH_WORK_DIR="$PWD/.work-refresh" bash script/frontend/run_work_refresh.
 The R environment is pinned in `work_r_packages.lock`; Python uses the existing
 asset-history requirements. Both install without root. Set `NBA_WORK_RUNTIME`
 to reuse an existing runtime directory, then source its `environment.sh`.
+The runner sets `TZ=UTC` to align R's observation date with the Python source
+snapshots; existing NBA Eastern rules for games and injuries remain explicit.
 
 The refresh stops on invalid source inputs or failed projection checks. Keep the
 current live deployment on any failure. Do not relabel old data as current or
@@ -32,10 +34,12 @@ evidence, draft scores, and all 30 asset portfolios are regenerated.
 
 ## Upload and publish directly
 
-ZIP the contents of `frontend/dist` at the archive root. Run:
+Package the contents of `frontend/dist` at the archive root, keeping the active
+asset-history method and excluding unused method copies. Run:
 
 ```sh
-python3 script/frontend/upload_pages_assets.py RELEASE.zip PAGES_MANIFEST.json
+python3 script/frontend/package_work_release.py --output .work-refresh/release.zip
+python3 script/frontend/upload_pages_assets.py .work-refresh/release.zip .work-refresh/pages_manifest.json
 ```
 
 The upload helper validates the archive, calculates the same BLAKE3 hashes as
