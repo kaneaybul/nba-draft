@@ -15,8 +15,11 @@ export VITE_PUBLIC_READ_ONLY=true
 export TZ=UTC
 export FRONTEND_MAX_STATIC_ASSET_BYTES=26214400
 export FRONTEND_MAX_INITIAL_PAYLOAD_BYTES=8388608
-work="${NBA_REFRESH_WORK_DIR:-$(mktemp -d -t nba-work-refresh-XXXXXX)}"
-mkdir -p "$work"
+work_root="${NBA_REFRESH_WORK_DIR:-$repo/.work-refresh}"
+mkdir -p "$work_root"
+# Calibration caches are tied to exact inputs, including on same-day retries.
+work="$(mktemp -d "$work_root/run-XXXXXX")"
+echo "Refresh scratch: $work"
 
 echo 'Checking saved inputs and frozen preseason archive'
 node script/frontend/validate_preseason_archive.mjs
@@ -52,6 +55,10 @@ if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
   fi
 fi
 
+echo 'Resolving signed ownership using saved contract terms'
+python3 script/frontend/prepare_work_contracts.py --repo "$repo" --work-dir "$work/contracts"
+sha256sum processed/contracts/current.json processed/contracts/current.csv > "$work/signed-book.sha256"
+
 echo 'Exporting injury-aware player and team projections'
 Rscript script/frontend/export_frontend_data.R
 Rscript script/frontend/test_live_ratings.R --require-export
@@ -64,6 +71,7 @@ echo 'Refreshing all 30 asset portfolios using saved contract terms'
 python3 script/asset_history/materialize.py --repo "$repo"
 python3 script/asset_history/refresh.py --repo "$repo" --work-dir "$work/asset-history" --skip-contract-refresh
 python3 script/frontend/build_shared_contracts.py --repo "$repo"
+sha256sum --check "$work/signed-book.sha256"
 python3 script/frontend/build_asset_value_data.py --repo "$repo"
 node script/frontend/build_cap_tracker_spotrac_data.mjs
 node script/frontend/build_static_data_manifest.mjs

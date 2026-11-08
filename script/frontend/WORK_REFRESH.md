@@ -24,6 +24,12 @@ asset-history requirements. Both install without root. Set `NBA_WORK_RUNTIME`
 to reuse an existing runtime directory, then source its `environment.sh`.
 The runner sets `TZ=UTC` to align R's observation date with the Python source
 snapshots; existing NBA Eastern rules for games and injuries remain explicit.
+Each run gets a fresh scratch subdirectory so a same-day retry cannot reuse a
+calibration cache built from different inputs.
+Signed ownership is resolved from the existing ownership replay and saved
+agreement terms before projecting minutes. The final asset capture must agree
+with that same signed roster; a stale provider roster cannot add an unsigned
+player to the projection or force another circular rebuild.
 
 The refresh stops on invalid source inputs or failed projection checks. Keep the
 current live deployment on any failure. Do not relabel old data as current or
@@ -71,6 +77,13 @@ head as the commit parent and a non-forced `expected_sha` ref update. Preserve
 concurrent changes. Include only validated source snapshots and derived app /
 model outputs; omit scratch, runtimes, credentials, and intermediate diagnostics.
 Routine generated-data commits should include `[skip ci]`.
+Store the current method's team histories as the canonical `.json.gz` files.
+The ordinary `.json` files are materialized for calculation and browser builds;
+do not commit both forms. The materializer restores exact bytes before use.
+For large Git blob uploads, read base64 in bounded chunks of 262143 source
+bytes (divisible by three), concatenate them, verify the encoded length, and
+require GitHub's returned blob SHA to match the local Git blob SHA. Large
+command outputs have a byte cap even when their token budget is higher.
 
 The archived workflow files retain their manual inputs and commands but have no
 automatic triggers. Daily refreshes and deployments do not use Actions minutes.
