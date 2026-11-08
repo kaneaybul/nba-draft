@@ -1,10 +1,8 @@
 name: Verify asset minutes integration
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  pull_request:
-    paths:
-      - script/frontend/role_minutes_policy.json
-      - script/asset_history/**
-      - .github/workflows/asset-minutes-check.yml
+  workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

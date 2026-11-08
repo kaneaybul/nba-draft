@@ -1,18 +1,7 @@
 name: Verify daily positions and SWITCH
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  pull_request:
-    paths:
-      - script/data/*positions*
-      - script/data/*switch*
-      - script/data/*transport*
-      - script/data/*snapshot*
-      - script/frontend/player_pool.R
-      - script/frontend/*positions.R
-      - script/frontend/refresh_live_switch.R
-      - script/frontend/live_ratings.R
-      - script/frontend/test_live_ratings.R
-      - .github/workflows/switch-position-checks.yml
   workflow_dispatch:
 
 permissions:

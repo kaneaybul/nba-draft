@@ -1,27 +1,13 @@
 name: Refresh asset history
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - script/frontend/role_minutes_policy.json
-      - script/asset_history/**
-      - .github/workflows/asset-history-refresh.yml
-      - raw/asset_history_refresh_request.json
   workflow_dispatch:
     inputs:
       refresh_contracts:
         description: Pull updated contract terms for this manual run
         type: boolean
         default: false
-  workflow_run:
-    workflows:
-      - Rebuild lineup projections
-    branches:
-      - main
-    types:
-      - completed
 
 jobs:
   refresh:

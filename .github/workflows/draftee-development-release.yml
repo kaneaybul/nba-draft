@@ -1,12 +1,8 @@
 name: Rebuild stable year-four asset projections
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches: [codex/draftee-development]
-    paths:
-      - script/asset_history/**
-      - script/frontend/**
-      - frontend/src/**
-      - .github/workflows/draftee-development-release.yml
+  workflow_dispatch:
+
 permissions:
   contents: write
 concurrency:

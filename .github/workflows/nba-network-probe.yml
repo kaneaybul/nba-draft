@@ -1,9 +1,8 @@
 name: Probe alternate NBA fetch network
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  pull_request:
-    paths:
-      - .github/workflows/nba-network-probe.yml
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

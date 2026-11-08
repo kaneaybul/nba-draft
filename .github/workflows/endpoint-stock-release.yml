@@ -1,13 +1,8 @@
 name: Validate career-path methodology release
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches: [codex/career-path-methodology]
-    paths:
-      - script/asset_history/**
-      - script/frontend/*asset*.py
-      - script/frontend/test_asset_history_visuals.mjs
-      - frontend/src/AssetHistory*
-      - .github/workflows/endpoint-stock-release.yml
+  workflow_dispatch:
+
 permissions:
   contents: write
 concurrency:

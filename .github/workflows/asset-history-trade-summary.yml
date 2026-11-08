@@ -1,13 +1,8 @@
 name: Publish dated trade summaries
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches: [codex/trade-summary]
-    paths:
-      - script/asset_history/attribution*.py
-      - script/asset_history/test_attribution_trades.py
-      - frontend/src/AssetHistoryCharts.tsx
-      - frontend/src/assetHistory.css
-      - .github/workflows/asset-history-trade-summary.yml
+  workflow_dispatch:
+
 permissions:
   contents: write
 concurrency:

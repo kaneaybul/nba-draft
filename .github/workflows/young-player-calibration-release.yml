@@ -1,9 +1,8 @@
 name: Validate young-player calibration
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches:
-      - codex/young-player-path-production
   workflow_dispatch:
+
 permissions:
   contents: write
 concurrency:

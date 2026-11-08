@@ -1,5 +1,6 @@
 name: Refresh data and deploy
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
   workflow_dispatch:
     inputs:

@@ -12,6 +12,8 @@ Thumbs.db
 *backup*.csv
 processed/logs/*.csv
 tmp/
+.work-runtime/
+.work-refresh/
 
 # Frontend generated files
 frontend/node_modules/

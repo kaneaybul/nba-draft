@@ -1,38 +1,9 @@
 name: Rebuild lineup projections
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "15 13 * * *"
-  push:
-    branches:
-      - main
-    paths:
-      # Rebuild for collector inputs and changes to the live pipeline itself.
-      # Generated outputs are excluded, so bot data commits cannot loop.
-      - raw/live/matchup_snapshot.json
-      - raw/live_refresh_request.json
-      - processed/contracts/current.json
-      - script/data/live_positions.py
-      - script/data/live_switch.py
-      - script/data/refresh_live_skill_stats.py
-      - script/data/refresh_live_ratings.mjs
-      - script/data/live_rating_dates.mjs
-      - script/data/test_live_ratings.mjs
-      - script/data/refresh_injury_outlook.py
-      - script/data/refresh_player_pool.py
-      - script/draft/refresh_2027_stats.py
-      - script/draft/score_2027_preview.R
-      - script/frontend/export_frontend_data.R
-      - script/frontend/live_ratings.R
-      - script/frontend/live_minutes.R
-      - script/frontend/injury_projections.R
-      - script/frontend/player_pool.R
-      - script/frontend/refresh_live_switch.R
-      - script/frontend/publish_refresh.sh
-      - .github/workflows/lineup-rebuild.yml
 
-# Serialize data commits with a deliberate roster refresh.
 concurrency:
   group: roster-refresh
   cancel-in-progress: false

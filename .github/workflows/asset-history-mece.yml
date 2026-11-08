@@ -1,18 +1,8 @@
 name: Build MECE asset attribution
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  pull_request:
-    paths:
-      - script/asset_history/**
-      - processed/asset_history/attribution_*.json
-      - frontend/src/AssetHistory*
-      - .github/workflows/asset-history-mece.yml
-  push:
-    branches: [main]
-    paths:
-      - script/asset_history/attribution*.py
-      - processed/asset_history/attribution_reviewed.json
-      - .github/workflows/asset-history-mece.yml
   workflow_dispatch:
+
 concurrency:
   group: mece-waterfall-validation-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true

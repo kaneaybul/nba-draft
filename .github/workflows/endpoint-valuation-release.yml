@@ -1,13 +1,8 @@
 name: Validate endpoint valuation release
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches: [codex/draft-endpoint-production]
-    paths:
-      - script/asset_history/**
-      - script/frontend/*asset*.py
-      - frontend/src/**
-      - .github/workflows/endpoint-valuation-release.yml
   workflow_dispatch:
+
 permissions:
   contents: write
 concurrency:

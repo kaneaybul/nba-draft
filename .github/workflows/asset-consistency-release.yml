@@ -1,12 +1,8 @@
 name: Validate consistent asset history release
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches: [codex/consistent-asset-window]
-    paths:
-      - script/asset_history/**
-      - script/frontend/**
-      - frontend/src/**
-      - .github/workflows/asset-consistency-release.yml
+  workflow_dispatch:
+
 permissions:
   contents: write
 concurrency:

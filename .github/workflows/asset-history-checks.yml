@@ -1,18 +1,8 @@
 name: Check asset history
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  pull_request:
-    paths:
-      - frontend/src/AssetHistory.tsx
-      - frontend/src/AssetHistoryCharts.tsx
-      - script/frontend/test_asset_history_visuals.mjs
-      - frontend/src/assetHistory.css
-      - frontend/src/App.tsx
-      - frontend/public/data/asset_history/**
-      - script/asset_history/**
-      - .github/workflows/asset-history-checks.yml
-      - .github/workflows/asset-history-refresh.yml
-      - processed/asset_history/**
   workflow_dispatch:
+
 permissions:
   contents: read
 jobs:

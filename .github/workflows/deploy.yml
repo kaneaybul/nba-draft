@@ -1,23 +1,8 @@
 name: Deploy static app
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - frontend/**
-      - .github/workflows/deploy.yml
-      - script/frontend/validate_frontend_data.mjs
-      - script/frontend/test_data_refresh.mjs
-      - script/frontend/build_asset_value_data.py
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - Refresh current NBA rosters
-      - Rebuild lineup projections
-      - Refresh asset history
-    types:
-      - completed
 
 jobs:
   deploy:

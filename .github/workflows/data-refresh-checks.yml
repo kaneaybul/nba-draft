@@ -1,25 +1,7 @@
 name: Verify frontend data refresh
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
-  pull_request:
-    paths:
-      - script/frontend/role_minutes_policy.json
-      - frontend/src/data.ts
-      - frontend/src/assetValue.ts
-      - frontend/package*.json
-      - script/frontend/test_data_refresh.mjs
-      - script/data/refresh_live_ratings.mjs
-      - script/data/live_rating_dates.mjs
-      - script/data/test_live_ratings.mjs
-      - script/draft/refresh_2027_stats.py
-      - script/draft/score_2027_preview.R
-      - script/frontend/live_minutes.R
-      - script/frontend/test_live_minutes.R
-      - script/frontend/injury_projections.R
-      - script/frontend/player_pool.R
-      - script/frontend/test_player_pool.R
-      - script/frontend/export_frontend_data.R
-      - .github/workflows/data-refresh-checks.yml
   workflow_dispatch:
 
 permissions:

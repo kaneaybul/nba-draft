@@ -1,16 +1,8 @@
 name: Refresh current NBA rosters
 
+# Automatic runs are replaced by the scheduled Work refresh.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    # Code changes must not launch a live scrape or reuse an expired snapshot.
-    # The usual refresh supplies verified fresh HTML before this push trigger runs.
-    paths:
-      - raw/cap_sources/spotrac/current_snapshot.json.xz
-      # Explicit refresh requests; ordinary code edits do not run live scrapes.
-      - raw/roster_refresh_request.json
 
 concurrency:
   group: roster-refresh
