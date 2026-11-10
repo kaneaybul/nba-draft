@@ -8,7 +8,8 @@ from publish import METHOD,TEAMS,validate
 HISTORICAL_INJURIES='Historical injury coverage uses reviewed major absence reports; it is not a complete archive of short-term medical reports.'
 
 def bridge(previous,current):
-    old={a['id']:a for a in previous['assets']};new={a['id']:a for a in current['assets']};out=[]
+    from identity import indexed_assets
+    old=indexed_assets(previous['assets']);new=indexed_assets(current['assets']);out=[]
     for kind,label in [('player','player'),('pick','draft-right')]:
         added=sum(a['value']for aid,a in new.items()if aid not in old and a['kind']==kind)
         removed=-sum(a['value']for aid,a in old.items()if aid not in new and a['kind']==kind)

@@ -70,6 +70,11 @@ def context(repo,runtime):
         if file.exists() and file.stat().st_size:rows=read(file)['snapshots']
         else:
             with gzip.open(file.with_suffix('.json.gz'),'rt')as f:rows=json.load(f)['snapshots']
+        # Resolve verified identity transitions only in this comparison view.
+        # The stored closed-month inventories and their values remain intact.
+        from identity import indexed_assets
+        for snapshot in rows:
+            snapshot['assets']=[{**asset,'id':identity} for identity,asset in indexed_assets(snapshot['assets']).items()]
         histories[team]={s['date']:s for s in rows}
     dates=sorted(histories['UTA'])
     if any(sorted(h)!=dates for h in histories.values()):raise ValueError('Attribution needs all 30 teams on the same observation dates')
