@@ -79,7 +79,20 @@ def build(repo):
     slots={str(r['pick']):r['quote']for r in model['pick_curve']}
     if len(slots)!=60 or any(not math.isfinite(v)for v in slots.values()):raise ValueError('Incomplete asset pick curve')
     index={}
+    reviews=json.loads((repo/'script/asset_history/backfill/reviewed_trade_packages.json').read_text())
     for year,dt in selected.items():
+        reviewed={}
+        for package in reviews['packages']:
+            if package['date']>dt:continue
+            for transfer in package['pick_transfers']:
+                if not transfer.get('unprotected'):continue
+                key=(transfer['origin_team'],transfer['draft_year'],transfer['round'])
+                claims=[p for p in feeds[dt]['picks'] if (p['origin'],p['year'],p['round'])==key]
+                # The current legal replay, not the original recipient, owns the
+                # quote if the pick has subsequently been traded again.
+                if len(claims)==1:
+                    reviewed[key]={**claims[0],'source_url':package['sources'][0]}
+        feeds[dt]['reviewed_pick_ownership']=list(reviewed.values())
         path=f'/data/asset_valuations/{DATA_VERSION}/{year}.json'
         index[str(year)]={'observation_date':dt,'path':path}
         feeds[dt].update(schema_version=2,method=METHOD,history_version=DATA_VERSION,

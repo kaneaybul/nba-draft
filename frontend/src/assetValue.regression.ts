@@ -79,6 +79,15 @@ export function runAssetValueRegressionTests(): string[] {
     "dated historical Impact, sorting and both trade entry points match the identical inventory quote");
   const ambiguous = withAssetPickValues([picks[1], { ...picks[1], asset_id: "duplicate" }], published);
   expect(ambiguous.every((pick) => pick.value_priced === false), "ambiguous legal claims cannot duplicate a portfolio quote");
+  const reviewed = { team: "SAC", origin: "UTA", year: 2028, round: 2, value: 123, source_url: "https://www.nba.com/kings/news/sacramento-kings-complete-trade" };
+  const corrected = withAssetPickValues([{ ...picks[1], team: "OKC", origin_team: "UTA", draft_year: 2028, round: 2 }],
+    { ...published, picks: [reviewed], reviewed_pick_ownership: [reviewed] });
+  expect(corrected.length === 1 && corrected[0].team === "SAC" && corrected[0].value === 123 && corrected[0].value_priced,
+    "reviewed ownership replaces the stale source owner and uses the shared quote");
+  const missingPick = withAssetPickValues([], { ...published, picks: [reviewed], reviewed_pick_ownership: [reviewed] });
+  expect(missingPick.length === 1 && missingPick[0].team === "SAC", "a reviewed pick missing from the generic feed is available to trade");
+  expect(withAssetPickValues(corrected, { ...published, picks: [reviewed], reviewed_pick_ownership: [reviewed] }).length === 1,
+    "repeated hydration cannot duplicate reviewed picks");
   return [
     "annual value rewards cheap production and preserves signed liabilities",
     "best-two production includes every four-year contract adjustment",

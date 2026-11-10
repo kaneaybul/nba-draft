@@ -11,7 +11,8 @@ def source_signature(repo):
         'processed/asset_history/player_state/archived_inputs/*',
         'frontend/public/data/v2/team_schedules/*.json','frontend/public/data/v2/team_projections/*.json','frontend/public/data/v2/impact_players/*.json',
         'script/asset_history/*.py','script/asset_history/backfill/*.py','script/asset_history/calibration/*.py',
-        'script/frontend/role_minutes_policy.json')
+        'script/frontend/role_minutes_policy.json',
+        'script/asset_history/backfill/reviewed_trade_packages.json')
     files={p for pattern in patterns for p in repo.glob(pattern)if p.is_file()and not p.name.startswith('test_')}
     parts=[(str(p.relative_to(repo)),hashlib.sha256(p.read_bytes()).hexdigest())for p in sorted(files)]
     return hashlib.sha256(json.dumps(parts,separators=(',',':')).encode()).hexdigest()

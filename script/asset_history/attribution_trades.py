@@ -276,7 +276,8 @@ def enrich_trade_details(ctx, ledgers):
         teams.intersection_update(ledgers)
         if len(teams) >= 2:
             sources = action['source']
-            source = event.get('source') or record.get('source') or (sources[0] if isinstance(sources, list) else sources)
+            evidence = record.get('source') if record.get('reviewed_package_id') else None
+            source = (evidence[0] if isinstance(evidence, list) else evidence) or event.get('source') or record.get('source') or (sources[0] if isinstance(sources, list) else sources)
             actions_by_day[day][event_id] = add_deal(day, event_id, source, text, teams)
     pick_estimates(ctx, deals, actions_by_day)
 

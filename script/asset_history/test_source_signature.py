@@ -4,6 +4,12 @@ from source_signature import source_signature
 
 
 class InputFingerprint(unittest.TestCase):
+    def test_trade_package_review_invalidates_reuse(self):
+        with tempfile.TemporaryDirectory()as folder:
+            root=Path(folder);p=root/'script/asset_history/backfill/reviewed_trade_packages.json'
+            p.parent.mkdir(parents=True);p.write_text('{"packages":[]}')
+            old=source_signature(root);p.write_text('{"packages":[{"id":"reviewed"}]}')
+            self.assertNotEqual(old,source_signature(root))
     def test_new_evidence_or_model_changes_invalidate_but_outputs_do_not(self):
         with tempfile.TemporaryDirectory()as folder:
             root=Path(folder)

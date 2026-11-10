@@ -16,6 +16,7 @@ export type AssetValuationData = {
   players: Record<string, NonNullable<PlayerImpact["asset_valuation"]>>;
   slots: Record<string, number>;
   picks: Array<{ team: string; origin: string; year: number; round: number; value: number }>;
+  reviewed_pick_ownership?: Array<{ team: string; origin: string; year: number; round: number; value: number; source_url: string }>;
   seasons?: Record<string, { observation_date: string; path: string }>;
 };
 
@@ -129,6 +130,17 @@ export function withAssetValueContext(players: PlayerImpact[], capTracker?: CapT
 
 export function withAssetPickValues(picks: PickAsset[], valuations?: AssetValuationData): PickAsset[] {
   if (!valuations) return picks;
+  // The generic future-picks feed can lag an officially reviewed transaction.
+  // Replace only reviewed, fully owned physical picks with the replay's current owner.
+  for (const right of valuations.reviewed_pick_ownership ?? []) {
+    picks = picks.filter((pick) => !(pick.asset_type !== "slot_value" && pick.origin_team === right.origin
+      && pick.draft_year === right.year && pick.round === right.round));
+    picks.push({ asset_id: `reviewed-pick-${right.origin}-${right.year}-${right.round}`, team: right.team,
+      origin_team: right.origin, draft_year: right.year, round: right.round, pick: right.round === 1 ? 15 : 45,
+      label: `${right.year} ${right.origin} ${right.round === 1 ? "1st" : "2nd"} (unprotected)`,
+      asset_type: "team_pick", value: right.value, normalized: 0, protection: "Unprotected",
+      convey_probability: 1, source_url: right.source_url, description: "Ownership verified against the complete trade package and current legal replay." });
+  }
   const key = (team: string, origin: string, year: number, round: number) => `${team}:${origin}:${year}:${round}`;
   const rights = new Map<string, number>();
   for (const pick of valuations.picks) {
