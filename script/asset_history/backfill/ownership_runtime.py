@@ -9,6 +9,9 @@ from datetime import datetime,timezone
 from pathlib import Path
 
 ALIASES={
+ # NBA profile verifies the new signing before any rating/stat appearance.
+ # https://www.nba.com/player/1643563/richie-saunders
+ 'richiesaunders':1643563,
  'bjboston':1630527,'brandonboston':1630527,
  'ejharkless':1641989,'elijahharkless':1641989,
  'cameronchristie':1642353,'camchristie':1642353,

@@ -1,9 +1,27 @@
 import unittest
+import json,tempfile
+from pathlib import Path
 from datetime import datetime,timezone
-from refresh_player_pool import reconcile,departure_for,roster_rows
+from refresh_player_pool import reconcile,departure_for,roster_rows,seed_registry
 NOW=datetime(2026,10,24,tzinfo=timezone.utc)
 
 class PoolTests(unittest.TestCase):
+    def test_official_identity_before_first_nba_minutes_preserves_app_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'ref').mkdir()
+            history=root/'processed/livedata/impactrefresh/impactoutput.csv'
+            history.parent.mkdir(parents=True);history.write_text('nba_id,player_name,year,Minutes\n')
+            identity=dict(app_nba_id=-2027020,nba_id=1643563,player_name='Richie Saunders',source_url='https://www.nba.com/player/1643563/richie-saunders')
+            (root/'ref/player_identity_overrides.json').write_text(json.dumps([identity]))
+            player=dict(app_nba_id=-2027020,nba_id=None,player_name='Richie Saunders',pool_status='roster',team='MEM')
+            rows=seed_registry(root,2027,[player])
+            self.assertEqual(len(rows),1)
+            self.assertEqual(rows[0]['nba_id'],1643563)
+            self.assertEqual(rows[0]['app_nba_id'],-2027020)
+            self.assertEqual(seed_registry(root,2027,rows),rows)
+            with self.assertRaisesRegex(ValueError,'Conflicting verified'):
+                seed_registry(root,2027,[dict(player,nba_id=123)])
     def player(self):
         return dict(app_nba_id=42,nba_id=42,player_name='Example Player',team='UTA',pool_status='roster',last_seen='2026-10-22',last_nba_season=2026)
     def test_missing_roster_is_not_a_waiver(self):

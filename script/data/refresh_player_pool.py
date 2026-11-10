@@ -135,6 +135,16 @@ def seed_registry(root,season,previous):
             records[canonical]=p;names[name_key(p['player_name'])].append(p)
         p['nba_id']=canonical
         if minutes>0:p['last_nba_season']=max(p.get('last_nba_season') or 0,year)
+    # Official profiles can establish identity before the first rating or NBA
+    # minute. Keep the app ID so frozen preseason comparisons still join.
+    for identity in read_json(root/'ref/player_identity_overrides.json',[]):
+        p=records.get(identity['app_nba_id'])
+        if p is None:continue
+        if (name_key(p['player_name'])!=name_key(identity['player_name'])
+            or p.get('nba_id') not in (None,identity['nba_id'])
+            or not identity.get('source_url')):
+            raise ValueError('Conflicting verified player identity: '+identity['player_name'])
+        p.update(nba_id=identity['nba_id'],identity_status='nba_id',identity_source_url=identity['source_url'])
     return list(records.values())
 
 def main():
