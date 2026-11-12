@@ -5,6 +5,23 @@ and the frontend build. GitHub stores source and validated generated data.
 Production is the existing `nba-impact-lab` Cloudflare Pages project in account
 `459c82aa78b901e821b6b0935cac5bea`, branch `main`.
 
+## Recover source without a working ZIP download
+
+Pin the current main commit before fetching files. If a browser archive stalls,
+use the GitHub connector's recursive tree and directory contents endpoints.
+Reuse local files only when their Git blob hashes match that tree. For missing
+files, request each directory at the pinned commit and immediately download its
+returned file-specific `download_url` values in bounded concurrent batches.
+These URLs expire quickly; acquire them just before downloading each batch and
+request fresh directory metadata after a 404. Do not reuse one file's token for
+another path. Verify every Git blob SHA before using a recovered file. Keep
+credentials out of source, logs, and recovery checkpoints.
+
+A failed run must preserve the last successful deployment and leave the daily
+schedule enabled. Report the failing stage; do not pause future runs merely
+because the current run failed. Publication is complete only after the exact
+Cloudflare deployment succeeds and the production site serves the new data.
+
 ## Build a fresh release
 
 Use a current checkout of `kaneaybul/nba-draft` and inspect applicable repository
