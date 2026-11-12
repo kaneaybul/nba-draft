@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "season": 2027,
-  "generated_at": "2026-11-12T18:18:35.495Z",
+  "generated_at": "2026-11-12T18:34:27.105Z",
   "epm_type": "expected",
   "epm_as_of": "2026-11-12",
   "darko_through": "2026-11-10",
@@ -10,7 +10,7 @@
   "matched_players": 521,
   "total_players": 635,
   "unmatched_players": ["Kevin Porter Jr.", "Brandon Clarke", "Chris Boucher", "Dwight Powell", "Lonzo Ball", "Cameron Payne", "DAngelo Russell", "John Konchar", "Vince Williams Jr.", "Haywood Highsmith", "Jonas Valanciunas", "Kevin Love", "Aaron Holiday", "Garrison Mathews", "Cam Thomas", "Guerschon Yabusele", "Jeremy Sochan", "Cody Martin", "Chris Paul", "Monte Morris", "Russell Westbrook", "Kelly Olynyk", "Dalen Terry", "Killian Hayes", "Nicolas Batum", "Cole Anthony", "Seth Curry", "Jaden Ivey", "Xavier Tillman", "Jaden Springer", "Gary Harris", "Caleb Houstan", "Dario Saric", "Dante Exum", "Ochai Agbaji", "Eric Gordon", "Pat Connaughton", "Dalano Banton", "MarJon Beauchamp", "Amir Coffey", "Terry Rozier", "JD Davison", "Ethan Thompson", "Drew Eubanks", "Jeremiah Robinson-Earl", "Tyrese Martin", "Johnny Juzang", "Gabe Vincent", "Mason Plumlee", "David Roddy", "Blake Hinson", "Antonio Reeves", "Colby Jones", "Lindy Waters III", "DeJon Jarreau", "A.J. Lawson", "John Poulakidas", "Malaki Branham", "Maxi Kleber", "Lachlan Olbrich", "Tristen Newton", "Andre Jackson Jr.", "Yuki Kawamura", "Alex Antetokounmpo", "E.J. Liddell", "Doug McDermott", "Keaton Wallace", "KJ Simpson", "Alondes Williams", "Bruce Brown", "Isaiah Livers", "Tyler Burton", "Kyle Lowry", "Mac McClung", "Taelon Peter", "Nate Williams", "Bez Mbeng", "Christian Koloko", "Omer Yurtseven", "Luke Travers", "Kennedy Chandler", "Tyler Smith", "Sharife Cooper", "Andersson Garcia", "Tyson Etienne", "Blake Wesley", "Joe Ingles", "Adama Bal", "Thanasis Antetokounmpo", "Nick Smith Jr.", "Miles Kelly", "Lucas Williamson", "Trevon Scott", "Hunter Tyson", "Rob Dillingham", "Dariq Whitehead", "Nigel Hayes-Davis", "Jeff Green", "Toby Okani", "Bismack Biyombo", "Milos Uzan", "Lawson Lovering", "Enrique Freeman", "Taj Gibson", "Garrett Temple", "Skal Labissiere", "Markelle Fultz", "DaQuan Jeffries", "Patrick Baldwin Jr.", "Mouhamadou Gueye", "Tristan Enaruna", "Otega Oweh", "Carson Cooper", "AK Okereke"],
-  "skill_stats_fetched_at": "2026-11-12T18:19:13.291033+00:00",
+  "skill_stats_fetched_at": "2026-11-12T18:34:51.066130+00:00",
   "skill_updated_players": 463,
   "max_current_weight": 1,
   "held_skill_components": [
@@ -19,7 +19,7 @@
   "switch_status": {
     "season": 2027,
     "season_label": "2026-27",
-    "checked_at": "2026-11-12T18:19:13.297379+00:00",
+    "checked_at": "2026-11-12T18:34:51.072367+00:00",
     "source": "https://stats.nba.com/stats/leagueseasonmatchups",
     "status": "partial",
     "reason": "410 fresh SWITCH samples; 182 with partial game coverage; 18 last valid samples retained; 36 without observations. Sample-specific evidence weights apply; unavailable observations retain preseason.",

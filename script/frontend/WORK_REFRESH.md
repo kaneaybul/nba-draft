@@ -14,7 +14,7 @@ files, request each directory at the pinned commit and immediately download its
 returned file-specific `download_url` values in bounded concurrent batches.
 These URLs expire quickly; acquire them just before downloading each batch and
 request fresh directory metadata after a 404. Do not reuse one file's token for
-another path. Verify every Git blob SHA before using a recovered file. Keep
+another path. Verify every Git blob SHA before using a recovered file; changed line endings also\ninvalidate saved model fingerprints. Keep full logs on disk and read bounded\ntails rather than emitting datasets or encoded blobs into the conversation. Keep
 credentials out of source, logs, and recovery checkpoints.
 
 A failed run must preserve the last successful deployment and leave the daily
@@ -37,7 +37,7 @@ NBA_REFRESH_WORK_DIR="$PWD/.work-refresh" bash script/frontend/run_work_refresh.
 ```
 
 The R environment is pinned in `work_r_packages.lock`; Python uses the existing
-asset-history requirements. Both install without root. Set `NBA_WORK_RUNTIME`
+asset-history requirements. Both install without root. Installer metadata and\npackage caches live inside the runtime, not the container home directory.\nSource `environment.sh` before `npm ci` so npm uses its writable cache. Set `NBA_WORK_RUNTIME`
 to reuse an existing runtime directory, then source its `environment.sh`.
 The runner sets `TZ=UTC` to align R's observation date with the Python source
 snapshots; existing NBA Eastern rules for games and injuries remain explicit.
@@ -93,7 +93,7 @@ Use the connected GitHub Git-data tools on the latest `main` head, with that
 head as the commit parent and a non-forced `expected_sha` ref update. Preserve
 concurrent changes. Include only validated source snapshots and derived app /
 model outputs; omit scratch, runtimes, credentials, and intermediate diagnostics.
-Routine generated-data commits should include `[skip ci]`.
+Routine generated-data commits should include `[skip ci]`. Commit the complete\nvalidated generated state, including player-state checkpoints, before considering\na release finished. A deployed release with uncommitted state leaves the next\nclean refresh starting from older inputs.
 Store the current method's team histories as the canonical `.json.gz` files.
 The ordinary `.json` files are materialized for calculation and browser builds;
 do not commit both forms. The materializer restores exact bytes before use.

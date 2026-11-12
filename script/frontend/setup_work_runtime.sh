@@ -5,6 +5,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 repo="$PWD"
 runtime="${NBA_WORK_RUNTIME:-$repo/.work-runtime}"
 mkdir -p "$runtime"
+# Managed Work containers may not have a writable (or even existing) home.
+# Keep micromamba's environment registry and package caches inside this runtime.
+runtime="$(cd "$runtime" && pwd)"
+mkdir -p "$runtime/home" "$runtime/pip-cache"
+export HOME="$runtime/home"
+export PIP_CACHE_DIR="$runtime/pip-cache"
 if [[ ! -x "$runtime/bin/micromamba" ]]; then
   python3 - "$runtime" <<'PY'
 import io,pathlib,sys,tarfile,urllib.request
@@ -28,6 +34,10 @@ fi
 python3 - "$runtime" <<'PY'
 import pathlib,shlex,sys
 p=pathlib.Path(sys.argv[1]).resolve()
-(p/'environment.sh').write_text('export PATH='+shlex.quote(str(p/'nba-python/bin')+':'+str(p/'nba-r/bin'))+':"$PATH"\n')
+(p/'environment.sh').write_text(
+    'export PATH='+shlex.quote(str(p/'nba-python/bin')+':'+str(p/'nba-r/bin'))+':"$PATH"\n'
+    'export npm_config_cache='+shlex.quote(str(p/'npm-cache'))+'\n'
+)
 print('Runtime ready:',p/'environment.sh')
 PY
+
