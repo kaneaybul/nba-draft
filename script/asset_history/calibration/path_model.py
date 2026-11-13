@@ -169,7 +169,7 @@ def development_weight(minutes, scale, remaining_seasons):
 
 def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
                           nba, nba_cost, nba_weights, nba_weight, exposures,
-                          nba_endpoint_values=None, nba_endpoint_weights=None):
+                          nba_endpoint_values=None, nba_endpoint_weights=None, endpoint_weight=None):
     """One padded stock: original prior blended with the updated Y4 appraisal.
 
     Each linked NBA career is priced before averaging. The draft component
@@ -204,8 +204,23 @@ def summarize_development(prior, prior_cost, prior_weights, endpoint_values,
         quotes=np.concatenate([endpoint_values+financial[:len(pw)],
             (own[:,None]+financial[len(pw):][None,:]).ravel()])
         qw=np.concatenate([(1-nba_weight)*pw,nba_weight*(ow[:,None]*nw[None,:]).ravel()])
+    endpoint_weight=nba_weight if endpoint_weight is None else float(endpoint_weight)
+    if not 0<=endpoint_weight<=1:raise ValueError('Invalid endpoint mixture weight')
+    if endpoint_weight!=nba_weight:
+        # One shared latent regime U yields the nearest coupling, preserves
+        # both marginals, and exactly retains old pairing when weights match.
+        q00=1-max(endpoint_weight,nba_weight);q11=min(endpoint_weight,nba_weight)
+        q10=max(0.,endpoint_weight-nba_weight);q01=max(0.,nba_weight-endpoint_weight)
+        branches=[endpoint_values+financial[:len(pw)],
+                  (own[:,None]+financial[len(pw):][None,:]).ravel(),
+                  (own[:,None]+financial[:len(pw)][None,:]).ravel(),
+                  (endpoint_values[:,None]+financial[len(pw):][None,:]).ravel()]
+        probabilities=[q00*pw,q11*(ow[:,None]*nw[None,:]).ravel(),
+                       q10*(ow[:,None]*pw[None,:]).ravel(),q01*(pw[:,None]*nw[None,:]).ravel()]
+        quotes=np.concatenate(branches);qw=np.concatenate(probabilities)
+        positive=qw>0;quotes=quotes[positive];qw=qw[positive]
     production=np.concatenate([endpoint_values,own])
-    production_weights=np.concatenate([(1-nba_weight)*pw,nba_weight*ow])
+    production_weights=np.concatenate([(1-endpoint_weight)*pw,endpoint_weight*ow])
     result['draft_prior_adjustment'] = float(qw@quotes) - result['mean']
     result['mean'] = float(qw@quotes)
     result['scenarios']=len(qw)

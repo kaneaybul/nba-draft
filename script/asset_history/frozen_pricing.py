@@ -32,7 +32,7 @@ def endpoint_shift(original_path,path,group):
  delta=[(path.mean(82*(int(y)-2000),82*(int(y)+1-2000))-original_path.mean(82*(int(y)-2000),82*(int(y)+1-2000)))*float(k)for y,k in zip(years,coeff)]
  def peak(row):return 2*sum(sorted(max(0.,float(v))for v in row)[-2:])
  if any(len(row)!=4 for row in paths):raise ValueError('Invalid endpoint scenario length')
- return float(group['weight'])*sum(float(w)*(peak([v+d for v,d in zip(row,delta)])-peak(row))for row,w in zip(paths,weights))
+ return float(group.get('endpoint_weight',group['weight']))*sum(float(w)*(peak([v+d for v,d in zip(row,delta)])-peak(row))for row,w in zip(paths,weights))
 def price_context(asset,exposures,market,coordinate_shift=0.):
  d=asset['details'];ctx=d['rolling_impact'];rows={int(r['season']):r for r in ctx['annual_pricing_rows']}
  path=ImpactPath(tuple((float(x)+coordinate_shift,float(y))for x,y in ctx['knots']));clock=clock_from_exposures(exposures)
@@ -82,7 +82,7 @@ def price_context(asset,exposures,market,coordinate_shift=0.):
   if abs(coordinate_shift)>1e-12 and payload is not None:
    original_path=ImpactPath(tuple(tuple(x)for x in ctx['knots']))
    for group in groups:
-    if group['kind']=='nba'and float(group['weight']):prod_quote+=endpoint_shift(original_path,path,group)
+    if group['kind']=='nba'and float(group.get('endpoint_weight',group['weight'])):prod_quote+=endpoint_shift(original_path,path,group)
  return dict(value=prod_quote+financial,peak=prod_quote,rolling_peak=prod_quote,tail_carry=[],method='opening rolling impact path reintegrated with frozen pricing scenarios')
 def frozen_clock(asset,exposures,market=None,closing_asset=None):
  original={int(r['season']):float(r['exposure'])for r in asset['details']['annual_values']if float(r['exposure'])>0}

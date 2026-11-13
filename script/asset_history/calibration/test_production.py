@@ -127,17 +127,18 @@ class ProductionQuotes(unittest.TestCase):
 
     def test_expected_peak_survives_the_exported_annual_means(self):
         c,p,a=fixture();result=c.quote(p,a)
-        self.assertAlmostEqual(result['mean'],92.66666666666667)
+        self.assertAlmostEqual(result['mean'],76.)
         self.assertAlmostEqual(result['mean_path_quote'],56.)
         self.assertAlmostEqual(result['path_selection_premium'],30.)
-        self.assertAlmostEqual(result['draft_prior_adjustment'],6.666666666666667)
-        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],92.66666666666667)
+        self.assertAlmostEqual(result['draft_prior_adjustment'],-10.)
+        self.assertAlmostEqual(result['production_quote']+result['contract_adjustment_sum'],76.)
         self.assertAlmostEqual(sum((r['asset']-r['production'])*r['exposure']for r in result['annual_values']),result['contract_adjustment_sum'])
 
     def test_observed_minutes_update_reliability_and_veterans_keep_the_old_policy(self):
         c,p,a=fixture();first=c.quote(p,a)
         c.observations[p['cutoff_date'],7]=600.
-        self.assertGreater(c.quote(p,a)['nba_weight'],first['nba_weight'])
+        self.assertGreater(c.quote(p,a)['service_nba_weight'],first['service_nba_weight'])
+        self.assertEqual(c.quote(p,a)['nba_weight'],first['nba_weight'])
         p['draft_year']='2020'
         self.assertIsNone(c.quote(p,a))
 
@@ -147,7 +148,8 @@ class ProductionQuotes(unittest.TestCase):
         result=c.quote(p,a)
         self.assertEqual(result['completed_minutes'],1000.)
         self.assertEqual(result['current_observed_minutes'],0.)
-        self.assertAlmostEqual(result['nba_weight'],1000./1100.)
+        self.assertAlmostEqual(result['service_nba_weight'],1000./1100.)
+        self.assertAlmostEqual(result['nba_weight'],.5)
 
     def test_last_development_season_continuously_reaches_the_normal_quote(self):
         c,p,a=fixture()
@@ -162,14 +164,17 @@ class ProductionQuotes(unittest.TestCase):
         self.assertIsNone(c.quote(p,a))
 
     def test_first_season_updates_the_endpoint_with_verified_nba_evidence(self):
-        c,p,a=fixture();p['draft_year']='2024';c.observations[p['cutoff_date'],7]=2000.
+        c,p,a=fixture();p['draft_year']='2024';p['impact_team_game_clock']=82*25+20;c.observations[p['cutoff_date'],7]=2000.
         for row in c.careers:row['stage']=0
         c.pick_curve[1]=dict(peak_production_quote=80.,cumulative_production_quote=40.)
         result=c.quote(p,a)
         self.assertGreater(result['nba_weight'],0.)
         self.assertEqual(result['current_observed_minutes'],2000.)
         c.observations[p['cutoff_date'],7]=0.
-        self.assertEqual(c.quote(p,a)['nba_weight'],0.)
+        no_minutes=c.quote(p,a)
+        self.assertEqual(no_minutes['nba_weight'],result['nba_weight'])
+        self.assertEqual(no_minutes['service_nba_weight'],0.)
+        self.assertGreater(no_minutes['nba_production_quote'],0.)
 
     def test_known_absence_preserves_signed_cost(self):
         c,p,a=fixture();a[0].update(availability_overlay='0',annual_production='0',app_effective_contract='10')

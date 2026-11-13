@@ -40,7 +40,7 @@ def prepare(runtime,repo,state,output):
            runtime/'monthly_reconstruction/projections/app_sources/career_projection_selected_terms.csv',
            runtime/'monthly_reconstruction/projections/valuation_engine.py',
            *[runtime/f'app_model/impact_{y}.json'for y in range(2016,last+1)],
-           *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','endpoint_paths.py','legacy_v4.py')]]
+           *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','endpoint_paths.py','legacy_v4.py','padding_ramp.py')]]
     files += [Path(__file__).parents[1]/n for n in ('rolling_context.py','frozen_pricing.py','rolling_impact.py')]
     hashes=[(p.name,hashlib.sha256(p.read_bytes()).hexdigest())for p in files]
     pick=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
@@ -226,6 +226,9 @@ class PathCalibrator:
         observed=self.observations.get((dt,pid),0.) if self.observation_seasons.get((dt,pid))==cutoff+1 else 0.
         remaining=float(e[window].sum())
         weight=development_weight(minutes+observed,fitted['scale'],remaining) if fitted['n']>=30 else 0.
+        from .padding_ramp import audit as ramp_audit
+        padding_audit=ramp_audit(player,draft,minutes+observed,remaining)
+        endpoint_weight=padding_audit['weight']
         cap_by_year={int(r['season']):float(r['salary_cap_scenario'])for r in annual}
         def cap(year,_):
             if year in cap_by_year:return cap_by_year[year]
@@ -263,7 +266,7 @@ class PathCalibrator:
         nba,nc=price(nba);prior,pc=price(prior)
         endpoint_values=production_quotes(endpoint_prior['paths'][:,4:8])
         endpoint_audit={}
-        if weight:
+        if weight or endpoint_weight:
             endpoint_mean=own_endpoint_path(player,full_carry_annual,int(draft),self.endpoint_states,self.runtime,endpoint_audit,canonical=True)
             ep,ew,ea=self.endpoint_residuals.scenarios(endpoint_mean,feature,cutoff,min(4.,remaining),key)
             own_values=production_quotes(ep)
@@ -271,15 +274,16 @@ class PathCalibrator:
         else:
             own_values,ew=np.array([0.]),np.array([1.])
             endpoint_audit.update(method='no NBA evidence; original draft expectation')
-        result=summarize_development(prior,pc,pw,endpoint_values,nba,nc,nw,weight,e,own_values,ew)
-        if weight and endpoint_audit.get('impact_sensitivities') is not None:
+        result=summarize_development(prior,pc,pw,endpoint_values,nba,nc,nw,weight,e,own_values,ew,endpoint_weight=endpoint_weight)
+        if (weight or endpoint_weight) and endpoint_audit.get('impact_sensitivities') is not None:
             groups=unpack_scenarios(frozen_scenarios)
+            groups[0]['endpoint_weight']=endpoint_weight
             groups[0]['endpoint']=dict(years=list(endpoint_audit['years']),paths=ep.tolist(),
                 weights=(ew/np.sum(ew)).tolist(),sensitivities=list(endpoint_audit['impact_sensitivities']))
             frozen_scenarios=pack_scenarios(groups)
         result['frozen_pricing_scenarios']=frozen_scenarios
         result.update(status='priced',policy=POLICY,cutoff=cutoff,training_signature=self.data['signature'],
-            nba_weight=weight,completed_minutes=minutes,current_observed_minutes=observed,
+            nba_weight=endpoint_weight,service_nba_weight=weight,padding_ramp=padding_audit,completed_minutes=minutes,current_observed_minutes=observed,
             learning_scale=fitted['scale'],learning_training_n=fitted['n'],
             latest_learning_label=fitted.get('latest_label'),latest_residual_label=residual_meta['latest_label'],
             latest_prior_label=endpoint_prior['latest_label'],prior_scale=prior_scale,
