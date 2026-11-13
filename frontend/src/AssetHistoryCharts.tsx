@@ -36,7 +36,7 @@ export type AttributionInterval = {
 };
 export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[]; trade_deals?: TradeDeal[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
-  const expectedAttribution = valuationMethod === 'peak4-payroll-0.8-v13'
+  const expectedAttribution = (valuationMethod === 'peak4-payroll-0.8-v13' || valuationMethod === 'peak4-payroll-0.8-v14')
     ? 'forecast-based-attribution-v8'
     : /^peak4-payroll-0\.8-v(?:[1-9]|1[0-2])$/.test(valuationMethod ?? '')
       ? 'forecast-based-attribution-v7' : null;

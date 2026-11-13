@@ -1,8 +1,8 @@
 {
   "archive": "processed/asset_history/canonical_runtime_seed.zip",
-  "archive_sha256": "7921c70082a2e421b37a8bd789c858eeedd657235dd11491e4ccd95b082c8839",
+  "archive_sha256": "08fce3b704e32b503fb9ccc0b612d433297095c9b76ec5cac2b80530b11886c5",
   "files": 135,
-  "compressed_bytes": 32854009,
-  "uncompressed_bytes": 162313916,
-  "scope": "Canonical engine and original seed evidence; only rolling impact runtime source replaced or added. Current captured inputs restore separately before refresh."
+  "compressed_bytes": 32854212,
+  "uncompressed_bytes": 162314740,
+  "scope": "Canonical engine and existing seed evidence; only the fixed-endpoint role export and carry sources changed."
 }

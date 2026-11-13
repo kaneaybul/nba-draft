@@ -47,3 +47,44 @@ class EndpointTests(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+class AnchoredEndpointTailTests(unittest.TestCase):
+    def inputs(self):
+        import json
+        player={'impact_path_knots_json':json.dumps([[82*2027-164000,2.],[82*2037-164000,2.]]),'impact_team_game_clock':82*27}
+        rows=[dict(season=y,latent_annual_minutes=9999,endpoint_role_annual_minutes=100+y-2027,
+                   scale_budget_scenario=1,salary_cap_scenario=164961000,league_timin=30,
+                   replacement=0,league_reference_year=2026,annual_production=7)for y in range(2027,2032)]
+        return player,rows
+    def run_endpoint(self,player,rows,audit=None):
+        import types
+        from unittest.mock import patch
+        from calibration.endpoint_model import own_endpoint_path
+        def forbidden(*args):raise AssertionError('Generic role fallback must not run')
+        with patch.dict(sys.modules,{'valuation_engine':types.SimpleNamespace(AnnualState=forbidden,project_path=forbidden)}):
+            return own_endpoint_path(player,rows,2023,{},None,audit,True)
+    def test_actual_endpoint_years_use_anchored_minutes_not_generic(self):
+        p,r=self.inputs();audit={};values=self.run_endpoint(p,r,audit)
+        self.assertEqual(values,[202.,204.,206.,208.])
+        self.assertEqual(audit['years'],[2028,2029,2030,2031])
+        self.assertEqual(audit['endpoint_annual_minutes'],[101.,102.,103.,104.])
+        self.assertEqual(audit['endpoint_minutes_source'],'fixed_anchor_RoleSmoother_full_posterior')
+    def test_csv_and_frozen_context_keep_endpoint_tail(self):
+        import csv,io
+        from rolling_export import serialize_impact_context
+        p,r=self.inputs();buf=io.StringIO();w=csv.DictWriter(buf,fieldnames=list(r[0]));w.writeheader();w.writerows(r);buf.seek(0)
+        parsed=list(csv.DictReader(buf));context=serialize_impact_context(p,parsed)
+        self.assertEqual(self.run_endpoint(p,context['annual_pricing_rows']),[202.,204.,206.,208.])
+    def test_missing_column_fails_closed(self):
+        p,r=self.inputs()
+        for row in r:row.pop('endpoint_role_annual_minutes')
+        with self.assertRaisesRegex(ValueError,'Missing anchored'):self.run_endpoint(p,r)
+    def test_missing_late_year_and_nonfinite_fail_closed(self):
+        p,r=self.inputs()
+        with self.assertRaisesRegex(ValueError,'2031'):self.run_endpoint(p,r[:-1])
+        r[-1]['endpoint_role_annual_minutes']='nan'
+        with self.assertRaisesRegex(ValueError,'Invalid anchored'):self.run_endpoint(p,r)
+    def test_legacy_nonrolling_full_path_unchanged(self):
+        p,r=self.inputs();p={}
+        for row in r:row['app_annual_quote_production_reporting_rate']=7
+        self.assertEqual(self.run_endpoint(p,r),[7.,7.,7.,7.])
