@@ -206,7 +206,7 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
 
 async function loadAssetValuations(cacheBust?: string, season?: number): Promise<AssetValuationData | undefined> {
   const data = await loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current");
-  if (data.method !== "peak4-payroll-0.8-v12" || data.history_version !== "v12") {
+  if (data.method !== "peak4-payroll-0.8-v13" || data.history_version !== "v13") {
     throw new Error("The current asset valuation release is unavailable. Reload after the update finishes.");
   }
   if (season !== undefined && season !== data.season && data.seasons?.[String(season)]) {
@@ -371,3 +371,4 @@ function numberValue(value: string | number | null | undefined): number | null {
   const parsed = Number(String(value).replace(/[$,%]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
+

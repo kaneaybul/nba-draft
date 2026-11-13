@@ -77,7 +77,7 @@ def main(args):
     if not staged_model.exists():raise ValueError('Missing endpoint-trained shared pick model')
     model=json.loads(staged_model.read_text())
     if new_version and published_inputs:
-        picks=reprice_historical_picks(repo,model,[asof],args.draws)[asof]
+        picks=reprice_historical_picks(repo,model,[asof],args.draws,runtime=runtime)[asof]
     else:
         picks = refresh_picks(repo,runtime,asof,work/'pick_candidates.json',args.draws,
                               staged_model,use_published_inputs=published_inputs)
@@ -102,13 +102,15 @@ def main(args):
         dates=sorted({d for points in legacy.values()for d in points if d[:7]<asof[:7]})
         # Always use the staged model: an unpublished rebuild may already have
         # replaced the model file while the preserved legacy inventory has not.
-        repriced=reprice_historical_picks(repo,model,dates,args.draws)
+        repriced=reprice_historical_picks(repo,model,dates,args.draws,runtime=runtime)
         sources=published_source_dates(prior,asof)if published_inputs else source_dates(repo,asof)
         candidates=reconstruct(player_data,picks,legacy,events,asof,sources,repriced)
 
     else:
         player_data=[s for s in player_data if s['date']==asof]
         candidates=assemble(player_data,{asof:picks},events,'reconstructed'if args.allow_reconstructed else'published',source_dates(repo,asof),previous)
+    from rolling_store import detach
+    detach(repo,candidates)
     (work/'portfolio_candidates.json').write_text(json.dumps({'snapshots':candidates},separators=(',',':'),allow_nan=False))
     require_uniform_minutes_policy(candidates)
     if not new_version:

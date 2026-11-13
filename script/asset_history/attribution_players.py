@@ -27,8 +27,11 @@ def parts(a):
     assert abs(peak-q['production_quote']-premium)<.05,(a['name'],peak,q,premium)
     return peak,premium,annual
 
-def clock(a,exposures):
+def clock(a,exposures,market=None,closing_asset=None):
     """Quote the opening forecast with the closing window's season weights."""
+    if a.get('details',{}).get('rolling_impact') and a.get('details',{}).get('annual_values'):
+        from frozen_pricing import frozen_clock
+        return frozen_clock(a,exposures,market,closing_asset)
     peak,premium,annual=parts(a)
     if not annual:return dict(value=a['value'],peak=peak,rolling_peak=peak,method='no annual path; value held fixed')
     by={int(r['season']):r for r in annual};last=by[max(by)];p=[];v=[];e=[];tails=[]
@@ -149,7 +152,7 @@ def player_bridge(team,ctx):
         start,end=previous['date'],current['date'];old={a['id']:a for a in previous['assets']if a['kind']=='player'};new={a['id']:a for a in current['assets']if a['kind']=='player'}
         exemplar=next(a for a in new.values()if a.get('details',{}).get('annual_values'))
         exposures={int(r['season']):r['exposure']for r in exemplar['details']['annual_values']}
-        changes=Counter();clocked={aid:clock(a,exposures)for aid,a in old.items()}
+        changes=Counter();clocked={aid:clock(a,exposures,market,new.get(aid))for aid,a in old.items()}
         changes['player_clock']=sum(clocked[aid]['value']-a['value']for aid,a in old.items())
         def attribute(a,category,component,value):
             if abs(value)>.000001:
@@ -158,6 +161,15 @@ def player_bridge(team,ctx):
         for aid,a in old.items():
             old_peak,_,_=parts(a);cf=clocked[aid]
             production=cf['peak']-old_peak;financial=cf['value']-a['value']-production
+            ownership_production=0.
+            if aid in new and a.get('details',{}).get('rolling_impact') and a.get('details',{}).get('annual_values'):
+                from frozen_pricing import coordinate_translation
+                if abs(coordinate_translation(a,new[aid]))>1e-12:
+                    unshifted=clock(a,exposures,market);ownership_production=cf['peak']-unshifted['peak'];production-=ownership_production
+                    clock_details.append(dict(start=start,end=end,player=a['name'],asset_id=aid,
+                        total=ownership_production,production=ownership_production,financial=0.,tail_carry=[],
+                        production_category='player',ownership_coordinate_translation=True))
+                    attribute(a,'aging',AGING_COMPONENT,ownership_production)
             clock_details.append(dict(start=start,end=end,player=a['name'],asset_id=aid,
                                       total=production+financial,production=production,
                                       financial=financial,tail_carry=cf.get('tail_carry',[]),production_category=production_category(a,end)))
@@ -206,7 +218,16 @@ def player_bridge(team,ctx):
                     owner=owners[start,aid]
                     ref=next(z for z in histories[owner][end]['assets']if z['kind']=='player'and z.get('details',{}).get('annual_values'))
                     source_exposures={int(z['season']):z['exposure']for z in ref['details']['annual_values']}
-                    cf=clock(incoming,source_exposures);changes['trade_players']+=cf['value'];revalue(a,cf['value'],cf['peak'],True)
+                    cf=clock(incoming,source_exposures,market);changes['trade_players']+=cf['value']
+                    routed=clock(incoming,exposures,market,a)
+                    production=routed['peak']-cf['peak'];financial=routed['value']-cf['value']-production
+                    changes['player_clock']+=production+financial
+                    clock_details.append(dict(start=start,end=end,player=a['name'],asset_id=aid,
+                        total=production+financial,production=production,financial=financial,
+                        tail_carry=routed.get('tail_carry',[]),production_category='player',ownership_coordinate_translation=True))
+                    attribute(a,'aging',AGING_COMPONENT,production)
+                    attribute(a,'contracts','Remaining contract-year mix',financial)
+                    revalue(a,routed['value'],routed['peak'],True)
                 else:
                     changes['trade_players']+=a['value'];warnings.append(dict(date=end,player=a['name'],reason='No previous league mark; incoming trade uses first post-trade monthly value'))
                 details.append(dict(start=start,end=end,player=a['name'],kind='trade_in',value=cf['value']if incoming else a['value'],event=trades[-1]['text']))

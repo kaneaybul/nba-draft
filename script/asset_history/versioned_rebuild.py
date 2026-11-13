@@ -40,7 +40,7 @@ def reconstruct(players,current_picks,legacy,events,asof,current_sources,histori
     return out
 
 
-def reprice_historical_picks(repo,model,dates,draws=10000):
+def reprice_historical_picks(repo,model,dates,draws=10000,runtime=None):
     """Replay joint legal outcomes, never price a protection at its mean slot."""
     from concurrent.futures import ThreadPoolExecutor
     from backfill.pick_replay import active_rules,load_actions,display_years
@@ -52,6 +52,17 @@ def reprice_historical_picks(repo,model,dates,draws=10000):
     orders=json.loads((inputs/'dated_orders.json').read_text())
     actions,missing=load_actions()
     if missing:raise ValueError('Missing historical legal pick cohorts')
+    from backfill.run_pick_refresh import new_pick_actions
+    events=[]
+    if runtime is not None:events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
+    saved=repo/'processed/asset_history/player_state/ownership_events.json'
+    if saved.exists():
+        extra=json.loads(saved.read_text());extra=extra.get('events',extra)if isinstance(extra,dict)else extra
+        events=list({(e['event_id'],e['date'],e['text']):e for e in events+extra}.values())
+    last=max(dates);first=min(display_years(last,orders['draft_completion_dates'],announced_draft_months=orders.get('announced_draft_months')))
+    fresh,extra_catalog,unknown=new_pick_actions(events,catalog,last,first)
+    if unknown:raise ValueError('Unreviewed new pick terms prevent historical repricing')
+    actions+=fresh;catalog+=extra_catalog
     def one(day):
         earlier=[d for d in forecasts['ratings']if d<=day]
         if not earlier:raise ValueError('No dated pick forecast before '+day)

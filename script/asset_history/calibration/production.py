@@ -41,6 +41,7 @@ def prepare(runtime,repo,state,output):
            runtime/'monthly_reconstruction/projections/valuation_engine.py',
            *[runtime/f'app_model/impact_{y}.json'for y in range(2016,last+1)],
            *[Path(__file__).with_name(n)for n in ('production.py','path_model.py','historical.py','run_backtest.py','endpoint_model.py','endpoint_paths.py','legacy_v4.py')]]
+    files += [Path(__file__).parents[1]/n for n in ('rolling_context.py','frozen_pricing.py','rolling_impact.py')]
     hashes=[(p.name,hashlib.sha256(p.read_bytes()).hexdigest())for p in files]
     pick=json.loads((repo/'processed/asset_history/picks/trained_pick_model.json').read_text())
     cost_inputs={'rows':[{k:r.get(k)for k in ('pick','annual_full_rookie_scale_reporting_dollars','annual_paid_cost_fraction')}for r in pick['pick_curve']],
@@ -136,6 +137,7 @@ class PathCalibrator:
     def quote(self,player,annual):
         draft=number(player.get('draft_year'));slot=number(player.get('draft_slot'))
         if draft is None or slot is None:return None
+        full_carry_annual=annual
         annual=sorted([r for r in annual if number(r['exposure'])>0],key=lambda r:int(r['season']))
         if not annual:raise ValueError('Missing full annual path')
         cutoff=int(annual[0]['league_reference_year']);stage=cutoff-int(draft)
@@ -252,11 +254,17 @@ class PathCalibrator:
                         release=1.8*p[:,j]-.8*c[:,j]<-.8*guaranteed
                         p[release,j]=0;c[release,j]=guaranteed
             return p,c
+        from frozen_pricing import pack_scenarios,unpack_scenarios
+        frozen_nba=nba.copy();frozen_prior=prior.copy()
+        frozen_nba[:,~window]=mean[~window];frozen_prior[:,~window]=mean[~window]
+        frozen_scenarios=pack_scenarios([
+            dict(kind='nba',weight=float(weight),seasons=[int(r['season'])for r in annual],paths=frozen_nba.tolist(),weights=(nw/np.sum(nw)).tolist()),
+            dict(kind='prior',weight=float(1-weight),seasons=[int(r['season'])for r in annual],paths=frozen_prior.tolist(),weights=(pw/np.sum(pw)).tolist())])
         nba,nc=price(nba);prior,pc=price(prior)
         endpoint_values=production_quotes(endpoint_prior['paths'][:,4:8])
         endpoint_audit={}
         if weight:
-            endpoint_mean=own_endpoint_path(player,annual,int(draft),self.endpoint_states,self.runtime,endpoint_audit,canonical=True)
+            endpoint_mean=own_endpoint_path(player,full_carry_annual,int(draft),self.endpoint_states,self.runtime,endpoint_audit,canonical=True)
             ep,ew,ea=self.endpoint_residuals.scenarios(endpoint_mean,feature,cutoff,min(4.,remaining),key)
             own_values=production_quotes(ep)
             endpoint_audit.update(ea)
@@ -264,6 +272,12 @@ class PathCalibrator:
             own_values,ew=np.array([0.]),np.array([1.])
             endpoint_audit.update(method='no NBA evidence; original draft expectation')
         result=summarize_development(prior,pc,pw,endpoint_values,nba,nc,nw,weight,e,own_values,ew)
+        if weight and endpoint_audit.get('impact_sensitivities') is not None:
+            groups=unpack_scenarios(frozen_scenarios)
+            groups[0]['endpoint']=dict(years=list(endpoint_audit['years']),paths=ep.tolist(),
+                weights=(ew/np.sum(ew)).tolist(),sensitivities=list(endpoint_audit['impact_sensitivities']))
+            frozen_scenarios=pack_scenarios(groups)
+        result['frozen_pricing_scenarios']=frozen_scenarios
         result.update(status='priced',policy=POLICY,cutoff=cutoff,training_signature=self.data['signature'],
             nba_weight=weight,completed_minutes=minutes,current_observed_minutes=observed,
             learning_scale=fitted['scale'],learning_training_n=fitted['n'],

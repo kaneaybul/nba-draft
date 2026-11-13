@@ -70,6 +70,8 @@ def context(repo,runtime):
         if file.exists() and file.stat().st_size:rows=read(file)['snapshots']
         else:
             with gzip.open(file.with_suffix('.json.gz'),'rt')as f:rows=json.load(f)['snapshots']
+        from rolling_store import hydrate
+        hydrate(repo,team,rows)
         # Resolve verified identity transitions only in this comparison view.
         # The stored closed-month inventories and their values remain intact.
         from identity import indexed_assets
@@ -132,7 +134,7 @@ def correct_transfers(players,ctx):
             annual=next((a['details']['annual_values']for a in ctx['histories'][team][row['end']]['assets']
                          if a['kind']=='player'and a.get('details',{}).get('annual_values')),None)
             if annual:
-                production=clock(asset,{int(r['season']):r['exposure']for r in annual})['peak']
+                production=clock(asset,{int(r['season']):r['exposure']for r in annual},ctx['market'])['peak']
                 add(team,row,'draft','Loss of acquired draftee before year four',-production,{})
         add(team,row,'contracts',component,-value+production,{'waiver_expiry_boundary':-value})
     legs=defaultdict(list)
@@ -151,7 +153,7 @@ def correct_transfers(players,ctx):
                 add(intermediate,a,'trades','Intermediate player receipt before loss of control',value,{'trade_players':value})
                 loss_of_control(intermediate,a,value,'Intermediate loss of contract control')
                 import copy
-                asset=copy.deepcopy(ctx['league'][start,aid]);annual=next(z['details']['annual_values']for z in ctx['histories'][source][end]['assets']if z['kind']=='player'and z.get('details',{}).get('annual_values'));ex={int(r['season']):r['exposure']for r in annual};cf=clock(asset,ex)
+                asset=copy.deepcopy(ctx['league'][start,aid]);annual=next(z['details']['annual_values']for z in ctx['histories'][source][end]['assets']if z['kind']=='player'and z.get('details',{}).get('annual_values'));ex={int(r['season']):r['exposure']for r in annual};cf=clock(asset,ex,ctx['market'])
                 path={int(r['season']):r for r in asset['details']['annual_values']};tail=path[max(path)];asset['details']['annual_values']=[dict(path.get(y,tail),season=y,exposure=e)for y,e in sorted(ex.items())];asset['value']=cf['value'];asset['details']['peak_production']=cf['peak'];ref=market_reference(asset,end,ctx['caps'],ctx['market'])
                 add(target,a,'trades','Post-waiver acquisition reclassified as FA',-value,{'trade_players':-value})
                 add(target,a,'fa','Post-waiver reference-market acquisition',ref['value'],{'free_agent_entries':value})
@@ -182,7 +184,7 @@ def correct_transfers(players,ctx):
         elif incoming:
             target,row=incoming[0];value=row['value'];origin=ctx['owners'].get((start,aid))
             if origin:
-                old=ctx['league'][start,aid];annual=next(a['details']['annual_values']for a in ctx['histories'][origin][end]['assets']if a['kind']=='player'and a.get('details',{}).get('annual_values'));ex={int(r['season']):r['exposure']for r in annual};cf=clock(old,ex)
+                old=ctx['league'][start,aid];annual=next(a['details']['annual_values']for a in ctx['histories'][origin][end]['assets']if a['kind']=='player'and a.get('details',{}).get('annual_values'));ex={int(r['season']):r['exposure']for r in annual};cf=clock(old,ex,ctx['market'])
                 import copy
                 a=copy.deepcopy(old);path={int(r['season']):r for r in a.get('details',{}).get('annual_values',[])}
                 if not path:raise ValueError(('Transferred control has no annual path',target,end,aid))

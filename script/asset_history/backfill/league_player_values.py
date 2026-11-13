@@ -268,9 +268,12 @@ def run(args):
             return historical_injury(pid,k,cutoff,season,future_game_dates,current_games)
         src.injury=current_injury
     import role_smoothing
-    from live_runtime import load_state,restore_roles,persistent_calibration,save_state,install_clocks
+    from live_runtime import load_state,restore_roles,persistent_calibration,save_state,install_clocks,restore_impact
     state_file=args.state_dir/f'{args.team}.json'if args.state_dir else None
     state=load_state(state_file,canonical)
+    restore_impact(src,state)
+    from owner_runtime import install as install_owner_runtime
+    install_owner_runtime(src,canonical,args.team)
     if state:
         src.inventory=[s for s in src.inventory if s['asof_date']>state['as_of']]
         coverage=[c for c in coverage if c['date']>state['as_of']]
@@ -316,7 +319,7 @@ def run(args):
         restore_clock()
         restore_minutes()
     if state_file:
-        save_state(state_file,canonical,args.team,src.inventory[-1]['asof_date'],roles,calibration_capture['instance'])
+        save_state(state_file,canonical,args.team,src.inventory[-1]['asof_date'],roles,calibration_capture['instance'],src.impact_cache)
     if args.calibration_cache and not args.calibration_cache.exists():
         status=json.loads((out/'monthly_integration_status.json').read_text())
         cached={'input_sha256':signature,'calibration':status['monthly_calibration'],'rows':pd.read_csv(out/'monthly_adaptive_calibration.csv').to_dict('records'),'positions':pd.read_csv(out/'monthly_position_usage.csv').to_dict('records')}

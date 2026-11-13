@@ -227,6 +227,32 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
     """Read raw production before contract choices; extend own missing years."""
     from valuation_engine import AnnualState, project_path
     years = list(range(draft+5, draft+9))
+    from rolling_context import path_from_player, annual_mean
+    rolling=path_from_player(player)
+    if rolling is not None:
+        impact,clock=rolling
+        first=min(annual,key=lambda r:int(r['season']));year=int(first['season'])
+        pid=int(float(player.get('source_nba_id') or player['ledger_nba_id']))
+        previous=states.get((year-1,pid));age=previous.age+1 if previous else 22.
+        games=float(player['healthy_forecast_annual_games']);mpg=float(player.get('healthy_forecast_conditional_MPG') or 0)
+        seed=AnnualState(year,age,previous.yoe+1 if previous else year-draft,
+                         float(player['healthy_current_total']),games,min(3300.,games*mpg))
+        history=sorted([st for (y,p),st in states.items() if p==pid and y<year],key=lambda st:st.season)
+        roles={st.season:st for st in project_path(seed,history,max(years)-year)}
+        direct={}
+        if runtime is not None and (runtime/'direct_future_minutes.json').exists():
+            direct=direct_forecasts(runtime/'direct_future_minutes.json').get(str(first['league_reference_year']),{}).get(str(pid),{})
+        coefficient=float(first['scale_budget_scenario'])/float(first['salary_cap_scenario'])*164961000.*30/float(first['league_timin'])
+        replacement=float(first['replacement']);values=[];sensitivities=[]
+        for y in years:
+            role=direct.get(str(y));saved=next((r for r in annual if int(r['season'])==y),None)
+            minutes=(float(saved['latent_annual_minutes']) if saved is not None else role['games']*role['mpg'] if role else roles[y].minutes)
+            values.append((annual_mean(impact,y)-replacement)*minutes*coefficient)
+            sensitivities.append(minutes*coefficient)
+        if audit is not None:audit.update(method='same_rolling_path_integrated_year_four_endpoint',
+            team_game_clock=clock,years=years,impact_sensitivities=sensitivities,
+            impact_path_policy='rolling-team-games-impact-v1')
+        return values
     raw = {int(r['season']): float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])
            for r in annual}
     if canonical:

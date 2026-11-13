@@ -9,6 +9,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from model_version import METHOD
+from rolling_export import serialize_impact_context
 
 TEAMS='ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split()
 
@@ -155,6 +156,16 @@ def export(output,asof=None,calibrator=None):
                 annual_by_player.setdefault((dt,identity),[]).append({
                     'season':int(annual['season']),'production':float(production),
                     'asset':float(asset),'exposure':float(annual['exposure'])})
+        carry_by_player={}
+        carry_file=folder/'monthly_quote_carry_states.csv'
+        if carry_file.exists():
+            with carry_file.open()as handle:
+                for annual in csv.DictReader(handle):
+                    dt=annual['cutoff_date']
+                    if asof and dt!=asof:continue
+                    pid=annual.get('source_nba_id')or annual.get('ledger_nba_id')
+                    identity=str(int(float(pid)))if pid else annual['player_name']
+                    carry_by_player.setdefault((dt,identity),[]).append(annual)
         for c in coverage['coverage']:
             dt=c['date']
             if asof and dt!=asof:continue
@@ -170,6 +181,14 @@ def export(output,asof=None,calibrator=None):
                 details['role_minutes_policy']=POLICY
                 details['annual_values']=annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
                 raw_path=raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                full_path=carry_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[])
+                if row.get('impact_path_knots_json'):
+                    if not full_path:raise ValueError('Missing rolling carry rows')
+                    context=serialize_impact_context(row,full_path)
+                    details['rolling_impact']=context
+                    details['impact_team_game_clock']=context['clock']
+                    details['impact_path_knots']=context['knots']
+                else:full_path=raw_path
                 details['raw_annual_production']=[dict(season=int(r['season']),
                     production=float(r['annual_production'])*164961000./float(r['salary_cap_scenario']))for r in raw_path
                     if r.get('annual_production')not in(None,'')and r.get('salary_cap_scenario')not in(None,'')]
@@ -181,7 +200,7 @@ def export(output,asof=None,calibrator=None):
                     if hasattr(calibrator,'legacy'):
                         before=calibrator.legacy.quote(row,raw_path)
                         details['v4_same_source_quote']=before['mean']if before and before.get('status')=='priced'else value
-                    path=calibrator.quote(row,raw_annual_by_player.get((dt,str(pid)if pid is not None else row['player_name']),[]))
+                    path=calibrator.quote(row,full_path)
                     if path:
                         details['path_calibration']={k:v for k,v in path.items()if k!='annual_values'}
                         if path['status']=='unsigned_draft_right_existing_policy':
@@ -202,7 +221,7 @@ def export(output,asof=None,calibrator=None):
                             details['app_style_four_year_peak_production_quote']=str(path['production_quote'])
                             details['app_style_four_year_contract_adjustment_sum']=str(path['contract_adjustment_sum'])
                     if row.get('asset_type')!='unsigned_draft_right' and pid is not None:
-                        details['draft_development']=calibrator.draft_evaluation(row,raw_path,path)
+                        details['draft_development']=calibrator.draft_evaluation(row,full_path,path)
                 assets.append({'id':ident,'kind':'player','name':row['player_name'],'value':float(row['app_style_four_year_asset_quote_with_draft_prior']),'exposure':float(row['app_priced_season_equivalents']),
                   'source':'Dated ownership and original contract replay; paired EPM/DARKO, observed-or-prior SKILL and canonical development model',
                   'note':row.get('flags')or None,'details':details})
@@ -316,19 +335,17 @@ def run(args):
         if review.exists():command+=['--injury-review',str(review)]
         with(output/f'{team}.log').open('w')as log:subprocess.run(command,check=True,stdout=log,stderr=subprocess.STDOUT)
         print('Completed player quotes: '+team,flush=True)
-    # Checkpoint the expensive mean projections separately from the path target.
-    # Reuse is restricted to source-identical method-only reseeds.
-    from projection_checkpoint import signature,reuse,save
-    checkpoint=output.parent/'annual_projection_checkpoint'
-    checkpoint_signature=signature(repo,runtime,injuries,args.as_of)if args.reseed and getattr(args,'use_published_inputs',False)else None
-    reused=bool(checkpoint_signature and reuse(checkpoint,output,state,TEAMS,checkpoint_signature))
-    if reused:print('Reused verified source-identical annual projections',flush=True)
-    else:
-        if checkpoint_signature:(checkpoint/'manifest.json').unlink(missing_ok=True)
-        # First team establishes one shared source-hashed league calibration.
-        compute(TEAMS[0])
-        with ThreadPoolExecutor(max_workers=args.workers)as pool:list(pool.map(compute,TEAMS[1:]))
-        if checkpoint_signature:save(checkpoint,output,state,TEAMS,checkpoint_signature)
+    from run_owner_replay import run as replay_owners,collect as collect_owners
+    from argparse import Namespace
+    if not reseed and not(state/'ownership_manifest.json').exists():
+        raise ValueError('Missing ownership continuity checkpoint; explicit reseed required')
+    owner_root=output/'owner_replay'
+    if owner_root.exists():shutil.rmtree(owner_root) # rebuild intraday retry from staged prior-day state
+    replay_owners(Namespace(canonical=runtime,repo=repo,output=owner_root,
+        calibration_cache=calibration if calibration.exists()else None,
+        initial_state=None if reseed else state,injuries=injuries,
+        through=args.as_of,max_dates=None,workers=args.workers))
+    collect_owners(owner_root,output,state)
     from calibration.production import prepare
     calibrator=prepare(runtime,repo,state,output)
     result=export(output,None if reseed else args.as_of,calibrator)

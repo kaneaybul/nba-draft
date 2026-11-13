@@ -201,7 +201,7 @@ class HistoricalPanel:
             nxt = project_next_state(current,history,coefficients)
             role=direct.get(str(nxt.season))
             minutes=role['games']*role['mpg'] if role else nxt.minutes
-            production.append((nxt.total-base['replacement_total'])*minutes*coefficient)
+            production.append(((current.total+nxt.total)/2-base['replacement_total'])*minutes*coefficient)
             history.append(current)
             current = nxt
         return production
