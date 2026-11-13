@@ -79,6 +79,7 @@ node script/frontend/build_static_data_manifest.mjs
 echo 'Validating the complete static release'
 node script/frontend/test_shared_contracts.mjs --require-export
 node script/frontend/test_asset_surface_consistency.mjs
+node script/frontend/test_asset_history_visuals.mjs --require-published
 node script/frontend/test_data_refresh.mjs
 node script/frontend/validate_preseason_archive.mjs
 sha256sum --check "$work/preserved-inputs.sha256"

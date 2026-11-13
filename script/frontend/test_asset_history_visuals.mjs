@@ -13,6 +13,15 @@ const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
 const { Waterfall, TradeBreakdown, LeagueComparison, aggregateAttribution, categoryLabels, leagueRows, leagueMetricValue, rankLeague } = module.exports;
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
+// Render the exact expanded state reached by each category button, without
+// changing production components or requiring an external browser service.
+const expandedWaterfalls=Object.fromEntries(Object.keys(categoryLabels).map(key=>{
+ const scope={exports:{}};
+ const requireExpanded=name=>name==='react'?{...React,useState:()=>[key,()=>{}]}:require(name);
+ new Function('require','module','exports',compiled)(requireExpanded,scope,scope.exports);
+ return [key,scope.exports.Waterfall];
+}));
+
 const rangeSource=readFileSync(resolve(frontend,'src/AssetHistoryDateRange.tsx'),'utf8');
 const rangeCompiled=ts.transpileModule(rangeSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText;
 const rangeModule={exports:{}};
@@ -44,21 +53,27 @@ assert.match(league, /Missing matching observations: MIA, ATL/);
 assert.match(league, /−\$10M/);
 const keys=['aging','player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','automatic'];
 const row=(start,end,opening,closing,key)=>({start,end,opening,closing,categories:Object.fromEntries(keys.map(k=>[k,k===key?closing-opening:0])),components:Object.fromEntries(keys.map(k=>[k,{movement:k===key?closing-opening:0}])),contributors:Object.fromEntries(keys.map(k=>[k,k===key?[{player:'Test player',value:closing-opening}]:[]])),reconciliation_error:0});
-const ledger={team:'BOS',method:'forecast-based-attribution-v7',valuation_method:'v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
-const combined=aggregateAttribution(ledger,'a','c',100,110,'v5');
+const ledger={team:'BOS',method:'forecast-based-attribution-v7',valuation_method:'peak4-payroll-0.8-v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
+
+const v13={...ledger,method:'forecast-based-attribution-v8',valuation_method:'peak4-payroll-0.8-v13'};
+assert.ok(aggregateAttribution(v13,'a','c',100,110,v13.valuation_method));
+assert.equal(aggregateAttribution({...v13,method:'forecast-based-attribution-v7'},'a','c',100,110,v13.valuation_method),null,'v13 must reject stale v7 attribution');
+assert.equal(aggregateAttribution({...ledger,method:'forecast-based-attribution-v8'},'a','c',100,110,ledger.valuation_method),null,'Older valuation must reject v8 attribution');
+assert.equal(aggregateAttribution({...v13,valuation_method:'peak4-payroll-0.8-v14'},'a','c',100,110,'peak4-payroll-0.8-v14'),null,'Unknown future pairs fail closed');
+const combined=aggregateAttribution(ledger,'a','c',100,110,'peak4-payroll-0.8-v5');
 assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,10);
-assert.equal(aggregateAttribution(ledger,'a','c',100,111,'v5'),null,'Never show a chart that does not match canonical totals');
-assert.equal(aggregateAttribution({...ledger,method:'holdings-fallback'},'a','c',100,110,'v5'),null,'Only one attribution method is accepted');
-assert.equal(aggregateAttribution({...ledger,intervals:[ledger.intervals[1]]},'a','c',100,110,'v5'),null,'Do not bridge missing periods with another method');
-assert.equal(aggregateAttribution(ledger,'b','c',120,110,'v5').categories.contracts,-10);
-assert.equal(aggregateAttribution(ledger,'a','a',100,100,'v5').change,0);
-assert.equal(aggregateAttribution({...ledger,valuation_method:'v4'},'a','c',100,110,'v5'),null);
+assert.equal(aggregateAttribution(ledger,'a','c',100,111,'peak4-payroll-0.8-v5'),null,'Never show a chart that does not match canonical totals');
+assert.equal(aggregateAttribution({...ledger,method:'holdings-fallback'},'a','c',100,110,'peak4-payroll-0.8-v5'),null,'Only one attribution method is accepted');
+assert.equal(aggregateAttribution({...ledger,intervals:[ledger.intervals[1]]},'a','c',100,110,'peak4-payroll-0.8-v5'),null,'Do not bridge missing periods with another method');
+assert.equal(aggregateAttribution(ledger,'b','c',120,110,'peak4-payroll-0.8-v5').categories.contracts,-10);
+assert.equal(aggregateAttribution(ledger,'a','a',100,100,'peak4-payroll-0.8-v5').change,0);
+assert.equal(aggregateAttribution({...ledger,valuation_method:'peak4-payroll-0.8-v4'},'a','c',100,110,'peak4-payroll-0.8-v5'),null);
 const malformed=structuredClone(ledger);malformed.intervals[0].components.draft.movement=15;
-assert.equal(aggregateAttribution(malformed,'a','c',100,110,'v5'),null,'Category details must reconcile');
+assert.equal(aggregateAttribution(malformed,'a','c',100,110,'peak4-payroll-0.8-v5'),null,'Category details must reconcile');
 const waived={...ledger,trade_waivers:[{player:'Test player',acquired:'a',waived:'b',dead_cap:100,source:'https://example.com'}]};
-assert.deepEqual(aggregateAttribution(waived,'a','b',100,120,'v5').tradeWaivers,waived.trade_waivers);
-assert.deepEqual(aggregateAttribution(waived,'b','c',120,110,'v5').tradeWaivers,[]);
-assert.deepEqual(aggregateAttribution(ledger,'a','b',100,120,'v5').tradeWaivers,[]);
+assert.deepEqual(aggregateAttribution(waived,'a','b',100,120,'peak4-payroll-0.8-v5').tradeWaivers,waived.trade_waivers);
+assert.deepEqual(aggregateAttribution(waived,'b','c',120,110,'peak4-payroll-0.8-v5').tradeWaivers,[]);
+assert.deepEqual(aggregateAttribution(ledger,'a','b',100,120,'peak4-payroll-0.8-v5').tradeWaivers,[]);
 
 const trade = { id:'deal-1', date:'b', source:'https://example.com', counterparties:['LAL'], net:27e6, pieces:[
  {id:'low', name:'Reserve', direction:'in', value:2e6},
@@ -66,8 +81,8 @@ const trade = { id:'deal-1', date:'b', source:'https://example.com', counterpart
  {id:'sent', name:'Veteran', direction:'out', value:-5e6},
 ] };
 const traded = {...ledger, trade_deals:[trade, {...trade, id:'deal-2', date:'c'}]};
-assert.deepEqual(aggregateAttribution(traded,'a','b',100,120,'v5').tradeDeals,[trade]);
-assert.deepEqual(aggregateAttribution(traded,'b','c',120,110,'v5').tradeDeals.map(x=>x.id),['deal-2']);
+assert.deepEqual(aggregateAttribution(traded,'a','b',100,120,'peak4-payroll-0.8-v5').tradeDeals,[trade]);
+assert.deepEqual(aggregateAttribution(traded,'b','c',120,110,'peak4-payroll-0.8-v5').tradeDeals.map(x=>x.id),['deal-2']);
 const dealMarkup = render(TradeBreakdown, {deals:[trade]});
 assert.match(dealMarkup,/Net \+\$27M/);
 assert.match(dealMarkup,/Incoming.*2029 LAL first-round pick.*Reserve.*Outgoing.*Veteran/);
@@ -80,23 +95,23 @@ const teams = [
  {team:'MIA',points:[point('a',100,2),point('b',140),point('c',150)]}
 ];
 const ledgers = {BOS:ledger, UTA:{...ledger,team:'UTA',intervals:[row('a','b',100,95,'draft'),row('b','c',95,125,'contracts')]}};
-const rankedRows = leagueRows(teams,ledgers,'a','c',1,'v5');
+const rankedRows = leagueRows(teams,ledgers,'a','c',1,'peak4-payroll-0.8-v5');
 assert.equal(rankedRows.length,3);
 assert.deepEqual(rankLeague(rankedRows,'draft').map(r=>[r.team,r.value]),[['BOS',20],['UTA',-5]]);
 assert.deepEqual(rankLeague(rankedRows,'contracts').map(r=>[r.team,r.value]),[['UTA',30],['BOS',-10]]);
 assert.deepEqual(rankLeague(rankedRows,'change').map(r=>r.team),['ATL','UTA','BOS']);
-assert.deepEqual(rankLeague(leagueRows(teams,ledgers,'b','c',1,'v5'),'draft').map(r=>r.value),[0,0]);
+assert.deepEqual(rankLeague(leagueRows(teams,ledgers,'b','c',1,'peak4-payroll-0.8-v5'),'draft').map(r=>r.value),[0,0]);
 assert.equal(rankLeague(leagueRows(teams,ledgers,'a','c',1,'old'),'draft').length,0);
-assert.equal(rankLeague(leagueRows(teams,{...ledgers,BOS:{...ledger,team:'UTA'}},'a','c',1,'v5'),'draft').length,1);
+assert.equal(rankLeague(leagueRows(teams,{...ledgers,BOS:{...ledger,team:'UTA'}},'a','c',1,'peak4-payroll-0.8-v5'),'draft').length,1);
 const broken = structuredClone(ledgers);broken.BOS.intervals[0].categories.draft=999;
-assert.deepEqual(rankLeague(leagueRows(teams,broken,'a','c',1,'v5'),'draft').map(r=>r.team),['UTA']);
+assert.deepEqual(rankLeague(leagueRows(teams,broken,'a','c',1,'peak4-payroll-0.8-v5'),'draft').map(r=>r.team),['UTA']);
 for(const key of keys){
  assert.ok(league.includes(`value="${key}"`),`Missing ranking control: ${key}`);
  for(const team of rankedRows.filter(r=>r.categories)){
-  assert.equal(leagueMetricValue(team,key),aggregateAttribution(ledgers[team.team],'a','c',100,team.total,'v5').categories[key]);
+  assert.equal(leagueMetricValue(team,key),aggregateAttribution(ledgers[team.team],'a','c',100,team.total,'peak4-payroll-0.8-v5').categories[key]);
  }
 }
-const completeMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'v5',selectedTeam:'UTA',onSelect:()=>{}});
+const completeMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'peak4-payroll-0.8-v5',selectedTeam:'UTA',onSelect:()=>{}});
 assert.match(completeMarkup,/Waterfall categories unavailable: ATL/);
 assert.match(completeMarkup,/aria-sort="descending"/);
 assert.match(completeMarkup,/Full league table/);
@@ -104,7 +119,7 @@ assert.match(completeMarkup,/Contract Management/);
 assert.match(completeMarkup,/Draftee Development/);
 assert.match(completeMarkup,/Aging/);
 assert.doesNotMatch(completeMarkup,/Player Development &amp; Aging|Draft Value Added/);
-const categoryMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'v5',selectedTeam:'UTA',metric:'contracts',onSelect:()=>{}});
+const categoryMarkup=render(LeagueComparison,{teams,ledgers,start:'a',end:'c',cap:1,valuationMethod:'peak4-payroll-0.8-v5',selectedTeam:'UTA',metric:'contracts',onSelect:()=>{}});
 assert.match(categoryMarkup,/1\. UTA, Contract Management: \$0M/);
 assert.match(categoryMarkup,/League combined · Contract Management/);
 assert.match(categoryMarkup,/Waterfall categories unavailable: ATL/);
@@ -113,8 +128,11 @@ assert.match(categoryMarkup,/Waterfall categories unavailable: ATL/);
 const versionSource = readFileSync(resolve(frontend,'../script/asset_history/model_version.py'),'utf8');
 const version = versionSource.match(/DATA_VERSION\s*=\s*['"]([^'"]+)['"]/)[1];
 const data = resolve(frontend,`public/data/asset_history/${version}`);
+if(process.argv.includes('--require-published')) assert.ok(existsSync(resolve(data,'manifest.json')), 'Release requires actual published Asset History feeds');
 if(existsSync(resolve(data,'manifest.json'))){
  const manifest=JSON.parse(readFileSync(resolve(data,'manifest.json'),'utf8'));
+ assert.equal(manifest.teams.length,30);
+ if(version==='v13') assert.equal(manifest.method,'peak4-payroll-0.8-v13');
  const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
  for (const book of Object.values(books)) {
   const dealIds = new Set();
@@ -137,10 +155,16 @@ if(existsSync(resolve(data,'manifest.json'))){
     const first=manifest.teams.find(t=>t.team===r.team).points.find(p=>p.date===start);
     const waterfall=aggregateAttribution(books[r.team],start,end,first.total,r.total,manifest.method);
     assert.equal(leagueMetricValue(r,key),waterfall.categories[key]);
+    const markup=render(expandedWaterfalls[key],{opening:waterfall.opening,closing:waterfall.closing,
+     changes:Object.entries(waterfall.categories).map(([key,value])=>({key,label:key,value})),analysis:waterfall});
+    assert.match(markup,/class="ah-drilldown"/,`${r.team} ${start} ${key}: missing expanded category`);
+    assert.ok(markup.includes(`<h3>${categoryLabels[key]}</h3>`));
+    assert.ok(markup.includes('aria-pressed="true"'));
+
    }
   }
   for(const r of actualRows)assert.ok(Math.abs(Object.values(r.categories).reduce((a,b)=>a+b,0)-r.change)<.01);
  }
- console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges.');
+ console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges, and all 1,200 expanded category drilldowns.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');

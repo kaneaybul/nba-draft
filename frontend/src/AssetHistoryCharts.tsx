@@ -36,7 +36,11 @@ export type AttributionInterval = {
 };
 export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[]; trade_deals?: TradeDeal[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
-  if (ledger.method !== 'forecast-based-attribution-v7' || ledger.valuation_method !== valuationMethod || start > end) return null;
+  const expectedAttribution = valuationMethod === 'peak4-payroll-0.8-v13'
+    ? 'forecast-based-attribution-v8'
+    : /^peak4-payroll-0\.8-v(?:[1-9]|1[0-2])$/.test(valuationMethod ?? '')
+      ? 'forecast-based-attribution-v7' : null;
+  if (!expectedAttribution || ledger.method !== expectedAttribution || ledger.valuation_method !== valuationMethod || start > end) return null;
   const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
   if (start !== end && (!rows.length || rows[0].start !== start || rows[rows.length - 1].end !== end)) return null;
   const categories = Object.fromEntries(Object.keys(categoryLabels).map(key => [key, 0]));
