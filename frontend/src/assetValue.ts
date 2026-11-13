@@ -102,6 +102,34 @@ export function playerFourYearAssetValue(player: PlayerImpact): number | null {
   return fourYearAssetQuote(rows);
 }
 
+// These are slice-specific annualized production rates from the rolling
+// 328-team-game forecast, before options, draft padding or payroll economics.
+// Annual asset rows supply ONLY exposure. Multiply the raw rate once, never
+// reuse the calibrated/continuation-floored annual production or peak quote.
+export function playerRollingFourYearProduction(player: PlayerImpact): number | null {
+  const quote = player.asset_valuation;
+  const raw = quote?.raw_annual_production;
+  const annual = quote?.annual;
+  if (!raw?.length || !annual?.length || raw.length !== annual.length) return null;
+  const rates = new Map<number, number>();
+  for (const row of raw) {
+    if (!Number.isInteger(row.season) || !Number.isFinite(row.production) || rates.has(row.season)) return null;
+    rates.set(row.season, row.production);
+  }
+  const seen = new Set<number>();
+  let exposure = 0;
+  let production = 0;
+  for (const row of annual) {
+    const rate = rates.get(row.season);
+    if (rate === undefined || seen.has(row.season) || !Number.isFinite(row.exposure)
+      || row.exposure <= 0 || row.exposure > 1) return null;
+    seen.add(row.season);
+    exposure += row.exposure;
+    production += rate * row.exposure;
+  }
+  return Math.abs(exposure - 4) <= 1e-8 && Number.isFinite(production) ? production : null;
+}
+
 // These are the exporter's salary caps, never projection_cap_yN (which is a
 // payroll/Scale budget). Attach once at ingestion, leaving production and
 // market salary inputs intact for forecasting and free-agent pricing.

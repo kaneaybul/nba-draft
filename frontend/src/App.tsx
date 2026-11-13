@@ -1,5 +1,5 @@
 import { AssetHistoryWorkspace } from "./AssetHistory";
-import { playerFourYearAssetValue, playerValueExposures } from "./assetValue";
+import { playerFourYearAssetValue, playerRollingFourYearProduction, playerValueExposures } from "./assetValue";
 import { ProjectionHistory } from "./PreseasonArchive";
 import { Component, type CSSProperties, type ChangeEvent, type ErrorInfo, lazy, type MouseEvent, type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { latestManifestSeason, loadAppData, loadDataForView, loadNewerAppData, loadPlayerCareerHistory, manifestSeasons } from "./data";
@@ -1314,7 +1314,7 @@ function PlayerTable({
             <th className="col-money c-money c-current-money align-right">{sortableHeader("contract", "Contract")}</th>
             <th className="col-money c-va c-current-va align-right">{sortableHeader("value_add", "Szn VA")}</th>
             <th className="col-scale c-scale c-current-scale align-center group-end">{sortableHeader("scalability", "Scale")}</th>
-            <th className="col-money c-money c-future-money align-right" title="Sum of current-season and next three seasons' production values before contract adjustments">{sortableHeader("future_value_4y", "4Y Value")}</th>
+            <th className="col-money c-money c-future-money align-right" title="Expected production over the next 328 team games (four rolling 82-game windows), in common-cap dollars. No contracts, peak selection or draft padding.">{sortableHeader("future_value_4y", "4Y Value")}</th>
             <th className="col-money c-money c-fa align-right" title="Estimated free-agent salary">{sortableHeader("fa_value", "FA $")}</th>
             <th className="col-scale c-scale c-future-scale align-center group-end">{sortableHeader("future_scale_4y", "4Y Scale")}</th>
             <th className="col-money c-money c-asset-value align-right group-end" title="Four-year asset value including contract economics; same methodology and canonical quote used in the trade machine and Asset History">{sortableHeader("asset_value", "Asset Value")}</th>
@@ -1393,7 +1393,7 @@ function PlayerTable({
                   </span>
                 </div>
               </td>
-              <td className="money-text"><div className="cell-stage money-stage">{formatMoney(futureValue4y(player))}</div></td>
+              <td className="money-text" title={futureValue4y(player) === null ? "No rolling production estimate available. Signed-player forecast coverage begins with the 2021–22 season." : `Rolling production forecast as of ${player.asset_valuation?.date}`}><div className="cell-stage money-stage">{formatMoney(futureValue4y(player))}</div></td>
               <td className="money-text"><div className="cell-stage money-stage">{formatMoney(player.fa_value)}</div></td>
               <td className="align-center group-end-cell">
                 <div className="cell-stage">
@@ -1583,7 +1583,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
             </div>
             <div className="mc">
               <span>4Y Value</span>
-              <strong>{formatMoney(futureValue4y(player))}</strong>
+              <strong title={futureValue4y(player) === null ? "No rolling production estimate available. Signed-player forecast coverage begins with the 2021–22 season." : undefined}>{formatMoney(futureValue4y(player))}</strong>
             </div>
             <div className="mc">
               <span>Asset Value</span>
@@ -1595,8 +1595,9 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
             </div>
           </div>
           <p className="note note-text">
-            Value and 4Y Value measure production before contract adjustments. Asset Value is the four-year quote used in trades and Asset History, including contract economics in common-cap dollars.
-            {player.asset_valuation && ` Asset model as of ${player.asset_valuation.date}.`}
+            Value remains the current-season production estimate. 4Y Value is expected production over the next 328 team games (four rolling 82-game windows), in common-cap dollars, without contracts, peak selection or draft padding. Asset Value is the separate quote used in trades and Asset History, including contract economics.
+            {player.asset_valuation && ` Forecast as of ${player.asset_valuation.date}.`}
+            {futureValue4y(player) === null && " No rolling production estimate is available for this player and observation."}
           </p>
           <p className="note note-text">
             {formatNumber(player.Minutes, 0)} min / {formatNumber(player.yoe, 0)} yrs experience
@@ -6492,9 +6493,7 @@ function impactNumber(player: PlayerImpact, key: keyof PlayerImpact): number | n
 }
 
 export function futureValue4y(player: PlayerImpact): number | null {
-  const values = [impactNumber(player, "value"), ...[1, 2, 3].map((horizon) => impactNumber(player, `projection_value_y${horizon}` as keyof PlayerImpact))]
-    .filter((value): value is number => value !== null);
-  return values.length > 0 ? values.reduce((sum, value) => sum + value, 0) : null;
+  return playerRollingFourYearProduction(player);
 }
 
 export function futureScale4y(player: PlayerImpact): number | null {
@@ -8764,11 +8763,12 @@ function tradeTeamMeta(team: string, teamMeta: Map<string, TeamProjection>): Tea
   return teamMeta.get(team) ?? null;
 }
 
-function passesFilterRules(player: PlayerImpact, rules: FilterRule[]): boolean {
+export function passesFilterRules(player: PlayerImpact, rules: FilterRule[]): boolean {
   return rules.every((rule) => {
     if (!isImpactFilterKey(rule.key)) return true;
     const value = getPlayerSortValue(player, rule.key as FilterKey);
     const field = filterFields.find((item) => item.key === rule.key);
+    if (rule.key === "future_value_4y" && value == null) return false;
     if (field?.type === "number") return passesNumericRule(Number(value), rule);
     return passesTextRule(String(value ?? ""), rule);
   });
@@ -8920,9 +8920,13 @@ function teamForProjectionScenario(player: PlayerImpact, scenario: TeamProjectio
   return cleanTeamValue(player.team_projection_base ?? player.team);
 }
 
-function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, direction: SortDirection): number {
+export function comparePlayers(a: PlayerImpact, b: PlayerImpact, key: SortKey, direction: SortDirection): number {
   const aValue = getPlayerSortValue(a, key);
   const bValue = getPlayerSortValue(b, key);
+  if (key === "future_value_4y" && (aValue == null || bValue == null)) {
+    if (aValue == null && bValue == null) return b.score - a.score || a.player_name.localeCompare(b.player_name);
+    return aValue == null ? 1 : -1; // Unknown is not zero; keep it last in either direction.
+  }
   let result = 0;
 
   if (typeof aValue === "string" || typeof bValue === "string") {
