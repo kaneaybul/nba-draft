@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "method": "peak4-payroll-0.8-v16",
+  "observation_date": "2026-11-12",
+  "recorded_at": "2026-11-14T05:29:47.741343+00:00",
+  "teams": 30,
+  "observations": 1800,
+  "version_reconstruction": true,
+  "source_dates": {
+    "contracts": "2026-11-06",
+    "darko": "2026-11-10",
+    "epm": "2026-11-11",
+    "ownership": "2026-11-12",
+    "skill": "2026-11-12"
+  },
+  "refresh_mode": "source_identical_method_replay",
+  "validation_report_sha256": "6f2b3bd61b9409e749e0be0163a3cc05597ac95b24f7e9da81ebca6b4b250b30",
+  "source_signature": "8dde2e5af692a02c93248b5277e4b072c4643b601b8bf2b3a0aeb6ddb8a31920"
+}

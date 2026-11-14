@@ -245,7 +245,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
             sensitivities.append(minutes*coefficient);endpoint_minutes.append(minutes)
         if audit is not None:audit.update(method='same_rolling_path_integrated_year_four_endpoint',
             team_game_clock=clock,years=years,impact_sensitivities=sensitivities,
-            endpoint_annual_minutes=endpoint_minutes,endpoint_minutes_source='fixed_anchor_RoleSmoother_full_posterior',
+            endpoint_annual_minutes=endpoint_minutes,endpoint_minutes_source='endpoint_only_same_origin_preseason_anchor',
             impact_path_policy='rolling-team-games-impact-v1')
         return values
     raw = {int(r['season']): float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])

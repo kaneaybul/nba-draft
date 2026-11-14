@@ -1,8 +1,8 @@
 {
   "archive": "processed/asset_history/canonical_runtime_seed.zip",
-  "archive_sha256": "08fce3b704e32b503fb9ccc0b612d433297095c9b76ec5cac2b80530b11886c5",
+  "archive_sha256": "84d9262a9fe67671cef30dfde448585e028b8c724b182b1cb19592f58bfdd383",
   "files": 135,
-  "compressed_bytes": 32854212,
-  "uncompressed_bytes": 162314740,
-  "scope": "Canonical engine and existing seed evidence; only the fixed-endpoint role export and carry sources changed."
+  "compressed_bytes": 32854230,
+  "uncompressed_bytes": 162314855,
+  "scope": "Endpoint-only future-role export; ordinary runtime source and inputs retained byte for byte."
 }

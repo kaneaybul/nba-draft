@@ -66,7 +66,11 @@ const v15={...v14,valuation_method:'peak4-payroll-0.8-v15'};
 assert.ok(aggregateAttribution(v15,'a','c',100,110,v15.valuation_method));
 assert.equal(aggregateAttribution(v14,'a','c',100,110,v15.valuation_method),null,'Stale v14 ledger must not satisfy v15');
 assert.equal(aggregateAttribution({...v15,method:'forecast-based-attribution-v7'},'a','c',100,110,v15.valuation_method),null,'v15 must reject stale v7 attribution');
-assert.equal(aggregateAttribution({...v15,valuation_method:'peak4-payroll-0.8-v16'},'a','c',100,110,'peak4-payroll-0.8-v16'),null,'Unknown future pairs fail closed');
+const v16={...v15,valuation_method:'peak4-payroll-0.8-v16'};
+assert.ok(aggregateAttribution(v16,'a','c',100,110,v16.valuation_method));
+assert.equal(aggregateAttribution(v15,'a','c',100,110,v16.valuation_method),null,'Stale v15 ledger must not satisfy v16');
+assert.equal(aggregateAttribution({...v16,method:'forecast-based-attribution-v7'},'a','c',100,110,v16.valuation_method),null,'v16 must reject stale v7 attribution');
+assert.equal(aggregateAttribution({...v16,valuation_method:'peak4-payroll-0.8-v17'},'a','c',100,110,'peak4-payroll-0.8-v17'),null,'Unknown future pairs fail closed');
 const combined=aggregateAttribution(ledger,'a','c',100,110,'peak4-payroll-0.8-v5');
 assert.ok(combined);assert.equal(combined.categories.draft,20);assert.equal(combined.categories.contracts,-10);assert.equal(combined.change,10);assert.equal(Object.keys(combined.categories).length,10);
 assert.equal(aggregateAttribution(ledger,'a','c',100,111,'peak4-payroll-0.8-v5'),null,'Never show a chart that does not match canonical totals');
@@ -141,13 +145,13 @@ if(existsSync(resolve(data,'manifest.json'))){
  assert.equal(manifest.teams.length,30);
  assert.equal(manifest.method,`peak4-payroll-0.8-${version}`);
  const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
- if(version==='v15') {
+ if(version==='v16') {
   for(const team of manifest.teams) {
-   const stale=JSON.parse(readFileSync(resolve(frontend,`public/data/asset_history/v14/attribution/${team.team}.json`),'utf8'));
+   const stale=JSON.parse(readFileSync(resolve(frontend,`public/data/asset_history/v15/attribution/${team.team}.json`),'utf8'));
    const first=team.points[0], last=team.points.at(-1);
-   assert.equal(aggregateAttribution(stale,first.date,last.date,first.total,last.total,manifest.method),null,`${team.team}: actual stale v14 ledger must not satisfy v15`);
+   assert.equal(aggregateAttribution(stale,first.date,last.date,first.total,last.total,manifest.method),null,`${team.team}: actual stale v15 ledger must not satisfy v16`);
   }
-  console.log('Actual stale v14 ledger rejection passed for all 30 teams.');
+  console.log('Actual stale v15 ledger rejection passed for all 30 teams.');
  }
  for (const book of Object.values(books)) {
   const dealIds = new Set();

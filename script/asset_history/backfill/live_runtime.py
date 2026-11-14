@@ -20,7 +20,7 @@ def annual_waiver_choice(asset_value,production,cell):
     floor=-.8*guaranteed
     return (floor,0.,True)if asset_value<floor else(asset_value,production,False)
 
-ROLE_STATE=('states','previous_roster','previous_caps','previous_cutoff','previous_labels')
+ROLE_STATE=('states','previous_roster','previous_caps','previous_cutoff','previous_labels','endpoint_role_state')
 
 def encode(x):
     if isinstance(x,(date,)):return x.isoformat()
@@ -34,7 +34,7 @@ def encode(x):
 def fingerprint(canonical):
     p=canonical/'monthly_reconstruction/projections'
     files=[p/n for n in ('valuation_engine.py','role_smoothing.py','adaptive_calibration.py','integrate_monthly.py','quote_window.py','expected_contracts.py','rolling_impact.py','rolling_export.py')]
-    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('owner_runtime.py'),Path(__file__).with_name('owner_handoff.py'),Path(__file__).with_name('asset_minutes.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv',Path(__file__).resolve().parents[2]/'frontend/role_minutes_policy.json']
+    files += [Path(__file__),Path(__file__).with_name('league_player_values.py'),Path(__file__).with_name('owner_runtime.py'),Path(__file__).with_name('owner_handoff.py'),Path(__file__).with_name('asset_minutes.py'),Path(__file__).with_name('endpoint_role_overlay.py'),Path(__file__).with_name('draft_prior.py'),p/'app_sources/career_projection_selected_terms.csv',Path(__file__).resolve().parents[2]/'frontend/role_minutes_policy.json']
     return {f.name:hashlib.sha256(f.read_bytes()).hexdigest()for f in files}
 
 def load_state(path,canonical):

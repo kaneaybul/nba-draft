@@ -281,6 +281,8 @@ def run(args):
     from asset_minutes import install as install_asset_minutes
     restore_minutes=install_asset_minutes(role_smoothing)
     restore_clock=install_clocks(model,role_smoothing,src,canonical,args.team)
+    from endpoint_role_overlay import install as install_endpoint_role_overlay
+    restore_endpoint_overlay=install_endpoint_role_overlay(role_smoothing)
     roles=role_smoothing.RoleSmoother(src)
     from future_minutes import FORECAST_FILE
     future_minutes_file=canonical/FORECAST_FILE
@@ -300,6 +302,7 @@ def run(args):
     for snapshot in src.inventory:
         dt=snapshot['asof_date'];year=int(dt[:4])+(int(dt[5:7])>=7)
         roles.prepare(snapshot,year,model.key)
+    (out/'endpoint_role_overlay_audit.json').write_text(json.dumps(getattr(roles,'endpoint_role_audits',[]),indent=2))
     pd.DataFrame(roles.rows).to_csv(out/'monthly_role_posteriors.csv',index=False)
     pd.DataFrame(roles.annual_rows).to_csv(out/'monthly_role_annual_states.csv',index=False)
     (out/'role_allocations.json').write_text(json.dumps(roles.allocations,indent=2))
@@ -316,6 +319,7 @@ def run(args):
         model.run()
     finally:
         model.HERE=original_here;model.Inputs=original_inputs;model.AdaptiveCalibration=original_calibration
+        restore_endpoint_overlay()
         restore_clock()
         restore_minutes()
     if state_file:

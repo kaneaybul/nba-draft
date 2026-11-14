@@ -66,3 +66,30 @@ def install(src,canonical,team):
         moved['owner_handoff']=dict(audit,ownership_observed_day=day)
         return moved
     src.owner_impact_lookup=lookup
+    endpoint_donors={}
+    def endpoint_states(owner):
+        if owner not in endpoint_donors:
+            data=json.loads((root/'states'/f'{owner}.json').read_text())
+            endpoint_donors[owner]=data['role_state'].get('endpoint_role_state')or{}
+        return endpoint_donors[owner]
+    def endpoint_lookup(pid,key,day,local):
+        record=manifest['owners'].get(str(pid)) if pid is not None else None
+        if record is not None:
+            if record['team']==team:return local
+            return endpoint_states(record['team']).get(key)
+        # A player can leave active NBA service and later return elsewhere.
+        # The active ownership manifest alone cannot identify their last state.
+        # All prior team files retain historical overlays; pick the newest
+        # record last updated by its own authoritative owner, not a stale copy.
+        candidates=[]
+        for path in sorted((root/'states').glob('*.json')):
+            value=endpoint_states(path.stem).get(key)
+            if value and value.get('last_owner')==path.stem:
+                candidates.append(value)
+        if not candidates:return local
+        latest=max(v.get('last_asof','')for v in candidates)
+        newest=[v for v in candidates if v.get('last_asof','')==latest]
+        if len(newest)>1 and any(v!=newest[0]for v in newest[1:]):
+            raise ValueError(f'Ambiguous endpoint reentry origin {key} {latest}')
+        return newest[0]
+    src.owner_endpoint_lookup=endpoint_lookup
