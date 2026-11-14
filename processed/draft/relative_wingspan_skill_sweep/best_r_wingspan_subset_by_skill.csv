@@ -1,0 +1,10 @@
+skill,variant,predictors,predictor_set,temporal_r2,temporal_mse,validation_rows,temporal_splits,includes_r_wingspan,current_reported_r2,delta_vs_current_reported
+DPM,subset_with_r.wingspan,"stl_pct, height_wo_shoes_in, r.wingspan",3,0.41451041768746,0.143956781652614,96,3,TRUE,0.398404,0.0161064176874604
+DREB,subset_with_r.wingspan,"dr_pct, or_pct, r.wingspan",3,0.444407584672481,0.0323377896022655,96,3,TRUE,0.481793,-0.037385415327519
+FTD,current_plus_r.wingspan,"scv_draft, obpm_plus, r.wingspan",3,0.385543551997931,0.150136890980023,96,3,TRUE,0.376995,0.0085485519979312
+OREB,current_plus_r.wingspan,"or_pct, dr_pct, r.wingspan",3,0.636497624191001,0.0682799121275813,96,3,TRUE,0.668711,-0.0322133758089993
+PASS,subset_with_r.wingspan,"ast_pct, height_wo_shoes_in, r.wingspan",3,0.452415248813483,0.173227620496133,96,3,TRUE,0.409161,0.0432542488134831
+RIM,subset_with_r.wingspan,"rim_pct, three_pct, r.wingspan",3,0.101863875989389,0.210784946371413,96,3,TRUE,0.151678,-0.0498141240106107
+RIMPRO,subset_with_r.wingspan,"blk_pct, wingspan_in, r.wingspan",3,0.622442814739596,0.0445278861858403,96,3,TRUE,0.632008,-0.00956518526040362
+SHOOT,subset_with_r.wingspan,"X3PA_100, ft_pct, r.wingspan",3,0.618339232930324,0.31633112802117,96,3,TRUE,0.6621,-0.0437607670696757
+SWITCH,current_plus_r.wingspan,"or_pct, height_wo_shoes_in, blk_pct, r.wingspan",4,0.323521541110082,0.0183529904135635,96,3,TRUE,0.319286,0.00423554111008201

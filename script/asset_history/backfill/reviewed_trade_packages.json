@@ -1,0 +1,23 @@
+{
+  "reviewed_register_through": "2026-10-26",
+  "reviewed_register_basis": "Canonical ownership runtime seed cutoff; subsequent trades require independent complete-package review.",
+  "packages": [
+    {
+      "id": "NBA_2026_11_08_CLIFFORD",
+      "date": "2026-11-08",
+      "players": ["Nique Clifford"],
+      "player_destinations": {"Nique Clifford": "OKC"},
+      "team_names": ["Sacramento Kings", "Oklahoma City Thunder"],
+      "pick_terms_complete": true,
+      "sources": [
+        "https://www.nba.com/kings/news/sacramento-kings-complete-trade",
+        "https://www.nba.com/thunder/news/nique-clifford-261108"
+      ],
+      "pick_transfers": [
+        {"origin_team": "UTA", "draft_year": 2028, "round": 2, "from_team": "OKC", "to_team": "SAC", "unprotected": true},
+        {"origin_team": "MIN", "draft_year": 2030, "round": 2, "from_team": "OKC", "to_team": "SAC", "unprotected": true}
+      ],
+      "note": "RealGM's player transaction describes only a trade exception. Both team announcements identify the two picks; Sacramento explicitly states both are unprotected. Match the dated player route, not an unstable source event ID."
+    }
+  ]
+}

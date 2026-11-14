@@ -1,0 +1,46 @@
+name: Verify asset minutes integration
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - name: Extract the unchanged canonical role source
+        run: |
+          python3 - <<'PY'
+          import sys,zipfile,os
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history/backfill')
+          from runtime_archive import resolved_archive
+          target=Path(os.environ['RUNNER_TEMP'])/'role_smoothing.py'
+          with resolved_archive(Path('processed/asset_history/canonical_runtime_seed.zip')) as archive:
+              with zipfile.ZipFile(archive) as z:
+                  target.write_bytes(z.read('monthly_reconstruction/projections/role_smoothing.py'))
+          with open(os.environ['GITHUB_ENV'],'a') as f:
+              f.write('CANONICAL_ROLE_FILE='+str(target)+'\n')
+          PY
+      - name: Verify role, injury and refresh-state behavior
+        run: |
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+      - name: Compare actual canonical asset dollars on identical sources
+        run: |
+          python3 script/asset_history/materialize.py --repo .
+          python3 script/asset_history/backfill/compare_asset_minutes.py --repo . --work "$RUNNER_TEMP/asset-minutes"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: asset-minutes-comparison
+          path: |
+            ${{ runner.temp }}/asset-minutes/asset_minutes_comparison.json
+            ${{ runner.temp }}/asset-minutes/*.log

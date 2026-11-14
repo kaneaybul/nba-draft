@@ -1,0 +1,2 @@
+team,source_url,scraped_at,active_roster_rows,cap_hold_rows,method,notes
+Atlanta Hawks,https://www.spotrac.com/nba/atlanta-hawks/yearly/_/sort/cap_total/view/roster,2026-05-15T02:39:58.442Z,12,10,claimed user-open Chrome tab; extracted whole Active Roster and Cap Hold tables via table-level DOM text,No Duncd On files touched.

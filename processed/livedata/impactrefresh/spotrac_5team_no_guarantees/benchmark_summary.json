@@ -1,0 +1,64 @@
+{
+  "total_seconds": 39.4,
+  "teams": [
+    "Atlanta Hawks",
+    "Boston Celtics",
+    "Brooklyn Nets",
+    "Charlotte Hornets",
+    "Chicago Bulls"
+  ],
+  "rows_wide": 98,
+  "rows_long": 490,
+  "audit": [
+    {
+      "team": "Atlanta Hawks",
+      "source_url": "https://www.spotrac.com/nba/atlanta-hawks/yearly/_/sort/cap_total/view/roster",
+      "table_count": 13,
+      "active_roster_rows": 12,
+      "cap_hold_rows": 10,
+      "elapsed_seconds": "11.40",
+      "scraped_at": "2026-05-15T04:00:04.242Z",
+      "method": "Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass"
+    },
+    {
+      "team": "Boston Celtics",
+      "source_url": "https://www.spotrac.com/nba/boston-celtics/yearly/_/sort/cap_total/view/roster",
+      "table_count": 13,
+      "active_roster_rows": 14,
+      "cap_hold_rows": 5,
+      "elapsed_seconds": "7.13",
+      "scraped_at": "2026-05-15T04:00:11.367Z",
+      "method": "Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass"
+    },
+    {
+      "team": "Brooklyn Nets",
+      "source_url": "https://www.spotrac.com/nba/brooklyn-nets/yearly/_/sort/cap_total/view/roster",
+      "table_count": 13,
+      "active_roster_rows": 13,
+      "cap_hold_rows": 6,
+      "elapsed_seconds": "6.66",
+      "scraped_at": "2026-05-15T04:00:18.029Z",
+      "method": "Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass"
+    },
+    {
+      "team": "Charlotte Hornets",
+      "source_url": "https://www.spotrac.com/nba/charlotte-hornets/yearly/_/sort/cap_total/view/roster",
+      "table_count": 13,
+      "active_roster_rows": 15,
+      "cap_hold_rows": 3,
+      "elapsed_seconds": "6.49",
+      "scraped_at": "2026-05-15T04:00:24.524Z",
+      "method": "Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass"
+    },
+    {
+      "team": "Chicago Bulls",
+      "source_url": "https://www.spotrac.com/nba/chicago-bulls/yearly/_/sort/cap_total/view/roster",
+      "table_count": 13,
+      "active_roster_rows": 10,
+      "cap_hold_rows": 10,
+      "elapsed_seconds": "7.71",
+      "scraped_at": "2026-05-15T04:00:32.238Z",
+      "method": "Chrome user/open tab; Spotrac table-level DOM innerText; no guarantee hover pass"
+    }
+  ]
+}

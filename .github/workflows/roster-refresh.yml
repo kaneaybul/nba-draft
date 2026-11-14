@@ -1,0 +1,164 @@
+name: Refresh current NBA rosters
+
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: roster-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CURRENT_ROSTER_YEAR: "2026"
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+      SPOTRAC_HTML_SNAPSHOT_DIR: /tmp/nba-impact-spotrac-snapshot
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install R system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          rspm <- Sys.getenv("RSPM", "")
+          repos <- c(CRAN = if (nzchar(rspm)) rspm else "https://cloud.r-project.org")
+          # Keep this limited to packages used by the Spotrac scraper and frontend exporter.
+          pkgs <- c("data.table", "jsonlite", "mgcv", "ranger", "readr", "rpart", "rvest", "xml2")
+          missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repos)
+          still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
+
+      - name: Refresh current multi-year contract exports
+        env:
+          DATABALLR_END_YEAR: "2027"
+          DATABALLR_CONTRACT_END_SEASON: "2026"
+        run: |
+          Rscript script/frontend/test_contract_source_years.R
+          Rscript script/data/pull_contracts_databallr.R
+
+      - name: Stage a verified fresh Spotrac snapshot if supplied
+        run: python3 script/data/prepare_spotrac_snapshot.py raw/cap_sources/spotrac/current_snapshot.json.xz "$SPOTRAC_HTML_SNAPSHOT_DIR"
+
+      - name: Scrape all 30 Spotrac rosters
+        # Spotrac is primary; a fresh ESPN roster can cover a failed team page.
+        run: Rscript script/data/pull_spotrac_current_rosters.R
+
+      - name: Require a fresh complete scrape
+        shell: Rscript {0}
+        run: |
+          path <- "processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv"
+          audit <- read.csv(path, stringsAsFactors = FALSE)
+          if (nrow(audit) != 30) stop("Expected 30 team audit rows; got ", nrow(audit))
+          fresh <- audit$status %in% c("ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error")
+          if (any(!fresh)) {
+            bad <- audit$team[!fresh]
+            stop("Fresh scrape failed or used cached data for: ", paste(bad, collapse = ", "))
+          }
+          pulled <- as.POSIXct(audit$scraped_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+          age_minutes <- as.numeric(difftime(Sys.time(), pulled, units = "mins"))
+          if (any(!is.finite(age_minutes)) || any(age_minutes > 30)) {
+            stop("Scrape audit is stale.")
+          }
+          if (any(audit$active_roster_rows < 10)) {
+            stop("Implausibly small active roster for: ", paste(audit$team[audit$active_roster_rows < 10], collapse = ", "))
+          }
+          message("Fresh roster sources verified for all 30 teams; ESPN fallbacks: ", sum(audit$status == "fresh_espn_roster_after_spotrac_error"))
+
+      - name: Refresh and test injury outlook before projecting minutes
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
+          python3 script/data/refresh_injury_outlook.py
+
+      - name: Refresh the complete shared signed-agreement book
+        run: python3 script/frontend/refresh_shared_contracts.py --repo .
+
+      - name: Export roster-dependent frontend data
+        run: |
+          node script/frontend/test_cap_roster_fallback.mjs
+          Rscript script/frontend/export_frontend_data.R
+          node script/frontend/build_cap_tracker_spotrac_data.mjs
+          node script/frontend/build_static_data_manifest.mjs
+          node script/frontend/test_shared_contracts.mjs --require-export
+
+      - name: Verify positional lineups and contract-season alignment
+        run: Rscript script/frontend/test_lineup_positions.R
+
+      - name: Verify injury minutes and game forecasts
+        run: Rscript script/frontend/test_injury_projections.R --require-export
+
+      - name: Validate frontend data
+        run: |
+          npm run validate:data
+          npm run validate:schedule
+        working-directory: frontend
+
+      - name: Run roster-sensitive regressions
+        run: |
+          npm run test:offseason-market
+          npm run test:offseason-view-models
+          npm run test:cap-sandbox
+          npm run test:cap-tracker
+          npm run test:trade-scenarios
+          npm run test:trade-machine
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Commit refreshed roster data
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data
+          git add processed/contracts processed/asset_history/contracts
+          git add processed/livedata/impactrefresh/contracts_*_current.csv
+          git add processed/livedata/impactrefresh/contracts_by_year.csv
+          git add processed/livedata/impactrefresh/current_rosters_2026.csv
+          git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
+          git add processed/livedata/impactrefresh/contracts_2026_spotrac.csv
+          git add processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/*.csv
+          git add processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/benchmark_summary.json
+          bash script/frontend/publish_refresh.sh "Refresh current NBA rosters and injury outlook"
+
+
+      - name: Preserve collected contract exports and source audits
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-refresh-sources
+          path: |
+            processed/livedata/impactrefresh/contracts_*_current.csv
+            processed/livedata/impactrefresh/contracts_by_year.csv
+            processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv
+          retention-days: 7
+

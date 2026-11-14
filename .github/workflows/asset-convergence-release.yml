@@ -1,0 +1,111 @@
+name: Validate shared draftee value release
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: shared-draft-value-release
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      VITE_PUBLIC_READ_ONLY: 'true'
+      FRONTEND_MAX_STATIC_ASSET_BYTES: '26214400'
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: '8388608'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/shared-draft-value
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - name: Verify convergence, frozen draft grades and rights attribution
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+          python3 script/frontend/test_asset_value_data.py
+      - name: Materialize the validated source observations
+        run: |
+          python3 script/asset_history/materialize.py --repo .
+          python3 - <<'PY'
+          import os,sys
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history/backfill')
+          from run_player_refresh import unpack
+          unpack(Path('processed/asset_history/canonical_runtime_seed.zip'),Path(os.environ['RUNNER_TEMP'])/'consistent-assets/runtime')
+          PY
+      - uses: actions/cache/restore@v4
+        id: annual_checkpoint
+        with:
+          path: ${{ runner.temp }}/consistent-assets/annual_projection_checkpoint
+          key: shared-draft-projections-v9-${{ github.sha }}
+          restore-keys: |
+            shared-draft-projections-v9-
+            consistent-asset-projections-v8-
+      - name: Rebuild shared player prices and all 30 team histories
+        id: rebuild
+        run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/consistent-assets/runtime" --rebuild-unpublished
+      - uses: actions/cache/save@v4
+        if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/consistent-assets/annual_projection_checkpoint
+          key: shared-draft-projections-v9-${{ github.sha }}
+      - name: Verify every historical range and shared player/draft mark
+        run: |
+          python3 script/asset_history/calibration/review_release.py --repo .
+          python3 script/frontend/build_asset_value_data.py --repo .
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Verify league rankings and application value surfaces
+        working-directory: frontend
+        run: |
+          npm run test:asset-value
+          npm run test:trade-machine
+          npm run test:trade-suggestions
+          node ../script/frontend/test_asset_surface_consistency.mjs
+          ASSET_HISTORY_FRONTEND=. node ../script/frontend/test_asset_history_visuals.mjs
+          npm run shard:data
+          npm run validate:data
+          npm run build
+      - name: Preserve the reconstructed release for validation and review
+        if: always() && steps.rebuild.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-draft-value-release
+          retention-days: 7
+          path: |
+            frontend/public/data/asset_history/v9
+            frontend/public/data/asset_valuations/v9
+            frontend/public/data/asset_valuation.json
+            frontend/public/data/manifest.json
+            processed/asset_history/player_state
+            processed/asset_history/picks/trained_pick_model.json
+            processed/asset_history/methodology_review.json
+            processed/asset_history/attribution_validation.json
+      - name: Preserve rebuild diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-draft-value-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/consistent-assets/player_refresh.log
+            ${{ runner.temp }}/consistent-assets/players/path_pricing_coverage.json
+            processed/asset_history/methodology_review.json
+            processed/asset_history/attribution_validation.json
+            frontend/public/data/asset_history/v9/attribution/manifest.json

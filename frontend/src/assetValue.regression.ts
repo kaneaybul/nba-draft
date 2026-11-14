@@ -1,0 +1,141 @@
+import { annualAssetValue, ASSET_REPORTING_CAP, fourYearAssetQuote, playerFourYearAssetValue, playerRollingFourYearProduction, playerSeasonAssetValue, playerValueExposures, withAssetPickValues, withAssetValueContext, type AssetValuationData } from "./assetValue";
+import { comparePlayers, passesFilterRules, futureScale4y, futureValue4y, getPlayerSortValue, playerTradeValue } from "./App";
+import { playerTradeMachineAsset } from "./tradeMachine";
+import type { PickAsset, PlayerImpact } from "./types";
+
+export function runAssetValueRegressionTests(): string[] {
+  expect(annualAssetValue(20, 10)?.asset === 28, "cheap production receives a payroll bonus");
+  expect(annualAssetValue(20, 30)?.asset === 12, "expensive production receives a payroll penalty");
+  expect(annualAssetValue(0, 10)?.asset === -8, "signed salary survives a full injury absence");
+  const declined = annualAssetValue(-10, 5, true)!;
+  expect(declined.asset === 0 && declined.production === 0, "declining unsigned service zeros both quote legs");
+
+  const badContract = [10, 20, 30, 40].map((production, i) => annualAssetValue(production, [5, 100, 5, 5][i])!);
+  expect(fourYearAssetQuote(badContract) === 128, "the best production years cannot hide an expensive weak year");
+  expect(fourYearAssetQuote(badContract.slice(1)) === null, "a partial horizon is unavailable, not a sum over missing years");
+
+  const cheap = player(20, 10);
+  const expensive = player(20, 30);
+  expect(playerFourYearAssetValue(cheap) === 112, "four flat cheap seasons match the asset methodology");
+  expect(playerFourYearAssetValue(expensive) === 48, "four flat expensive seasons match the asset methodology");
+  expect(playerSeasonAssetValue(cheap) === 28, "annual asset value retains the current asset methodology");
+  expect(futureValue4y(cheap) === null && futureValue4y(expensive) === null, "missing rolling quotes never fall back to the old seasonal production sum");
+  expect(getPlayerSortValue(cheap, "value") === 20 && getPlayerSortValue(expensive, "value") === 20, "Value sorting and filters use original single-season production");
+  expect(getPlayerSortValue(cheap, "asset_value") === 112 && getPlayerSortValue(expensive, "asset_value") === 48, "the separate Asset Value column keeps contract economics");
+  const scales = { ...cheap, minutes_remaining_team_games: 41, scalability: 0.8, projection_scalability_y1: 1.2, projection_scalability_y2: 0.6, projection_scalability_y3: 1.4, projection_scalability_y4: 4 };
+  expect(futureScale4y(scales) === 1, "4Y Scale restores the current-plus-three-year arithmetic average");
+  expect(playerTradeValue(cheap) === playerFourYearAssetValue(cheap), "the Asset Value column and trade suggestions use one four-year quote");
+  expect(playerTradeMachineAsset(cheap, "UTA").tradeValue === playerFourYearAssetValue(cheap), "direct trade-engine assets use the same quote");
+  expect(playerFourYearAssetValue({ ...cheap, scalability: 99, projection_scalability_y1: 0 }) === 112, "diagnostic Scale cannot alter asset value");
+  const missing = { ...cheap, projection_value_y2: null };
+  expect(playerFourYearAssetValue(missing) === null && playerTradeMachineAsset(missing, "UTA").valuePriced === false,
+    "missing forecast years cannot be priced as zero in trades");
+
+  const rolling = { ...cheap, minutes_remaining_team_games: 41, Minutes: 2000, minutes_remaining: 1000 };
+  expect(playerValueExposures(rolling).reduce((sum, row) => sum + row.exposure, 0) === 4, "a half-played season still quotes exactly four forward season-equivalents");
+  expect(playerFourYearAssetValue(rolling) === 112, "partial first and final seasons keep identical flat economics");
+  expect(playerFourYearAssetValue({ ...rolling, projection_value_y4: null }) === null, "a rolling quote requires the fractional final year");
+
+  const lastHalf = { ...rolling, projection_value_y4: 100, projection_contract_y4: 10 };
+  expect(playerFourYearAssetValue(lastHalf) === 224, "a half-season of peak talent cannot count as a full peak year");
+  const normalized = { ...cheap, valuation_salary_caps: [1, 2, 4, 8, 16].map((x) => x * ASSET_REPORTING_CAP) };
+  Object.assign(normalized, {
+    projection_value_y1: 40, projection_value_y2: 80, projection_value_y3: 160,
+    projection_contract_y1: 20, projection_contract_y2: 40, projection_contract_y3: 80
+  });
+  expect(playerFourYearAssetValue(normalized) === 112, "cap inflation alone cannot increase the four-year asset quote");
+  const ingested = withAssetValueContext([cheap])[0];
+  expect(ingested.value === cheap.value && ingested.scalability === cheap.scalability, "ingestion preserves production and diagnostic Scale inputs");
+  expect(ingested.valuation_salary_caps?.[0] === ASSET_REPORTING_CAP, "the reporting year uses Asset History's reporting cap");
+  const published: AssetValuationData = {
+    generated_at: "2026-11-01", observation_date: "2026-11-01", season: 2027, reporting_cap: ASSET_REPORTING_CAP,
+    players: { "1": { date: "2026-11-01", value: 123, annual: [{ season: 2027, production: 25, asset: 35, exposure: 1 }] } },
+    slots: { "1": 200, "2": 100 }, picks: [{ team: "UTA", origin: "CLE", year: 2028, round: 1, value: 75 }]
+  };
+  const canonical = withAssetValueContext([cheap], undefined, published)[0];
+  expect(playerSeasonAssetValue(canonical) === 35 && playerFourYearAssetValue(canonical) === 123,
+    "published canonical quotes override separate forecast inputs on every live surface");
+  expect(playerTradeValue(canonical) === 123 && playerTradeMachineAsset(canonical, "UTA").tradeValue === 123,
+    "Asset Value and both trade entry points exactly match the published inventory");
+  expect(futureValue4y(canonical) === null && getPlayerSortValue(canonical, "value") === 20,
+    "canonical asset quotes must not replace the Player Impact production columns");
+  expect(getPlayerSortValue(canonical, "asset_value") === 123 && getPlayerSortValue(canonical, "future_value_4y") === null,
+    "Asset Value and 4Y Value sorting and filtering stay distinct");
+  const productionOnly: PlayerImpact = { ...cheap, asset_valuation: {
+    date: "2026-11-12", value: 9999,
+    annual: [0.75, 1, 1, 1, 0.25].map((exposure, i) => ({ season: 2027 + i, exposure, production: 9000, asset: -5000 })),
+    raw_annual_production: [10, 20, 30, 40, 50].map((production, i) => ({ season: 2027 + i, production }))
+  } };
+  expect(futureValue4y(productionOnly) === 110, "slice-specific production rates receive exactly one exposure weight");
+  expect(getPlayerSortValue(productionOnly, "future_value_4y") === 110, "4Y sorting and filters use the same rolling production quote as table and details");
+  expect(playerFourYearAssetValue(productionOnly) === 9999 && getPlayerSortValue(productionOnly, "value") === 20,
+    "rolling production changes neither Asset Value nor current Value");
+  expect(futureValue4y({ ...productionOnly, contract: 1e9, scalability: 99, Minutes: 1, minutes_actual_games: 0 }) === 110,
+    "salary, Scale, and individual appearances cannot change the team-game rolling production total");
+  const archive = { ...productionOnly, year: 2022 };
+  expect(futureValue4y(archive) === 110, "historical as-of paths match by season key, not the selected player season");
+  const negative = { ...productionOnly, asset_valuation: { ...productionOnly.asset_valuation!, raw_annual_production:
+    productionOnly.asset_valuation!.raw_annual_production!.map(r => ({ ...r, production: -10 })) } };
+  expect(futureValue4y(negative) === -40, "negative production is preserved, not floored as optional service");
+  for (const invalid of [
+    { ...productionOnly.asset_valuation!, raw_annual_production: [] },
+    { ...productionOnly.asset_valuation!, annual: [] },
+    { ...productionOnly.asset_valuation!, annual: productionOnly.asset_valuation!.annual.slice(1) },
+    { ...productionOnly.asset_valuation!, raw_annual_production: productionOnly.asset_valuation!.raw_annual_production!.map(r => ({ ...r, season: 2027 })) },
+    { ...productionOnly.asset_valuation!, annual: productionOnly.asset_valuation!.annual.map(r => ({ ...r, exposure: 1 })) },
+    { ...productionOnly.asset_valuation!, raw_annual_production: productionOnly.asset_valuation!.raw_annual_production!.map(r => ({ ...r, production: NaN })) }
+  ]) expect(playerRollingFourYearProduction({ ...productionOnly, asset_valuation: invalid }) === null, "incomplete or invalid production paths are unavailable, never partial or zero");
+  expect(!passesFilterRules(cheap, [{ id: "missing", key: "future_value_4y", operator: "lte", value: "0" }]), "missing rolling estimates never pass filters as zero");
+  expect(comparePlayers(cheap, negative, "future_value_4y", "asc") > 0 && comparePlayers(cheap, negative, "future_value_4y", "desc") > 0,
+    "unknown rolling estimates sort after priced negative estimates in either direction");
+  const picks = withAssetPickValues([
+    { asset_id: "slot1", asset_type: "slot_value", pick: 1, value: 1 },
+    { asset_id: "right", asset_type: "team_pick", pick: 2, expected_pick: 2, team: "UTA", origin_team: "CLE", draft_year: 2028, round: 1, value: 10 }
+  ] as PickAsset[], published);
+  expect(picks[0].value === 200 && picks[1].value === 75, "trade picks use the asset curve and exact uniquely matched rights quote");
+  const unavailable = withAssetValueContext([{ ...cheap, nba_id: 2 }], undefined, published)[0];
+  expect(playerFourYearAssetValue(unavailable) === null, "missing live quotes never silently switch to the legacy model");
+  expect(playerFourYearAssetValue(withAssetValueContext([{ ...cheap, year: 2026 }], undefined, published)[0]) === null,
+    "historical season rows cannot silently substitute a legacy quote for a dated asset observation");
+  const dated = withAssetValueContext([{ ...cheap, year: 2026 }], undefined,
+    { ...published, season: 2026, observation_date: "2026-06-30", players: {
+      "1": { date: "2026-06-30", value: 456, annual: [] }
+    } })[0];
+  expect(playerFourYearAssetValue(dated) === 456 && getPlayerSortValue(dated, "asset_value") === 456
+    && playerTradeValue(dated) === 456 && playerTradeMachineAsset(dated, "UTA").tradeValue === 456,
+    "dated historical Impact, sorting and both trade entry points match the identical inventory quote");
+  const ambiguous = withAssetPickValues([picks[1], { ...picks[1], asset_id: "duplicate" }], published);
+  expect(ambiguous.every((pick) => pick.value_priced === false), "ambiguous legal claims cannot duplicate a portfolio quote");
+  const reviewed = { team: "SAC", origin: "UTA", year: 2028, round: 2, value: 123, source_url: "https://www.nba.com/kings/news/sacramento-kings-complete-trade" };
+  const corrected = withAssetPickValues([{ ...picks[1], team: "OKC", origin_team: "UTA", draft_year: 2028, round: 2 }],
+    { ...published, picks: [reviewed], reviewed_pick_ownership: [reviewed] });
+  expect(corrected.length === 1 && corrected[0].team === "SAC" && corrected[0].value === 123 && corrected[0].value_priced,
+    "reviewed ownership replaces the stale source owner and uses the shared quote");
+  const missingPick = withAssetPickValues([], { ...published, picks: [reviewed], reviewed_pick_ownership: [reviewed] });
+  expect(missingPick.length === 1 && missingPick[0].team === "SAC", "a reviewed pick missing from the generic feed is available to trade");
+  expect(withAssetPickValues(corrected, { ...published, picks: [reviewed], reviewed_pick_ownership: [reviewed] }).length === 1,
+    "repeated hydration cannot duplicate reviewed picks");
+  return [
+    "annual value rewards cheap production and preserves signed liabilities",
+    "best-two production includes every four-year contract adjustment",
+    "Player Impact production columns remain separate from asset and trade values",
+    "rolling horizons handle partial seasons and unavailable years",
+    "unsigned continuation and constant-cap reporting match the asset method"
+  ];
+}
+
+function player(production: number, salary: number): PlayerImpact {
+  return {
+    nba_id: 1, player_name: "Asset fixture", team: "UTA", year: 2027,
+    value: production, contract: salary, contract_status: "Signed", Minutes: 2000,
+    scalability: 1, trade_value: 999999, fa_value: salary,
+    projection_value_y1: production, projection_value_y2: production,
+    projection_value_y3: production, projection_value_y4: production,
+    projection_contract_y1: salary, projection_contract_y2: salary,
+    projection_contract_y3: salary, projection_contract_y4: salary
+  } as PlayerImpact;
+}
+
+function expect(condition: unknown, message: string): void {
+  if (!condition) throw new Error(message);
+}

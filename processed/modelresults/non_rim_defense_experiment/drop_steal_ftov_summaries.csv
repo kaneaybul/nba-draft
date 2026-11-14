@@ -1,0 +1,5 @@
+variant,n,terms,r_squared,adj_r_squared,sigma,aic,bic
+full_non_rim,4461,switch | Steals_100 | d_FTOVs_Per100 | d_DefRebounds_Per100 | d_Blocks_Per100 | rim_points_saved_100 | non_rim_dfga_100 | non_rim_points_saved_100,0.48857378581563166,0.487654780938391,0.7156907758837213,9686.28831169863,9750.319594049914
+full_non_rim_drop_steals,4461,switch | d_FTOVs_Per100 | d_DefRebounds_Per100 | d_Blocks_Per100 | rim_points_saved_100 | non_rim_dfga_100 | non_rim_points_saved_100,0.48199313599927485,0.4811788427030689,0.7201996649001231,9741.322963750808,9798.951117866964
+full_non_rim_drop_ftovs,4461,switch | Steals_100 | d_DefRebounds_Per100 | d_Blocks_Per100 | rim_points_saved_100 | non_rim_dfga_100 | non_rim_points_saved_100,0.47763655992784787,0.4768154182075457,0.7232218596020897,9778.684275156611,9836.312429272766
+full_non_rim_drop_steals_ftovs,4461,switch | d_DefRebounds_Per100 | d_Blocks_Per100 | rim_points_saved_100 | non_rim_dfga_100 | non_rim_points_saved_100,0.3235944651592933,0.32268327674235475,0.8228865715257225,10929.536975693696,10980.762001574722

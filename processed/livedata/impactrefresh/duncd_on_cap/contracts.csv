@@ -1,0 +1,105 @@
+team,player,age,position,rank,contract_notes,season,amount,raw_cell_context,likely_indicator,hold_indicator,option_indicator,confidence
+ATL,CJ McCollum,34.6,SG,37,,2026,30666666,salary,false,false,false,high
+ATL,CJ McCollum,34.6,SG,37,,2027,45999999,cap_hold,false,true,false,medium
+ATL,Jalen Johnson,24.4,PF,7,,2026,30000000,salary,false,false,false,high
+ATL,Jalen Johnson,24.4,PF,7,,2027,30000000,salary/likely,true,false,false,high
+ATL,Jalen Johnson,24.4,PF,7,,2028,30000000,salary/likely,true,false,false,medium
+ATL,Jalen Johnson,24.4,PF,7,,2029,30000000,salary,false,false,false,medium
+ATL,Jalen Johnson,24.4,PF,7,,2030,30000000,salary,false,false,false,medium
+ATL,Jonathan Kuminga,23.6,PF,42,Implicit no-trade waived; 15% trade bonus paid,2026,23799569,salary,false,false,false,high
+ATL,Jonathan Kuminga,23.6,PF,42,Implicit no-trade waived; 15% trade bonus paid,2027,24300000,salary,false,false,false,high
+ATL,Jonathan Kuminga,23.6,PF,42,Implicit no-trade waived; 15% trade bonus paid,2027,35699353,cap_hold,false,true,false,medium
+ATL,Jonathan Kuminga,23.6,PF,42,Implicit no-trade waived; 15% trade bonus paid,2028,36450000,cap_hold,false,true,false,medium
+ATL,Nickeil Alexander-Walker,27.6,SG,14,,2026,15161800,salary,false,false,false,high
+ATL,Nickeil Alexander-Walker,27.6,SG,14,,2027,14403710,salary/likely,true,false,false,high
+ATL,Nickeil Alexander-Walker,27.6,SG,14,,2028,15161800,salary/likely,true,false,false,medium
+ATL,Nickeil Alexander-Walker,27.6,SG,14,,2029,15919890,salary,false,false,false,medium
+ATL,Onyeka Okongwu,25.4,C,17,,2026,15000000,salary,false,false,false,high
+ATL,Onyeka Okongwu,25.4,C,17,,2027,16120000,salary/likely,true,false,false,high
+ATL,Onyeka Okongwu,25.4,C,17,,2028,16880000,salary/likely,true,false,false,high
+ATL,Corey Kispert,27.1,SG,47,,2026,13975000,salary,false,false,false,high
+ATL,Corey Kispert,27.1,SG,47,,2027,13975000,salary/likely,true,false,false,high
+ATL,Corey Kispert,27.1,SG,47,,2028,13025000,salary/likely,true,false,false,high
+ATL,Corey Kispert,27.1,SG,47,,2029,13025000,salary,false,false,false,medium
+ATL,Zaccharie Risacher,21.0,SF,40,,2026,13197720,salary,false,false,false,high
+ATL,Zaccharie Risacher,21.0,SF,40,,2027,13826040,salary/likely,true,false,false,high
+ATL,Zaccharie Risacher,21.0,SF,40,,2028,17434636,hold/likely,true,true,false,medium
+ATL,Gabe Vincent,29.9,PG,57,,2026,11500000,salary,false,false,false,high
+ATL,Gabe Vincent,29.9,PG,57,,2027,21850000,cap_hold,false,true,false,medium
+ATL,Buddy Hield,33.4,SG,,26-27: $3M GT; 2027-28: $3M GT if PO exercised,2026,9219512,salary,false,false,false,high
+ATL,Buddy Hield,33.4,SG,,26-27: $3M GT; 2027-28: $3M GT if PO exercised,2027,9658536,salary,false,false,false,high
+ATL,Buddy Hield,33.4,SG,,26-27: $3M GT; 2027-28: $3M GT if PO exercised,2027,3000000,guaranteed_likely,true,false,false,medium
+ATL,Buddy Hield,33.4,SG,,26-27: $3M GT; 2027-28: $3M GT if PO exercised,2028,10097560,player_option,false,false,true,medium
+ATL,Buddy Hield,33.4,SG,,26-27: $3M GT; 2027-28: $3M GT if PO exercised,2028,18351218,cap_hold,false,true,false,medium
+ATL,Dyson Daniels,23.1,SF,35,,2026,7707709,salary,false,false,false,high
+ATL,Dyson Daniels,23.1,SF,35,,2027,25000000,salary/likely,true,false,false,high
+ATL,Dyson Daniels,23.1,SF,35,,2028,25000000,salary,false,false,false,medium
+ATL,Dyson Daniels,23.1,SF,35,,2029,25000000,salary,false,false,false,medium
+ATL,Dyson Daniels,23.1,SF,35,,2030,25000000,salary,false,false,false,medium
+ATL,Asa Newell,20.6,PF,57,,2026,3237480,salary,false,false,false,high
+ATL,Asa Newell,20.6,PF,57,,2027,3399480,salary/likely,true,false,false,high
+ATL,Asa Newell,20.6,PF,57,,2028,3560880,salary/likely,true,false,false,high
+ATL,Asa Newell,20.6,PF,57,,2029,6042813,cap_hold,false,true,false,medium
+ATL,Jock Landale,30.5,C,69,,2026,2296274,salary,false,false,false,high
+ATL,Jock Landale,30.5,C,69,,2027,2450000,cap_hold,false,true,false,medium
+ATL,Keaton Wallace,27.2,SG,,,2026,2296274,salary,false,false,false,high
+ATL,Keaton Wallace,27.2,SG,,,2027,2870343,cap_hold,false,true,false,medium
+ATL,Mouhamed Gueye,23.5,PF,,26-27: GT 1/7/27,2026,2221677,salary,false,false,false,medium
+ATL,Mouhamed Gueye,23.5,PF,,26-27: GT 1/7/27,2027,2406205,salary/likely,true,false,false,medium
+ATL,Mouhamed Gueye,23.5,PF,,26-27: GT 1/7/27,2027,2777096,cap_hold,false,true,false,medium
+ATL,Mouhamed Gueye,23.5,PF,,26-27: GT 1/7/27,2028,2621500,cap_hold,false,true,false,low
+UTA,Lauri Markkanen,28.9,PF,3,,2026,46394100,salary,false,false,false,high
+UTA,Lauri Markkanen,28.9,PF,3,,2027,46113154,salary/likely,true,false,false,high
+UTA,Lauri Markkanen,28.9,PF,3,,2028,49824681,salary/likely,true,false,false,high
+UTA,Lauri Markkanen,28.9,PF,3,,2029,53536209,salary,false,false,false,medium
+UTA,Jaren Jackson Jr.,26.6,PF,5,,2026,35000000,salary,false,false,false,high
+UTA,Jaren Jackson Jr.,26.6,PF,5,,2027,49000000,salary/likely,true,false,false,high
+UTA,Jaren Jackson Jr.,26.6,PF,5,,2028,50500000,salary/likely,true,false,false,high
+UTA,Jaren Jackson Jr.,26.6,PF,5,,2029,52000000,salary,false,false,false,medium
+UTA,Jaren Jackson Jr.,26.6,PF,5,,2030,53500000,salary,false,false,false,medium
+UTA,Jusuf Nurkic,31.7,C,57,,2026,19375000,salary,false,false,false,high
+UTA,Jusuf Nurkic,31.7,C,57,,2027,29062500,cap_hold,false,true,false,high
+UTA,Ace Bailey,19.7,SF,43,,2026,9069840,salary,false,false,false,high
+UTA,Ace Bailey,19.7,SF,43,,2027,9523080,salary/likely,true,false,false,high
+UTA,Ace Bailey,19.7,SF,43,,2028,9976560,salary/likely,true,false,false,high
+UTA,Ace Bailey,19.7,SF,43,,2029,12640302,cap_hold,false,true,false,medium
+UTA,John Konchar,30.1,SG,,,2026,6165000,salary,false,false,false,high
+UTA,John Konchar,30.1,SG,,,2027,6165000,salary/likely,true,false,false,high
+UTA,John Konchar,30.1,SG,,,2028,11713500,cap_hold,false,true,false,medium
+UTA,Cody Williams,21.4,SF,,,2026,5742480,salary,false,false,false,high
+UTA,Cody Williams,21.4,SF,,,2027,6015600,salary/likely,true,false,false,high
+UTA,Cody Williams,21.4,SF,,,2028,7669890,salary/likely,true,false,false,medium
+UTA,Walker Kessler,24.7,C,19,,2026,4878938,salary,false,false,false,high
+UTA,Walker Kessler,24.7,C,19,,2027,14636814,cap_hold/likely,true,true,false,medium
+UTA,Keyonte George,22.5,PG,12,,2026,4278960,salary,false,false,false,high
+UTA,Keyonte George,22.5,PG,12,,2027,6563925,salary/likely,true,false,false,high
+UTA,Keyonte George,22.5,PG,12,,2028,19691774,cap_hold/likely,true,true,false,medium
+UTA,Kevin Love,37.6,PF,,,2026,4150000,salary,false,false,false,high
+UTA,Kevin Love,37.6,PF,,,2027,7885000,cap_hold,false,true,false,medium
+UTA,Svi Mykhailiuk,28.9,SG,41,26-27: GT 6/30/26; 27-28: GT 6/30/27,2026,3675000,salary,false,false,false,high
+UTA,Svi Mykhailiuk,28.9,SG,41,26-27: GT 6/30/26; 27-28: GT 6/30/27,2027,3850000,salary/likely,true,false,false,high
+UTA,Svi Mykhailiuk,28.9,SG,41,26-27: GT 6/30/26; 27-28: GT 6/30/27,2028,4025000,salary/likely,true,false,false,high
+UTA,Svi Mykhailiuk,28.9,SG,41,26-27: GT 6/30/26; 27-28: GT 6/30/27,2028,7315000,cap_hold,false,true,false,medium
+UTA,Kyle Filipowski,22.5,C,69,26-27: GT 6/30/26; 27-28: GT 6/30/27,2026,3000000,salary,false,false,false,high
+UTA,Kyle Filipowski,22.5,C,69,26-27: GT 6/30/26; 27-28: GT 6/30/27,2027,3000000,salary/likely,true,false,false,high
+UTA,Kyle Filipowski,22.5,C,69,26-27: GT 6/30/26; 27-28: GT 6/30/27,2028,3000000,salary/likely,true,false,false,high
+UTA,Kyle Filipowski,22.5,C,69,26-27: GT 6/30/26; 27-28: GT 6/30/27,2028,4050000,cap_hold,false,true,false,medium
+UTA,Brice Sensabaugh,22.5,SG,63,,2026,2693760,salary,false,false,false,high
+UTA,Brice Sensabaugh,22.5,SG,63,,2027,4862237,salary/likely,true,false,false,high
+UTA,Brice Sensabaugh,22.5,SG,63,,2028,14586710,cap_hold/likely,true,true,false,medium
+UTA,Isaiah Collier,21.5,PG,43,,2026,2638200,salary,false,false,false,high
+UTA,Isaiah Collier,21.5,PG,43,,2027,2763960,salary/likely,true,false,false,high
+UTA,Isaiah Collier,21.5,PG,43,,2028,4988948,salary/likely,true,false,false,medium
+UTA,Bez Mbeng,23.0,SG,,,2026,73153,salary,false,false,false,medium
+UTA,Bez Mbeng,23.0,SG,,,2027,2150918,salary,false,false,false,medium
+UTA,Bez Mbeng,23.0,SG,,,2027,2385632,cap_hold,false,true,false,medium
+UTA,Bez Mbeng,23.0,SG,,,2028,2821500,cap_hold,false,true,false,medium
+UTA,Hayden Gray,23.0,SG,,,2026,14631,salary,false,false,false,medium
+UTA,Hayden Gray,23.0,SG,,,2027,2150918,salary,false,false,false,medium
+UTA,Hayden Gray,23.0,SG,,,2027,2385632,cap_hold,false,true,false,medium
+UTA,Hayden Gray,23.0,SG,,,2028,2821500,cap_hold,false,true,false,medium
+UTA,Elijah Harkless,26.2,SG,,2 way,2026,,two_way,false,false,false,high
+UTA,Oscar Tshiebwe,26.4,C,,2 way,2026,,two_way,false,false,false,high
+UTA,Blake Hinson,,,,2 way,2026,,two_way,false,false,false,high
+NYK,Jordan Clarkson,33.9,SG,75,,2026,2296274,salary,false,false,false,high
+NYK,Jordan Clarkson,33.9,SG,75,,2027,2450000,cap_hold,false,true,false,high

@@ -1,0 +1,5 @@
+year,nba_id,player_name,team,rights_team,bird_rights,cap_hold,cap_hold_type,guaranteed_salary,dead_cap,contract_status,roster_source
+2026,1631093,Jaden Ivey,FA,FA,None,0,Off roster override,0,0,UFA,RealGM transaction/current-roster override
+2026,1631246,Vince Williams Jr.,FA,FA,None,0,Off roster override,0,0,UFA,RealGM transaction/current-roster override
+2026,1628366,Lonzo Ball,FA,FA,None,0,Off roster override,0,0,UFA,NBA.com league roster current-team blank
+2026,1628449,Chris Boucher,FA,FA,None,0,Off roster override,0,0,UFA,NBA.com league roster current-team blank

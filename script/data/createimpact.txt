@@ -1,0 +1,289 @@
+library(tidyverse)
+
+# =========================
+# Paths
+# =========================
+resolve_base_dir <- function() {
+  candidates <- c(
+    getwd(),
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", "..")
+  )
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate_norm, "raw")) &&
+        dir.exists(file.path(candidate_norm, "script"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+base_dir      <- resolve_base_dir()
+source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+source(file.path(base_dir, "script", "data", "darko_dpm_fallback.R"), local = TRUE)
+raw_dir       <- file.path(base_dir, "raw")
+epm_dir       <- file.path(raw_dir, "epm")
+databallr_fp  <- file.path(raw_dir, "databallr_stats.csv")
+processed_dir <- file.path(base_dir, "processed")
+livedata_dir  <- get_live_data_dir(base_dir, create = TRUE)
+
+migrate_legacy_live_data_files(base_dir, files = "impactoutput.csv")
+
+out_fp <- file.path(livedata_dir, "impactoutput.csv")
+
+# =========================
+# Settings
+# =========================
+MIN_MINUTES <- as.numeric(Sys.getenv("IMPACT_MIN_MINUTES", unset = "500"))
+
+exclude_years_raw <- trimws(Sys.getenv("IMPACT_EXCLUDE_YEARS", unset = "none"))
+if (!nzchar(exclude_years_raw) || tolower(exclude_years_raw) %in% c("none", "null", "na")) {
+  EXCLUDE_YEARS <- integer(0)
+} else {
+  EXCLUDE_YEARS <- as.integer(trimws(strsplit(exclude_years_raw, ",")[[1]]))
+  EXCLUDE_YEARS <- EXCLUDE_YEARS[!is.na(EXCLUDE_YEARS)]
+}
+
+# =========================
+# Helpers
+# =========================
+safe_z <- function(x) {
+  s <- sd(x, na.rm = TRUE)
+  m <- mean(x, na.rm = TRUE)
+
+  if (is.na(s) || s == 0) return(rep(0, length(x)))
+  (x - m) / s
+}
+
+extract_epm_year <- function(path) {
+  nm <- basename(path)
+
+  # expects epm21.csv, epm22.csv, etc.
+  yy <- stringr::str_extract(nm, "\\d{2}")
+  if (is.na(yy)) stop("Could not extract 2-digit year from filename: ", nm)
+
+  2000 + as.integer(yy)
+}
+
+pick_col <- function(df, candidates, label) {
+  hit <- candidates[candidates %in% names(df)]
+
+  if (length(hit) == 0) {
+    stop(
+      "Could not find a column for ", label, ". Tried: ",
+      paste(candidates, collapse = ", ")
+    )
+  }
+
+  hit[[1]]
+}
+
+clean_id <- function(x) {
+  x <- as.character(x)
+  x <- stringr::str_trim(x)
+  x[x == ""] <- NA_character_
+  x
+}
+
+clean_display_name <- function(x) {
+  x <- as.character(x)
+  x <- trimws(x)
+  x[x == ""] <- NA_character_
+  x <- iconv(x, from = "", to = "ASCII//TRANSLIT")
+  x <- gsub("[?`']", "", x)
+  x <- gsub("\\s+", " ", x)
+  trimws(x)
+}
+
+write_csv_with_retry <- function(df, path, attempts = 5, sleep_seconds = 2) {
+  last_error <- NULL
+
+  for (i in seq_len(attempts)) {
+    result <- tryCatch(
+      {
+        readr::write_csv(df, path)
+        TRUE
+      },
+      error = function(e) e
+    )
+
+    if (isTRUE(result)) {
+      return(invisible(TRUE))
+    }
+
+    last_error <- result
+    message("Write attempt ", i, " failed for ", path)
+
+    if (i < attempts) {
+      Sys.sleep(sleep_seconds)
+    }
+  }
+
+  stop(
+    paste0(
+      "Could not write output file: ", path, "\n",
+      "If this file is open in Excel or another program, close it and try again.\n",
+      "Original error: ", conditionMessage(last_error)
+    )
+  )
+}
+
+# =========================
+# Read and combine EPM files
+# =========================
+epm_files <- list.files(epm_dir, pattern = "^epm\\d{2}\\.csv$", full.names = TRUE)
+
+if (length(epm_files) == 0) {
+  stop("No EPM files found in: ", epm_dir)
+}
+
+epm_raw <- purrr::map_dfr(epm_files, function(fp) {
+  year_val <- extract_epm_year(fp)
+  dat <- readr::read_csv(fp, show_col_types = FALSE)
+
+  nba_id_col <- pick_col(dat, c("nba_id", "player_id", "PLAYER_ID"), "EPM nba_id")
+  o_epm_col  <- pick_col(dat, c("oepm", "o_epm", "off_epm", "offensive_epm", "OEPM"), "offensive EPM")
+  d_epm_col  <- pick_col(dat, c("depm", "d_epm", "def_epm", "defensive_epm", "DEPM"), "defensive EPM")
+  name_col   <- names(dat)[names(dat) %in% c("player_name", "player", "PLAYER_NAME", "name")][1]
+
+  dat %>%
+    transmute(
+      nba_id = clean_id(.data[[nba_id_col]]),
+      year = as.integer(year_val),
+      player_name_epm = if (!is.na(name_col) && length(name_col) > 0) as.character(.data[[name_col]]) else NA_character_,
+      o_epm = as.numeric(.data[[o_epm_col]]),
+      d_epm = as.numeric(.data[[d_epm_col]])
+    )
+}) %>%
+  filter(!year %in% EXCLUDE_YEARS) %>%
+  filter(!is.na(nba_id)) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+# =========================
+# Read databallr
+# =========================
+db_raw <- readr::read_csv(databallr_fp, show_col_types = FALSE)
+latest_epm_year <- max(epm_raw$year, na.rm = TRUE)
+latest_epm_rows <- epm_raw[epm_raw$year == latest_epm_year, c("nba_id", "year", "player_name_epm"), drop = FALSE]
+db_raw <- append_darko_dpm_fallback_rows(
+  stats = db_raw,
+  epm_rows = latest_epm_rows,
+  base_dir = base_dir,
+  strict = TRUE
+)
+
+nba_id_col_db  <- pick_col(db_raw, c("nba_id", "player_id", "PLAYER_ID"), "databallr nba_id")
+year_col_db    <- pick_col(db_raw, c("year", "YEAR"), "databallr year")
+o_dpm_col      <- pick_col(db_raw, c("o_dpm", "off_dpm", "odpm", "O_DPM"), "offensive DPM")
+d_dpm_col      <- pick_col(db_raw, c("d_dpm", "def_dpm", "ddpm", "D_DPM"), "defensive DPM")
+minutes_col_db <- pick_col(db_raw, c("Minutes", "minutes", "MIN", "min"), "Minutes")
+name_col_db    <- names(db_raw)[names(db_raw) %in% c("player_name", "player", "PLAYER_NAME", "name")][1]
+
+db <- db_raw %>%
+  transmute(
+    nba_id = clean_id(.data[[nba_id_col_db]]),
+    year = as.integer(.data[[year_col_db]]),
+    player_name_db = if (!is.na(name_col_db) && length(name_col_db) > 0) as.character(.data[[name_col_db]]) else NA_character_,
+    darko_dpm_fallback = if (".darko_dpm_fallback" %in% names(db_raw)) as.logical(.data[[".darko_dpm_fallback"]]) else FALSE,
+    Minutes = as.numeric(.data[[minutes_col_db]]),
+    o_dpm = as.numeric(.data[[o_dpm_col]]),
+    d_dpm = as.numeric(.data[[d_dpm_col]])
+  ) %>%
+  filter(!year %in% EXCLUDE_YEARS) %>%
+  filter(Minutes >= MIN_MINUTES) %>%
+  filter(!is.na(nba_id)) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+# =========================
+# Join EPM + DPM on correct fields
+# =========================
+depvar_raw <- epm_raw %>%
+  inner_join(db, by = c("nba_id", "year")) %>%
+  filter(
+    is.finite(o_epm),
+    is.finite(d_epm),
+    is.finite(o_dpm),
+    is.finite(d_dpm)
+  )
+
+if (nrow(depvar_raw) == 0) {
+  stop("Join produced 0 rows. Check nba_id/year alignment.")
+}
+
+# =========================
+# Build blended offensive + defensive targets
+# =========================
+depvar <- depvar_raw %>%
+  group_by(year) %>%
+  mutate(
+    # z-scores within year
+    z_o_epm = safe_z(o_epm),
+    z_o_dpm = safe_z(o_dpm),
+    z_d_epm = safe_z(d_epm),
+    z_d_dpm = safe_z(d_dpm),
+
+    # equal-weight blend on standardized scale
+    off_blend_z_raw = (z_o_epm + z_o_dpm) / 2,
+    def_blend_z_raw = (z_d_epm + z_d_dpm) / 2,
+
+    # re-standardize blend
+    off_blend_z = safe_z(off_blend_z_raw),
+    def_blend_z = safe_z(def_blend_z_raw),
+
+    # remap to average of source distributions
+    off_target_mean = (mean(o_epm, na.rm = TRUE) + mean(o_dpm, na.rm = TRUE)) / 2,
+    off_target_sd   = (sd(o_epm, na.rm = TRUE)   + sd(o_dpm, na.rm = TRUE))   / 2,
+
+    def_target_mean = (mean(d_epm, na.rm = TRUE) + mean(d_dpm, na.rm = TRUE)) / 2,
+    def_target_sd   = (sd(d_epm, na.rm = TRUE)   + sd(d_dpm, na.rm = TRUE))   / 2,
+
+    off_dep = off_target_mean + off_target_sd * off_blend_z,
+    def_dep = def_target_mean + def_target_sd * def_blend_z
+  ) %>%
+  ungroup() %>%
+  mutate(
+    player_name = clean_display_name(coalesce(player_name_db, player_name_epm))
+  ) %>%
+  select(
+    nba_id,
+    player_name,
+    year,
+    Minutes,
+    o_epm,
+    o_dpm,
+    d_epm,
+    d_dpm,
+    off_dep,
+    def_dep
+  ) %>%
+  arrange(year, desc(off_dep))
+
+# =========================
+# Quick checks
+# =========================
+print(depvar %>% count(year), n = Inf)
+
+print(
+  depvar %>%
+    group_by(year) %>%
+    summarize(
+      n = n(),
+      min_minutes = min(Minutes, na.rm = TRUE),
+      off_dep_mean = mean(off_dep, na.rm = TRUE),
+      off_dep_sd   = sd(off_dep, na.rm = TRUE),
+      def_dep_mean = mean(def_dep, na.rm = TRUE),
+      def_dep_sd   = sd(def_dep, na.rm = TRUE),
+      .groups = "drop"
+    ),
+  n = Inf
+)
+
+# =========================
+# Write output
+# =========================
+write_csv_with_retry(depvar, out_fp)
+
+message("Wrote dependent variable file to: ", out_fp)

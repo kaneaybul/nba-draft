@@ -1,0 +1,5 @@
+total_feature,age_feature,pick_feature,weighted_score,weighted_z,objective,search,off_feature,def_feature,hist_board_feature
+1.275,0.125,0.375,0.571522610961395,1.28163614225518,1.27467989225518,total_age_pick,,,
+,-0.2,0.55,0.574847923560984,1.33746384805315,1.31541384805315,off_def_age_pick,1.3,1.55,
+1.1,-0.1,,0.57694785532138,1.38291703511321,1.37689828511321,historical_board_proxy,,,0.425
+1.05,-0.1,0.15,0.578979452483836,1.41095965032474,1.40720965032474,board_plus_pick_proxy,,,0.3

@@ -1,0 +1,78 @@
+name: Verify frontend data refresh
+
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+      - name: Verify projection and valuation updates reach the app
+        run: node script/frontend/test_data_refresh.mjs
+      - name: Verify source parsing and forecast dates
+        run: node --test script/data/test_live_ratings.mjs
+
+  score_calibration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+      - name: Install Score test dependency
+        shell: Rscript {0}
+        run: |
+          rspm <- Sys.getenv("RSPM", "")
+          install.packages("jsonlite", repos=c(CRAN=if(nzchar(rspm)) rspm else "https://cloud.r-project.org"))
+      - name: Verify season-relative Score calibration
+        run: Rscript script/frontend/test_player_pool.R
+
+
+      - name: Verify remaining-season minutes and injury accounting
+        run: Rscript script/frontend/test_live_minutes.R
+
+  draft_preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install draft scoring dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y r-base-core r-cran-data.table r-cran-ranger r-cran-glmnet
+      - name: Reproduce the published draft preview on its saved inputs
+        run: |
+          draft_dir=processed/draft
+          Rscript script/draft/score_2027_preview.R \
+            "$draft_dir/draft_consensus_projection_ranks_2027.csv" "$RUNNER_TEMP/scores.csv"
+          Rscript - "$RUNNER_TEMP/scores.csv" "$draft_dir/draft_skill_preview_2027.csv" <<'RS'
+          paths <- commandArgs(trailingOnly = TRUE)
+          actual <- read.csv(paths[[1]])
+          expected <- read.csv(paths[[2]])
+          columns <- c("player", "big_board_rank", "model_rank", grep("^FINAL_", names(expected), value = TRUE))
+          stopifnot(isTRUE(all.equal(actual[columns], expected[columns], tolerance = 1e-9)))
+          RS
+      - name: Validate and score a collected draft snapshot
+        run: |
+          snapshot=raw/draft_preview_2027_inputs.csv
+          if [ -f "$snapshot" ]; then
+            python3 script/draft/refresh_2027_stats.py processed/draft/draft_consensus_projection_ranks_2027.csv \
+              "$RUNNER_TEMP/draft-inputs.csv" --snapshot "$snapshot"
+            Rscript script/draft/score_2027_preview.R "$RUNNER_TEMP/draft-inputs.csv" "$RUNNER_TEMP/draft-scores.csv"
+          fi
+

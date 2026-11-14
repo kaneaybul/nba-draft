@@ -1,0 +1,29 @@
+.injury-workspace { padding: 24px; max-width: 1640px; margin: 0 auto; }
+.injury-workspace .table-panel { padding: 24px; }
+.injury-heading { display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; align-items: start; }
+.injury-heading h2 { margin: 0 0 8px; }
+.injury-heading p, .injury-policy, .injury-timestamp { color: var(--muted); }
+.injury-timestamp { display: grid; gap: 8px; font-size: 12px; text-align: right; }
+.injury-workspace a, .injury-player-note a { color: var(--teal); }
+.injury-stale { color: #bc7631; }
+.injury-summary { display: flex; flex-wrap: wrap; gap: 12px 32px; padding: 24px 0 14px; }
+.injury-summary strong { font-size: 24px; margin-right: 4px; }
+.injury-policy { max-width: 1100px; line-height: 1.6; font-size: 12px; }
+.injury-filters { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin: 24px 0; }
+.injury-filters label { display: grid; gap: 6px; font-size: 12px; }
+.injury-filters input, .injury-filters select { font: inherit; color: inherit; padding: 9px 12px; border: 1px solid var(--line, #d9d9d2); border-radius: 6px; background: var(--paper, #fff); }
+.injury-filters input { width: min(280px, 65vw); }
+.injury-filters > span { font-size: 12px; color: var(--muted); padding-bottom: 10px; }
+.injury-table-scroll { overflow-x: auto; }
+.injury-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 980px; }
+.injury-table th { font-weight: 600; text-align: left; color: var(--muted); padding: 14px 12px; border-bottom: 2px solid var(--line, #ddd); }
+.injury-table td { padding: 18px 12px; vertical-align: top; border-bottom: 1px solid var(--line, #e7e7e2); }
+.injury-table td:first-child { min-width: 170px; }
+.injury-table td:nth-child(3) { max-width: 340px; }
+.injury-table td > span:not(.injury-status), .injury-table small { display: block; color: var(--muted); font-size: 11px; line-height: 1.55; margin-top: 5px; white-space: normal; }
+.injury-status { display: inline-block; border-radius: 30px; background: #f3e9d3; color: #755312; padding: 5px 9px; font-size: 11px; white-space: nowrap; }
+.injury-status.out { background: #f5dddd; color: #873737; }
+.injury-empty { padding: 24px; text-align: center; }
+.injury-player-note { display: grid; gap: 7px; border-left: 3px solid #bc7631; padding: 12px 14px; background: rgba(188,118,49,.07); margin-bottom: 18px; font-size: 12px; }
+.injury-player-note small { color: var(--muted); line-height: 1.5; }
+@media(max-width: 700px) { .injury-workspace { padding: 12px; } .injury-workspace .table-panel { padding: 16px; } .injury-timestamp { text-align: left; } .injury-summary { gap: 16px; } .injury-summary strong { font-size: 20px; } }

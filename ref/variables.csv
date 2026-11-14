@@ -1,0 +1,22 @@
+﻿ovar,dvar
+3PA_100,d_Blocks_Per100
+3P_PERC,rim_dif%
+AtRimAssists/100,rim_points_saved_100
+PASSING_Potential Assists/100,rimdfga/100
+PASSING_on-ball-time%,switch
+final_creation_TSA100,d_DefRebounds_Per100
+final_creation_TS,OFFD_100
+final_transition_TSA100,STOPS_100
+final_transition_TS,Steals_100
+FTA_100,d_FTOVs_Per100
+FT_PERC,d_DEF_LOOSE_BALLS_RECOVERED_Per100
+d_AtRimFGA_Per100,d_DEFLECTIONS_Per100
+RimFGPerc,td_dts
+d_ShortMidRangeFGA_Per100,
+ShortMidFGPerc,
+d_LongMidRangeFGA_Per100,
+LongMidFGPerc,
+OffFGReboundPct,
+cTOV,
+nonPassTOVPct,
+d_Assists_Per100,

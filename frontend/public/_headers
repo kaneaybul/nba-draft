@@ -1,0 +1,29 @@
+/data/manifest.json
+  Cache-Control: no-cache
+
+/data/draft_prospects.json
+  Cache-Control: no-cache
+
+/data/draft_tracker_board_summary.json
+  Cache-Control: no-cache
+
+/data/draft_tracker_board_scores.json
+  Cache-Control: no-cache
+
+/data/draft_tracker_prospect_scores.json
+  Cache-Control: no-cache
+
+/data/v2/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/*
+  X-Content-Type-Options: nosniff

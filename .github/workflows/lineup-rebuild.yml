@@ -1,0 +1,213 @@
+name: Rebuild lineup projections
+
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: roster-refresh
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CURRENT_ROSTER_YEAR: "2026"
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install R system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: Install R packages
+        shell: Rscript {0}
+        run: |
+          rspm <- Sys.getenv("RSPM", "")
+          repos <- c(CRAN = if (nzchar(rspm)) rspm else "https://cloud.r-project.org")
+          # Keep this limited to packages used by the Spotrac scraper and frontend exporter.
+          pkgs <- c("data.table", "jsonlite", "mgcv", "ranger", "readr", "rpart", "rvest", "xml2")
+          missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repos)
+          still_missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(still_missing)) stop("Missing R packages: ", paste(still_missing, collapse = ", "))
+
+      - name: Verify minutes blend and injury accounting before collection
+        run: |
+          Rscript script/frontend/test_contract_source_years.R
+          Rscript script/frontend/test_live_minutes.R
+
+      - name: Refresh player membership from rosters and transactions
+        run: |
+          python3 script/frontend/test_publish_refresh.py
+          python3 -m unittest discover -s script/data -p "test_player_pool.py"
+          python3 script/data/refresh_player_pool.py
+
+      - name: Test and refresh expected EPM and DARKO
+        run: |
+          node --test script/data/test_live_ratings.mjs
+          python3 -m unittest discover -s script/data -p "test_live_results.py"
+          node script/frontend/validate_preseason_archive.mjs
+          node script/data/refresh_live_ratings.mjs
+
+      - name: Record cached source inputs
+        run: |
+          sha256sum processed/livedata/impactrefresh/current_rosters_2026.csv processed/livedata/impactrefresh/contracts_2026_spotrac.csv processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv processed/livedata/schedules/bref_team_schedules.csv > "$RUNNER_TEMP/nba-lineup-inputs.sha256"
+
+      - name: Refresh and test injury outlook before projecting minutes
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_injury_outlook.py'
+          python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
+
+      - name: Refresh current position estimates
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_live_positions.py'
+          Rscript script/frontend/test_live_positions.R
+          BREF_POSITION_YEARS="$((CURRENT_ROSTER_YEAR + 1))" BREF_POSITION_REFRESH=true Rscript script/data/pull_bref_position_estimates.R
+
+      - name: Refresh current skill statistics with conservative evidence weights
+        env:
+          SWITCH_DIAGNOSE: ${{ github.event_name == 'push' && '1' || '0' }}
+        run: |
+          python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
+          python3 -m unittest discover -s script/data -p "test_live_switch.py"
+          python3 -m unittest discover -s script/data -p "test_nba_transport.py"
+          python3 -m unittest discover -s script/data -p "test_matchup_snapshot.py"
+          python3 script/data/refresh_live_skill_stats.py
+          Rscript script/frontend/test_live_switch.R
+          Rscript script/frontend/refresh_live_switch.R
+          python3 script/data/refresh_player_pool.py --enrich
+
+      - name: Capture the old minutes method on identical inputs when requested
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          if python3 -c "import json,sys;sys.exit(not json.load(open('raw/live_refresh_request.json')).get('compare_minutes',False))"; then
+            LIVE_MINUTES_METHOD=legacy Rscript script/frontend/export_frontend_data.R
+            mkdir -p "$RUNNER_TEMP/minutes-before"
+            cp frontend/public/data/v2/impact_players/2027.json "$RUNNER_TEMP/minutes-before/players.json"
+            cp frontend/public/data/v2/team_projections/2027.json "$RUNNER_TEMP/minutes-before/teams.json"
+            python3 script/frontend/compare_minutes.py --capture "$RUNNER_TEMP/minutes-before"
+          fi
+
+      - name: Refresh the 2027 draft board
+        id: draft
+        continue-on-error: true
+        timeout-minutes: 5
+        run: |
+          draft_dir=processed/draft
+          stage="$RUNNER_TEMP/draft-preview"
+          mkdir -p "$stage"
+          snapshot=raw/draft_preview_2027_inputs.csv
+          if [ ! -f "$snapshot" ]; then
+            echo 'No draft input snapshot available.'
+            exit 0
+          fi
+          python3 script/draft/refresh_2027_stats.py \
+            "$draft_dir/draft_consensus_projection_ranks_2027.csv" "$stage/inputs.csv" --snapshot "$snapshot"
+          if cmp -s "$stage/inputs.csv" "$draft_dir/draft_consensus_projection_ranks_2027.csv"; then
+            echo 'No new draft stats to score.'
+            exit 0
+          fi
+          sudo apt-get install --no-install-recommends -y r-base-core r-cran-data.table r-cran-ranger r-cran-glmnet
+          env -u R_HOME -u R_LIBS_USER -u R_LIBS_SITE /usr/bin/Rscript --vanilla \
+            script/draft/score_2027_preview.R "$stage/inputs.csv" "$stage/scores.csv"
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+
+      - name: Use validated draft inputs and scores in the export
+        if: steps.draft.outputs.ready == 'true'
+        run: |
+          cp "$RUNNER_TEMP/draft-preview/inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv
+          cp "$RUNNER_TEMP/draft-preview/scores.csv" processed/draft/draft_skill_preview_2027.csv
+
+      - name: Rebuild projections from cached rosters and fresh injuries
+        run: |
+          Rscript script/frontend/export_frontend_data.R
+          node script/frontend/build_cap_tracker_spotrac_data.mjs
+          node script/frontend/build_static_data_manifest.mjs
+          node script/frontend/test_shared_contracts.mjs --require-export
+          if [ -f "$RUNNER_TEMP/minutes-before/source_hashes.json" ]; then
+            python3 script/frontend/compare_minutes.py --before "$RUNNER_TEMP/minutes-before"
+          fi
+
+      - name: Verify live ratings and completed results
+        run: |
+          Rscript script/frontend/test_live_ratings.R --require-export
+          Rscript script/frontend/test_player_pool.R --require-export
+          Rscript script/frontend/test_live_minutes.R --require-export
+
+      - name: Verify positional lineups and contract-season alignment
+        run: Rscript script/frontend/test_lineup_positions.R
+
+      - name: Verify injury minutes and game forecasts
+        run: Rscript script/frontend/test_injury_projections.R --require-export
+
+      - name: Validate frontend data
+        run: |
+          node ../script/frontend/test_data_refresh.mjs
+          npm run validate:data
+          npm run validate:schedule
+        working-directory: frontend
+
+      - name: Run roster-sensitive regressions
+        run: |
+          npm run test:offseason-market
+          npm run test:offseason-view-models
+          npm run test:cap-sandbox
+          npm run test:cap-tracker
+          npm run test:trade-scenarios
+          npm run test:trade-machine
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - name: Verify roster, contract and schedule sources were preserved
+        run: sha256sum --check "$RUNNER_TEMP/nba-lineup-inputs.sha256"
+
+      - name: Commit regenerated frontend data
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node script/frontend/validate_preseason_archive.mjs
+          git add frontend/public/data raw/live
+          git add raw/bref_position_estimates.csv raw/bref_position_estimates_by_year
+          git add processed/livedata/impactrefresh/current_roster_audit_2026.csv
+          git add processed/draft/draft_consensus_projection_ranks_2027.csv processed/draft/draft_skill_preview_2027.csv
+          bash script/frontend/publish_refresh.sh "Refresh NBA player, team and draft projections"
+
+      - name: Preserve failed export diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-export-diagnostics
+          path: |
+            frontend/public/data/v2/impact_players/2027.json
+            frontend/public/data/cap_tracker.json
+          retention-days: 7
+

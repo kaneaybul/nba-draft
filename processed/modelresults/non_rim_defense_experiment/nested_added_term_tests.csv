@@ -1,0 +1,8 @@
+variant,nested_vs_current,df,sumsq,f_value,p_value
+current_plus_non_rim_volume_suppression,TRUE,2,150.1993775878518,146.6180021997443,2.1571283508332336e-62
+current_plus_non_rim_volume_dif,TRUE,2,137.11457612049026,133.08157348483883,7.331296305162747e-57
+current_plus_non_rim_suppression,TRUE,1,107.90831908729842,206.88124435047385,6.925754965836993e-46
+current_plus_non_rim_dif,TRUE,1,100.99865349930496,193.05973996477172,5.333435627883853e-43
+current_plus_non_rim_volume,TRUE,1,56.826552485372304,106.60306451607578,1.031253095674801e-24
+non_rim_replaces_rim_suppression,FALSE,NA,NA,NA,NA
+rim_and_non_rim_suppression_no_blocks,FALSE,NA,NA,NA,NA

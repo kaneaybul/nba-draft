@@ -1,0 +1,7 @@
+field_family,fields_found
+defended_3pt_attempts,d_FG3A_Per100 | d_FG3A_Per100_pos_pct | d_FG3A_PerGame | d_FG3A_PerGame_pos_pct
+defended_long_mid_attempts,d_LongMidRangeFGA_Per100 | d_LongMidRangeFGA_Per100_pos_pct | d_LongMidRangeFGA_PerGame | d_LongMidRangeFGA_PerGame_pos_pct
+defended_short_mid_attempts,d_ShortMidRangeFGA_Per100 | d_ShortMidRangeFGA_Per100_pos_pct | d_ShortMidRangeFGA_PerGame | d_ShortMidRangeFGA_PerGame_pos_pct
+defended_3pt_suppression,(none)
+defended_long_mid_suppression,(none)
+defended_short_mid_suppression,(none)

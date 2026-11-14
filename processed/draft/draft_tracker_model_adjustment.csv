@@ -1,0 +1,2 @@
+fit_years,out_years,latest_impact_year,b_age,b_pick,objective,in_sample_weighted_z,version,eval_years
+"2016,2017,2018,2019,2020,2021",2022,2026,-0.075,0.6,1.38846853556203,1.39943728556203,whatif_tracker_2016_2021_in_sample_2022_oos,"2016,2017,2018,2019,2020,2021,2022"

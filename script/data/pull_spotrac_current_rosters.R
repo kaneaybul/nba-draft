@@ -1,0 +1,840 @@
+get_script_dir <- function() {
+  cmd_args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- "--file="
+  script_arg <- cmd_args[grepl(file_arg, cmd_args)]
+  if (length(script_arg) > 0) {
+    return(dirname(normalizePath(sub(file_arg, "", script_arg[[1]]), winslash = "/", mustWork = FALSE)))
+  }
+  normalizePath(getwd(), winslash = "/", mustWork = FALSE)
+}
+
+resolve_base_dir <- function() {
+  script_dir <- get_script_dir()
+  candidates <- unique(c(
+    getwd(),
+    file.path(script_dir, "..", ".."),
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", "..")
+  ))
+  for (candidate in candidates) {
+    candidate <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate, "raw")) && dir.exists(file.path(candidate, "script"))) {
+      return(candidate)
+    }
+  }
+  stop("Could not resolve project root.")
+}
+
+normalize_name <- function(x) {
+  x <- iconv(as.character(x), from = "", to = "ASCII//TRANSLIT")
+  x <- tolower(x)
+  x <- gsub("\\b(jr|sr|ii|iii|iv|v)\\b", "", x)
+  x <- gsub("[^a-z0-9]+", "", x)
+  x
+}
+
+normalize_team <- function(x) {
+  out <- toupper(trimws(as.character(x)))
+  map <- c(
+    CHO = "CHA", BRK = "BKN", PHO = "PHX", NOK = "NOP", NOH = "NOP", NJN = "BKN",
+    "ATLANTA HAWKS" = "ATL", "BOSTON CELTICS" = "BOS", "BROOKLYN NETS" = "BKN",
+    "CHARLOTTE HORNETS" = "CHA", "CHICAGO BULLS" = "CHI", "CLEVELAND CAVALIERS" = "CLE",
+    "DALLAS MAVERICKS" = "DAL", "DENVER NUGGETS" = "DEN", "DETROIT PISTONS" = "DET",
+    "GOLDEN STATE WARRIORS" = "GSW", "HOUSTON ROCKETS" = "HOU", "INDIANA PACERS" = "IND",
+    "LA CLIPPERS" = "LAC", "LOS ANGELES CLIPPERS" = "LAC", "LOS ANGELES LAKERS" = "LAL",
+    "MEMPHIS GRIZZLIES" = "MEM", "MIAMI HEAT" = "MIA", "MILWAUKEE BUCKS" = "MIL",
+    "MINNESOTA TIMBERWOLVES" = "MIN", "NEW ORLEANS PELICANS" = "NOP", "NEW YORK KNICKS" = "NYK",
+    "OKLAHOMA CITY THUNDER" = "OKC", "ORLANDO MAGIC" = "ORL", "PHILADELPHIA 76ERS" = "PHI",
+    "PHILADELPHIA SIXERS" = "PHI", "PHOENIX SUNS" = "PHX", "PORTLAND TRAIL BLAZERS" = "POR",
+    "SACRAMENTO KINGS" = "SAC", "SAN ANTONIO SPURS" = "SAS", "TORONTO RAPTORS" = "TOR",
+    "UTAH JAZZ" = "UTA", "WASHINGTON WIZARDS" = "WAS"
+  )
+  out <- ifelse(out %in% names(map), unname(map[out]), out)
+  ifelse(is.na(out) | !nzchar(out), "FA", out)
+}
+
+infer_roster_year <- function(base_dir) {
+  env_year <- suppressWarnings(as.integer(Sys.getenv("CURRENT_ROSTER_YEAR", unset = "")))
+  if (is.finite(env_year)) return(env_year)
+
+  stats_path <- file.path(base_dir, "raw", "databallr_stats.csv")
+  if (file.exists(stats_path)) {
+    stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
+    if ("year" %in% names(stats)) {
+      year <- suppressWarnings(max(as.integer(stats$year), na.rm = TRUE))
+      if (is.finite(year)) return(year)
+    }
+  }
+
+  today <- Sys.Date()
+  calendar_year <- as.integer(format(today, "%Y"))
+  month <- as.integer(format(today, "%m"))
+  ifelse(month >= 7, calendar_year + 1L, calendar_year)
+}
+
+season_labels <- function(roster_year) {
+  starts <- roster_year:(roster_year + 6L)
+  paste0(starts - 1L, "-", substr(starts, 3, 4))
+}
+
+teams <- data.frame(
+  team = c(
+    "Atlanta Hawks", "Boston Celtics", "Brooklyn Nets", "Charlotte Hornets", "Chicago Bulls",
+    "Cleveland Cavaliers", "Dallas Mavericks", "Denver Nuggets", "Detroit Pistons",
+    "Golden State Warriors", "Houston Rockets", "Indiana Pacers", "Los Angeles Clippers",
+    "Los Angeles Lakers", "Memphis Grizzlies", "Miami Heat", "Milwaukee Bucks",
+    "Minnesota Timberwolves", "New Orleans Pelicans", "New York Knicks", "Oklahoma City Thunder",
+    "Orlando Magic", "Philadelphia 76ers", "Phoenix Suns", "Portland Trail Blazers",
+    "Sacramento Kings", "San Antonio Spurs", "Toronto Raptors", "Utah Jazz", "Washington Wizards"
+  ),
+  slug = c(
+    "atlanta-hawks", "boston-celtics", "brooklyn-nets", "charlotte-hornets", "chicago-bulls",
+    "cleveland-cavaliers", "dallas-mavericks", "denver-nuggets", "detroit-pistons",
+    "golden-state-warriors", "houston-rockets", "indiana-pacers", "la-clippers",
+    "los-angeles-lakers", "memphis-grizzlies", "miami-heat", "milwaukee-bucks",
+    "minnesota-timberwolves", "new-orleans-pelicans", "new-york-knicks", "oklahoma-city-thunder",
+    "orlando-magic", "philadelphia-76ers", "phoenix-suns", "portland-trail-blazers",
+    "sacramento-kings", "san-antonio-spurs", "toronto-raptors", "utah-jazz", "washington-wizards"
+  ),
+  stringsAsFactors = FALSE
+)
+teams$abbr <- normalize_team(teams$team)
+
+clean_cell <- function(x) {
+  vapply(as.character(x), function(value) {
+    value <- gsub("\u00a0", " ", value, fixed = TRUE)
+    parts <- trimws(unlist(strsplit(value, "\n", fixed = TRUE)))
+    parts <- parts[nzchar(parts)]
+    gsub("\\s+", " ", paste(parts, collapse = " | "))
+  }, character(1), USE.NAMES = FALSE)
+}
+
+parse_money <- function(x) {
+  x <- as.character(x)
+  money_pattern <- "\\$(?:[0-9]{1,3}(?:,[0-9]{3})+(?:\\.[0-9]+)?|[0-9]+(?:\\.[0-9]+)?[MK]|[0-9]+(?:\\.[0-9]+)?)"
+  hit <- regmatches(x, regexpr(money_pattern, x, ignore.case = TRUE, perl = TRUE))
+  if (!length(hit) || is.na(hit) || !nzchar(hit)) return(NA_real_)
+  mult <- if (grepl("M$", hit, ignore.case = TRUE)) 1000000 else if (grepl("K$", hit, ignore.case = TRUE)) 1000 else 1
+  as.numeric(gsub("[^0-9.]", "", hit)) * mult
+}
+
+parse_status <- function(cell, section) {
+  if (grepl("\\bRFA\\b", cell, ignore.case = TRUE)) return("RFA")
+  if (grepl("\\bUFA\\b", cell, ignore.case = TRUE)) return("UFA")
+  if (grepl("player option", cell, ignore.case = TRUE)) return("Player Option")
+  if (grepl("(team|club) option", cell, ignore.case = TRUE)) return("Team Option")
+  if (grepl("non[- ]guaranteed|exhibit[ -]*(9|10)\\b", cell, ignore.case = TRUE)) return("Non-Guaranteed")
+  if (grepl("two-way", cell, ignore.case = TRUE)) return("Two-Way")
+  if (grepl("1ST RD|2ND RD|draft", cell, ignore.case = TRUE)) return("Rookie FA")
+  if (identical(section, "Cap Hold")) return("Cap Hold")
+  if (is.finite(parse_money(cell))) return("Signed")
+  NA_character_
+}
+
+fetch_page <- function(url, out_path) {
+  curl <- Sys.which("curl.exe")
+  if (!nzchar(curl)) curl <- Sys.which("curl")
+  if (!nzchar(curl)) stop("curl/curl.exe is required to fetch Spotrac pages.")
+  args <- c("-L", "--fail", "--silent", "--show-error", "--user-agent", "Mozilla/5.0", url, "-o", out_path)
+  status <- system2(curl, args = args)
+  if (!identical(status, 0L)) {
+    stop("curl failed with status ", status, " for ", url)
+  }
+  out_path
+}
+
+extract_player_name <- function(row_node, fallback_text) {
+  links <- rvest::html_elements(row_node, "a[href*='/nba/player'], a[href*='/redirect/player']")
+  link_text <- trimws(rvest::html_text2(links))
+  link_text <- link_text[nzchar(link_text)]
+  if (length(link_text)) return(link_text[[1]])
+  fallback_text <- trimws(fallback_text)
+  fallback_text <- sub("^[A-Za-z'. -]+\\s+([A-Z][A-Za-z'. -]+)$", "\\1", fallback_text)
+  gsub("\\s+", " ", fallback_text)
+}
+
+extract_spotrac_id <- function(row_node) {
+  hrefs <- rvest::html_attr(rvest::html_elements(row_node, "a[href*='/nba/player'], a[href*='/redirect/player']"), "href")
+  hrefs <- hrefs[!is.na(hrefs)]
+  hit <- hrefs[grepl("/id/[0-9]+|/player/[0-9]+", hrefs)][1]
+  if (is.na(hit)) return(NA_integer_)
+  id <- sub(".*(?:/id/|/player/)([0-9]+).*", "\\1", hit)
+  suppressWarnings(as.integer(id))
+}
+
+row_trade_marker <- function(row_node) {
+  text <- paste(
+    rvest::html_attr(rvest::html_elements(row_node, "[data-bs-original-title], [title]"), "data-bs-original-title"),
+    rvest::html_attr(rvest::html_elements(row_node, "[data-bs-original-title], [title]"), "title"),
+    rvest::html_attr(rvest::html_elements(row_node, "i, span, a"), "class"),
+    collapse = " "
+  )
+  grepl("\\bTrade Pending\\b|text-trade-pending|arrow-right-arrow-left", text, ignore.case = TRUE)
+}
+
+extract_trade_destinations <- function(page) {
+  cards <- rvest::html_elements(page, "div.d-flex.align-items-center.border-bottom")
+  if (!length(cards)) {
+    return(data.frame(name_key = character(), trade_destination_team = character(), stringsAsFactors = FALSE))
+  }
+  rows <- lapply(cards, function(card) {
+    detail <- clean_cell(rvest::html_text2(rvest::html_element(card, "p")))
+    if (!grepl("\\bTraded to\\b", detail, ignore.case = TRUE)) return(NULL)
+    dest <- sub(".*\\bTraded to\\s+[^()]+\\(([A-Z]{2,3})\\).*", "\\1", detail, ignore.case = TRUE)
+    if (identical(dest, detail)) return(NULL)
+    player <- clean_cell(rvest::html_text2(rvest::html_element(card, "h6 a")))
+    player <- sub(",.*$", "", player)
+    key <- normalize_name(player)
+    if (!nzchar(key)) return(NULL)
+    data.frame(
+      name_key = key,
+      trade_destination_team = normalize_team(dest),
+      stringsAsFactors = FALSE
+    )
+  })
+  rows <- rows[!vapply(rows, is.null, logical(1))]
+  if (!length(rows)) {
+    return(data.frame(name_key = character(), trade_destination_team = character(), stringsAsFactors = FALSE))
+  }
+  out <- do.call(rbind, rows)
+  out[!duplicated(out$name_key), , drop = FALSE]
+}
+
+empty_rows <- function() {
+  data.frame()
+}
+
+parse_section_table <- function(table_node, section, team_name, abbr, source_url, scraped_at, labels) {
+  headers <- clean_cell(rvest::html_text2(rvest::html_elements(table_node, "thead tr:last-child th")))
+  season_headers <- vapply(headers, function(header) {
+    hit <- regmatches(header, regexpr("[0-9]{4}-[0-9]{2}", header))
+    if (length(hit)) hit else ""
+  }, character(1))
+  source_seasons <- season_headers[nzchar(season_headers)]
+  if (!length(source_seasons) || !any(labels %in% source_seasons)) {
+    stop("No matching season headers for ", section, " at ", source_url)
+  }
+  season_columns <- match(labels, season_headers)
+  body_rows <- rvest::html_elements(table_node, "tbody tr")
+  if (!length(body_rows)) return(empty_rows())
+  out <- lapply(seq_along(body_rows), function(i) {
+    cells <- rvest::html_elements(body_rows[[i]], xpath = "./td")
+    if (length(cells) < 3) return(NULL)
+    cell_text <- clean_cell(rvest::html_text2(cells))
+    raw_row_text <- clean_cell(rvest::html_text2(body_rows[[i]]))
+    is_roster_charge <- grepl("Incomplete Roster Charge", raw_row_text, ignore.case = TRUE) ||
+      grepl("Incomplete Roster Charge", cell_text[[1]], ignore.case = TRUE)
+    player_name <- if (is_roster_charge) "Incomplete Roster Charge" else extract_player_name(body_rows[[i]], cell_text[[1]])
+    if (!nzchar(normalize_name(player_name))) return(NULL)
+    marker <- row_trade_marker(body_rows[[i]])
+    state <- if (identical(section, "Pending Transactions")) {
+      "active_pending_done"
+    } else if (identical(section, "Active Roster") && marker) {
+      "traded_marker_excluded"
+    } else if (identical(section, "Active Roster")) {
+      "active"
+    } else if (identical(section, "Cap Hold")) {
+      "cap_hold"
+    } else if (identical(section, "Dead Money")) {
+      "dead_money"
+    } else {
+      tolower(gsub("[^a-z0-9]+", "_", section))
+    }
+    season_values <- rep("", length(labels))
+    present <- !is.na(season_columns) & season_columns <= length(cell_text)
+    season_values[present] <- cell_text[season_columns[present]]
+    names(season_values) <- labels
+    data.frame(
+      team = team_name,
+      team_abbr = abbr,
+      section = section,
+      roster_state = state,
+      entity_type = if (is_roster_charge) "roster_charge" else "player",
+      player_or_entity = player_name,
+      spotrac_player_id = if (is_roster_charge) NA_integer_ else extract_spotrac_id(body_rows[[i]]),
+      pos = if (is_roster_charge) "" else cell_text[[2]],
+      age = if (is_roster_charge) NA_real_ else suppressWarnings(as.numeric(cell_text[[3]])),
+      source_url = source_url,
+      source_first_season = source_seasons[[1]],
+      scraped_at = scraped_at,
+      guarantee_capture_status = "not_attempted_hover_only",
+      trade_marker = marker,
+      t(season_values),
+      raw_row_text = raw_row_text,
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+  })
+  out <- out[!vapply(out, is.null, logical(1))]
+  if (!length(out)) return(empty_rows())
+  do.call(rbind, out)
+}
+
+apply_trade_destination_truth <- function(wide, trade_destinations) {
+  if (!nrow(wide)) return(wide)
+  if (!("name_key" %in% names(wide))) wide$name_key <- normalize_name(wide$player_or_entity)
+  if (!nrow(trade_destinations)) return(wide)
+  idx <- match(wide$name_key, trade_destinations$name_key)
+  incoming <- !is.na(idx) &
+    wide$section == "Active Roster" &
+    wide$trade_marker %in% TRUE &
+    normalize_team(wide$team_abbr) == trade_destinations$trade_destination_team[idx]
+  wide$roster_state[incoming] <- "active_pending_done"
+  wide
+}
+
+espn_roster_rows <- function(payload, team_row, labels, source_url, pulled_at) {
+  source_year <- suppressWarnings(as.integer(payload$season$year))
+  if (!identical(normalize_team(payload$team$displayName), as.character(team_row$abbr))) stop("ESPN roster team mismatch.")
+  athletes <- payload$athletes
+  if (length(athletes) < 10L || length(athletes) > 30L) stop("Incomplete ESPN roster fallback.")
+  rows <- lapply(athletes, function(player) {
+    data.frame(
+      team = team_row$team, team_abbr = team_row$abbr, section = "Active Roster",
+      roster_state = "active", entity_type = "player", player_or_entity = player$displayName,
+      spotrac_player_id = NA_integer_, pos = player$position$abbreviation,
+      age = if (is.null(player$age)) NA_real_ else as.numeric(player$age), source_url = source_url,
+      source_first_season = paste0(source_year - 1L, "-", substr(source_year, 3, 4)),
+      scraped_at = pulled_at, guarantee_capture_status = "unavailable_espn_roster_fallback",
+      trade_marker = FALSE, raw_row_text = paste0("ESPN roster: ", player$displayName),
+      stringsAsFactors = FALSE, check.names = FALSE
+    )
+  })
+  out <- do.call(rbind, rows)
+  if (anyDuplicated(normalize_name(out$player_or_entity))) stop("Duplicate names in ESPN roster fallback.")
+  for (label in labels) out[[label]] <- ""
+  out$name_key <- normalize_name(out$player_or_entity)
+  out
+}
+
+fresh_espn_roster_fallback <- function(team_row, labels, spotrac_error) {
+  ids <- c(ATL=1, BOS=2, BKN=17, CHA=30, CHI=4, CLE=5, DAL=6, DEN=7, DET=8, GSW=9,
+    HOU=10, IND=11, LAC=12, LAL=13, MEM=29, MIA=14, MIL=15, MIN=16, NOP=3, NYK=18,
+    OKC=25, ORL=19, PHI=20, PHX=21, POR=22, SAC=23, SAS=24, TOR=28, UTA=26, WAS=27)
+  season <- as.integer(format(Sys.Date(), "%Y")) + as.integer(as.integer(format(Sys.Date(), "%m")) >= 7L)
+  source_url <- paste0("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/", ids[[team_row$abbr]], "/roster?season=", season)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  fetch_page(source_url, path)
+  payload <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+  if (!identical(payload$status, "success") || as.integer(payload$season$year) != season) stop("Invalid current-season ESPN roster fallback.")
+  pulled <- as.POSIXct(sub("Z$", "", payload$timestamp), format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC")
+  age <- as.numeric(difftime(Sys.time(), pulled, units = "mins"))
+  if (!is.finite(age) || age < -1 || age > 30) stop("Stale ESPN roster fallback.")
+  pulled_at <- format(pulled, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  wide <- espn_roster_rows(payload, team_row, labels, source_url, pulled_at)
+  audit <- data.frame(team = team_row$team, source_url = source_url, status = "fresh_espn_roster_after_spotrac_error",
+    table_count = 0L, pending_rows = 0L, active_roster_rows = nrow(wide), traded_marker_excluded_rows = 0L,
+    cap_hold_player_rows = 0L, elapsed_seconds = NA_real_, scraped_at = pulled_at,
+    method = "Fresh ESPN roster fallback; no new salary or rights claims; retain cached contracts",
+    error_message = spotrac_error, stringsAsFactors = FALSE)
+  message("Fresh ESPN roster fallback: ", team_row$abbr, " (", nrow(wide), " players).")
+  list(wide = wide, audit = audit)
+}
+
+scrape_team <- function(base_dir, team_row, labels) {
+  if (!requireNamespace("rvest", quietly = TRUE) || !requireNamespace("xml2", quietly = TRUE)) {
+    stop("Packages 'rvest' and 'xml2' are required to scrape Spotrac roster state.")
+  }
+  cache_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh", "spotrac_allteams_no_guarantees", "html")
+  dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+  url <- paste0("https://www.spotrac.com/nba/", team_row$slug, "/yearly/_/sort/cap_total/view/roster")
+  html_path <- file.path(cache_dir, paste0(team_row$abbr, ".html"))
+  fetched <- TRUE
+  snapshot_time <- NA_character_
+  error_message <- ""
+  tryCatch(
+    fetch_page(url, html_path),
+    error = function(e) {
+      fetched <<- FALSE
+      error_message <<- conditionMessage(e)
+      snapshot_dir <- Sys.getenv("SPOTRAC_HTML_SNAPSHOT_DIR", "")
+      receipts_path <- file.path(snapshot_dir, "receipts.csv")
+      snapshot_path <- file.path(snapshot_dir, paste0(team_row$abbr, ".html"))
+      if (nzchar(snapshot_dir) && file.exists(receipts_path) && file.exists(snapshot_path)) {
+        receipts <- read.csv(receipts_path, stringsAsFactors = FALSE)
+        receipt <- receipts[receipts$team == team_row$abbr & receipts$source_url == url, , drop = FALSE]
+        if (nrow(receipt) == 1L) {
+          pulled <- as.POSIXct(receipt$fetched_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+          age <- as.numeric(difftime(Sys.time(), pulled, units = "mins"))
+          if (is.finite(age) && age >= -1 && age <= 30) {
+            if (!file.copy(snapshot_path, html_path, overwrite = TRUE)) stop("Could not stage fresh snapshot for ", team_row$abbr)
+            snapshot_time <<- receipt$fetched_at
+          }
+        }
+      }
+    }
+  )
+  if (!fetched && is.na(snapshot_time)) {
+    return(fresh_espn_roster_fallback(team_row, labels, error_message))
+  }
+  page <- rvest::read_html(html_path)
+  tables <- rvest::html_elements(page, "table")
+  if (!length(tables)) {
+    stop("No tables found for ", team_row$team, " at ", url)
+  }
+  scraped_at <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  if (!is.na(snapshot_time)) scraped_at <- snapshot_time
+  sections <- vapply(tables, function(tab) {
+    h <- xml2::xml_find_first(tab, "preceding::h2[1]")
+    clean_cell(rvest::html_text2(h))
+  }, character(1))
+  wanted <- c("Pending Transactions", "Active Roster", "Cap Hold", "Dead Money")
+  selected <- match(wanted, sections)
+  selected <- selected[!is.na(selected)]
+  rows <- lapply(selected, function(idx) {
+    parse_section_table(tables[[idx]], sections[[idx]], team_row$team, team_row$abbr, url, scraped_at, labels)
+  })
+  rows <- rows[lengths(rows) > 0]
+  wide <- if (length(rows)) do.call(rbind, rows) else data.frame()
+  wide <- apply_trade_destination_truth(wide, extract_trade_destinations(page))
+  audit <- data.frame(
+    team = team_row$team,
+    source_url = url,
+    status = if (fetched) "ok" else if (!is.na(snapshot_time)) "fresh_snapshot_after_fetch_error" else "cached_after_fetch_error",
+    table_count = length(tables),
+    pending_rows = sum(wide$section == "Pending Transactions", na.rm = TRUE),
+    active_roster_rows = sum(wide$section == "Active Roster" & wide$roster_state == "active", na.rm = TRUE),
+    traded_marker_excluded_rows = sum(wide$roster_state == "traded_marker_excluded", na.rm = TRUE),
+    cap_hold_player_rows = sum(wide$section == "Cap Hold", na.rm = TRUE),
+    elapsed_seconds = NA_real_,
+    scraped_at = scraped_at,
+    method = "curl Spotrac server HTML; table heading parser; pending transactions treated as active roster truth",
+    error_message = error_message,
+    stringsAsFactors = FALSE
+  )
+  list(wide = wide, audit = audit)
+}
+
+status_flags <- function(cell, section) {
+  status <- parse_status(cell, section)
+  ifelse(is.na(status), "", status)
+}
+
+to_long <- function(wide, labels) {
+  if (!nrow(wide)) return(data.frame())
+  out <- lapply(labels, function(label) {
+    cell <- as.character(wide[[label]])
+    data.frame(
+      team = wide$team,
+      team_abbr = wide$team_abbr,
+      section = wide$section,
+      roster_state = wide$roster_state,
+      entity_type = wide$entity_type,
+      player_or_entity = wide$player_or_entity,
+      spotrac_player_id = suppressWarnings(as.integer(wide$spotrac_player_id)),
+      pos = wide$pos,
+      age = suppressWarnings(as.numeric(wide$age)),
+      season = label,
+      cell_text = cell,
+      amount_text = vapply(cell, function(x) {
+        amount <- parse_money(x)
+        ifelse(is.finite(amount), paste0("$", format(round(amount), big.mark = ",", scientific = FALSE, trim = TRUE)), "")
+      }, character(1)),
+      pct_of_cap = ifelse(grepl("\\b[0-9]+(?:\\.[0-9]+)?%", cell), sub(".*\\b([0-9]+(?:\\.[0-9]+)?%).*", "\\1", cell), ""),
+      status_flags = mapply(status_flags, cell, wide$section, USE.NAMES = FALSE),
+      guarantee_text = "",
+      guarantee_capture_status = wide$guarantee_capture_status,
+      source_url = wide$source_url,
+      scraped_at = wide$scraped_at,
+      has_value = nzchar(trimws(cell)),
+      stringsAsFactors = FALSE
+    )
+  })
+  do.call(rbind, out)
+}
+
+read_aliases <- function(base_dir) {
+  path <- file.path(base_dir, "ref", "player_name_aliases.csv")
+  if (!file.exists(path)) return(data.frame(alias_key = character(), canonical_key = character()))
+  aliases <- read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!all(c("alias", "canonical") %in% names(aliases))) {
+    return(data.frame(alias_key = character(), canonical_key = character()))
+  }
+  data.frame(
+    alias_key = normalize_name(aliases$alias),
+    canonical_key = normalize_name(aliases$canonical),
+    stringsAsFactors = FALSE
+  )
+}
+
+build_player_universe <- function(base_dir) {
+  frames <- list()
+  stats_path <- file.path(base_dir, "raw", "databallr_stats.csv")
+  if (file.exists(stats_path)) {
+    stats <- read.csv(stats_path, stringsAsFactors = FALSE, check.names = FALSE)
+    name_col <- names(stats)[names(stats) %in% c("player_name", "player", "PLAYER_NAME", "name", "Name")][1]
+    team_col <- names(stats)[names(stats) %in% c("TeamAbbreviation", "team", "TEAM_ABBREVIATION")][1]
+    if (!is.na(name_col) && "nba_id" %in% names(stats)) {
+      frames[[length(frames) + 1L]] <- data.frame(
+        nba_id = suppressWarnings(as.integer(stats$nba_id)),
+        player_name = as.character(stats[[name_col]]),
+        team = if (!is.na(team_col)) normalize_team(stats[[team_col]]) else NA_character_,
+        year = if ("year" %in% names(stats)) suppressWarnings(as.integer(stats$year)) else NA_integer_,
+        source = "raw/databallr_stats.csv",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  contracts_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", "contracts_2026_current.csv")
+  if (file.exists(contracts_path)) {
+    contracts <- read.csv(contracts_path, stringsAsFactors = FALSE, check.names = FALSE)
+    if (all(c("nba_id", "player_name") %in% names(contracts))) {
+      frames[[length(frames) + 1L]] <- data.frame(
+        nba_id = suppressWarnings(as.integer(contracts$nba_id)),
+        player_name = as.character(contracts$player_name),
+        team = if ("team" %in% names(contracts)) normalize_team(contracts$team) else NA_character_,
+        year = 2026L,
+        source = "contracts_2026_current.csv",
+        stringsAsFactors = FALSE
+      )
+    }
+  }
+  draft_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_adjusted.csv")
+  if (!file.exists(draft_path)) {
+    draft_path <- file.path(base_dir, "processed", "draft", "draft_skill_predictions_output.csv")
+  }
+  if (file.exists(draft_path)) {
+    draft <- read.csv(draft_path, stringsAsFactors = FALSE, check.names = FALSE)
+    if (all(c("player", "draft_year") %in% names(draft))) {
+      latest_draft_year <- suppressWarnings(max(as.integer(draft$draft_year), na.rm = TRUE))
+      draft <- draft[suppressWarnings(as.integer(draft$draft_year)) == latest_draft_year, , drop = FALSE]
+      if (nrow(draft)) {
+        if ("FINAL_rank" %in% names(draft)) {
+          draft$rank_in_class <- suppressWarnings(as.numeric(draft$FINAL_rank))
+        } else if ("TOTAL_pred" %in% names(draft)) {
+          draft$rank_in_class <- ave(-suppressWarnings(as.numeric(draft$TOTAL_pred)), draft$draft_year, FUN = rank, ties.method = "first")
+        } else {
+          draft$rank_in_class <- seq_len(nrow(draft))
+        }
+        draft <- draft[order(draft$rank_in_class, as.character(draft$player)), , drop = FALSE]
+        target_year <- latest_draft_year + 1L
+        frames[[length(frames) + 1L]] <- data.frame(
+          nba_id = -as.integer(target_year * 1000L + seq_len(nrow(draft))),
+          player_name = as.character(draft$player),
+          team = NA_character_,
+          year = target_year,
+          source = basename(draft_path),
+          stringsAsFactors = FALSE
+        )
+      }
+    }
+  }
+  if (!length(frames)) return(data.frame())
+  universe <- do.call(rbind, frames)
+  universe <- universe[is.finite(universe$nba_id) & nzchar(normalize_name(universe$player_name)), , drop = FALSE]
+  universe$name_key <- normalize_name(universe$player_name)
+  universe <- universe[order(universe$name_key, -suppressWarnings(as.integer(universe$year))), , drop = FALSE]
+  universe[!duplicated(paste(universe$nba_id, universe$name_key)), , drop = FALSE]
+}
+
+match_spotrac_players <- function(wide, universe, aliases) {
+  if (!nrow(wide)) return(wide)
+  if (!nrow(universe)) {
+    wide$nba_id <- NA_integer_
+    wide$match_method <- "no_universe"
+    wide$match_confidence <- 0
+    wide$matched_player_name <- NA_character_
+    return(wide)
+  }
+  key_to_canonical <- setNames(aliases$canonical_key, aliases$alias_key)
+  key <- normalize_name(wide$player_or_entity)
+  key <- ifelse(key %in% names(key_to_canonical), unname(key_to_canonical[key]), key)
+  wide$name_key <- key
+  # Canonicalize both sources. A GG/Gregory alias on only the Spotrac side
+  # would otherwise hide an NBA ID already present in the player universe.
+  universe$name_key <- ifelse(universe$name_key %in% names(key_to_canonical),
+    unname(key_to_canonical[universe$name_key]), universe$name_key)
+
+  exact_counts <- aggregate(universe$nba_id, by = list(name_key = universe$name_key), FUN = function(v) length(unique(v)))
+  names(exact_counts)[2] <- "id_count"
+  exact_unique <- merge(universe, exact_counts, by = "name_key", all.x = TRUE)
+  exact_unique <- exact_unique[exact_unique$id_count == 1, , drop = FALSE]
+  exact_unique <- exact_unique[!duplicated(exact_unique$name_key), , drop = FALSE]
+
+  wide$nba_id <- NA_integer_
+  wide$match_method <- "unmatched"
+  wide$match_confidence <- 0
+  wide$matched_player_name <- NA_character_
+  idx <- match(wide$name_key, exact_unique$name_key)
+  hit <- !is.na(idx)
+  wide$nba_id[hit] <- exact_unique$nba_id[idx[hit]]
+  wide$match_method[hit] <- ifelse(normalize_name(wide$player_or_entity[hit]) == wide$name_key[hit], "exact_name", "alias_name")
+  wide$match_confidence[hit] <- 1
+  wide$matched_player_name[hit] <- exact_unique$player_name[idx[hit]]
+
+  unmatched <- which(is.na(wide$nba_id) & nchar(wide$name_key) >= 6)
+  universe_keys <- unique(exact_unique$name_key)
+  for (i in unmatched) {
+    d <- utils::adist(wide$name_key[[i]], universe_keys, ignore.case = TRUE)
+    best <- which(d == min(d))
+    if (length(best) == 1 && d[[best]] <= 1) {
+      m <- match(universe_keys[[best]], exact_unique$name_key)
+      wide$nba_id[[i]] <- exact_unique$nba_id[[m]]
+      wide$match_method[[i]] <- "fuzzy_name_distance_1"
+      wide$match_confidence[[i]] <- 0.92
+      wide$matched_player_name[[i]] <- exact_unique$player_name[[m]]
+    }
+  }
+  wide
+}
+
+spotrac_current_season_cells <- function(wide, labels) {
+  vapply(seq_len(nrow(wide)), function(i) {
+    label <- if ("source_first_season" %in% names(wide)) wide$source_first_season[[i]] else labels[[1]]
+    if (!(label %in% names(wide))) return("")
+    as.character(wide[[label]][[i]])
+  }, character(1))
+}
+
+classify_rookie_cap_holds <- function(wide, labels) {
+  if (!nrow(wide) || !length(labels)) return(wide)
+  first_label <- labels[[1]]
+  if (!(first_label %in% names(wide))) return(wide)
+  current_status <- mapply(parse_status, spotrac_current_season_cells(wide, labels), wide$section, USE.NAMES = FALSE)
+  rookie_hold <- wide$roster_state == "cap_hold" & current_status == "Rookie FA"
+  wide$roster_state[rookie_hold] <- "rookie_cap_hold"
+  wide
+}
+
+build_current_roster_truth <- function(wide, roster_year, labels) {
+  if (!nrow(wide)) return(data.frame())
+  wide <- wide[wide$entity_type == "player", , drop = FALSE]
+  if (!nrow(wide)) return(data.frame())
+  first_label <- labels[[1]]
+  wide$current_status <- mapply(parse_status, spotrac_current_season_cells(wide, labels), wide$section, USE.NAMES = FALSE)
+  wide$current_status <- ifelse(
+    wide$roster_state %in% c("active", "active_pending_done") & (is.na(wide$current_status) | wide$current_status %in% c("Cap Hold", "UFA", "RFA")),
+    "Signed",
+    wide$current_status
+  )
+  active <- wide[wide$roster_state %in% c("active", "active_pending_done"), , drop = FALSE]
+  rookies <- wide[wide$roster_state == "rookie_cap_hold", , drop = FALSE]
+  holds <- wide[wide$roster_state == "cap_hold", , drop = FALSE]
+  if (nrow(active)) {
+    active$dedupe_key <- ifelse(is.finite(active$nba_id), paste0("id:", active$nba_id), paste0("name:", active$name_key))
+  } else {
+    active$dedupe_key <- character()
+  }
+  if (nrow(rookies)) {
+    rookies$dedupe_key <- ifelse(is.finite(rookies$nba_id), paste0("id:", rookies$nba_id), paste0("name:", rookies$name_key))
+    rookies <- rookies[!(rookies$dedupe_key %in% active$dedupe_key), , drop = FALSE]
+  }
+  if (nrow(holds)) {
+    holds$dedupe_key <- ifelse(is.finite(holds$nba_id), paste0("id:", holds$nba_id), paste0("name:", holds$name_key))
+    occupied_keys <- unique(c(active$dedupe_key, if (nrow(rookies)) rookies$dedupe_key else character()))
+    holds <- holds[!(holds$dedupe_key %in% occupied_keys), , drop = FALSE]
+  }
+  active_out <- if (nrow(active)) data.frame(
+    year = roster_year,
+    nba_id = suppressWarnings(as.integer(active$nba_id)),
+    player_name = active$player_or_entity,
+    team = active$team_abbr,
+    rights_team = active$team_abbr,
+    contract_status = active$current_status,
+    roster_state = active$roster_state,
+    roster_source = paste0(ifelse(grepl("^https://site.api.espn.com/", active$source_url), "ESPN ", "Spotrac "), active$section),
+    pulled_at = active$scraped_at,
+    spotrac_player_id = suppressWarnings(as.integer(active$spotrac_player_id)),
+    match_method = active$match_method,
+    match_confidence = active$match_confidence,
+    stringsAsFactors = FALSE
+  ) else data.frame()
+  rookie_out <- if (nrow(rookies)) data.frame(
+    year = roster_year,
+    nba_id = suppressWarnings(as.integer(rookies$nba_id)),
+    player_name = rookies$player_or_entity,
+    team = rookies$team_abbr,
+    rights_team = rookies$team_abbr,
+    contract_status = "Rookie FA",
+    roster_state = rookies$roster_state,
+    roster_source = "Spotrac Rookie Cap Hold",
+    pulled_at = rookies$scraped_at,
+    spotrac_player_id = suppressWarnings(as.integer(rookies$spotrac_player_id)),
+    match_method = rookies$match_method,
+    match_confidence = rookies$match_confidence,
+    stringsAsFactors = FALSE
+  ) else data.frame()
+  hold_out <- if (nrow(holds)) data.frame(
+    year = roster_year,
+    nba_id = suppressWarnings(as.integer(holds$nba_id)),
+    player_name = holds$player_or_entity,
+    team = "FA",
+    rights_team = holds$team_abbr,
+    contract_status = ifelse(holds$current_status %in% c("RFA", "UFA", "Rookie FA"), holds$current_status, "UFA"),
+    roster_state = "cap_hold",
+    roster_source = "Spotrac Cap Hold",
+    pulled_at = holds$scraped_at,
+    spotrac_player_id = suppressWarnings(as.integer(holds$spotrac_player_id)),
+    match_method = holds$match_method,
+    match_confidence = holds$match_confidence,
+    stringsAsFactors = FALSE
+  ) else data.frame()
+  out <- rbind(active_out, rookie_out, hold_out)
+  if (!nrow(out)) return(out)
+  out$name_key <- normalize_name(out$player_name)
+  out$priority <- ifelse(out$team != "FA", 1L, 2L)
+  out <- out[order(out$priority, out$team, out$player_name), , drop = FALSE]
+  out <- out[!duplicated(ifelse(is.finite(out$nba_id), paste0("id:", out$nba_id), paste0("name:", out$name_key, ":", out$team, ":", out$rights_team))), , drop = FALSE]
+  out$priority <- NULL
+  out$name_key <- NULL
+  out
+}
+
+contract_status_from_spotrac_cell <- function(cell, section) {
+  cell <- as.character(cell)
+  if (!nzchar(trimws(cell))) return(NA_character_)
+  if (grepl("\\bRFA\\b", cell, ignore.case = TRUE)) return("RFA")
+  if (grepl("\\bUFA\\b", cell, ignore.case = TRUE)) return("UFA")
+  if (grepl("player option", cell, ignore.case = TRUE)) return("Player Option")
+  if (grepl("(team|club) option", cell, ignore.case = TRUE)) return("Team Option")
+  if (grepl("non[- ]guaranteed|exhibit[ -]*(9|10)\\b", cell, ignore.case = TRUE)) return("Non-Guaranteed")
+  if (grepl("two-way", cell, ignore.case = TRUE)) return("Two-Way")
+  if (grepl("1ST RD|2ND RD|draft", cell, ignore.case = TRUE)) return("Rookie FA")
+  if (identical(section, "Cap Hold")) return("Cap Hold")
+  if (is.finite(parse_money(cell))) return("Signed")
+  NA_character_
+}
+
+contract_amount_from_spotrac_cell <- function(cell, section) {
+  status <- contract_status_from_spotrac_cell(cell, section)
+  if (status %in% c("UFA", "RFA", "Cap Hold")) return(NA_real_)
+  amount <- parse_money(cell)
+  ifelse(is.finite(amount), amount, NA_real_)
+}
+
+first_fa_status <- function(statuses) {
+  statuses <- statuses[statuses %in% c("UFA", "RFA")]
+  if (length(statuses)) statuses[[1]] else NA_character_
+}
+
+first_fa_year <- function(statuses, roster_year) {
+  idx <- which(statuses %in% c("UFA", "RFA"))[1]
+  if (length(idx) && is.finite(idx)) roster_year + idx - 1L else NA_integer_
+}
+
+build_spotrac_contract_export <- function(wide, roster_year, labels) {
+  if (!nrow(wide)) return(data.frame())
+  active <- wide[
+    wide$entity_type == "player" &
+      !grepl("^https://site.api.espn.com/", wide$source_url) &
+      wide$roster_state %in% c("active", "active_pending_done", "rookie_cap_hold"),
+    ,
+    drop = FALSE
+  ]
+  if (!nrow(active)) return(data.frame())
+  active <- active[order(active$team_abbr, active$player_or_entity), , drop = FALSE]
+
+  salary_cols <- paste0("salary_y", seq_along(labels) - 1L)
+  status_cols <- paste0("contract_status_y", seq_along(labels) - 1L)
+  salaries <- as.data.frame(setNames(replicate(length(labels), numeric(nrow(active)), simplify = FALSE), salary_cols))
+  statuses <- as.data.frame(setNames(replicate(length(labels), character(nrow(active)), simplify = FALSE), status_cols), stringsAsFactors = FALSE)
+
+  for (i in seq_along(labels)) {
+    label <- labels[[i]]
+    cell <- as.character(active[[label]])
+    salaries[[salary_cols[[i]]]] <- mapply(contract_amount_from_spotrac_cell, cell, active$section, USE.NAMES = FALSE)
+    statuses[[status_cols[[i]]]] <- mapply(contract_status_from_spotrac_cell, cell, active$section, USE.NAMES = FALSE)
+  }
+
+  status_matrix <- as.matrix(statuses[, status_cols, drop = FALSE])
+  free_agent_status <- apply(status_matrix, 1, first_fa_status)
+  free_agent_year <- apply(status_matrix, 1, first_fa_year, roster_year = roster_year)
+
+  out <- data.frame(
+    rank = seq_len(nrow(active)),
+    nba_id = suppressWarnings(as.integer(active$nba_id)),
+    spotrac_player_id = suppressWarnings(as.integer(active$spotrac_player_id)),
+    player_name = active$player_or_entity,
+    team = active$team_abbr,
+    position = active$pos,
+    age = suppressWarnings(as.numeric(active$age)),
+    salaries,
+    statuses,
+    free_agent_status = free_agent_status,
+    free_agent_year = suppressWarnings(as.integer(free_agent_year)),
+    guaranteed = NA_real_,
+    contract_type = NA_character_,
+    contract_status_source = "Spotrac roster table",
+    signed_using = NA_character_,
+    contract_notes = paste0("Spotrac section: ", active$section, "; state: ", active$roster_state),
+    match_method = active$match_method,
+    match_confidence = active$match_confidence,
+    source = active$source_url,
+    source_contract_year = roster_year,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  out <- out[is.finite(out$nba_id), , drop = FALSE]
+  out[!duplicated(out$nba_id), , drop = FALSE]
+}
+
+base_dir <- resolve_base_dir()
+roster_year <- infer_roster_year(base_dir)
+labels <- season_labels(roster_year)
+spotrac_dir <- file.path(base_dir, "processed", "livedata", "impactrefresh", "spotrac_allteams_no_guarantees")
+dir.create(spotrac_dir, recursive = TRUE, showWarnings = FALSE)
+
+results <- lapply(seq_len(nrow(teams)), function(i) {
+  started <- Sys.time()
+  result <- scrape_team(base_dir, teams[i, , drop = FALSE], labels)
+  result$audit$elapsed_seconds <- round(as.numeric(difftime(Sys.time(), started, units = "secs")), 2)
+  Sys.sleep(0.25)
+  result
+})
+
+wide <- do.call(rbind, lapply(results, `[[`, "wide"))
+audit <- do.call(rbind, lapply(results, `[[`, "audit"))
+universe <- build_player_universe(base_dir)
+aliases <- read_aliases(base_dir)
+wide <- match_spotrac_players(wide, universe, aliases)
+wide <- classify_rookie_cap_holds(wide, labels)
+long <- to_long(wide, labels)
+roster_truth <- build_current_roster_truth(wide, roster_year, labels)
+spotrac_contracts <- build_spotrac_contract_export(wide, roster_year, labels)
+
+wide_path <- file.path(spotrac_dir, "spotrac_active_roster_cap_hold_allteams_wide.csv")
+long_path <- file.path(spotrac_dir, "spotrac_active_roster_cap_hold_allteams_long.csv")
+audit_path <- file.path(spotrac_dir, "scrape_audit.csv")
+state_path <- file.path(spotrac_dir, paste0("spotrac_roster_state_", roster_year, ".csv"))
+review_path <- file.path(spotrac_dir, paste0("spotrac_roster_match_review_", roster_year, ".csv"))
+roster_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("current_rosters_", roster_year, ".csv"))
+contract_path <- file.path(base_dir, "processed", "livedata", "impactrefresh", paste0("contracts_", roster_year, "_spotrac.csv"))
+
+write.csv(wide, wide_path, row.names = FALSE, na = "")
+write.csv(long, long_path, row.names = FALSE, na = "")
+write.csv(audit, audit_path, row.names = FALSE, na = "")
+write.csv(wide, state_path, row.names = FALSE, na = "")
+write.csv(
+  wide[wide$entity_type == "player" & (wide$match_method == "unmatched" | wide$match_confidence < 1 | wide$roster_state == "traded_marker_excluded"), , drop = FALSE],
+  review_path,
+  row.names = FALSE,
+  na = ""
+)
+write.csv(roster_truth, roster_path, row.names = FALSE, na = "")
+write.csv(spotrac_contracts, contract_path, row.names = FALSE, na = "")
+
+summary_path <- file.path(spotrac_dir, "benchmark_summary.json")
+summary <- paste0(
+  "{\n",
+  '  "teams_requested": ', nrow(teams), ",\n",
+  '  "teams_ok": ', sum(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error")), ",\n",
+  '  "teams_error": ', sum(!(audit$status %in% c("ok", "fresh_snapshot_after_fetch_error", "fresh_espn_roster_after_spotrac_error"))), ",\n",
+  '  "rows_wide": ', nrow(wide), ",\n",
+  '  "rows_long": ', nrow(long), ",\n",
+  '  "active_roster_truth_rows": ', sum(roster_truth$team != "FA"), ",\n",
+  '  "free_agent_or_cap_hold_truth_rows": ', sum(roster_truth$team == "FA"), ",\n",
+  '  "traded_marker_excluded_rows": ', sum(wide$roster_state == "traded_marker_excluded"), ",\n",
+  '  "unmatched_rows": ', sum(wide$entity_type == "player" & wide$match_method == "unmatched"), ",\n",
+  '  "generated_at": "', format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), '"\n',
+  "}\n"
+)
+writeLines(summary, summary_path)
+
+message("Spotrac roster state written: ", state_path)
+message("Spotrac cap wide written: ", wide_path)
+message("Roster truth written: ", roster_path)
+message("Spotrac contracts written: ", contract_path)
+message("Rows: active=", sum(roster_truth$team != "FA"), "; FA/cap-hold=", sum(roster_truth$team == "FA"), "; review=", nrow(read.csv(review_path)))
+message("Contracts: ", nrow(spotrac_contracts), " active/pending rows")
+

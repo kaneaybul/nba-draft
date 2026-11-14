@@ -1,0 +1,102 @@
+name: Validate career-path methodology release
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+concurrency:
+  group: career-path-methodology-release
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      VITE_PUBLIC_READ_ONLY: 'true'
+      FRONTEND_MAX_STATIC_ASSET_BYTES: '26214400'
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: '8388608'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/career-path-methodology
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - name: Verify endpoint stock and attribution identities
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+      - name: Materialize the unchanged source observations
+        run: |
+          python3 script/asset_history/materialize.py --repo .
+          python3 - <<'PY'
+          import os,sys
+          from pathlib import Path
+          sys.path.insert(0,'script/asset_history/backfill')
+          from run_player_refresh import unpack
+          unpack(Path('processed/asset_history/canonical_runtime_seed.zip'),Path(os.environ['RUNNER_TEMP'])/'endpoint-stock/runtime')
+          PY
+      - uses: actions/cache/restore@v4
+        id: annual_checkpoint
+        with:
+          path: ${{ runner.temp }}/endpoint-stock/annual_projection_checkpoint
+          key: career-path-projections-v7-${{ github.sha }}
+          restore-keys: career-path-projections-v7-
+      - name: Refit endpoint distributions and replay all 30 histories
+        run: python3 script/asset_history/endpoint_stock_release.py --repo . --runtime "$RUNNER_TEMP/endpoint-stock/runtime" --rebuild-unpublished
+      - uses: actions/cache/save@v4
+        if: always() && steps.annual_checkpoint.outputs.cache-hit != 'true'
+        with:
+          path: ${{ runner.temp }}/endpoint-stock/annual_projection_checkpoint
+          key: career-path-projections-v7-${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Verify app entry points and league rankings
+        run: |
+          python3 script/frontend/test_asset_value_data.py
+          python3 script/asset_history/calibration/review_release.py --repo .
+          python3 script/frontend/build_asset_value_data.py --repo .
+          cd frontend
+          npm ci
+          npm run test:asset-value
+          npm run test:trade-machine
+          npm run test:trade-suggestions
+          npm run validate:data
+          ASSET_HISTORY_FRONTEND=. node ../script/frontend/test_asset_history_visuals.mjs
+          npm run build
+      - name: Commit the validated data to the reviewed branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/public/data/asset_history/v7 processed/asset_history
+          if ! git diff --cached --quiet; then
+            git commit -m 'Publish audited career-path valuation and rolling attribution'
+            git push origin HEAD:codex/career-path-methodology
+          fi
+      - name: Preserve validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: year-four-stock-validation
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/endpoint-stock/player_refresh.log
+            ${{ runner.temp }}/endpoint-stock/players/player_candidates.json
+            ${{ runner.temp }}/endpoint-stock/players/player_state_staged/path_calibration.json.gz
+            ${{ runner.temp }}/endpoint-stock/players/*/monthly_annual_values.csv
+            ${{ runner.temp }}/endpoint-stock/players/*/monthly_player_values.csv
+            ${{ runner.temp }}/endpoint-stock/players/*/league_player_coverage.json
+            processed/asset_history/methodology_review.json
+            processed/asset_history/player_state/path_calibration.json.gz
+            processed/asset_history/attribution_validation.json
+            frontend/public/data/asset_history/v7/attribution/manifest.json

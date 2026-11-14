@@ -1,0 +1,7 @@
+﻿VAR,FTD,SHOOT,PASS,RIM,OREB,SWITCH,DPM,DREB,RIMPRO
+Term1,I(FTA_100 * FT_PERC),I(X3PA_100 * X3P_PERC),d_Assists_Per100,d_AtRimFGA_Per100,OffFGReboundPct,switch,Steals_100,d_DefRebounds_Per100,d_Blocks_Per100
+Term2,,I(d_ShortMidRangeFGA_Per100 * ShortMidFGPerc),cTOV,RimFGPerc,,perimeter_alloc_ps_resid_role,d_FTOVs_Per100,,rim_points_saved_100
+Term3,,I(d_LongMidRangeFGA_Per100 * LongMidFGPerc),,,,,,,
+Term4,,,,,,,,,
+Offense?,1,1,1,1,1,0,0,0,0
+Defense?,0,0,0,0,0,1,1,1,1

@@ -1,0 +1,121 @@
+library(dplyr)
+
+resolve_base_dir <- function() {
+  candidates <- c(
+    getwd(),
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", "..")
+  )
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (file.exists(file.path(candidate_norm, "script", "switch", "createswitchvar.txt")) &&
+        file.exists(file.path(candidate_norm, "script", "switch", "switchprocess.txt"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+base_dir <- resolve_base_dir()
+source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+migrate_legacy_live_data_files(base_dir, files = c("switch.csv", "switch_pre_refresh_backup.csv"))
+live_data_dir <- get_live_data_dir(base_dir, create = TRUE)
+
+detect_latest_switch_season <- function(base_dir) {
+  env_target <- Sys.getenv("SWITCH_REFRESH_SEASON", unset = "")
+  if (nzchar(env_target)) {
+    return(env_target)
+  }
+
+  switch_fp <- file.path(live_data_dir, "switch.csv")
+  if (file.exists(switch_fp)) {
+    existing <- tryCatch(
+      read.csv(switch_fp, stringsAsFactors = FALSE),
+      error = function(e) NULL
+    )
+
+    if (!is.null(existing) && "season" %in% names(existing) && nrow(existing) > 0) {
+      seasons <- unique(existing$season)
+      seasons <- seasons[!is.na(seasons) & seasons != ""]
+      if (length(seasons) > 0) {
+        return(sort(seasons)[length(seasons)])
+      }
+    }
+  }
+
+  today <- Sys.Date()
+  start_year <- if (as.integer(format(today, "%m")) >= 7) {
+    as.integer(format(today, "%Y"))
+  } else {
+    as.integer(format(today, "%Y")) - 1L
+  }
+
+  paste0(start_year, "-", substr(start_year + 1L, 3, 4))
+}
+
+target_season <- detect_latest_switch_season(base_dir)
+switch_fp <- file.path(live_data_dir, "switch.csv")
+backup_fp <- file.path(live_data_dir, "switch_pre_refresh_backup.csv")
+
+if (file.exists(switch_fp)) {
+  file.copy(switch_fp, backup_fp, overwrite = TRUE)
+}
+
+Sys.setenv(
+  SWITCH_START_YEAR = substr(target_season, 1, 4),
+  SWITCH_END_YEAR = substr(target_season, 1, 4),
+  SWITCH_OVERWRITE = "true"
+)
+
+message("Refreshing switch season ", target_season, " from: ", base_dir)
+
+source(
+  file.path(base_dir, "script", "switch", "createswitchvar.txt"),
+  local = new.env(parent = globalenv())
+)
+
+source(
+  file.path(base_dir, "script", "switch", "switchprocess.txt"),
+  local = new.env(parent = globalenv())
+)
+
+refreshed <- read.csv(switch_fp, stringsAsFactors = FALSE)
+
+if (!"season" %in% names(refreshed)) {
+  stop("Refreshed switch file is missing a season column: ", switch_fp)
+}
+
+refreshed <- refreshed[refreshed$season == target_season, , drop = FALSE]
+
+if (nrow(refreshed) == 0) {
+  stop("Refresh completed, but no rows were produced for season ", target_season)
+}
+
+if (file.exists(backup_fp)) {
+  existing <- read.csv(backup_fp, stringsAsFactors = FALSE)
+  if ("season" %in% names(existing)) {
+    existing <- existing[existing$season != target_season, , drop = FALSE]
+    combined <- dplyr::bind_rows(existing, refreshed)
+  } else {
+    combined <- refreshed
+  }
+} else {
+  combined <- refreshed
+}
+
+combined <- combined |>
+  dplyr::mutate(
+    player_id = as.character(player_id),
+    player_name = as.character(player_name),
+    season = as.character(season),
+    switch = as.numeric(switch)
+  ) |>
+  dplyr::arrange(season, player_name, player_id) |>
+  dplyr::distinct(player_id, season, .keep_all = TRUE)
+
+write.csv(combined, switch_fp, row.names = FALSE)
+
+message("Refresh complete. Updated season: ", target_season)
+message("Wrote merged switch file to: ", switch_fp)

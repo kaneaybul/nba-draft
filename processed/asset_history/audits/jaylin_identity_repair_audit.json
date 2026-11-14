@@ -1,0 +1,19 @@
+{
+  "changed_team_dates": [
+    [
+      "2024-07-31",
+      "DEN"
+    ],
+    [
+      "2024-08-31",
+      "DEN"
+    ],
+    [
+      "2024-09-30",
+      "DEN"
+    ]
+  ],
+  "all_other_team_inventories_identical": true,
+  "comparison": "Per-team source records sorted by physical player name; immutable prior seed compared to normalized replay",
+  "reason": "Auburn and Arkansas Jaylin Williams are different source profiles; prevent name-only performance/draft fallback."
+}

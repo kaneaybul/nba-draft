@@ -1,0 +1,318 @@
+library(tidyverse)
+
+# =========================
+# Paths
+# =========================
+resolve_base_dir <- function() {
+  candidates <- c(
+    getwd(),
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", "..")
+  )
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate_norm, "raw")) &&
+        dir.exists(file.path(candidate_norm, "script"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+base_dir      <- resolve_base_dir()
+source(file.path(base_dir, "script", "live_data_paths.txt"), local = TRUE)
+raw_dir       <- file.path(base_dir, "raw")
+ref_dir       <- file.path(base_dir, "ref")
+processed_dir <- file.path(base_dir, "processed")
+livedata_dir  <- get_live_data_dir(base_dir, create = TRUE)
+
+migrate_legacy_live_data_files(
+  base_dir,
+  files = c("switch.csv", "impactoutput.csv", "offdata.csv", "defdata.csv")
+)
+
+databallr_fp  <- file.path(raw_dir, "databallr_stats.csv")
+variables_fp  <- file.path(ref_dir, "variables.csv")
+switch_fp     <- file.path(livedata_dir, "switch.csv")
+depvar_fp     <- file.path(livedata_dir, "impactoutput.csv")
+
+off_out_fp    <- file.path(livedata_dir, "offdata.csv")
+def_out_fp    <- file.path(livedata_dir, "defdata.csv")
+
+# =========================
+# Helpers
+# =========================
+pick_col <- function(df, candidates, label) {
+  hit <- candidates[candidates %in% names(df)]
+
+  if (length(hit) == 0) {
+    stop(
+      "Could not find a column for ", label, ". Tried: ",
+      paste(candidates, collapse = ", ")
+    )
+  }
+
+  hit[[1]]
+}
+
+clean_id <- function(x) {
+  x <- as.character(x)
+  x <- stringr::str_trim(x)
+  x[x == ""] <- NA_character_
+  x
+}
+
+clean_display_name <- function(x) {
+  x <- as.character(x)
+  x <- trimws(x)
+  x[x == ""] <- NA_character_
+  x <- iconv(x, from = "", to = "ASCII//TRANSLIT")
+  x <- gsub("[?`']", "", x)
+  x <- gsub("\\s+", " ", x)
+  trimws(x)
+}
+
+normalize_switch_year <- function(x) {
+  x <- as.character(x)
+  x <- stringr::str_trim(x)
+
+  out <- x
+
+  # convert season format like 2024-25 -> 2025
+  season_mask <- stringr::str_detect(out, "^\\d{4}-\\d{2}$")
+  out[season_mask] <- paste0("20", substr(out[season_mask], 6, 7))
+
+  as.integer(out)
+}
+
+fill_na_rules <- function(df, vars) {
+  vars <- intersect(vars, names(df))
+
+  for (v in vars) {
+    if (identical(v, "switch")) {
+      df[[v]] <- ifelse(is.na(df[[v]]), 0, df[[v]])
+    } else if (stringr::str_detect(v, "TSA")) {
+      df[[v]] <- ifelse(is.na(df[[v]]), 0, df[[v]])
+    } else if (stringr::str_detect(v, "rTS|Perc")) {
+      df <- df %>%
+        group_by(year) %>%
+        mutate(
+          !!v := {
+            x <- .data[[v]]
+            floor_val <- suppressWarnings(
+              quantile(x, probs = 0.10, na.rm = TRUE, type = 7)
+            )
+            if (is.na(floor_val) || is.infinite(floor_val)) {
+              floor_val <- min(x, na.rm = TRUE)
+            }
+            if (is.na(floor_val) || is.infinite(floor_val)) {
+              floor_val <- 0
+            }
+            ifelse(is.na(x), floor_val, x)
+          }
+        ) %>%
+        ungroup()
+    }
+  }
+
+  df
+}
+
+write_csv_with_retry <- function(df, path, attempts = 5, sleep_seconds = 2) {
+  last_error <- NULL
+
+  for (i in seq_len(attempts)) {
+    result <- tryCatch(
+      {
+        readr::write_csv(df, path)
+        TRUE
+      },
+      error = function(e) e
+    )
+
+    if (isTRUE(result)) {
+      return(invisible(TRUE))
+    }
+
+    last_error <- result
+    message("Write attempt ", i, " failed for ", path)
+
+    if (i < attempts) {
+      Sys.sleep(sleep_seconds)
+    }
+  }
+
+  stop(
+    paste0(
+      "Could not write output file: ", path, "\n",
+      "If this file is open in Excel or another program, close it and try again.\n",
+      "Original error: ", conditionMessage(last_error)
+    )
+  )
+}
+
+# =========================
+# Read source files
+# =========================
+db_raw   <- readr::read_csv(databallr_fp, show_col_types = FALSE)
+vars_raw <- readr::read_csv(variables_fp, show_col_types = FALSE)
+sw_raw   <- readr::read_csv(switch_fp, show_col_types = FALSE)
+dep_raw  <- readr::read_csv(depvar_fp, show_col_types = FALSE)
+
+# =========================
+# Standardize databallr
+# =========================
+db_id_col   <- pick_col(db_raw, c("nba_id", "player_id", "PLAYER_ID"), "databallr id")
+db_year_col <- pick_col(db_raw, c("year", "YEAR"), "databallr year")
+db_name_col <- pick_col(db_raw, c("player_name", "player", "PLAYER_NAME", "name", "Name"), "databallr player name")
+
+db <- db_raw %>%
+  mutate(
+    nba_id = clean_id(.data[[db_id_col]]),
+    year = as.integer(.data[[db_year_col]]),
+    player_name = clean_display_name(.data[[db_name_col]])
+  )
+
+# =========================
+# Standardize switch
+# =========================
+sw_id_col   <- pick_col(sw_raw, c("player_id", "nba_id", "PLAYER_ID"), "switch id")
+sw_year_col <- pick_col(sw_raw, c("season", "year", "YEAR"), "switch year/season")
+sw_name_col <- names(sw_raw)[names(sw_raw) %in% c("player_name", "player", "PLAYER_NAME", "name", "Name")][1]
+
+sw <- sw_raw %>%
+  transmute(
+    nba_id = clean_id(.data[[sw_id_col]]),
+    year = normalize_switch_year(.data[[sw_year_col]]),
+    player_name_switch = if (!is.na(sw_name_col) && length(sw_name_col) > 0) clean_display_name(.data[[sw_name_col]]) else NA_character_,
+    switch = as.numeric(switch)
+  ) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+# =========================
+# Standardize depvar
+# =========================
+dep_id_col   <- pick_col(dep_raw, c("nba_id", "player_id", "PLAYER_ID"), "depvar id")
+dep_year_col <- pick_col(dep_raw, c("year", "YEAR"), "depvar year")
+dep_name_col <- names(dep_raw)[names(dep_raw) %in% c("player_name", "player", "PLAYER_NAME", "name", "Name")][1]
+off_dep_col  <- pick_col(dep_raw, c("off_dep"), "off_dep")
+def_dep_col  <- pick_col(dep_raw, c("def_dep"), "def_dep")
+
+dep <- dep_raw %>%
+  transmute(
+    nba_id = clean_id(.data[[dep_id_col]]),
+    year = as.integer(.data[[dep_year_col]]),
+    player_name_dep = if (!is.na(dep_name_col) && length(dep_name_col) > 0) clean_display_name(.data[[dep_name_col]]) else NA_character_,
+    off_dep = as.numeric(.data[[off_dep_col]]),
+    def_dep = as.numeric(.data[[def_dep_col]])
+  ) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+# =========================
+# Variable lists
+# =========================
+ovar_list <- vars_raw %>%
+  pull(ovar) %>%
+  as.character() %>%
+  stringr::str_trim() %>%
+  purrr::discard(~ is.na(.x) || .x == "")
+
+dvar_list <- vars_raw %>%
+  pull(dvar) %>%
+  as.character() %>%
+  stringr::str_trim() %>%
+  purrr::discard(~ is.na(.x) || .x == "")
+
+ovar_db <- setdiff(ovar_list, "switch")
+dvar_db <- setdiff(dvar_list, "switch")
+
+missing_ovar <- setdiff(ovar_db, names(db))
+missing_dvar <- setdiff(dvar_db, names(db))
+
+if (length(missing_ovar) > 0) {
+  warning("These offense vars were not found in databallr_stats.csv: ",
+          paste(missing_ovar, collapse = ", "))
+}
+
+if (length(missing_dvar) > 0) {
+  warning("These defense vars were not found in databallr_stats.csv: ",
+          paste(missing_dvar, collapse = ", "))
+}
+
+ovar_db <- intersect(ovar_db, names(db))
+dvar_db <- intersect(dvar_db, names(db))
+
+# =========================
+# Build base merged table
+# =========================
+base <- db %>%
+  select(nba_id, year, player_name, everything()) %>%
+  inner_join(dep, by = c("nba_id", "year")) %>%
+  left_join(sw, by = c("nba_id", "year")) %>%
+  mutate(
+    player_name = clean_display_name(coalesce(player_name, player_name_dep, player_name_switch))
+  )
+
+# =========================
+# Build offense dataset
+# =========================
+off_keep <- c("player_name", "nba_id", "year", "off_dep", ovar_db)
+
+if ("switch" %in% ovar_list) {
+  off_keep <- c(off_keep, "switch")
+}
+
+off_keep <- unique(off_keep)
+off_keep <- intersect(off_keep, names(base))
+
+offense_test <- base %>%
+  select(all_of(off_keep)) %>%
+  filter(!is.na(off_dep)) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+offense_test <- fill_na_rules(offense_test, setdiff(names(offense_test), c("player_name", "nba_id", "year", "off_dep")))
+
+# =========================
+# Build defense dataset
+# =========================
+def_keep <- c("player_name", "nba_id", "year", "def_dep", dvar_db)
+
+if ("switch" %in% dvar_list) {
+  def_keep <- c(def_keep, "switch")
+}
+
+def_keep <- unique(def_keep)
+def_keep <- intersect(def_keep, names(base))
+
+defense_test <- base %>%
+  select(all_of(def_keep)) %>%
+  filter(!is.na(def_dep)) %>%
+  distinct(nba_id, year, .keep_all = TRUE)
+
+defense_test <- fill_na_rules(defense_test, setdiff(names(defense_test), c("player_name", "nba_id", "year", "def_dep")))
+
+# =========================
+# Write outputs
+# =========================
+write_csv_with_retry(offense_test, off_out_fp)
+write_csv_with_retry(defense_test, def_out_fp)
+
+message("Wrote offense dataset to: ", off_out_fp)
+message("Wrote defense dataset to: ", def_out_fp)
+
+# =========================
+# Quick checks
+# =========================
+cat("\nOffense dataset rows by year:\n")
+print(offense_test %>% count(year), n = Inf)
+
+cat("\nDefense dataset rows by year:\n")
+print(defense_test %>% count(year), n = Inf)
+
+cat("\nOffense columns:\n")
+print(names(offense_test))
+
+cat("\nDefense columns:\n")
+print(names(defense_test))

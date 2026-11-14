@@ -1,0 +1,23 @@
+team,player,season,amount,record_type,label,note,likely_outcome_marker,confidence
+ATL,CJ McCollum,2027,45999999,cap_hold,UFA hold,,false,medium
+ATL,Jonathan Kuminga,2027,35699353,cap_hold,UFA/RFA hold visible,,false,medium
+ATL,Jonathan Kuminga,2028,36450000,cap_hold,UFA/RFA hold visible,,false,medium
+ATL,Buddy Hield,2027,3000000,guarantee,GT,26-27: $3M GT,true,medium
+ATL,Buddy Hield,2028,10097560,option,PO,2027-28: $3M GT if PO exercised,false,medium
+ATL,Buddy Hield,2028,18351218,cap_hold,hold,,false,medium
+ATL,Dyson Daniels,2027,25000000,likely,likely outcome,,true,high
+ATL,Zaccharie Risacher,2028,17434636,cap_hold,hold/likely,,true,medium
+UTA,Jusuf Nurkic,2027,29062500,cap_hold,hold,,false,high
+UTA,Walker Kessler,2027,14636814,cap_hold,hold/likely,,true,high
+UTA,Keyonte George,2028,19691774,cap_hold,hold/likely,,true,high
+UTA,Svi Mykhailiuk,2027,3850000,guarantee,GT,26-27 GT 6/30/26,true,high
+UTA,Svi Mykhailiuk,2028,4025000,guarantee,GT,27-28 GT 6/30/27,true,high
+UTA,Kyle Filipowski,2027,3000000,guarantee,GT,26-27 GT 6/30/26,true,high
+UTA,Kyle Filipowski,2028,3000000,guarantee,GT,27-28 GT 6/30/27,true,high
+UTA,Ace Bailey,2029,12640302,cap_hold,hold,,false,medium
+UTA,Brice Sensabaugh,2028,14586710,cap_hold,hold/likely,,true,medium
+NYK,Jordan Clarkson,2027,2450000,cap_hold,hold,Manual promotion from NYK_top screenshot row 18,false,high
+BOS,Jayson Tatum,2026,,note,trade_bonus,15% Trade Bonus,false,high
+BOS,Jaylen Brown,2026,,note,trade_bonus,Lesser of 7% or $7M trade bonus,false,high
+BOS,Derrick White,2026,,note,likely_incentive_trade_bonus,"~$1.4M likely incentive; 15% trade bonus",true,high
+BOS,Neemias Queta,2027,1333972,guarantee,GT,"26-27: $1,333,972 GT; 6/29/26 GT opening night",true,medium

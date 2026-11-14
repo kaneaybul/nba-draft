@@ -1,0 +1,32 @@
+{
+  "season": 2027,
+  "label": "2026\u201327 preseason",
+  "source_commit": "ee9f0a89b48f9a02a30f1f136532c950eb3a0994",
+  "source_as_of": "2026-10-19T05:13:00Z",
+  "captured_at": "2026-10-23",
+  "immutable": true,
+  "files": {
+    "impact_players": {
+      "file": "impact_players.json",
+      "sha256": "734decb9923a4c86de065b9826f1c0bdc9b2b05184c2642a19dedad0c47d31ec"
+    },
+    "team_projections": {
+      "file": "team_projections.json",
+      "sha256": "1e80def42dbaaae6f7129b4d8065a44cf59a9f6ae648fe06491d5d6183bf3725"
+    },
+    "team_schedules": {
+      "file": "team_schedules.json",
+      "sha256": "5d225d2cc7c5233198aed2e80b7c90c2b21d40fec68d142d79fab72d067d90df"
+    },
+    "team_lineups": {
+      "file": "team_lineups.json",
+      "sha256": "287120456435f5bce085697d1af98974ea3329f922a17d70f1616395b0d17a6e"
+    },
+    "market_lines": {
+      "file": "market_lines.json",
+      "sha256": "91c52bde208d0a1abe6236f1adf0407fd03747357e5b67b4b14443c1766f8fd3"
+    }
+  },
+  "note": "Original published projection export from before opening night. No completed regular-season games. Rebuilds never overwrite this directory.",
+  "market_note": "\u2020 Last documented pre-tip lines located: Oct 20 DraftKings for five teams and Oct 19 reported FanDuel for the rest. Exact closing status is unverified; these are frozen reference lines, not current betting offers."
+}

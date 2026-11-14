@@ -1,0 +1,5 @@
+file,rows,wingspan_present,weight_present,scv_present
+draft_training_data.csv,196,195,195,195
+draft_prediction_domestic.csv,425,425,425,425
+draft_prediction_international.csv,2,2,2,2
+draft_prediction_unified.csv,491,491,426,491

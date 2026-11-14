@@ -1,0 +1,99 @@
+get_script_dir <- function() {
+  cmd_args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- "--file="
+  script_arg <- cmd_args[grepl(file_arg, cmd_args)]
+  if (length(script_arg) > 0) {
+    script_path <- sub(file_arg, "", script_arg[[1]])
+    return(dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE)))
+  }
+
+  ofile <- NULL
+  frame_list <- sys.frames()
+  if (length(frame_list) > 0) {
+    for (i in rev(seq_along(frame_list))) {
+      if (!is.null(frame_list[[i]]$ofile)) {
+        ofile <- frame_list[[i]]$ofile
+        break
+      }
+    }
+  }
+
+  if (!is.null(ofile)) {
+    return(dirname(normalizePath(ofile, winslash = "/", mustWork = FALSE)))
+  }
+
+  NULL
+}
+
+resolve_base_dir <- function() {
+  script_dir <- get_script_dir()
+  env_base_dir <- trimws(Sys.getenv("CLEANNBA_BASE_DIR", ""))
+  candidates <- c(
+    getwd(),
+    if (!is.null(script_dir)) script_dir else NULL,
+    if (!is.null(script_dir)) file.path(script_dir, "..") else NULL,
+    file.path(getwd(), ".."),
+    file.path(getwd(), "..", ".."),
+    if (nzchar(env_base_dir)) env_base_dir else NULL
+  )
+  candidates <- unique(candidates[!is.na(candidates) & nzchar(candidates)])
+
+  for (candidate in candidates) {
+    candidate_norm <- normalizePath(candidate, winslash = "/", mustWork = FALSE)
+    if (dir.exists(file.path(candidate_norm, "raw")) &&
+        dir.exists(file.path(candidate_norm, "script"))) {
+      return(candidate_norm)
+    }
+  }
+
+  stop("Could not resolve project root from working directory: ", getwd())
+}
+
+run_step <- function(base_dir, label, relative_path) {
+  script_path <- file.path(base_dir, relative_path)
+  message("")
+  message("=== ", label, " ===")
+  message("Running: ", script_path)
+
+  tryCatch(
+    {
+      source(script_path, local = new.env(parent = globalenv()))
+      message("Completed: ", label)
+    },
+    error = function(e) {
+      stop(
+        paste0(
+          "Pipeline stopped at '", label, "' (", relative_path, ").\n",
+          "Error: ", conditionMessage(e)
+        ),
+        call. = FALSE
+      )
+    }
+  )
+}
+
+base_dir <- resolve_base_dir()
+epm_dir <- file.path(base_dir, "raw", "epm")
+epm_files <- list.files(epm_dir, pattern = "^epm\\d{2}\\.csv$", full.names = TRUE)
+
+message("Full model pipeline starting from: ", base_dir)
+
+if (length(epm_files) == 0) {
+  stop(
+    paste0(
+      "No EPM files were found in ", epm_dir, ".\n",
+      "This repo does not currently include an EPM pull script, so the pipeline stops here."
+    ),
+    call. = FALSE
+  )
+}
+
+run_step(base_dir, "Pull Databallr Stats", file.path("script", "data", "pulldataballrstats.txt"))
+run_step(base_dir, "Build Switch Data", file.path("script", "switch", "switchpullall.txt"))
+run_step(base_dir, "Build Impact Targets", file.path("script", "data", "createimpact.txt"))
+run_step(base_dir, "Build Model Datasets", file.path("script", "nbamodel", "createtestdata.txt"))
+run_step(base_dir, "Train Models", file.path("script", "nbamodel", "trainmodels.txt"))
+run_step(base_dir, "Build Skill Output", file.path("script", "output", "impactoutput.txt"))
+
+message("")
+message("Full model pipeline completed successfully.")

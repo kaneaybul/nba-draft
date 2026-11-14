@@ -1,0 +1,135 @@
+name: Refresh asset history
+
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+    inputs:
+      refresh_contracts:
+        description: Pull updated contract terms for this manual run
+        type: boolean
+        default: false
+
+jobs:
+  refresh:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    # Skipped upstream runs must not displace a waiting player rebuild.
+    concurrency:
+      group: roster-refresh
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      VITE_PUBLIC_READ_ONLY: "true"
+      FRONTEND_MAX_STATIC_ASSET_BYTES: "26214400"
+      FRONTEND_MAX_INITIAL_PAYLOAD_BYTES: "8388608"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: script/asset_history/requirements.txt
+      - name: Resolve the active asset history version
+        run: |
+          python3 - <<'PY'
+          import os,sys
+          sys.path.insert(0,'script/asset_history')
+          from model_version import DATA_VERSION
+          with open(os.environ['GITHUB_ENV'],'a') as target:
+              target.write('ASSET_DATA_VERSION='+DATA_VERSION+'\n')
+          PY
+      - run: python3 -m pip install -r script/asset_history/requirements.txt
+      - run: python3 script/asset_history/materialize.py --repo .
+      - name: Check valuation and publication rules
+        run: |
+          python3 -m unittest discover -s script/asset_history -p 'test_*.py'
+          python3 -m unittest discover -s script/asset_history/backfill -p 'test_*.py'
+      - name: Produce and validate all 30 portfolios
+        id: portfolios
+        continue-on-error: true
+        env:
+          REFRESH_CONTRACTS: ${{ inputs.refresh_contracts }}
+        run: |
+          options=(--skip-contract-refresh)
+          if [ "$REFRESH_CONTRACTS" = true ]; then
+            options=(--force-contract-refresh)
+          fi
+          python3 script/asset_history/refresh.py --repo . --work-dir "$RUNNER_TEMP/asset-history" "${options[@]}"
+      - uses: actions/setup-node@v4
+        if: steps.portfolios.outcome == 'success'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the validated explorer
+        if: steps.portfolios.outcome == 'success'
+        run: |
+          npm ci
+          python3 ../script/frontend/build_shared_contracts.py --repo ..
+          python3 ../script/frontend/build_asset_value_data.py --repo ..
+          npm run test:asset-value
+          npm run build
+        working-directory: frontend
+      - name: Publish validated observations or retain the last good view
+        shell: bash
+        env:
+          PORTFOLIO_OUTCOME: ${{ steps.portfolios.outcome }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ "$PORTFOLIO_OUTCOME" = success ]; then
+            git add frontend/public/data/asset_history/${{ env.ASSET_DATA_VERSION }} frontend/public/data/asset_valuations/${{ env.ASSET_DATA_VERSION }} frontend/public/data/asset_valuation.json processed/asset_history processed/contracts
+          else
+            git add frontend/public/data/asset_history/${{ env.ASSET_DATA_VERSION }}/refresh_status.json
+          fi
+          if ! git diff --cached --quiet; then
+            # Preserve expensive validated results even if a later push fails.
+            git diff --cached --binary > "$RUNNER_TEMP/asset-history-release.patch"
+            git commit -m "Refresh validated NBA asset history"
+            # The runner is disposable. Keep uncommitted model intermediates
+            # out of the publication rebase, including on retained updates.
+            git stash push --include-untracked -m asset-history-intermediates
+            published=false
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                published=true
+                break
+              fi
+            done
+            if [ "$published" != true ]; then
+              echo "::error::Publication changed concurrently after three retries; validated results are preserved in the release artifact."
+              exit 1
+            fi
+          fi
+      - name: Preserve source and validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-history-validation
+          path: |
+            ${{ runner.temp }}/asset-history/player_refresh.log
+            ${{ runner.temp }}/asset-history-release.patch
+            ${{ runner.temp }}/asset-history/players/*.log
+            ${{ runner.temp }}/asset-history/players/*/league_player_coverage.json
+            ${{ runner.temp }}/asset-history/players/player_candidates.json
+            ${{ runner.temp }}/asset-history/pending_pick_review.json
+            ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/daily_input_audit.json
+            ${{ runner.temp }}/asset-history/runtime/monthly_reconstruction/league_ownership/roster_refresh_source.json
+            processed/asset_history/contracts/refresh_audit.json
+            frontend/public/data/asset_history/${{ env.ASSET_DATA_VERSION }}/refresh_status.json
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Report a retained observation
+        if: steps.portfolios.outcome != 'success'
+        run: echo "::warning::Asset history retained its last validated observation. Source or ownership review is pending; see the validation artifact."
+
+
+
+

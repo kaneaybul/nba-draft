@@ -1,0 +1,712 @@
+model,features,n_features,n_rows,validation_rows,temporal_r2,temporal_mse,rank_overall,rank_within_size
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.228199598710074,0.148240186181613,1,1
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.225884253368531,0.148684896010645,2,1
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.225655407073953,0.148728850661691,3,2
+lm,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.225326758198544,0.148791974456907,4,2
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.225230387115789,0.162231736401144,5,3
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.225172323438246,0.162243894558967,6,4
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.223308609180668,0.149179601602024,7,3
+lm,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.223150600100075,0.149209950505039,8,4
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.222780959618088,0.149280947583789,9,5
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.220252247637841,0.149766638876674,10,5
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.220215986279889,0.149773603618393,11,6
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.219149329098563,0.163505070544462,12,7
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.216407320757668,0.150505136389268,13,6
+lm,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.216307606838714,0.150524288504097,14,7
+lm,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.215586492360118,0.15066279341338,15,1
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.214781136880797,0.150817478544403,16,8
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.214456971732834,0.16448761977019,17,8
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.214128575738948,0.150942816371386,18,9
+lm,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.213282023558995,0.183198431828958,19,10
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.212566280920432,0.164883518174558,20,11
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.212414396950097,0.164915321693732,21,12
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.212229574776866,0.151307558674847,22,13
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.2115878721618,0.165088390628489,23,9
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.210017719963677,0.151732391013319,24,14
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.209856164719917,0.165450998945289,25,15
+lm,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.209846330986101,0.151765309801522,26,16
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.20939267167364,0.165548051385726,27,17
+lm,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.209236086476468,0.151882519846468,28,10
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.208889315266608,0.151949124409806,29,18
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.207735803213005,0.152170680191978,30,11
+lm,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.206764688766332,0.184716085612747,31,12
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.206678557923208,0.152373745956569,32,13
+lm,"rim_pct, wingspan_in, scv_draft",3,156,156,0.205993494120048,0.152505326590055,33,1
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.204418263139354,0.166589660298448,34,19
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.203801791881087,0.152926288210981,35,20
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.203347317231016,0.153013579441497,36,21
+lm,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.203291547637204,0.153024291142289,37,22
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.2028172352488,0.153115392619624,38,14
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.202655012670669,0.153146550811749,39,2
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.201992334261863,0.153273831868529,40,3
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.201412740022645,0.153385154896851,41,15
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.20134378205556,0.153398399696753,42,23
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.201033929586005,0.167298317813908,43,16
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.200299221783184,0.167452160866884,44,17
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.1999342209773,0.167528589670417,45,24
+lm,"rim_pct, scv_draft, rim_100",3,176,176,0.19986861242863,0.186321934733616,46,2
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.198698665941661,0.167787306888435,47,25
+lm,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.198405204135434,0.167848755889016,48,18
+lm,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.197003425422241,0.168142279267978,49,26
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.196733257776335,0.168198850622334,50,19
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.195898216441244,0.154444332892928,51,4
+lm,"rim_pct, scv_draft, three_pct",3,176,176,0.194973188209837,0.187461903651166,52,3
+lm,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.194914699188398,0.187475523648837,53,27
+lm,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.19439599448296,0.187596311391667,54,28
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.194307719989119,0.1687067425174,55,20
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.193593935712821,0.168856204319507,56,21
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.193387241016345,0.154926617514525,57,22
+lm,"rim_pct, three_pct, rim_100",3,177,177,0.19203526636707,0.199661191118307,58,4
+lm,"rim_pct, rim_100",2,177,177,0.191958065492122,0.199680268706729,59,1
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.191919565456359,0.155208514878018,60,29
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.190090467410312,0.15555983088464,61,5
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.190080784914193,0.169591835331387,62,23
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.189210199842223,0.169774130204033,63,24
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.189167566433502,0.169783057363553,64,25
+lm,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.188768712470706,0.200468409570612,65,30
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.188120415241857,0.155938220037783,66,6
+lm,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.188019681151879,0.200653507359014,67,5
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.187250122674108,0.156105377676027,68,26
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in",5,156,156,0.186442004056976,0.156260593524659,69,27
+lm,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.185698838586068,0.170509386497317,70,31
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.185623654053839,0.170525129651167,71,28
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.184991214151691,0.156539247649884,72,32
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.184786240947641,0.170700478529136,73,29
+lm,"rim_pct, wingspan_in, rim_100",3,157,157,0.183593210003215,0.170950291478012,74,6
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.183524884499933,0.170964598395647,75,33
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in",4,157,157,0.183064220064108,0.171061058543386,76,34
+lm,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.18291672688551,0.171091942659223,77,35
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, three_pct, height_wo_shoes_in, rim_100",5,157,157,0.182539978118125,0.171170831409767,78,30
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.1821796866069,0.171246274117515,79,36
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.180565553129562,0.171584263208022,80,37
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.18022043638007,0.157455573922731,81,38
+lm,"rim_pct, wingspan_in, three_pct",3,157,157,0.180127229898772,0.171676045252198,82,7
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.179324771107908,0.157627604912194,83,31
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.179010043257749,0.171909976895416,84,8
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.178988087144222,0.157692272011845,85,39
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.178957323240924,0.157698180854008,86,7
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.178891831652163,0.17193472963961,87,40
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.178846927817905,0.157719384572009,88,32
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct",4,156,156,0.178116699866956,0.157859639911632,89,41
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, three_pct",3,157,157,0.177756422347092,0.172172476990596,90,9
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.177623835183053,0.172200239883576,91,42
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.176178498744535,0.158231911414426,92,33
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.175735046194744,0.158317085623242,93,43
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.175143027319403,0.172719704974494,94,44
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.175090828947482,0.158440820833169,95,34
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, three_pct",3,157,157,0.173714086482524,0.173018915926145,96,10
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.17327314886797,0.17311124540534,97,45
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.173249470425405,0.158794491717096,98,35
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.172961848895332,0.158849735364413,99,8
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.172909674017396,0.158859756625877,100,36
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.172391800079386,0.158959224997312,101,9
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.171939827065115,0.159046035737074,102,37
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, three_pct",3,157,157,0.171169318933886,0.173551773760639,103,11
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.171044262937546,0.158377019099837,104,46
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.170472614363352,0.159327844199099,105,10
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.168936998757179,0.158779624696759,106,47
+lm,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.168516009099835,0.17410735964634,107,12
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.16847502538282,0.174115941371107,108,13
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.167272972377182,0.174367643481137,109,48
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, three_pct",3,157,157,0.167148378674924,0.174393732595018,110,14
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.166832289519759,0.159181742156343,111,49
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft",3,156,156,0.166747311052142,0.160043365537924,112,15
+lm,"rim_pct, wingspan_in",2,157,157,0.166216359061628,0.17458889146252,113,2
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft",3,156,156,0.166075261231587,0.160172446567625,114,16
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, three_pct",3,157,157,0.165568230511681,0.174724605380981,115,17
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.164577371721073,0.174932084790931,116,18
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.164123139927896,0.159699341610054,117,50
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.164038897307853,0.175044837843724,118,51
+lm,"wingspan_in, scv_draft, three_pct",3,160,160,0.163967648693597,0.159729049153031,119,19
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.163867036093183,0.175080824468409,120,52
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.16385439726936,0.160599009298992,121,38
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, three_pct",3,157,157,0.163717331111533,0.175112171721473,122,20
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.163627864719797,0.160642519547584,123,11
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.162804163240774,0.175303383156247,124,21
+lm,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.162791704585642,0.159953720404003,125,53
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.16212277525669,0.160081523407675,126,54
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.16212147585305,0.160931852600139,127,39
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.161977718526338,0.160959464159865,128,55
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, three_pct",3,157,157,0.161348397124545,0.175608211147565,129,22
+ranger_mtry1_node10_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.161099791500856,0.173860599013831,130,23
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.160824199932461,0.175717974642769,131,24
+ranger_mtry1_node10_sf1,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.160227040902661,0.174041475046826,132,25
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft",3,156,156,0.15987870407325,0.161362623179741,133,26
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.159799226388578,0.161377888508385,134,40
+ranger_mtry2_node10_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.158798301665191,0.174337578751586,135,27
+lm,"rim_pct, three_pct",2,177,177,0.158788579374222,0.207876986745775,136,3
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, three_pct",3,157,157,0.158196157433544,0.176268269712226,137,28
+ranger_mtry1_node5_sf1,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.157276249308776,0.174653021436826,138,29
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.156996133127205,0.161916280385683,139,12
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft",3,156,156,0.15680497028217,0.161952997152987,140,30
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.156656198823503,0.161125945976288,141,56
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.156399496376038,0.161174990535132,142,57
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, three_pct",3,157,157,0.156294192497721,0.176666528844982,143,31
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, three_pct",3,157,157,0.15594507104651,0.176739632614545,144,32
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.155452589221158,0.162212749829894,145,58
+ranger_mtry1_node5_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.155315265773176,0.175059431840234,146,33
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.154818678371051,0.176975491941719,147,59
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.154243241046344,0.162445030090818,148,41
+lm,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.154070900535841,0.196986581088932,149,34
+lm,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.154068147299838,0.162478660456309,150,60
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.152998395266559,0.177356647428295,151,61
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",6,156,156,0.152091294829175,0.162858355747753,152,13
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.151268608161396,0.162155277834486,153,62
+ranger_mtry2_node5_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.150652612090016,0.176025758650188,154,35
+lm,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.149726780408144,0.16331250951266,155,42
+lm,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.149235471640585,0.210237714621115,156,36
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.149043433454953,0.178184790803341,157,37
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.147613136710948,0.163718478380609,158,43
+ranger_mtry3_node10_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.146438067743462,0.17689921558492,159,38
+lm,"wingspan_in, scv_draft, rim_100",3,156,156,0.146362414424422,0.163958705393067,160,39
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.145967138329003,0.178828947068204,161,40
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, three_pct",3,160,160,0.145858727341581,0.163188868362449,162,41
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.145526036300676,0.163252431002749,163,63
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.145466071702853,0.178933867172789,164,64
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.144718445462738,0.179090415262823,165,42
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, three_pct",3,160,160,0.144341012025232,0.163478837074768,166,43
+ranger_mtry2_node10_sf1,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.144110627274145,0.177381573546052,167,44
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.143732953728397,0.179296770845969,168,65
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, height_wo_shoes_in, rim_100",4,157,157,0.142986285860087,0.179453118259157,169,66
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.142845751831015,0.164634152978626,170,67
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.142269378471374,0.164744857370591,171,44
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.142192708104314,0.164759583495984,172,45
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.141977177321219,0.163930462025688,173,68
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, three_pct",3,157,157,0.141915547908841,0.179677323847725,174,45
+lm,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.14173754843451,0.164847006298669,175,69
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft",3,156,156,0.141563321168111,0.164880470238783,176,46
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, three_pct",3,176,176,0.141419113808257,0.199932728956067,177,47
+lm,"rim_pct, scv_draft",2,176,176,0.141179248903932,0.199988584898906,178,4
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.140723830353723,0.165041711764979,179,46
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.140550808376852,0.165074944204379,180,47
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.140517570477052,0.165081328228599,181,70
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.140436774924198,0.179986969328203,182,71
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.140230840323223,0.165136400668723,183,48
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.140148789268644,0.180047271658318,184,72
+lm,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,0.14003098709936,0.200255973935672,185,73
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.139888630958003,0.165202129035705,186,74
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.139475118553619,0.165281552622052,187,49
+lm,"wingspan_in, scv_draft",2,160,160,0.139423167427751,0.164418421099489,188,5
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft",3,156,156,0.139386756961192,0.165298524288419,189,48
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.139084533917268,0.165356572457641,190,75
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.139078522711776,0.165357727033643,191,76
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.138788242616944,0.165413481313157,192,50
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, three_pct",3,176,176,0.138288907907323,0.200661641767932,193,49
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, three_pct",3,160,160,0.137905382620557,0.164708403088456,194,50
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.137794227905813,0.200776835017925,195,77
+lm,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.137621759966101,0.164762590916048,196,51
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, three_pct",3,176,176,0.13741575683321,0.200864967371665,197,52
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.137124679995292,0.165733002827199,198,51
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, three_pct",3,160,160,0.136957331100907,0.164889534078836,199,53
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.136939130544888,0.180719353396361,200,54
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.136357768308915,0.165880304034847,201,78
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, three_pct",3,157,157,0.136317795680066,0.180849456890781,202,55
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, three_pct",3,160,160,0.136057920469386,0.165061371932654,203,56
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, three_pct",3,176,176,0.135811981900681,0.201238429096761,204,57
+lm,"wingspan_in, three_pct",2,162,162,0.1355236862302,0.179161202038775,205,6
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.135085879632035,0.181107412128376,206,79
+ranger_mtry1_node10_sf0.65,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.134771143180467,0.213812084799487,207,58
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.134673780025508,0.166203748718528,208,52
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.134295470704841,0.16627641082655,209,80
+ranger_mtry3_node5_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.133944683058827,0.179488447680674,210,59
+ranger_mtry2_node5_sf1,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.133506555385024,0.179579248873761,211,60
+lm,"wingspan_in, three_pct, rim_100",3,157,157,0.132239359033602,0.181703455096125,212,61
+ranger_mtry3_node10_sf1,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.131764163138505,0.179940356615334,213,62
+lm,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.131605962956694,0.201237576578246,214,63
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.131272826905874,0.165975593067534,215,81
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, three_pct",3,176,176,0.131156129076631,0.202322610419338,216,64
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.131127418732241,0.181936288189814,217,65
+lm,"wingspan_in, rim_100",2,157,157,0.130697876183446,0.18202623161608,218,7
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.13045567846893,0.202485720271594,219,82
+ranger_mtry1_node10_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.130079718539932,0.182155669820946,220,83
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, three_pct",3,176,176,0.129958040192307,0.202601602397877,221,66
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.12991695993706,0.167117394130432,222,84
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft",3,156,156,0.129532107647325,0.167191312950618,223,67
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.12899250854449,0.16729495408806,224,53
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.128517173875056,0.167386251915552,225,54
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.128476427606789,0.166509862106761,226,68
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft",3,156,156,0.12751405898645,0.167578920820103,227,69
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.12749392394594,0.18269711845288,228,85
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, three_pct",3,160,160,0.127293325083602,0.16673590101636,229,70
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, three_pct",3,160,160,0.127024369477492,0.166787286615448,230,71
+ranger_mtry1_node10_sf0.65,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.126807481893822,0.215780034676464,231,86
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.126728685683753,0.167729767961954,232,55
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.126354972603016,0.18293560748364,233,87
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in, rim_100",3,157,157,0.126327601224027,0.182941338873032,234,72
+ranger_mtry1_node10_sf0.65,"rim_pct, three_pct",2,177,177,0.126284299923374,0.215909321427535,235,8
+lm,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.126218094651551,0.203472501727382,236,73
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, three_pct, rim_100",5,156,156,0.12613112188703,0.167844542414433,237,56
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.125291200700655,0.168005866602446,238,57
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in",4,160,160,0.124935109637523,0.167186452373986,239,88
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.124463273029499,0.183331717116049,240,89
+lm,rim_pct,1,177,177,0.124407615753504,0.216373080526307,241,1
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.124406105809854,0.168175867332145,242,90
+lm,"three_pct, rim_100",2,177,177,0.124255389626997,0.216410698071321,243,9
+ranger_mtry1_node5_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.123947233407273,0.183439772468986,244,91
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in",2,157,157,0.123842374233797,0.183461729300421,245,10
+ranger_mtry1_node10_sf0.65,"rim_pct, wingspan_in, rim_100",3,157,157,0.123659760605948,0.183499967410749,246,74
+ranger_mtry1_node10_sf1,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.123209148893335,0.183594322583389,247,92
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in, rim_100",5,156,156,0.122631260590408,0.168516762964402,248,58
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, three_pct",3,176,176,0.122371518493922,0.204368231507419,249,75
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.122174796312531,0.183810909311165,250,93
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft",3,156,156,0.122062897249339,0.168625928867086,251,76
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.12203952073125,0.204445541892224,252,59
+ranger_mtry1_node5_sf1,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.121816878370524,0.183885855008899,253,94
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, three_pct",3,160,160,0.12178474827132,0.167788348012027,254,77
+lm,"scv_draft, three_pct, rim_100",3,176,176,0.121752879429097,0.204512290382312,255,78
+ranger_mtry1_node5_sf0.65,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.120939050508098,0.217230219259646,256,79
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, three_pct",3,160,160,0.12089188626383,0.167958934711523,257,80
+ranger_mtry1_node5_sf0.65,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.120715446363465,0.217285475470713,258,95
+ranger_mtry2_node10_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.120650204168553,0.184130149026698,259,96
+ranger_mtry1_node10_sf0.65,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.120176943643862,0.217418548227408,260,81
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in, rim_100",3,157,157,0.120015715741614,0.18426300679179,261,82
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.120009782037451,0.169020271990974,262,97
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in, rim_100",3,157,157,0.119361579927849,0.184399978592367,263,83
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, three_pct",3,176,176,0.119153883105257,0.205117503514736,264,84
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.119137266223878,0.169187856649435,265,98
+lm,"rim_pct, height_wo_shoes_in",2,177,177,0.118634481823395,0.217799715562452,266,11
+ranger_mtry3_node5_sf1,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.118115839738169,0.18276894773723,267,85
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.118022588690322,0.169401953461034,268,99
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, three_pct",3,160,160,0.117331443837856,0.168639178822144,269,86
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.117024401705333,0.205613383442179,270,100
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.116872968916433,0.205648646713497,271,60
+ranger_mtry1_node10_sf0.65,"rim_pct, three_pct, rim_100",3,177,177,0.116662130889912,0.218287115470258,272,87
+lm,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.116463216308564,0.185006877152738,273,101
+lm,rim_100,1,177,177,0.115783186758676,0.218504316821832,274,2
+ranger_mtry2_node5_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.115520244940703,0.185204329246677,275,102
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.115005586207587,0.185312095450384,276,103
+ranger_mtry1_node5_sf0.65,"rim_pct, three_pct",2,177,177,0.114851820528928,0.21873447252425,277,12
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.114736057100103,0.170033199640761,278,104
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.11463497846222,0.170052613878009,279,61
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft",3,156,156,0.114564367108469,0.170066176244923,280,88
+lm,"wingspan_in, three_pct, height_wo_shoes_in",3,162,162,0.114288936850929,0.183562066658411,281,89
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, three_pct",3,176,176,0.114138645571102,0.206285372661014,282,90
+lm,wingspan_in,1,162,162,0.113927956991937,0.183636879101989,283,3
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.113694287465716,0.206388847744226,284,105
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.113676793816286,0.206392921388453,285,106
+ranger_mtry2_node10_sf0.65,"rim_pct, three_pct",2,177,177,0.113385773277899,0.219096756579719,286,13
+ranger_mtry3_node10_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.113377403779296,0.185653026300183,287,107
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in, rim_100",3,157,157,0.11334142599007,0.185660559816109,288,91
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.113227111782034,0.169423336343872,289,92
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.113169027202064,0.206511162041706,290,108
+ranger_mtry1_node5_sf0.65,"rim_pct, three_pct, rim_100",3,177,177,0.113094147965504,0.219168821924664,291,93
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, three_pct",3,176,176,0.112926348671797,0.206567673177227,292,94
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, height_wo_shoes_in",4,156,156,0.112805548038587,0.170403993724602,293,109
+lm,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.112453154220551,0.185846558168612,294,95
+lm,"three_pct, height_wo_shoes_in, rim_100",3,177,177,0.11210604825241,0.219412997391053,295,96
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.112024098416858,0.170554087242593,296,62
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.111469927220118,0.170660527251233,297,63
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, three_pct",3,160,160,0.111452677869161,0.16976235270041,298,97
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft",3,156,156,0.111321436122085,0.170689048029379,299,98
+ranger_mtry1_node5_sf0.65,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.111274946387156,0.219618376142686,300,99
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.111047124008521,0.186140971783881,301,100
+ranger_mtry2_node10_sf0.65,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.110903288504805,0.21971021883382,302,101
+lm,"height_wo_shoes_in, rim_100",2,177,177,0.110124779279813,0.219902601090976,303,14
+ranger_mtry2_node10_sf0.65,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.1100166665178,0.219929317508092,304,110
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.109003773600574,0.20748110038151,305,111
+ranger_mtry1_node5_sf0.65,"rim_pct, wingspan_in",2,157,157,0.108953756618941,0.186579309350158,306,15
+ranger_mtry3_node5_sf0.65,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.108560846594609,0.186661582163181,307,112
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.107626479303831,0.171398740698307,308,113
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.107538345753013,0.170510209581791,309,102
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.107206620555679,0.171479383230874,310,114
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, three_pct, rim_100",4,157,157,0.106797395468624,0.187030837401732,311,115
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, three_pct",3,160,160,0.106777161031245,0.170655638537558,312,103
+ranger_mtry1_node10_sf0.65,"wingspan_in, height_wo_shoes_in",2,162,162,0.106502712064367,0.185175748109116,313,16
+ranger_mtry1_node10_sf1,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.105675779838832,0.221002021016988,314,104
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.105407210445036,0.17182499705716,315,64
+ranger_mtry2_node10_sf1,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.105249477943831,0.187354961300858,316,116
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in, rim_100",3,157,157,0.105243227076031,0.18735627019207,317,105
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.104254899370444,0.208586943056986,318,106
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, height_wo_shoes_in",3,157,157,0.104073796007306,0.187601141479902,319,107
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, three_pct",3,176,176,0.103739732501989,0.208706906964329,320,108
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.103407152565995,0.171299499085479,321,109
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.103263435068635,0.172236753335594,322,117
+ranger_mtry1_node10_sf0.65,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.1029711514959,0.187832028095412,323,110
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.102644263295192,0.172355678045688,324,65
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.102564453951749,0.208980587233262,325,118
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, rim_100",3,157,157,0.102466916425771,0.187937611651635,326,111
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.102354851406155,0.209029396156929,327,112
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.101787169664734,0.209161588896794,328,119
+ranger_mtry3_node5_sf0.65,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.101567079670348,0.172562573378771,329,120
+ranger_mtry1_node10_sf1,"rim_pct, three_pct",2,177,177,0.101565287922437,0.222017790242978,330,17
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.101276029352559,0.209280615163435,331,66
+ranger_mtry2_node5_sf0.65,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.101237582622711,0.222098771538022,332,121
+ranger_mtry1_node10_sf0.65,"wingspan_in, three_pct",2,162,162,0.100680054106131,0.18638248377352,333,18
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.10060426873487,0.209437044144862,334,122
+ranger_mtry2_node10_sf0.65,"rim_pct, wingspan_in",2,157,157,0.0998508738838715,0.188485394007852,335,19
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in, rim_100",3,157,157,0.0998428165962532,0.188487081151668,336,113
+lm,"scv_draft, rim_100",2,176,176,0.0997800769473702,0.209628968884753,337,20
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0989352911773286,0.20982568922538,338,123
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0986306963932965,0.173126566352813,339,124
+ranger_mtry1_node10_sf1,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0986305817485713,0.222743003740381,340,125
+ranger_mtry2_node5_sf1,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.0985415735744301,0.188759553008333,341,126
+ranger_mtry1_node10_sf1,"rim_pct, wingspan_in",2,157,157,0.0985383735860001,0.188760223065174,342,21
+ranger_mtry3_node10_sf0.65,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.098302902679108,0.222823978553501,343,127
+ranger_mtry2_node5_sf0.65,"rim_pct, three_pct",2,177,177,0.097868561792939,0.222931311231617,344,22
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0966576945525173,0.210356059882337,345,67
+ranger_mtry3_node5_sf0.65,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0963644850234166,0.223302992997956,346,128
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.0956548063692824,0.173698147412474,347,129
+ranger_mtry3_node10_sf0.65,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0953131819027622,0.223562787051531,348,114
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in, rim_100",3,157,157,0.0950482097036948,0.189491040765733,349,115
+ranger_mtry2_node5_sf0.65,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0948660015424546,0.223673292571967,350,116
+ranger_mtry1_node5_sf0.65,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0943586308065915,0.189635434118289,351,117
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0943486102132143,0.210893762899922,352,68
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.0943409364979063,0.2108955498333,353,130
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft",3,156,156,0.0940508185795336,0.174006226351262,354,118
+ranger_mtry3_node10_sf0.65,"rim_pct, wingspan_in, rim_100",3,157,157,0.0937998237387376,0.189752444697206,355,119
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0935499354614292,0.174102431285282,356,131
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0932963747578322,0.211138790840192,357,132
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.0921347017751001,0.174374256105276,358,69
+ranger_mtry2_node10_sf0.65,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0918803291048492,0.224411100659828,359,120
+ranger_mtry3_node10_sf1,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.0917207410985789,0.19018779112952,360,133
+ranger_mtry1_node5_sf1,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0915558844282543,0.224491276202008,361,134
+ranger_mtry1_node5_sf1,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0904139815785619,0.224773458918184,362,121
+ranger_mtry2_node10_sf0.65,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0900792291549668,0.190531513093452,363,122
+ranger_mtry3_node10_sf0.65,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0897723522144619,0.19059577113622,364,123
+ranger_mtry2_node5_sf0.65,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.089758354990156,0.224935474882645,365,124
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0895635447274159,0.212008033222259,366,70
+ranger_mtry1_node5_sf0.65,"wingspan_in, height_wo_shoes_in",2,162,162,0.0894973518214616,0.188700079237329,367,23
+lm,"wingspan_in, height_wo_shoes_in",2,162,162,0.089399848302025,0.18872028667097,368,24
+ranger_mtry1_node10_sf1,"wingspan_in, height_wo_shoes_in",2,162,162,0.089220259550399,0.188757506125224,369,25
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.0889087243411517,0.212160517430686,370,135
+ranger_mtry2_node10_sf0.65,"wingspan_in, height_wo_shoes_in",2,162,162,0.088732941591686,0.188858501918709,371,26
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0884094435737606,0.212276782034226,372,136
+ranger_mtry1_node5_sf1,"rim_pct, three_pct",2,177,177,0.0884021038450937,0.225270626539402,373,27
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft",2,176,176,0.0883368480701648,0.212293686926214,374,28
+ranger_mtry3_node5_sf1,"wingspan_in, three_pct, height_wo_shoes_in, rim_100",4,157,157,0.0876570479588942,0.191038702140083,375,137
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft",2,160,160,0.0874877163139546,0.17434100389282,376,29
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.0873933867796696,0.212513385260415,377,125
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0873700222885559,0.174363490049891,378,126
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0867515449662687,0.212662847224191,379,138
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, three_pct",3,176,176,0.0866366535941043,0.212689601308681,380,127
+ranger_mtry1_node10_sf1,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0864875920858819,0.225743733449076,381,128
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0864553225996948,0.175465098018484,382,139
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0862213411478878,0.174582952545681,383,129
+ranger_mtry2_node10_sf1,"rim_pct, three_pct",2,177,177,0.0861179342520342,0.225835081895784,384,30
+lm,"scv_draft, three_pct",2,180,180,0.0858043746644662,0.211851422641427,385,31
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0855818957770055,0.174705122460418,386,130
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0843171955674443,0.213229719986405,387,140
+ranger_mtry1_node10_sf1,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0841918930430539,0.191764283125123,388,131
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.0839368460422372,0.175948823387307,389,141
+ranger_mtry1_node5_sf0.65,"wingspan_in, three_pct",2,162,162,0.0838586437726613,0.18986869160516,390,32
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0836037525003475,0.176012800872397,391,142
+ranger_mtry3_node10_sf0.65,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0834771892445215,0.22648765282084,392,132
+ranger_mtry2_node5_sf0.65,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0830892691404825,0.191995165425276,393,133
+ranger_mtry1_node10_sf1,"rim_pct, three_pct, rim_100",3,177,177,0.0824812190446335,0.226733773212177,394,134
+ranger_mtry3_node5_sf0.65,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0823604737185798,0.226763611340771,395,135
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, scv_draft, rim_100",4,156,156,0.0819674226218798,0.176327091776409,396,143
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.0819048173542049,0.213791476446634,397,144
+lm,"scv_draft, height_wo_shoes_in",2,180,180,0.0817081730394789,0.212800657266523,398,33
+ranger_mtry3_node5_sf0.65,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0814464966213665,0.226989469906483,399,136
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft",2,160,160,0.0813151188217085,0.17552031606501,400,34
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft",2,176,176,0.0808582737186749,0.214035178965975,401,35
+ranger_mtry2_node10_sf0.65,"wingspan_in, three_pct",2,162,162,0.0807342284263972,0.190516221213767,402,36
+ranger_mtry2_node5_sf0.65,"rim_pct, three_pct, rim_100",3,177,177,0.0796185199992455,0.227441192580155,403,137
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.079277750574528,0.214403226182574,404,71
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0792423372432068,0.214411472678724,405,145
+lm,"three_pct, height_wo_shoes_in",2,182,182,0.078396701857357,0.225776591035061,406,37
+ranger_mtry1_node10_sf0.65,"rim_pct, height_wo_shoes_in",2,177,177,0.0782385121236853,0.22778221491036,407,38
+ranger_mtry3_node5_sf0.65,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0773924562692769,0.193188041124941,408,138
+ranger_mtry2_node10_sf1,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0773429961789158,0.228003511425858,409,146
+ranger_mtry1_node5_sf1,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0771859911518803,0.228042309914709,410,139
+ranger_mtry2_node10_sf0.65,"rim_pct, three_pct, rim_100",3,177,177,0.077173733893657,0.228045338882032,411,140
+ranger_mtry3_node5_sf1,"rim_pct, wingspan_in, rim_100",3,157,157,0.076847966219248,0.193302053813101,412,141
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0767765620470916,0.177324103616211,413,147
+ranger_mtry1_node10_sf1,"wingspan_in, three_pct",2,162,162,0.0766934505195041,0.191353665358203,414,39
+lm,three_pct,1,182,182,0.0766631500296233,0.226201280728378,415,4
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0764720579387423,0.177382589910904,416,148
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0763119088212377,0.215093864472948,417,72
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0757014893717215,0.177530593497907,418,149
+ranger_mtry1_node10_sf0.65,"rim_pct, scv_draft, rim_100",3,176,176,0.0756709455887228,0.215243121846712,419,142
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0756276984679134,0.215253192551781,420,150
+ranger_mtry1_node5_sf1,"rim_pct, three_pct, rim_100",3,177,177,0.0755705155131592,0.228441520148551,421,143
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.0752451615939245,0.177618240659825,422,73
+ranger_mtry2_node5_sf1,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0747770582158076,0.228637596316849,423,151
+ranger_mtry1_node5_sf1,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0744842106825918,0.19379700890525,424,144
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.0740335542287884,0.215624411633412,425,145
+ranger_mtry1_node10_sf0.65,"rim_pct, rim_100",2,177,177,0.0739712156823918,0.228836733077871,426,40
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,156,156,0.0730347132271023,0.178042802861263,427,74
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0728472173536806,0.177138159977027,428,146
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0726370279936485,0.215949612561759,429,152
+ranger_mtry2_node10_sf1,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0718679037917808,0.229356495562409,430,147
+ranger_mtry2_node5_sf0.65,"rim_pct, wingspan_in",2,157,157,0.0718299372192458,0.194352796568681,431,41
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft",2,176,176,0.0713955636943495,0.216238705120482,432,42
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft",2,160,160,0.0712506165770656,0.177443200234772,433,43
+ranger_mtry1_node5_sf0.65,"rim_pct, scv_draft, rim_100",3,176,176,0.0707438361573585,0.216390469115118,434,148
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.0700880118406897,0.21654318710297,435,153
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0700484299852491,0.17767288527138,436,149
+ranger_mtry3_node10_sf1,"rim_pct, wingspan_in, rim_100",3,157,157,0.0700207444823886,0.19473162980414,437,150
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0690373098617333,0.178810586627811,438,154
+ranger_mtry1_node5_sf1,"rim_pct, wingspan_in",2,157,157,0.0680041744994949,0.195153886491107,439,44
+ranger_mtry2_node10_sf1,"rim_pct, wingspan_in",2,157,157,0.0670640614986757,0.19535074006151,440,45
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft",2,160,160,0.0665719561670565,0.178337086670426,441,46
+ranger_mtry2_node5_sf0.65,"wingspan_in, height_wo_shoes_in",2,162,162,0.0664882677170997,0.19346867162128,442,47
+ranger_mtry3_node10_sf0.65,"rim_pct, three_pct, rim_100",3,177,177,0.066438810011603,0.23069811269707,443,151
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0653061726384495,0.217656706139451,444,75
+ranger_mtry1_node5_sf0.65,"rim_pct, rim_100",2,177,177,0.0653021062116649,0.230979010643721,445,48
+ranger_mtry1_node10_sf0.65,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.0649415454728046,0.216686077196853,446,152
+ranger_mtry3_node5_sf0.65,"rim_pct, three_pct, rim_100",3,177,177,0.0647862749016801,0.231106480927362,447,153
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0647288261643454,0.179638119788449,448,155
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0635854827937561,0.218057393159007,449,156
+ranger_mtry2_node5_sf0.65,"wingspan_in, three_pct",2,162,162,0.0633477172734567,0.19411954520056,450,49
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0631282764937627,0.179945538365537,451,157
+ranger_mtry1_node10_sf0.65,"wingspan_in, three_pct, rim_100",3,157,157,0.0626971067844789,0.196265152080629,452,154
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0623958428971211,0.218334417671007,453,158
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.0621192743366136,0.21839882058043,454,155
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0617979816309113,0.218473638140986,455,159
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft",2,176,176,0.0613861286511287,0.218569543944971,456,50
+ranger_mtry2_node10_sf1,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0601332804305526,0.232256311334185,457,156
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0595728544642427,0.180628430500251,458,160
+ranger_mtry2_node10_sf1,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0587189736381866,0.197098147383007,459,157
+ranger_mtry3_node10_sf1,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0586245512735945,0.232629142780923,460,161
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0578506860262044,0.219392821871881,461,162
+ranger_mtry2_node5_sf1,"rim_pct, three_pct",2,177,177,0.0571625413134885,0.232990429156318,462,51
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0566836720379845,0.219664577620404,463,76
+ranger_mtry1_node5_sf1,"wingspan_in, height_wo_shoes_in",2,162,162,0.056152068074616,0.195610830895008,464,52
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.0558746396749611,0.219852972273435,465,163
+ranger_mtry3_node5_sf1,"rim_pct, three_pct, height_wo_shoes_in, rim_100",4,177,177,0.0557787929802408,0.233332375814289,466,164
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft",2,176,176,0.0550873984379642,0.220036292553901,467,53
+ranger_mtry1_node10_sf0.65,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.0542586342252976,0.220229282047803,468,158
+ranger_mtry1_node5_sf0.65,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.0539357477517427,0.220304470739793,469,159
+ranger_mtry1_node10_sf0.65,"wingspan_in, scv_draft, rim_100",3,156,156,0.0537427734439034,0.181748217811147,470,160
+ranger_mtry2_node5_sf1,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0531459789649894,0.233982986862514,471,161
+ranger_mtry1_node10_sf0.65,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,0.0530763393162741,0.220504596175328,472,165
+ranger_mtry1_node5_sf1,"wingspan_in, three_pct",2,162,162,0.0527861922963875,0.19630840275526,473,54
+ranger_mtry1_node5_sf0.65,"wingspan_in, three_pct, rim_100",3,157,157,0.0525200347547488,0.198396165015838,474,162
+ranger_mtry2_node10_sf0.65,"rim_pct, scv_draft, rim_100",3,176,176,0.0514677580196333,0.220879177130434,475,163
+ranger_mtry1_node10_sf1,"rim_pct, scv_draft, rim_100",3,176,176,0.0510748100557985,0.220970680633494,476,164
+ranger_mtry1_node5_sf0.65,"rim_pct, height_wo_shoes_in",2,177,177,0.0504930621461016,0.234638565639592,477,55
+ranger_mtry2_node5_sf1,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0504498246838504,0.234649250317839,478,165
+ranger_mtry3_node10_sf1,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0491635753202864,0.199098985871428,479,166
+ranger_mtry3_node10_sf1,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.049023966616272,0.235001602974196,480,167
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0487589972371946,0.221509950472855,481,166
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0487508841855151,0.181741910512531,482,168
+ranger_mtry2_node10_sf1,"rim_pct, three_pct, rim_100",3,177,177,0.0482364036560639,0.235196222556178,483,169
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0476881670091947,0.182911129858922,484,167
+ranger_mtry2_node10_sf1,"wingspan_in, three_pct",2,162,162,0.0476214675107315,0.19737878292191,485,56
+ranger_mtry2_node10_sf0.65,"rim_pct, rim_100",2,177,177,0.047423863740066,0.23539701434907,486,57
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0469994107660852,0.221919695123197,487,168
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0466220948602873,0.222007558479973,488,169
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0464955444718705,0.222037027531653,489,77
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0463518022993494,0.183167806265235,490,170
+ranger_mtry2_node10_sf1,"wingspan_in, height_wo_shoes_in",2,162,162,0.0461615570212934,0.197681346814049,491,58
+ranger_mtry2_node5_sf0.65,"rim_pct, rim_100",2,177,177,0.0458177596400295,0.235793908723694,492,59
+ranger_mtry1_node5_sf1,"rim_pct, scv_draft, rim_100",3,176,176,0.0452742244553301,0.22232142920861,493,170
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.04482917877977,0.222425064402283,494,171
+ranger_mtry2_node10_sf0.65,"rim_pct, height_wo_shoes_in",2,177,177,0.0444881771989971,0.236122470111111,495,60
+ranger_mtry3_node10_sf1,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0443892605829207,0.236146914011401,496,172
+ranger_mtry2_node5_sf1,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0439707580346074,0.200186328161394,497,173
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft, rim_100",3,176,176,0.0430154396326518,0.222847419270799,498,174
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in",4,176,176,0.0429627161490122,0.222859696681272,499,171
+ranger_mtry2_node5_sf1,"rim_pct, three_pct, rim_100",3,177,177,0.0419779212676112,0.236742795068883,500,175
+ranger_mtry1_node10_sf1,"wingspan_in, three_pct, rim_100",3,157,157,0.0414103329219949,0.200722464588322,501,176
+ranger_mtry1_node10_sf1,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.0411187192429061,0.223289097497845,502,177
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0410961413171262,0.183204395544322,503,178
+lm,height_wo_shoes_in,1,182,182,0.0408670957215607,0.234970684147906,504,5
+ranger_mtry1_node5_sf0.65,"wingspan_in, scv_draft, rim_100",3,156,156,0.0406361877598754,0.184265607927501,505,179
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0402475635303813,0.184340251226518,506,172
+ranger_mtry1_node10_sf1,"rim_pct, rim_100",2,177,177,0.0401839887923955,0.237186104881648,507,61
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0401319981721509,0.223518869485047,508,173
+ranger_mtry1_node5_sf0.65,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.0394360546055094,0.22259660047618,509,180
+ranger_mtry3_node5_sf1,"rim_pct, height_wo_shoes_in, rim_100",3,177,177,0.0386835687735631,0.237556883005577,510,181
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.0379439070186726,0.224028397524345,511,182
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft",2,160,160,0.0374929100492522,0.183892814722595,512,62
+ranger_mtry3_node10_sf0.65,"rim_pct, scv_draft, rim_100",3,176,176,0.0362049354502005,0.22443334170241,513,183
+ranger_mtry1_node10_sf0.65,"height_wo_shoes_in, rim_100",2,177,177,0.0359106672145683,0.238242111958125,514,63
+ranger_mtry3_node5_sf1,"wingspan_in, height_wo_shoes_in, rim_100",3,157,157,0.0357944754404627,0.201898388753983,515,184
+ranger_mtry1_node10_sf0.65,rim_pct,1,177,177,0.0353968678645616,0.238369080111496,516,6
+ranger_mtry1_node10_sf0.65,"three_pct, height_wo_shoes_in, rim_100",3,177,177,0.035135444454463,0.2384336820765,517,185
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.0350116328615993,0.185345919707484,518,174
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, three_pct, height_wo_shoes_in, rim_100",5,176,176,0.0348797818945966,0.224741922490684,519,78
+ranger_mtry1_node10_sf0.65,"scv_draft, height_wo_shoes_in",2,180,180,0.0346279976153396,0.223710797137463,520,64
+ranger_mtry1_node5_sf1,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.0344269945893592,0.224847360432558,521,186
+ranger_mtry1_node5_sf0.65,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,0.0342235141371197,0.224894743740013,522,175
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, rim_100",3,176,176,0.0342118647945269,0.224897456454555,523,187
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0338757372779739,0.185564091883241,524,176
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0322202381106292,0.225361234957405,525,177
+ranger_mtry1_node5_sf1,"wingspan_in, three_pct, rim_100",3,157,157,0.0320458696406043,0.202683322517364,526,188
+ranger_mtry1_node10_sf1,"wingspan_in, scv_draft, rim_100",3,156,156,0.0318552867286821,0.185952161084938,527,189
+ranger_mtry2_node10_sf0.65,"wingspan_in, three_pct, rim_100",3,157,157,0.0310876408634184,0.202883969413948,528,190
+ranger_mtry1_node10_sf1,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.0301695930392029,0.224743966982067,529,191
+ranger_mtry2_node5_sf0.65,"rim_pct, scv_draft",2,176,176,0.0298327890051063,0.225917186321554,530,65
+ranger_mtry3_node5_sf1,"rim_pct, three_pct, rim_100",3,177,177,0.0295367854038536,0.239817201539885,531,192
+ranger_mtry1_node5_sf0.65,"height_wo_shoes_in, rim_100",2,177,177,0.0294527881384585,0.239837958626626,532,66
+ranger_mtry1_node5_sf1,"rim_pct, rim_100",2,177,177,0.0291991145542216,0.239900645483955,533,67
+ranger_mtry3_node10_sf1,"rim_pct, three_pct, rim_100",3,177,177,0.0286706460032438,0.240031238634824,534,193
+ranger_mtry2_node10_sf0.65,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.0286252087254209,0.225101855386816,535,194
+ranger_mtry2_node5_sf1,"wingspan_in, three_pct",2,162,162,0.0282333297519917,0.201396940517231,536,68
+ranger_mtry1_node10_sf0.65,"three_pct, height_wo_shoes_in",2,182,182,0.0277803506023164,0.238176706420963,537,69
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, height_wo_shoes_in, rim_100",4,156,156,0.027453489258883,0.186797617080253,538,178
+ranger_mtry1_node10_sf0.65,"scv_draft, three_pct",2,180,180,0.0273803919274953,0.225390323415168,539,70
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, height_wo_shoes_in, rim_100",4,176,176,0.0270905630142436,0.226555752512096,540,179
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft",2,176,176,0.0245622522217592,0.227144505516641,541,71
+ranger_mtry2_node10_sf0.65,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.0241564497425976,0.227239002375797,542,195
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0236207852075933,0.187533766946452,543,180
+ranger_mtry3_node5_sf1,"rim_pct, three_pct, height_wo_shoes_in",3,177,177,0.0222135557657221,0.241626890368515,544,196
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0221302404447074,0.227710833930492,545,181
+ranger_mtry1_node10_sf1,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,0.0218649469468404,0.227772611281765,546,182
+ranger_mtry1_node5_sf0.65,"scv_draft, height_wo_shoes_in",2,180,180,0.0208868442508925,0.22689510781268,547,72
+ranger_mtry2_node5_sf0.65,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.0201126033200119,0.228180669333156,548,197
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, height_wo_shoes_in",3,160,160,0.0197711182201538,0.187278670489691,549,198
+ranger_mtry1_node5_sf0.65,"three_pct, height_wo_shoes_in, rim_100",3,177,177,0.0190915118791989,0.242398398053391,550,199
+ranger_mtry2_node10_sf0.65,"height_wo_shoes_in, rim_100",2,177,177,0.0183418127697083,0.242583660863697,551,73
+ranger_mtry3_node10_sf0.65,"wingspan_in, three_pct, rim_100",3,157,157,0.0183306929755441,0.205555191636157,552,200
+ranger_mtry1_node5_sf1,"wingspan_in, scv_draft, rim_100",3,156,156,0.0182388066892594,0.1885674869293,553,201
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.0180557832809025,0.188602640349906,554,183
+ranger_mtry2_node5_sf0.65,"wingspan_in, three_pct, rim_100",3,157,157,0.0178070275948371,0.205664843773505,555,202
+ranger_mtry3_node5_sf0.65,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.0169561935631137,0.228915684084298,556,203
+ranger_mtry2_node10_sf1,"rim_pct, rim_100",2,177,177,0.0167728340883424,0.242971380945182,557,74
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft",2,160,160,0.0165359266753439,0.187896773447636,558,75
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,0.0161907920129156,0.229093918684136,559,204
+ranger_mtry2_node10_sf1,"rim_pct, scv_draft, rim_100",3,176,176,0.0160470328066209,0.229127395052978,560,205
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, three_pct, rim_100",4,176,176,0.0154245023923029,0.229272360083757,561,184
+ranger_mtry1_node10_sf1,"scv_draft, height_wo_shoes_in",2,180,180,0.0145586788632638,0.228361567291292,562,76
+ranger_mtry1_node10_sf1,"rim_pct, height_wo_shoes_in",2,177,177,0.0139610913210014,0.243666208190328,563,77
+ranger_mtry1_node10_sf0.65,"wingspan_in, rim_100",2,157,157,0.0132346475530463,0.206622270525058,564,78
+ranger_mtry2_node10_sf0.65,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,0.0122757064858869,0.230005601841895,565,185
+ranger_mtry3_node10_sf0.65,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.0122091886777903,0.228906027168894,566,206
+ranger_mtry2_node10_sf0.65,"three_pct, height_wo_shoes_in, rim_100",3,177,177,0.0121308098353958,0.244118500433152,567,207
+ranger_mtry1_node10_sf1,"height_wo_shoes_in, rim_100",2,177,177,0.0111948213638773,0.244349798366487,568,79
+ranger_mtry2_node5_sf0.65,"height_wo_shoes_in, rim_100",2,177,177,0.0109655281341444,0.244406460442761,569,80
+ranger_mtry2_node5_sf1,"rim_pct, rim_100",2,177,177,0.0103023233816884,0.244570349094479,570,81
+ranger_mtry2_node5_sf1,"rim_pct, wingspan_in",2,157,157,0.0101126393519321,0.207275998811639,571,82
+ranger_mtry2_node10_sf0.65,"three_pct, height_wo_shoes_in",2,182,182,0.00652252939430098,0.243384498553273,572,83
+ranger_mtry1_node5_sf1,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,0.00599660549911207,0.231467779507234,573,186
+ranger_mtry2_node5_sf1,"wingspan_in, height_wo_shoes_in",2,162,162,0.00564424619147075,0.206078488524034,574,84
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,0.00522287890313089,0.191067464326458,575,187
+ranger_mtry1_node5_sf0.65,"scv_draft, three_pct",2,180,180,0.00518071085331207,0.230534773779416,576,85
+ranger_mtry2_node5_sf0.65,"rim_pct, height_wo_shoes_in",2,177,177,0.00505600563883846,0.245866799305632,577,86
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, rim_100",3,176,176,0.00460201755480572,0.231792529077087,578,208
+ranger_mtry2_node10_sf0.65,"wingspan_in, scv_draft, rim_100",3,156,156,0.00447829329534522,0.191210477350216,579,209
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, rim_100",3,176,176,0.00373532218007988,0.231994351379714,580,210
+ranger_mtry3_node10_sf0.65,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,0.00363563186265348,0.232017565683146,581,211
+ranger_mtry1_node5_sf1,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,0.00260885374068731,0.231130763929708,582,212
+ranger_mtry3_node5_sf0.65,"wingspan_in, three_pct, rim_100",3,157,157,0.000244423769300894,0.209342339208226,583,213
+ranger_mtry1_node5_sf0.65,"wingspan_in, rim_100",2,157,157,5.24283242625545e-05,0.209382541810279,584,87
+ranger_mtry3_node5_sf0.65,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,-0.000292272279203809,0.232932233837061,585,214
+ranger_mtry2_node5_sf0.65,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.000664344685306517,0.233018876170611,586,188
+ranger_mtry3_node10_sf0.65,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.000778438298655537,0.24730858503907,587,215
+ranger_mtry2_node5_sf0.65,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.00222380967304581,0.247665759750052,588,216
+ranger_mtry1_node10_sf0.65,"scv_draft, three_pct, rim_100",3,176,176,-0.00234908669623701,0.233411192227548,589,217
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, rim_100",3,176,176,-0.00307588018568361,0.233580436393205,590,218
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,-0.00420672476427697,0.233843769582028,591,219
+ranger_mtry1_node10_sf1,"scv_draft, three_pct",2,180,180,-0.00427272747238039,0.232725469405876,592,88
+ranger_mtry1_node10_sf1,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.00515617695427784,0.248390395269147,593,220
+ranger_mtry1_node5_sf1,"height_wo_shoes_in, rim_100",2,177,177,-0.0073644605491483,0.248936097964482,594,89
+ranger_mtry2_node10_sf0.65,"scv_draft, height_wo_shoes_in",2,180,180,-0.00828058913770868,0.233654232541488,595,90
+ranger_mtry3_node10_sf0.65,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.00861071857453655,0.23486930196337,596,189
+ranger_mtry2_node10_sf1,"wingspan_in, three_pct, rim_100",3,157,157,-0.00870712497560144,0.211216735509029,597,221
+ranger_mtry2_node10_sf1,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,-0.00918921565222353,0.235004013207582,598,222
+ranger_mtry1_node5_sf1,"scv_draft, height_wo_shoes_in",2,180,180,-0.00934970141703473,0.233901983625678,599,91
+ranger_mtry2_node5_sf0.65,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,-0.0100010439879885,0.234052922709677,600,223
+ranger_mtry1_node5_sf0.65,"three_pct, height_wo_shoes_in",2,182,182,-0.0104922154559621,0.247552811641307,601,92
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft",2,160,160,-0.0107660877692823,0.193112988825412,602,93
+ranger_mtry2_node10_sf0.65,"scv_draft, three_pct",2,180,180,-0.0125315025907251,0.234639319362722,603,94
+ranger_mtry3_node5_sf0.65,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.0127587554038324,0.250269115720204,604,224
+ranger_mtry3_node10_sf1,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,-0.0129335592675983,0.2358759366911,605,225
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, three_pct, rim_100",4,156,156,-0.013927018644766,0.194745597135296,606,190
+ranger_mtry3_node10_sf0.65,"wingspan_in, scv_draft, rim_100",3,156,156,-0.0152195521084959,0.194993854846731,607,226
+lm,scv_draft,1,180,180,-0.0157966403007872,0.235395967119314,608,7
+ranger_mtry2_node10_sf0.65,"wingspan_in, rim_100",2,157,157,-0.0165964243457444,0.212868703674175,609,95
+ranger_mtry1_node5_sf0.65,"scv_draft, three_pct, rim_100",3,176,176,-0.0166883084130474,0.236750283249786,610,227
+ranger_mtry1_node5_sf0.65,rim_pct,1,177,177,-0.0187620387418543,0.25175262440814,611,8
+ranger_mtry2_node5_sf0.65,"wingspan_in, scv_draft, rim_100",3,156,156,-0.0190235275755168,0.195724486795768,612,228
+ranger_mtry1_node5_sf1,"rim_pct, height_wo_shoes_in",2,177,177,-0.0191900314751006,0.251858388354699,613,96
+ranger_mtry3_node5_sf0.65,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.0196876897779563,0.237448731714119,614,191
+ranger_mtry1_node10_sf0.65,scv_draft,1,180,180,-0.020780758947694,0.236550963486283,615,9
+ranger_mtry2_node5_sf1,"wingspan_in, three_pct, rim_100",3,157,157,-0.0219913397628082,0.213998364003249,616,229
+ranger_mtry1_node5_sf0.65,scv_draft,1,180,180,-0.0228931424142003,0.237040477360711,617,10
+ranger_mtry2_node10_sf1,"height_wo_shoes_in, rim_100",2,177,177,-0.0235240011686664,0.252929382564307,618,97
+ranger_mtry1_node10_sf1,scv_draft,1,180,180,-0.0240929803523753,0.237318522198268,619,11
+ranger_mtry1_node5_sf1,scv_draft,1,180,180,-0.0243221682267987,0.237371633125408,620,12
+ranger_mtry1_node10_sf1,"three_pct, height_wo_shoes_in",2,182,182,-0.0246683879011014,0.25102572443908,621,98
+ranger_mtry1_node5_sf1,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.024761272072761,0.253235132273625,622,230
+ranger_mtry1_node5_sf1,"scv_draft, three_pct",2,180,180,-0.0257211104221355,0.237695817453206,623,99
+ranger_mtry3_node10_sf1,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,-0.0276089243350075,0.239293303457053,624,231
+ranger_mtry3_node5_sf0.65,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,-0.0284715580119945,0.238333193326229,625,232
+ranger_mtry2_node10_sf1,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.0303034884563524,0.239920770905714,626,192
+ranger_mtry1_node10_sf1,"wingspan_in, rim_100",2,157,157,-0.0305751034131405,0.215795748488511,627,100
+ranger_mtry2_node5_sf1,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,-0.0306610174956103,0.240004026610155,628,233
+ranger_mtry1_node10_sf0.65,wingspan_in,1,162,162,-0.0308501740567979,0.213641893206431,629,13
+ranger_mtry1_node10_sf0.65,"scv_draft, rim_100",2,176,176,-0.0329849196772105,0.240545180172349,630,101
+ranger_mtry2_node10_sf1,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,-0.0343253617326873,0.239689726448598,631,234
+ranger_mtry1_node10_sf0.65,three_pct,1,182,182,-0.0345040503053036,0.25343528865469,632,14
+ranger_mtry3_node10_sf1,"wingspan_in, three_pct, rim_100",3,157,157,-0.0345056860479127,0.216618787021906,633,235
+ranger_mtry2_node5_sf1,"rim_pct, scv_draft",2,176,176,-0.0347602177876225,0.240958583500601,634,102
+ranger_mtry1_node10_sf1,"scv_draft, three_pct, rim_100",3,176,176,-0.034990351043432,0.241012173291147,635,236
+ranger_mtry2_node10_sf1,"rim_pct, height_wo_shoes_in",2,177,177,-0.0355961931486239,0.255912617017238,636,103
+ranger_mtry2_node5_sf0.65,"three_pct, height_wo_shoes_in",2,182,182,-0.0369349324526165,0.254030812005718,637,104
+ranger_mtry3_node5_sf1,"rim_pct, scv_draft, height_wo_shoes_in",3,176,176,-0.0411262396968757,0.242441001934765,638,237
+ranger_mtry2_node5_sf0.65,"wingspan_in, rim_100",2,157,157,-0.0418255350967227,0.218151515979824,639,105
+ranger_mtry2_node10_sf1,"wingspan_in, scv_draft, rim_100",3,156,156,-0.0420328016472469,0.200143892469302,640,238
+ranger_mtry2_node10_sf1,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.0420540622395047,0.257508461218226,641,239
+ranger_mtry1_node10_sf0.65,"three_pct, rim_100",2,177,177,-0.0435415492967344,0.257876043397568,642,106
+ranger_mtry1_node5_sf0.65,"scv_draft, rim_100",2,176,176,-0.0439315026122422,0.243094247166668,643,107
+ranger_mtry3_node5_sf0.65,"wingspan_in, scv_draft, rim_100",3,156,156,-0.0445051085368122,0.200618750001113,644,240
+ranger_mtry1_node10_sf1,rim_pct,1,177,177,-0.045055947202,0.258250275683961,645,15
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft",2,160,160,-0.0453873825449844,0.199727597083488,646,108
+ranger_mtry3_node5_sf1,"scv_draft, height_wo_shoes_in, rim_100",3,176,176,-0.0491495688000907,0.24430934783987,647,241
+ranger_mtry2_node5_sf1,"height_wo_shoes_in, rim_100",2,177,177,-0.0520727338193974,0.259984237471566,648,109
+ranger_mtry1_node10_sf0.65,height_wo_shoes_in,1,182,182,-0.052087161493217,0.257742841494179,649,16
+ranger_mtry2_node5_sf0.65,"scv_draft, height_wo_shoes_in",2,180,180,-0.0523916075840405,0.24387631384776,650,110
+ranger_mtry3_node5_sf1,"wingspan_in, three_pct, rim_100",3,157,157,-0.0539187362525588,0.220683753937449,651,242
+ranger_mtry1_node5_sf1,"scv_draft, three_pct, rim_100",3,176,176,-0.0541424768225713,0.245472017242853,652,243
+ranger_mtry1_node5_sf1,"wingspan_in, rim_100",2,157,157,-0.0544388388892128,0.220792660059279,653,111
+ranger_mtry1_node10_sf1,"scv_draft, rim_100",2,176,176,-0.0558156492983764,0.245861639169549,654,112
+ranger_mtry2_node5_sf1,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.0564796812776789,0.246016268427981,655,193
+ranger_mtry2_node10_sf1,"three_pct, height_wo_shoes_in",2,182,182,-0.0565045142263692,0.258825015183771,656,113
+ranger_mtry3_node10_sf1,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.0568018495437244,0.246091289875173,657,194
+ranger_mtry3_node10_sf1,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,-0.0585985889430416,0.24531469070581,658,244
+ranger_mtry3_node10_sf1,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.0585999009757117,0.261597206348559,659,245
+ranger_mtry2_node5_sf1,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.0600629207913663,0.261958742275641,660,246
+ranger_mtry2_node10_sf0.65,"scv_draft, three_pct, rim_100",3,176,176,-0.0609592416150473,0.247059397546247,661,247
+ranger_mtry2_node5_sf1,"wingspan_in, scv_draft, rim_100",3,156,156,-0.0625318496471266,0.204081157449949,662,248
+ranger_mtry1_node5_sf1,"three_pct, height_wo_shoes_in",2,182,182,-0.0642943160941081,0.260733379567971,663,114
+ranger_mtry2_node5_sf0.65,"scv_draft, three_pct",2,180,180,-0.0655279903806185,0.246920477817366,664,115
+ranger_mtry2_node10_sf1,"scv_draft, height_wo_shoes_in",2,180,180,-0.065699284468679,0.246960172708962,665,116
+ranger_mtry1_node5_sf0.65,"three_pct, rim_100",2,177,177,-0.0660274922056032,0.26343268461929,666,117
+ranger_mtry1_node5_sf1,"scv_draft, rim_100",2,176,176,-0.0668360653144879,0.248427899243315,667,118
+ranger_mtry3_node5_sf1,"scv_draft, three_pct, height_wo_shoes_in, rim_100",4,176,176,-0.0694712273754659,0.249041534080248,668,195
+ranger_mtry3_node10_sf1,"wingspan_in, scv_draft, rim_100",3,156,156,-0.0736866500657534,0.206223666948664,669,249
+ranger_mtry3_node5_sf1,"three_pct, height_wo_shoes_in, rim_100",3,177,177,-0.0769955289506619,0.266143064403939,670,250
+ranger_mtry1_node5_sf0.65,three_pct,1,182,182,-0.0785229403202457,0.264219142129119,671,17
+ranger_mtry2_node5_sf0.65,"scv_draft, three_pct, rim_100",3,176,176,-0.0851628952174119,0.252695561352423,672,251
+ranger_mtry2_node10_sf1,"wingspan_in, rim_100",2,157,157,-0.0876717124226842,0.227751408426893,673,119
+ranger_mtry2_node5_sf1,"rim_pct, height_wo_shoes_in",2,177,177,-0.0885331641484133,0.268994201205311,674,120
+ranger_mtry2_node5_sf1,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,-0.0886644918903994,0.252282022572071,675,252
+ranger_mtry3_node10_sf0.65,"scv_draft, three_pct, rim_100",3,176,176,-0.089741416197531,0.253761734859031,676,253
+ranger_mtry1_node5_sf0.65,wingspan_in,1,162,162,-0.0897708382194473,0.225853097664156,677,18
+ranger_mtry1_node10_sf1,"three_pct, rim_100",2,177,177,-0.0905374903115961,0.269489502711023,678,121
+ranger_mtry2_node10_sf1,"scv_draft, three_pct",2,180,180,-0.0917417552614919,0.252995133207193,679,122
+ranger_mtry2_node10_sf0.65,"three_pct, rim_100",2,177,177,-0.0927346563642475,0.270032458081345,680,123
+ranger_mtry1_node5_sf0.65,height_wo_shoes_in,1,182,182,-0.0940222342884742,0.268016196417715,681,19
+ranger_mtry3_node5_sf1,"wingspan_in, scv_draft, rim_100",3,156,156,-0.105242287668009,0.212284578015075,682,254
+ranger_mtry1_node10_sf1,height_wo_shoes_in,1,182,182,-0.1064029936386,0.271049264600229,683,20
+ranger_mtry2_node10_sf0.65,"scv_draft, rim_100",2,176,176,-0.107713395398815,0.257946764952576,684,124
+ranger_mtry1_node10_sf0.65,rim_100,1,177,177,-0.108196141683403,0.273853241893778,685,21
+ranger_mtry1_node10_sf1,three_pct,1,182,182,-0.109181726498424,0.271730005254861,686,22
+ranger_mtry3_node5_sf0.65,"scv_draft, three_pct, rim_100",3,176,176,-0.111229835555892,0.258765617885505,687,255
+ranger_mtry1_node5_sf1,"three_pct, rim_100",2,177,177,-0.112344332353108,0.274878327093196,688,125
+ranger_mtry2_node5_sf1,"three_pct, height_wo_shoes_in",2,182,182,-0.113562589316625,0.272803239557385,689,126
+ranger_mtry3_node5_sf1,"scv_draft, three_pct, height_wo_shoes_in",3,180,180,-0.113790284648624,0.258104556385739,690,256
+ranger_mtry2_node5_sf1,"wingspan_in, rim_100",2,157,157,-0.118189358773176,0.234141605817167,691,127
+ranger_mtry1_node10_sf1,wingspan_in,1,162,162,-0.121062782525321,0.232338298318784,692,23
+ranger_mtry2_node10_sf1,"scv_draft, three_pct, rim_100",3,176,176,-0.12262807606481,0.26141985974774,693,257
+ranger_mtry2_node5_sf0.65,"three_pct, rim_100",2,177,177,-0.124979248527313,0.278000619822086,694,128
+ranger_mtry1_node5_sf0.65,rim_100,1,177,177,-0.143214372673086,0.282506814777854,695,24
+ranger_mtry2_node5_sf1,"scv_draft, height_wo_shoes_in",2,180,180,-0.145803191543719,0.265523077849484,696,129
+ranger_mtry2_node5_sf0.65,"scv_draft, rim_100",2,176,176,-0.146776741450075,0.267043218768156,697,130
+ranger_mtry1_node5_sf1,rim_pct,1,177,177,-0.150674706718474,0.284350384329393,698,25
+ranger_mtry2_node5_sf1,"scv_draft, three_pct, rim_100",3,176,176,-0.15237984036487,0.268347979769318,699,258
+ranger_mtry1_node5_sf1,three_pct,1,182,182,-0.156151856059512,0.283236860486553,700,26
+ranger_mtry3_node10_sf1,"scv_draft, three_pct, rim_100",3,176,176,-0.156163568216428,0.269229074430468,701,259
+ranger_mtry2_node5_sf1,"scv_draft, three_pct",2,180,180,-0.157446173704059,0.268221168133554,702,131
+ranger_mtry1_node5_sf1,height_wo_shoes_in,1,182,182,-0.161471450312085,0.284540067472093,703,27
+ranger_mtry2_node10_sf1,"three_pct, rim_100",2,177,177,-0.164992952345965,0.287888655070314,704,132
+ranger_mtry2_node10_sf1,"scv_draft, rim_100",2,176,176,-0.169496226620016,0.272333772918099,705,133
+ranger_mtry1_node10_sf1,rim_100,1,177,177,-0.174377778119375,0.290207797743697,706,28
+ranger_mtry3_node5_sf1,"scv_draft, three_pct, rim_100",3,176,176,-0.180377686398578,0.274867675062372,707,260
+ranger_mtry2_node5_sf1,"three_pct, rim_100",2,177,177,-0.192481337644396,0.294681480947658,708,134
+ranger_mtry1_node5_sf1,wingspan_in,1,162,162,-0.203242548178746,0.249369910825929,709,29
+ranger_mtry2_node5_sf1,"scv_draft, rim_100",2,176,176,-0.227912639516243,0.285936862660722,710,135
+ranger_mtry1_node5_sf1,rim_100,1,177,177,-0.235039757427093,0.305198356786681,711,30

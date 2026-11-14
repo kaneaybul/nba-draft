@@ -1,0 +1,27 @@
+name: Probe alternate NBA fetch network
+# Automatic runs are replaced by the scheduled Work refresh.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe the public NBA matchup endpoint
+        run: |
+          python3 -u - <<'PY'
+          import sys,json
+          sys.path.insert(0,'script/data')
+          from nba_transport import nba_table
+          audit=[]
+          try:
+              rows,params=nba_table('leagueseasonmatchups',dict(LeagueID='00',Season='2026-27',SeasonType='Regular Season',PerMode='Totals',DefTeamID='',OffTeamID='',DefPlayerID='',OffPlayerID=''),'SeasonMatchups',audit,timeouts=(45,))
+              print('ALTERNATE_NETWORK_ROWS',len(rows),'PARAMETERS',params,flush=True)
+          except Exception as error:
+              print('ALTERNATE_NETWORK_ERROR',type(error).__name__,str(error),flush=True)
+          print('ALTERNATE_NETWORK_AUDIT',json.dumps(audit),flush=True)
+          PY

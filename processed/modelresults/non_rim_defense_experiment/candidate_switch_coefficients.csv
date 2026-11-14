@@ -1,0 +1,5 @@
+model,term,estimate
+perimeter_alloc_residual,switch,0.20774199318040698
+perimeter_alloc_residual,perimeter_alloc_ps_resid_role,0.15577168240150008
+perimeter_alloc_residual_drop_steals,switch,0.21017379023309388
+perimeter_alloc_residual_drop_steals,perimeter_alloc_ps_resid_role,0.15819095652031195
