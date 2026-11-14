@@ -17,7 +17,7 @@ export type AttributionAnalysis = {
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 export const signedMoney = (value: number) => `${value >= 50000 ? '+' : ''}${money(value)}`;
 export const categoryLabels = {
-  aging: 'Aging', player: 'Player Development', draft: 'Draftee Development', trades: 'Trades',
+  aging: 'Aging', player: 'Player Development', draft: 'Draftee Talent Revisions', control_loss: 'Loss of Team Control', trades: 'Trades',
   contracts: 'Contract Management', fa: 'FA Signings', own_picks: 'Own Pick Revaluation',
   acquired_picks: 'Acquired Pick Revaluation', lottery: 'Lottery Luck',
   automatic: 'Automatic Pick Additions',
@@ -26,7 +26,10 @@ export type CategoryKey = keyof typeof categoryLabels;
 export const rankingLabels = { change: 'Value change', ...categoryLabels, total: 'Total asset value', players: 'Player value', picks: 'Pick value' };
 export type RankingMetric = keyof typeof rankingLabels;
 const categoryKeys = Object.keys(categoryLabels) as CategoryKey[];
-const categoryLabel = (key: string) => categoryLabels[key as CategoryKey];
+export const hasSplitDraftAccounting = (valuationMethod?: string) => valuationMethod === 'peak4-payroll-0.8-v17';
+export const accountingCategoryKeys = (split: boolean): CategoryKey[] => categoryKeys.filter(key => split || key !== 'control_loss');
+export const categoryLabel = (key: string, split = true) => key === 'draft' && !split ? 'Draftee Development' : categoryLabels[key as CategoryKey];
+export const accountingRankingLabels = (split: boolean) => Object.fromEntries(Object.entries(rankingLabels).filter(([key]) => split || key !== 'control_loss').map(([key, label]) => [key, key === 'draft' && !split ? 'Draftee Development' : label]));
 
 export type AttributionInterval = {
   start: string; end: string; opening: number; closing: number;
@@ -36,20 +39,22 @@ export type AttributionInterval = {
 };
 export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[]; trade_deals?: TradeDeal[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
-  const expectedAttribution = (valuationMethod === 'peak4-payroll-0.8-v13' || valuationMethod === 'peak4-payroll-0.8-v14' || valuationMethod === 'peak4-payroll-0.8-v15' || valuationMethod === 'peak4-payroll-0.8-v16')
+  const split = hasSplitDraftAccounting(valuationMethod);
+  const expectedKeys = accountingCategoryKeys(split);
+  const expectedAttribution = split ? 'forecast-based-attribution-v9' : (valuationMethod === 'peak4-payroll-0.8-v13' || valuationMethod === 'peak4-payroll-0.8-v14' || valuationMethod === 'peak4-payroll-0.8-v15' || valuationMethod === 'peak4-payroll-0.8-v16')
     ? 'forecast-based-attribution-v8'
     : /^peak4-payroll-0\.8-v(?:[1-9]|1[0-2])$/.test(valuationMethod ?? '')
       ? 'forecast-based-attribution-v7' : null;
   if (!expectedAttribution || ledger.method !== expectedAttribution || ledger.valuation_method !== valuationMethod || start > end) return null;
   const rows = ledger.intervals.filter(row => start < row.end && row.end <= end);
   if (start !== end && (!rows.length || rows[0].start !== start || rows[rows.length - 1].end !== end)) return null;
-  const categories = Object.fromEntries(Object.keys(categoryLabels).map(key => [key, 0]));
+  const categories = Object.fromEntries(expectedKeys.map(key => [key, 0]));
   const components: Record<string, Record<string, number>> = {};
   const contributions: Record<string, Record<string, number>> = {};
   let prior = start, value = opening;
   for (const row of rows) {
     if (row.start !== prior || Math.abs(row.opening - value) > .01 || !Number.isFinite(row.reconciliation_error) || Math.abs(row.reconciliation_error) > .01) return null;
-    if (Object.keys(row.categories).length !== Object.keys(categoryLabels).length || Object.keys(categoryLabels).some(key => !Number.isFinite(row.categories[key]))) return null;
+    if (Object.keys(row.categories).length !== expectedKeys.length || expectedKeys.some(key => !Number.isFinite(row.categories[key]))) return null;
     if (Math.abs(row.opening + Object.values(row.categories).reduce((a, b) => a + b, 0) - row.closing) > .01) return null;
     for (const [key, amount] of Object.entries(row.categories)) {
       categories[key] += amount;
@@ -112,6 +117,7 @@ export function TradeBreakdown({ deals }: { deals: TradeDeal[] }) {
 export function Waterfall({ opening, closing, changes, analysis }: {
   opening: number; closing: number; changes: Change[]; analysis: AttributionAnalysis;
 }) {
+  const split = Object.prototype.hasOwnProperty.call(analysis.categories, 'control_loss');
   const [active, setActive] = useState<string | null>(null);
   const error = opening + changes.reduce((sum, row) => sum + row.value, 0) - closing;
   if (![opening, closing, ...changes.map(row => row.value)].every(Number.isFinite) || Math.abs(error) > .01) {
@@ -120,7 +126,7 @@ export function Waterfall({ opening, closing, changes, analysis }: {
   let running = opening;
   const rows = [
     { key: 'opening', label: 'Starting value', value: opening, from: 0, to: opening, total: true },
-    ...changes.map(row => { const from = running; running += row.value; return { ...row, label: categoryLabel(row.key) ?? row.label, from, to: running, total: false }; }),
+    ...changes.map(row => { const from = running; running += row.value; return { ...row, label: categoryLabel(row.key, split) ?? row.label, from, to: running, total: false }; }),
     { key: 'closing', label: 'Ending value', value: closing, from: 0, to: closing, total: true },
   ];
   const low = Math.min(0, ...rows.flatMap(row => [row.from, row.to]));
@@ -131,6 +137,7 @@ export function Waterfall({ opening, closing, changes, analysis }: {
   const step = (width - 90) / rows.length;
   const picked = changes.find(row => row.key === active);
   return <>
+    {split && <p className="ah-caption">Draftee Talent Revisions and Loss of Team Control are separate, additive parts of the value change. Loss of Team Control combines waivers, contract expirations and rights lapses for players of all ages. Genuine trades remain separate. Losing team control is not a talent downgrade. Control loss is signed: removal of a negative-valued asset can increase measured value; this is not a new dead-cap charge.</p>}
     <div className="ah-waterfall-scroll" tabIndex={0} aria-label="Asset value waterfall, scroll horizontally">
       <svg viewBox={`0 0 ${width} 405`} style={{ minWidth: width }} role="img" aria-label={`Asset value changed from ${money(opening)} to ${money(closing)}`}>
         <title>Asset value waterfall</title>
@@ -147,11 +154,11 @@ export function Waterfall({ opening, closing, changes, analysis }: {
         })}
       </svg>
     </div>
-    <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabel(row.key) ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
-    {picked && <section className="ah-drilldown"><h3>{categoryLabel(picked.key) ?? picked.label}</h3>
+    <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabel(row.key, split) ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
+    {picked && <section className="ah-drilldown"><h3>{categoryLabel(picked.key, split) ?? picked.label}</h3>
       {picked.key === 'trades' && analysis.tradeDeals ? <TradeBreakdown deals={analysis.tradeDeals}/> :
         analysis.components[picked.key] && <ul>{Object.entries(analysis.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
-      {picked.key === 'trades' && analysis.tradeWaivers.length > 0 && <>
+      {picked.key === (split ? 'control_loss' : 'trades') && analysis.tradeWaivers.length > 0 && <>
         <h4>Reported dead cap</h4>
         <p className="ah-caption">Cap charges are separate from the asset value totals.</p>
         <ul>{analysis.tradeWaivers.map(deal => (
@@ -196,7 +203,10 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
   start: string; end: string; cap: number; selectedTeam: string; onSelect: (team: string) => void;
 }) {
   const [localMetric, setLocalMetric] = useState<RankingMetric>('change');
-  const metric = selectedMetric ?? localMetric;
+  const split = hasSplitDraftAccounting(valuationMethod);
+  const labels = accountingRankingLabels(split);
+  const requestedMetric = selectedMetric ?? localMetric;
+  const metric = !split && requestedMetric === 'control_loss' ? 'change' : requestedMetric;
   const setMetric = onMetricChange ?? setLocalMetric;
   const rows = useMemo(() => leagueRows(teams, ledgers, start, end, cap, valuationMethod), [teams, ledgers, start, end, cap, valuationMethod]);
   const comparable = rankLeague(rows, metric);
@@ -206,12 +216,12 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
   const extent = Math.max(1, ...comparable.map(row => Math.abs(row.value)));
   const rank = comparable.findIndex(row => row.team === selectedTeam);
   const net = comparable.reduce((sum, row) => sum + row.value, 0);
-  const label = rankingLabels[metric];
+  const label = labels[metric];
   const isChange = metric === 'change' || metric in categoryLabels;
   const format = isChange ? signedMoney : money;
-  const columns: RankingMetric[] = ['total', 'change', ...categoryKeys, 'players', 'picks'];
+  const columns: RankingMetric[] = ['total', 'change', ...accountingCategoryKeys(split), 'players', 'picks'];
   return <section className="ah-league-panel">
-    <div className="ah-chart-heading"><div><h2>Across the league</h2><p className="ah-caption">{start} → {end} · {comparable.length} teams with matching {metric in categoryLabels ? 'waterfalls, dates and cap' : 'dates and cap'}</p></div><label>Rank by<select value={metric} onChange={event => setMetric(event.target.value as RankingMetric)}>{Object.entries(rankingLabels).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label></div>
+    <div className="ah-chart-heading"><div><h2>Across the league</h2><p className="ah-caption">{start} → {end} · {comparable.length} teams with matching {metric in categoryLabels ? 'waterfalls, dates and cap' : 'dates and cap'}</p></div><label>Rank by<select value={metric} onChange={event => setMetric(event.target.value as RankingMetric)}>{Object.entries(labels).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label></div>
     <div className="ah-stats ah-league-stats"><div><span>{selectedTeam} rank · {label}</span><strong>{rank >= 0 ? `${rank + 1} / ${comparable.length}` : 'Unavailable'}</strong></div><div><span>League combined · {label}</span><strong className={net >= 0 ? 'ah-positive' : 'ah-negative'}>{comparable.length ? format(net) : '—'}</strong></div><div><span>Highest · {label}</span><strong>{comparable[0]?.team ?? '—'}</strong></div><div><span>Lowest · {label}</span><strong>{comparable[comparable.length - 1]?.team ?? '—'}</strong></div></div>
     {loading && <p role="status" className="ah-caption">Loading league waterfall categories…</p>}
     {!loading && !comparable.length && <p role="status">No validated league data is available for this category and period.</p>}
@@ -219,7 +229,8 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
     {!!missingDates.length && <p className="ah-caption">Missing matching observations: {missingDates.map(team => team.team).join(', ')}.</p>}
     {!loading && !!missingAttribution.length && <p className="ah-caption">Waterfall categories unavailable: {missingAttribution.map(row => row.team).join(', ')}. These teams are excluded from category rankings.</p>}
     {!!missing.length && metric in categoryLabels && <p className="ah-caption">Category ranking covers {comparable.length} of {teams.length} teams.</p>}
-    <details className="ah-method"><summary>Full league table</summary><div className="ah-table ah-league-table" tabIndex={0} aria-label="League values and waterfall categories, scroll horizontally"><table><thead><tr><th scope="col">Rank</th><th scope="col">Team</th>{columns.map(key => <th key={key} scope="col" aria-sort={metric === key ? 'descending' : 'none'}><button onClick={() => setMetric(key)}>{rankingLabels[key]}</button></th>)}</tr></thead><tbody>{comparable.map((row, index) => <tr key={row.team}><td>{index + 1}</td><td>{row.team}</td>{columns.map(key => { const value = leagueMetricValue(row, key); return <td key={key}>{value === undefined ? '—' : key === 'change' || key in categoryLabels ? signedMoney(value) : money(value)}</td>; })}</tr>)}</tbody></table></div></details>
+    <details className="ah-method"><summary>Full league table</summary><div className="ah-table ah-league-table" tabIndex={0} aria-label="League values and waterfall categories, scroll horizontally"><table><thead><tr><th scope="col">Rank</th><th scope="col">Team</th>{columns.map(key => <th key={key} scope="col" aria-sort={metric === key ? 'descending' : 'none'}><button onClick={() => setMetric(key)}>{labels[key]}</button></th>)}</tr></thead><tbody>{comparable.map((row, index) => <tr key={row.team}><td>{index + 1}</td><td>{row.team}</td>{columns.map(key => { const value = leagueMetricValue(row, key); return <td key={key}>{value === undefined ? '—' : key === 'change' || key in categoryLabels ? signedMoney(value) : money(value)}</td>; })}</tr>)}</tbody></table></div></details>
     <p className="ah-caption">Category rankings use the same waterfall amounts and selected dates. The categories sum to value change.</p>
   </section>;
 }
+

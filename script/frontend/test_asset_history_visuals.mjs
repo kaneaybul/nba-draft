@@ -11,7 +11,7 @@ const source = readFileSync(resolve(frontend, 'src/AssetHistoryCharts.tsx'), 'ut
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2020 } }).outputText;
 const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
-const { Waterfall, TradeBreakdown, LeagueComparison, aggregateAttribution, categoryLabels, leagueRows, leagueMetricValue, rankLeague } = module.exports;
+const { Waterfall, TradeBreakdown, LeagueComparison, aggregateAttribution, categoryLabels, categoryLabel, accountingCategoryKeys, hasSplitDraftAccounting, leagueRows, leagueMetricValue, rankLeague } = module.exports;
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
 // Render the exact expanded state reached by each category button, without
 // changing production components or requiring an external browser service.
@@ -168,7 +168,7 @@ if(existsSync(resolve(data,'manifest.json'))){
  for(const start of [dates[0],'2024-02-29',dates.at(-2),end]){
   const actualRows=leagueRows(manifest.teams,books,start,end,cap,manifest.method);
   assert.equal(actualRows.length,30);
-  for(const key of Object.keys(categoryLabels)){
+  for(const key of accountingCategoryKeys(hasSplitDraftAccounting(manifest.method))){
    assert.equal(rankLeague(actualRows,key).length,30,`${start}: missing ${key} attribution`);
    for(const r of actualRows){
     const first=manifest.teams.find(t=>t.team===r.team).points.find(p=>p.date===start);
@@ -177,7 +177,7 @@ if(existsSync(resolve(data,'manifest.json'))){
     const markup=render(expandedWaterfalls[key],{opening:waterfall.opening,closing:waterfall.closing,
      changes:Object.entries(waterfall.categories).map(([key,value])=>({key,label:key,value})),analysis:waterfall});
     assert.match(markup,/class="ah-drilldown"/,`${r.team} ${start} ${key}: missing expanded category`);
-    assert.ok(markup.includes(`<h3>${categoryLabels[key]}</h3>`));
+    assert.ok(markup.includes(`<h3>${categoryLabel(key,hasSplitDraftAccounting(manifest.method))}</h3>`));
     assert.ok(markup.includes('aria-pressed="true"'));
 
    }
@@ -187,3 +187,4 @@ if(existsSync(resolve(data,'manifest.json'))){
  console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges, and all 1,200 expanded category drilldowns.');
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
+

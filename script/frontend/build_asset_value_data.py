@@ -4,7 +4,7 @@ Every quote is copied from a validated inventory. Historical season rows use
 the final available observation in that season, never today's player price.
 """
 from __future__ import annotations
-import argparse,json,math,sys
+import argparse,json,math,sys,re
 from pathlib import Path
 
 TEAMS='ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split()
@@ -44,8 +44,24 @@ def write(path,data):
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(data,separators=(',',':'),allow_nan=False)+'\n')
 
+def preserved_history_route(public):
+    """Keep the separately published history selected while current quotes refresh."""
+    index=public/'asset_valuation.json'
+    if not index.exists():return None
+    version=json.loads(index.read_text()).get('asset_history_version')
+    if version is None:return None
+    if not isinstance(version,str) or not re.fullmatch(r'v[1-9][0-9]*',version):
+        raise ValueError('Invalid independently published Asset History route')
+    manifest=public/'asset_history'/version/'manifest.json'
+    if not manifest.exists():raise ValueError('Selected Asset History payload is missing')
+    published=json.loads(manifest.read_text())
+    if published.get('method')!='peak4-payroll-0.8-'+version or len(published.get('teams',[]))!=30:
+        raise ValueError('Selected Asset History manifest is incompatible')
+    return version
+
 def build(repo):
     public=repo/'frontend/public/data'
+    history_route=preserved_history_route(public)
     sys.path.insert(0,str(repo/'script/asset_history'))
     from model_version import DATA_VERSION,METHOD
     root=public/'asset_history'/DATA_VERSION
@@ -99,6 +115,7 @@ def build(repo):
             generated_at=manifest['generated_at'],observation_date=dt,season=year,reporting_cap=164961000,slots=slots)
         write(public/path.removeprefix('/data/'),feeds[dt])
     result={**feeds[day],'seasons':index}
+    if history_route is not None:result['asset_history_version']=history_route
     write(public/'asset_valuation.json',result)
     return result
 
@@ -106,3 +123,4 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());args=p.parse_args()
     result=build(args.repo.resolve())
     print(json.dumps({'date':result['observation_date'],'players':len(result['players']),'pick_claims':len(result['picks']),'slots':len(result['slots']),'seasons':result['seasons']}))
+
