@@ -206,15 +206,18 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
 
 async function loadAssetValuations(cacheBust?: string, season?: number): Promise<AssetValuationData | undefined> {
   const data = await loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current");
-  if (data.method !== "peak4-payroll-0.8-v16" || data.history_version !== "v16") {
+  const currentRolling = data.method === "peak4-payroll-0.8-v18-current-rolling-role";
+  const historicalRelease = data.historical_quote_release ?? data;
+  if ((!currentRolling && data.method !== "peak4-payroll-0.8-v16") || data.history_version !== "v16"
+    || historicalRelease.method !== "peak4-payroll-0.8-v16" || historicalRelease.history_version !== "v16") {
     throw new Error("The current asset valuation release is unavailable. Reload after the update finishes.");
   }
   if (season !== undefined && season !== data.season && data.seasons?.[String(season)]) {
     const entry = data.seasons[String(season)];
-    const historical = await loadJson<AssetValuationData>(entry.path, cacheBust ?? data.generated_at);
-    if (historical.method !== data.method || historical.history_version !== data.history_version
+    const historical = await loadJson<AssetValuationData>(entry.path, cacheBust ?? historicalRelease.generated_at);
+    if (historical.method !== historicalRelease.method || historical.history_version !== historicalRelease.history_version
       || historical.season !== season || historical.observation_date !== entry.observation_date
-      || historical.generated_at !== data.generated_at) {
+      || historical.generated_at !== historicalRelease.generated_at) {
       throw new Error("The dated asset valuation release is inconsistent. Reload after the update finishes.");
     }
     return historical;
@@ -371,4 +374,5 @@ function numberValue(value: string | number | null | undefined): number | null {
   const parsed = Number(String(value).replace(/[$,%]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
+
 
