@@ -137,7 +137,6 @@ export function Waterfall({ opening, closing, changes, analysis }: {
   const step = (width - 90) / rows.length;
   const picked = changes.find(row => row.key === active);
   return <>
-    {split && <p className="ah-caption">Draftee Talent Revisions and Loss of Team Control are separate, additive parts of the value change. Loss of Team Control combines waivers, contract expirations and rights lapses for players of all ages. Genuine trades remain separate. Losing team control is not a talent downgrade. Control loss is signed: removal of a negative-valued asset can increase measured value; this is not a new dead-cap charge.</p>}
     <div className="ah-waterfall-scroll" tabIndex={0} aria-label="Asset value waterfall, scroll horizontally">
       <svg viewBox={`0 0 ${width} 405`} style={{ minWidth: width }} role="img" aria-label={`Asset value changed from ${money(opening)} to ${money(closing)}`}>
         <title>Asset value waterfall</title>
