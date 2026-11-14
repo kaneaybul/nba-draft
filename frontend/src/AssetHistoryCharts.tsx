@@ -26,7 +26,7 @@ export type CategoryKey = keyof typeof categoryLabels;
 export const rankingLabels = { change: 'Value change', ...categoryLabels, total: 'Total asset value', players: 'Player value', picks: 'Pick value' };
 export type RankingMetric = keyof typeof rankingLabels;
 const categoryKeys = Object.keys(categoryLabels) as CategoryKey[];
-export const hasSplitDraftAccounting = (valuationMethod?: string) => valuationMethod === 'peak4-payroll-0.8-v17';
+export const hasSplitDraftAccounting = (valuationMethod?: string) => valuationMethod === 'peak4-payroll-0.8-v17' || valuationMethod === 'peak4-payroll-0.8-v18';
 export const accountingCategoryKeys = (split: boolean): CategoryKey[] => categoryKeys.filter(key => split || key !== 'control_loss');
 export const categoryLabel = (key: string, split = true) => key === 'draft' && !split ? 'Draftee Development' : categoryLabels[key as CategoryKey];
 export const accountingRankingLabels = (split: boolean) => Object.fromEntries(Object.entries(rankingLabels).filter(([key]) => split || key !== 'control_loss').map(([key, label]) => [key, key === 'draft' && !split ? 'Draftee Development' : label]));
@@ -232,4 +232,5 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
     <p className="ah-caption">Category rankings use the same waterfall amounts and selected dates. The categories sum to value change.</p>
   </section>;
 }
+
 

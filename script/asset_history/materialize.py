@@ -4,7 +4,7 @@ from pathlib import Path
 from model_version import data_root
 
 def sources(repo):
-    return [*(repo/'frontend/public/data/asset_history').glob('v*/teams/*.json.gz'),repo/'processed/asset_history/contracts/contract_agreements.json.gz',repo/'frontend/public/data/draft_class_results.json.gz']
+    return [*(repo/'frontend/public/data/asset_history').glob('v*/teams/*.json.gz'),*(repo/'frontend/public/data/asset_history').glob('v*/draft_class_results.json.gz'),repo/'processed/asset_history/contracts/contract_agreements.json.gz',repo/'frontend/public/data/draft_class_results.json.gz']
 
 def materialize(repo):
     count=0
@@ -24,4 +24,3 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,default=Path.cwd());p.add_argument('--compact',action='store_true');a=p.parse_args()
     if a.compact:compact(a.repo.resolve())
     else:print('Materialized asset-history inputs:',materialize(a.repo.resolve()))
-

@@ -36,7 +36,7 @@ required = {'index.html','data/manifest.json','data/asset_valuation.json',
             f'data/asset_history/{version}/refresh_status.json'}
 if history != version:
     required.add(f'data/asset_history/{history}/manifest.json')
-    required.add('data/draft_class_results.json')
+    required.add(f'data/asset_history/{history}/draft_class_results.json' if int(history[1:]) >= 18 else 'data/draft_class_results.json')
     active = json.loads((dist/f'data/asset_history/{history}/manifest.json').read_text())
     teams = {row['team'] for row in active['teams']}
     if len(teams) != 30:
