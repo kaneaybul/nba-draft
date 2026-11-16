@@ -79,7 +79,11 @@ node script/frontend/build_static_data_manifest.mjs
 echo 'Validating the complete static release'
 node script/frontend/test_shared_contracts.mjs --require-export
 node script/frontend/test_asset_surface_consistency.mjs
-node script/frontend/test_asset_history_visuals.mjs --require-published
+if [[ -f script/frontend/history_release_policy.json ]]; then
+  python3 script/frontend/test_pinned_asset_history.py --repo "$repo" --policy script/frontend/history_release_policy.json
+else
+  node script/frontend/test_asset_history_visuals.mjs --require-published
+fi
 node script/frontend/test_data_refresh.mjs
 node script/frontend/validate_preseason_archive.mjs
 sha256sum --check "$work/preserved-inputs.sha256"
@@ -92,3 +96,4 @@ npm run test:trade-machine
 npm run test:trade-suggestions
 npm run build
 echo "WORK_REFRESH_COMPLETE: $repo/frontend/dist"
+

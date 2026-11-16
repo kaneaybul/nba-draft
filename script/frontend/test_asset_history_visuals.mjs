@@ -3,6 +3,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 const frontend = process.env.ASSET_HISTORY_FRONTEND || resolve('frontend');
+const publicRoot = process.env.ASSET_HISTORY_PUBLIC || resolve(frontend,'public');
 const require = createRequire(resolve(frontend, 'package.json'));
 const ts = require('typescript');
 const React = require('react');
@@ -13,14 +14,10 @@ const module = { exports: {} };
 new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
 const { Waterfall, TradeBreakdown, LeagueComparison, aggregateAttribution, categoryLabels, categoryLabel, accountingCategoryKeys, hasSplitDraftAccounting, leagueRows, leagueMetricValue, rankLeague } = module.exports;
 const render = (component, props) => renderToStaticMarkup(React.createElement(component, props));
-// Render the exact expanded state reached by each category button, without
-// changing production components or requiring an external browser service.
-const expandedWaterfalls=Object.fromEntries(Object.keys(categoryLabels).map(key=>{
- const scope={exports:{}};
- const requireExpanded=name=>name==='react'?{...React,useState:()=>[key,()=>{}]}:require(name);
- new Function('require','module','exports',compiled)(requireExpanded,scope,scope.exports);
- return [key,scope.exports.Waterfall];
-}));
+// Waterfall expansion is controlled by its active/onToggle props. Render the
+// same public interface used by the application, rather than mocking useState.
+const expandedWaterfalls=Object.fromEntries(Object.keys(categoryLabels).map(key=>
+ [key,props=>React.createElement(Waterfall,{...props,active:key,onToggle:()=>{}})]));
 
 const rangeSource=readFileSync(resolve(frontend,'src/AssetHistoryDateRange.tsx'),'utf8');
 const rangeCompiled=ts.transpileModule(rangeSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText;
@@ -32,13 +29,17 @@ assert.deepEqual(normalizeHistoryRange(refreshedDates,{start:'2026-06-30',end:'2
 assert.deepEqual(normalizeHistoryRange(refreshedDates,{start:'2026-06-30',end:'2026-10-31'},'2026-11-04'),{start:'2026-06-30',end:'2026-10-31'},'Historical end dates stay fixed');
 assert.deepEqual(normalizeHistoryRange(refreshedDates,{start:'2026-11-04',end:'2026-11-04'},'2026-11-04'),{start:'2026-11-05',end:'2026-11-05'},'A zero-length latest range remains zero-length');
 const changes = [{key:'gain',label:'Gain',value:30e6},{key:'loss',label:'Loss',value:-60e6}];
-const waterfall = render(Waterfall, {opening:100e6,closing:70e6,changes});
+const analysis = {start:'a',end:'b',opening:100e6,closing:70e6,change:-30e6,
+ categories:{gain:30e6,loss:-60e6},components:{gain:{movement:30e6},loss:{movement:-60e6}},
+ contributors:{gain:[],loss:[]},tradeWaivers:[],validation:{reconciliation_error:0}};
+const waterfallProps = {opening:100e6,closing:70e6,changes,analysis,active:null,onToggle:()=>{}};
+const waterfall = render(Waterfall, waterfallProps);
 assert.match(waterfall, /Asset value changed from \$100M to \$70M/);
 assert.match(waterfall, /\+\$30M/);
 assert.match(waterfall, /−\$60M/);
 assert.match(waterfall, /#f18f99/);
-assert.doesNotMatch(render(Waterfall, {opening:100e6,closing:80e6,changes}), /<svg/);
-assert.doesNotMatch(render(Waterfall, {opening:NaN,closing:80e6,changes}), /<svg/);
+assert.doesNotMatch(render(Waterfall, {...waterfallProps,closing:80e6}), /<svg/);
+assert.doesNotMatch(render(Waterfall, {...waterfallProps,opening:NaN,closing:80e6}), /<svg/);
 const point = (date,total,cap=1) => ({date,total,players:total*.7,picks:total*.3,reporting_cap:cap,vintage:'reconstructed'});
 const league = render(LeagueComparison, {teams:[
  {team:'UTA',points:[point('a',100e6),point('b',70e6)]},
@@ -54,6 +55,17 @@ assert.match(league, /−\$10M/);
 const keys=['aging','player','draft','trades','contracts','fa','own_picks','acquired_picks','lottery','automatic'];
 const row=(start,end,opening,closing,key)=>({start,end,opening,closing,categories:Object.fromEntries(keys.map(k=>[k,k===key?closing-opening:0])),components:Object.fromEntries(keys.map(k=>[k,{movement:k===key?closing-opening:0}])),contributors:Object.fromEntries(keys.map(k=>[k,k===key?[{player:'Test player',value:closing-opening}]:[]])),reconciliation_error:0});
 const ledger={team:'BOS',method:'forecast-based-attribution-v7',valuation_method:'peak4-payroll-0.8-v5',intervals:[row('a','b',100,120,'draft'),row('b','c',120,110,'contracts')]};
+
+// Cover controlled expansion even when no published feed is present locally.
+for (const key of keys) {
+ const fixture=aggregateAttribution({...ledger,intervals:[row('a','b',100,120,key)]},'a','b',100,120,ledger.valuation_method);
+ assert.ok(fixture);
+ const markup=render(expandedWaterfalls[key],{opening:100,closing:120,
+  changes:Object.entries(fixture.categories).map(([key,value])=>({key,label:key,value})),analysis:fixture});
+ assert.match(markup,/class="ah-drilldown"/);
+ assert.ok(markup.includes(`<h3>${categoryLabel(key,false)}</h3>`));
+ assert.ok(markup.includes('aria-pressed="true"'));
+}
 
 const v13={...ledger,method:'forecast-based-attribution-v8',valuation_method:'peak4-payroll-0.8-v13'};
 assert.ok(aggregateAttribution(v13,'a','c',100,110,v13.valuation_method));
@@ -137,17 +149,32 @@ assert.match(categoryMarkup,/Waterfall categories unavailable: ATL/);
 
 // Exercise every team against the actual published ledgers when available.
 const versionSource = readFileSync(resolve(frontend,'../script/asset_history/model_version.py'),'utf8');
-const version = versionSource.match(/DATA_VERSION\s*=\s*['"]([^'"]+)['"]/)[1];
-const data = resolve(frontend,`public/data/asset_history/${version}`);
+const legacyVersion = versionSource.match(/DATA_VERSION\s*=\s*['"]([^'"]+)['"]/)[1];
+const selectorPath=resolve(publicRoot,'data/asset_history_release.json');
+const selector=existsSync(selectorPath)?JSON.parse(readFileSync(selectorPath,'utf8')):null;
+const expectedSparseMethod='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster';
+const expectedSparseAttribution='forecast-based-attribution-v12-sparse-refit-20261116-evidence-v2-transient-roster';
+if(selector){
+ assert.equal(selector.asset_history_version,'v20','Independent history selector must name the verified release');
+ assert.equal(selector.method,expectedSparseMethod);
+ assert.equal(selector.attribution_method,expectedSparseAttribution);
+}
+const version=selector?.asset_history_version??legacyVersion;
+const expectedMethod=selector?.method??`peak4-payroll-0.8-${version}`;
+const data = resolve(publicRoot,`data/asset_history/${version}`);
 if(process.argv.includes('--require-published')) assert.ok(existsSync(resolve(data,'manifest.json')), 'Release requires actual published Asset History feeds');
 if(existsSync(resolve(data,'manifest.json'))){
  const manifest=JSON.parse(readFileSync(resolve(data,'manifest.json'),'utf8'));
  assert.equal(manifest.teams.length,30);
- assert.equal(manifest.method,`peak4-payroll-0.8-${version}`);
+ assert.equal(manifest.method,expectedMethod);
  const books=Object.fromEntries(manifest.teams.map(t=>[t.team,JSON.parse(readFileSync(resolve(data,`attribution/${t.team}.json`),'utf8'))]));
+ if(selector) for(const book of Object.values(books)){
+  assert.equal(book.method,selector.attribution_method);
+  assert.equal(book.valuation_method,selector.method);
+ }
  if(version==='v16') {
   for(const team of manifest.teams) {
-   const stale=JSON.parse(readFileSync(resolve(frontend,`public/data/asset_history/v15/attribution/${team.team}.json`),'utf8'));
+   const stale=JSON.parse(readFileSync(resolve(publicRoot,`data/asset_history/v15/attribution/${team.team}.json`),'utf8'));
    const first=team.points[0], last=team.points.at(-1);
    assert.equal(aggregateAttribution(stale,first.date,last.date,first.total,last.total,manifest.method),null,`${team.team}: actual stale v15 ledger must not satisfy v16`);
   }
@@ -168,7 +195,7 @@ if(existsSync(resolve(data,'manifest.json'))){
  for(const start of [dates[0],'2024-02-29',dates.at(-2),end]){
   const actualRows=leagueRows(manifest.teams,books,start,end,cap,manifest.method);
   assert.equal(actualRows.length,30);
-  for(const key of accountingCategoryKeys(hasSplitDraftAccounting(manifest.method))){
+  for(const key of accountingCategoryKeys(hasSplitDraftAccounting(manifest.method),manifest.method===expectedSparseMethod)){
    assert.equal(rankLeague(actualRows,key).length,30,`${start}: missing ${key} attribution`);
    for(const r of actualRows){
     const first=manifest.teams.find(t=>t.team===r.team).points.find(p=>p.date===start);
@@ -184,7 +211,9 @@ if(existsSync(resolve(data,'manifest.json'))){
   }
   for(const r of actualRows)assert.ok(Math.abs(Object.values(r.categories).reduce((a,b)=>a+b,0)-r.change)<.01);
  }
- console.log('Published league checks passed: 30 teams, all ten waterfall categories, four date ranges, and all 1,200 expanded category drilldowns.');
+ const count=accountingCategoryKeys(hasSplitDraftAccounting(manifest.method),manifest.method===expectedSparseMethod).length;
+ console.log(`Published league checks passed: 30 teams, all ${count} waterfall categories, four date ranges, and all ${30*4*count} expanded category drilldowns.`);
 }
 console.log('Asset History checks passed: category rankings, signed amounts, dates/cap/method alignment, invalid-data exclusion, and waterfall reconciliation.');
+
 
