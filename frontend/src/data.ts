@@ -206,7 +206,7 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
 
 async function loadAssetValuations(cacheBust?: string, season?: number): Promise<AssetValuationData | undefined> {
   const data = await loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current");
-  const currentRolling = data.method === "peak4-payroll-0.8-v18-current-rolling-role";
+  const currentRolling = data.method === "peak4-payroll-0.8-v18-current-rolling-role" || data.method === "peak4-payroll-0.8-v19-current-direct-rolling-role";
   const historicalRelease = data.historical_quote_release ?? data;
   if ((!currentRolling && data.method !== "peak4-payroll-0.8-v16") || data.history_version !== "v16"
     || historicalRelease.method !== "peak4-payroll-0.8-v16" || historicalRelease.history_version !== "v16") {
