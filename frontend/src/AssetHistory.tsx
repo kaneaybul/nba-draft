@@ -15,30 +15,34 @@ export function AssetHistoryWorkspace(){
  const [rankingMetric,setRankingMetric]=useState<RankingMetric>('change');
  const [dateRange,setDateRange]=useState<HistoryDateRange>({start:'',end:''});
  const latestObserved=useRef('');
- const [ledgers,setLedgers]=useState<Record<string,AttributionLedger>>({});
+ const [activeCategory,setActiveCategory]=useState<string|null>(null);
+ const [ledgerCache,setLedgerCache]=useState<{scope:string;books:Record<string,AttributionLedger>}|null>(null);
  const [leagueLoading,setLeagueLoading]=useState(false);
- const ledger=ledgers[team];
+
  const [attributionError,setAttributionError]=useState('');
  const [historyVersion,setHistoryVersion]=useState('v16');
+ const scope=manifest?`${historyVersion}/${manifest.method}`:'';
+ const ledgers=ledgerCache?.scope===scope?ledgerCache.books:{};
+ const ledger=ledgers[team];
  const [refreshStatus,setRefreshStatus]=useState<RefreshStatus|null>(null);
  useEffect(()=>{const f=()=>setRevision(x=>x+1);const timer=window.setInterval(f,60000);window.addEventListener('focus',f);return()=>{clearInterval(timer);window.removeEventListener('focus',f);};},[]);
- useEffect(()=>{const c=new AbortController();read<{history_version?:string;asset_history_version?:string}>('/data/asset_valuation.json',c.signal).then(async metadata=>{const version=metadata.asset_history_version??metadata.history_version;if(version!=='v16'&&version!=='v17'&&version!=='v18')throw Error('The current asset valuation release is unavailable.');const m=await read<Manifest>(`/data/asset_history/${version}/manifest.json`,c.signal);setHistoryVersion(version);setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
+ useEffect(()=>{const c=new AbortController();read<{history_version?:string;asset_history_version?:string}>('/data/asset_history_release.json',c.signal).then(async metadata=>{const version=metadata.asset_history_version??metadata.history_version;if(version!=='v16'&&version!=='v17'&&version!=='v18'&&version!=='v19'&&version!=='v20')throw Error('The current asset valuation release is unavailable.');const m=await read<Manifest>(`/data/asset_history/${version}/manifest.json`,c.signal);setHistoryVersion(version);setManifest(m);setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[revision]);
  useEffect(()=>{const c=new AbortController();read<RefreshStatus>(`/data/asset_history/${historyVersion}/refresh_status.json`,c.signal).then(setRefreshStatus).catch(()=>{});return()=>c.abort();},[revision,historyVersion]);
  useEffect(()=>{
   if(!manifest)return;
-  const c=new AbortController();setLedgers({});setLeagueLoading(true);setAttributionError('');
+  const c=new AbortController();setLeagueLoading(true);
   Promise.allSettled(manifest.teams.map(async t=>{
    const book=await read<AttributionLedger>(`/data/asset_history/${historyVersion}/attribution/${t.team}.json`,c.signal);
-   if(book.team!==t.team)throw Error('Attribution team does not match');
+   if(book.team!==t.team||book.valuation_method!==manifest.method)throw Error('Attribution team does not match');
    return [t.team,book] as const;
   })).then(results=>{
    if(c.signal.aborted)return;
    const available=results.flatMap(r=>r.status==='fulfilled'?[r.value]:[]);
-   setLedgers(Object.fromEntries(available));setLeagueLoading(false);
+   setLedgerCache(old=>({scope,books:{...(old?.scope===scope?old.books:{}),...Object.fromEntries(available)}}));setLeagueLoading(false);
    setAttributionError(results.some(r=>r.status==='rejected')?'Some waterfall categories are unavailable.':'');
   });
   return()=>c.abort();
- },[historyVersion,manifest,revision]);
+ },[historyVersion,manifest,scope]);
  const path=manifest?.teams.find(t=>t.team===team)?.path;
  useEffect(()=>{setFile(null);setQuery('');setError('');},[team]);
  useEffect(()=>{if(!path)return;const c=new AbortController();read<TeamFile>(path,c.signal).then(x=>{const dates=x.snapshots.map(s=>s.date);const previousLatest=latestObserved.current;setFile(x);setDateRange(range=>normalizeHistoryRange(dates,range,previousLatest));latestObserved.current=dates[dates.length-1]??'';setError('');}).catch(e=>{if(!c.signal.aborted)setError(String(e.message));});return()=>c.abort();},[path,manifest?.generated_at]);
@@ -78,14 +82,14 @@ export function AssetHistoryWorkspace(){
  </svg></section>
  <section className="ah-analysis-panel">
  <div className="ah-chart-heading"><div><h2>What changed</h2><p className="ah-caption">{baseline.date} → {current.date}</p></div></div>
- {analysis?<Waterfall opening={analysis.opening} closing={analysis.closing} changes={Object.entries(analysis.categories).map(([key,value])=>({key,label:key,value}))} analysis={analysis}/>:<p role="status">{attributionError?'Detailed attribution is unavailable. Please refresh after the next validated update.':'Loading reconciled attribution…'}</p>}
+ {analysis?<Waterfall opening={analysis.opening} closing={analysis.closing} changes={Object.entries(analysis.categories).map(([key,value])=>({key,label:key,value}))} analysis={analysis} active={activeCategory} onToggle={key=>setActiveCategory(old=>old===key?null:key)}/>:<p role="status">{attributionError?'Detailed attribution is unavailable. Please refresh after the next validated update.':'Loading reconciled attribution…'}</p>}
 
  </section>
- <LeagueComparison metric={rankingMetric} onMetricChange={setRankingMetric} teams={manifest?.teams??[]} ledgers={ledgers} valuationMethod={manifest?.method} loading={leagueLoading} start={baseline.date} end={current.date} cap={current.reporting_cap} selectedTeam={team} onSelect={setTeam}/>
+ <LeagueComparison metric={rankingMetric} onMetricChange={setRankingMetric} teams={manifest?.teams??[]} ledgers={ledgers} valuationMethod={manifest?.method} loading={leagueLoading&&!Object.keys(ledgers).length} start={baseline.date} end={current.date} cap={current.reporting_cap} selectedTeam={team} onSelect={setTeam}/>
  <details className="ah-method ah-moves"><summary>Moves in selected range ({moves.length})</summary>{moves.length?<ul>{moves.map((m,i)=><li key={i}><time>{m.date}</time> {m.label}</li>)}</ul>:<p>No annotated moves in this range.</p>}</details>
  <section><div className="ah-filters"><h2>Assets · {current.date}</h2><input aria-label="Search assets" placeholder="Find a player or pick" value={query} onChange={e=>setQuery(e.target.value)}/><select aria-label="Asset category" value={kind} onChange={e=>setKind(e.target.value)}><option value="all">All assets</option><option value="player">Players</option><option value="pick">Draft rights</option></select></div><div className="ah-table ah-inventory"><table><thead><tr><th>Asset</th><th>Type</th><th>Asset value</th><th>Change since {baseline.date}</th><th>Details</th></tr></thead><tbody>{assets.map(a=><tr key={a.id}><td>{a.name}</td><td>{a.kind==='player'?'Player':'Pick'}</td><td>{money(a.value)}</td><td>{oldAssets.has(a.id)?signedMoney(a.value-oldAssets.get(a.id)!):'Added'}</td><td><details><summary>View</summary>{a.details&&<p>Production {money(a.details.peak_production)} · Contract effect {money(a.details.contract_adjustment)}</p>}{a.details?.draft_development?.status==='priced'&&<p>Draftee development: {signedMoney(a.details.draft_development.gain)} versus original expectation.</p>}{a.details?.draft_development?.status==='unavailable'&&<p>Draft appraisal unavailable: {a.details.draft_development.reason ?? 'Missing year-four inputs'}.</p>}{a.note&&<p>{a.note}</p>}<small>{a.source}</small></details></td></tr>)}</tbody></table></div><p className="ah-caption">Sorted by asset value. Changes compare assets held on both dates; removed assets appear in the waterfall.</p></section>
  <details className="ah-method"><summary>Sources and assumptions</summary>{current.source_dates&&<p>{Object.entries(current.source_dates).map(([name,date])=>`${name}: ${date}`).join(' · ')}</p>}{current.assumptions?.length?<ul>{current.assumptions.map((a,i)=><li key={i}>{a}</li>)}</ul>:null}<p>Method: {file?.method}. Draftee development tracks the shared padded player value through year four. Contract effects are separate.</p></details>
- <footer><a href={path??undefined} download>Download {team} history</a>{(historyVersion==='v17'||historyVersion==='v18')&&<> · <a href={historyVersion==='v18'?'/data/asset_history/v18/draft_class_results.json':'/data/draft_class_results.json'} download>Draft-class report (JSON, each player once)</a></>} · Data through {points[points.length-1]!.date} · Method {file?.method}</footer></>}
+ <footer><a href={path??undefined} download>Download {team} history</a>{(historyVersion==='v17'||historyVersion==='v18'||historyVersion==='v19'||historyVersion==='v20')&&<> · <a href={historyVersion==='v17'?'/data/draft_class_results.json':`/data/asset_history/${historyVersion}/draft_class_results.json`} download>Draft-class report (JSON, each player once)</a></>} · Data through {points[points.length-1]!.date} · Method {file?.method}</footer></>}
  </main>;
 }
 

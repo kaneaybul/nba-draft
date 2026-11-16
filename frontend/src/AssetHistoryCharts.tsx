@@ -17,7 +17,7 @@ export type AttributionAnalysis = {
 export const money = (value: number) => `${value <= -50000 ? '−' : ''}$${(Math.abs(value) / 1e6).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
 export const signedMoney = (value: number) => `${value >= 50000 ? '+' : ''}${money(value)}`;
 export const categoryLabels = {
-  aging: 'Aging', player: 'Player Development', draft: 'Draftee Talent Revisions', control_loss: 'Loss of Team Control', trades: 'Trades',
+  minutes: 'Injuries / Minutes Distribution', aging: 'Aging', player: 'Player Development', draft: 'Draftee Talent Revisions', control_loss: 'Loss of Team Control', trades: 'Trades',
   contracts: 'Contract Management', fa: 'FA Signings', own_picks: 'Own Pick Revaluation',
   acquired_picks: 'Acquired Pick Revaluation', lottery: 'Lottery Luck',
   automatic: 'Automatic Pick Additions',
@@ -26,10 +26,10 @@ export type CategoryKey = keyof typeof categoryLabels;
 export const rankingLabels = { change: 'Value change', ...categoryLabels, total: 'Total asset value', players: 'Player value', picks: 'Pick value' };
 export type RankingMetric = keyof typeof rankingLabels;
 const categoryKeys = Object.keys(categoryLabels) as CategoryKey[];
-export const hasSplitDraftAccounting = (valuationMethod?: string) => valuationMethod === 'peak4-payroll-0.8-v17' || valuationMethod === 'peak4-payroll-0.8-v18';
-export const accountingCategoryKeys = (split: boolean): CategoryKey[] => categoryKeys.filter(key => split || key !== 'control_loss');
+export const hasSplitDraftAccounting = (valuationMethod?: string) => valuationMethod === 'peak4-payroll-0.8-v17' || valuationMethod === 'peak4-payroll-0.8-v18' || valuationMethod === 'peak4-payroll-0.8-v19' || valuationMethod === 'peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster';
+export const accountingCategoryKeys = (split: boolean, sparse=false): CategoryKey[] => categoryKeys.filter(key => (split || key !== 'control_loss')&&(sparse||key!=='minutes'));
 export const categoryLabel = (key: string, split = true) => key === 'draft' && !split ? 'Draftee Development' : categoryLabels[key as CategoryKey];
-export const accountingRankingLabels = (split: boolean) => Object.fromEntries(Object.entries(rankingLabels).filter(([key]) => split || key !== 'control_loss').map(([key, label]) => [key, key === 'draft' && !split ? 'Draftee Development' : label]));
+export const accountingRankingLabels = (split: boolean, sparse=false) => Object.fromEntries(Object.entries(rankingLabels).filter(([key]) => (split || key !== 'control_loss')&&(sparse||key!=='minutes')).map(([key, label]) => [key, key === 'draft' && !split ? 'Draftee Development' : label]));
 
 export type AttributionInterval = {
   start: string; end: string; opening: number; closing: number;
@@ -40,8 +40,8 @@ export type AttributionInterval = {
 export type AttributionLedger = { team: string; method: string; valuation_method: string; intervals: AttributionInterval[]; trade_waivers?: TradeWaiver[]; trade_deals?: TradeDeal[] };
 export function aggregateAttribution(ledger: AttributionLedger, start: string, end: string, opening: number, closing: number, valuationMethod?: string): AttributionAnalysis | null {
   const split = hasSplitDraftAccounting(valuationMethod);
-  const expectedKeys = accountingCategoryKeys(split);
-  const expectedAttribution = split ? 'forecast-based-attribution-v9' : (valuationMethod === 'peak4-payroll-0.8-v13' || valuationMethod === 'peak4-payroll-0.8-v14' || valuationMethod === 'peak4-payroll-0.8-v15' || valuationMethod === 'peak4-payroll-0.8-v16')
+  const expectedKeys = accountingCategoryKeys(split,valuationMethod==='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster');
+  const expectedAttribution = valuationMethod==='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster'?'forecast-based-attribution-v12-sparse-refit-20261116-evidence-v2-transient-roster':split ? 'forecast-based-attribution-v9' : (valuationMethod === 'peak4-payroll-0.8-v13' || valuationMethod === 'peak4-payroll-0.8-v14' || valuationMethod === 'peak4-payroll-0.8-v15' || valuationMethod === 'peak4-payroll-0.8-v16')
     ? 'forecast-based-attribution-v8'
     : /^peak4-payroll-0\.8-v(?:[1-9]|1[0-2])$/.test(valuationMethod ?? '')
       ? 'forecast-based-attribution-v7' : null;
@@ -114,11 +114,10 @@ export function TradeBreakdown({ deals }: { deals: TradeDeal[] }) {
   </>;
 }
 
-export function Waterfall({ opening, closing, changes, analysis }: {
-  opening: number; closing: number; changes: Change[]; analysis: AttributionAnalysis;
+export function Waterfall({ opening, closing, changes, analysis, active=null, onToggle }: {
+  opening: number; closing: number; changes: Change[]; analysis: AttributionAnalysis; active?:string|null; onToggle:(key:string)=>void;
 }) {
   const split = Object.prototype.hasOwnProperty.call(analysis.categories, 'control_loss');
-  const [active, setActive] = useState<string | null>(null);
   const error = opening + changes.reduce((sum, row) => sum + row.value, 0) - closing;
   if (![opening, closing, ...changes.map(row => row.value)].every(Number.isFinite) || Math.abs(error) > .01) {
     return <p role="status">The category breakdown is unavailable for this period. Total change: {signedMoney(closing - opening)}.</p>;
@@ -153,7 +152,7 @@ export function Waterfall({ opening, closing, changes, analysis }: {
         })}
       </svg>
     </div>
-    <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => setActive(active === row.key ? null : row.key)}><span>{categoryLabel(row.key, split) ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
+    <div className="ah-change-chips" aria-label="Change categories">{changes.map(row => <button key={row.key} aria-pressed={active === row.key} onClick={() => onToggle(row.key)}><span>{categoryLabel(row.key, split) ?? row.label}</span><strong className={row.value >= 0 ? 'ah-positive' : 'ah-negative'}>{signedMoney(row.value)}</strong></button>)}</div>
     {picked && <section className="ah-drilldown"><h3>{categoryLabel(picked.key, split) ?? picked.label}</h3>
       {picked.key === 'trades' && analysis.tradeDeals ? <TradeBreakdown deals={analysis.tradeDeals}/> :
         analysis.components[picked.key] && <ul>{Object.entries(analysis.components[picked.key]).map(([label, value]) => <li key={label}><span>{label}</span><strong>{signedMoney(value)}</strong></li>)}</ul>}
@@ -203,7 +202,7 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
 }) {
   const [localMetric, setLocalMetric] = useState<RankingMetric>('change');
   const split = hasSplitDraftAccounting(valuationMethod);
-  const labels = accountingRankingLabels(split);
+  const labels = accountingRankingLabels(split,valuationMethod==='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster');
   const requestedMetric = selectedMetric ?? localMetric;
   const metric = !split && requestedMetric === 'control_loss' ? 'change' : requestedMetric;
   const setMetric = onMetricChange ?? setLocalMetric;
@@ -218,7 +217,7 @@ export function LeagueComparison({ metric: selectedMetric, onMetricChange, teams
   const label = labels[metric];
   const isChange = metric === 'change' || metric in categoryLabels;
   const format = isChange ? signedMoney : money;
-  const columns: RankingMetric[] = ['total', 'change', ...accountingCategoryKeys(split), 'players', 'picks'];
+  const columns: RankingMetric[] = ['total', 'change', ...accountingCategoryKeys(split,valuationMethod==='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster'), 'players', 'picks'];
   return <section className="ah-league-panel">
     <div className="ah-chart-heading"><div><h2>Across the league</h2><p className="ah-caption">{start} → {end} · {comparable.length} teams with matching {metric in categoryLabels ? 'waterfalls, dates and cap' : 'dates and cap'}</p></div><label>Rank by<select value={metric} onChange={event => setMetric(event.target.value as RankingMetric)}>{Object.entries(labels).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label></div>
     <div className="ah-stats ah-league-stats"><div><span>{selectedTeam} rank · {label}</span><strong>{rank >= 0 ? `${rank + 1} / ${comparable.length}` : 'Unavailable'}</strong></div><div><span>League combined · {label}</span><strong className={net >= 0 ? 'ah-positive' : 'ah-negative'}>{comparable.length ? format(net) : '—'}</strong></div><div><span>Highest · {label}</span><strong>{comparable[0]?.team ?? '—'}</strong></div><div><span>Lowest · {label}</span><strong>{comparable[comparable.length - 1]?.team ?? '—'}</strong></div></div>
