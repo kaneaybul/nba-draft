@@ -1,12 +1,1977 @@
 {
-  "checked_at": "2026-11-14T14:17:52Z",
+  "checked_at": "2026-11-17T13:13:30.804609+00:00",
   "seasons": {
     "2027": {
       "year": 2027,
-      "status": "cached",
-      "reason": "Package 'rvest' is required.",
-      "rows": 452,
-      "source": "https://www.basketball-reference.com/leagues/NBA_2027_play-by-play.html"
+      "status": "ok",
+      "source": "sdv_nba_lineup_inferred",
+      "method": "seconds_weighted_legal_lineup_permutation_posterior",
+      "teams_checked": 30,
+      "rows": 471,
+      "prior_asof": "2026-11-14T14:17:55.086194+00:00",
+      "note": "Inferred positions conditional on dated priors, not independent positional observations; capture time does not prove completed-game coverage",
+      "lineups": 4346,
+      "lineup_seconds": 1136160.0000000016,
+      "max_slot_mass_error": 6.661338147750939e-16,
+      "unknown_prior_ids": [],
+      "players": 471,
+      "uncertain_players": 75,
+      "team_coverage": {
+        "ATL": {
+          "lineup_seconds": 40620.0,
+          "team_seconds": 40620.0,
+          "games": 14
+        },
+        "BOS": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "CLE": {
+          "lineup_seconds": 40620.0,
+          "team_seconds": 40620.0,
+          "games": 14
+        },
+        "NOP": {
+          "lineup_seconds": 41220.0,
+          "team_seconds": 41220.0,
+          "games": 14
+        },
+        "CHI": {
+          "lineup_seconds": 34860.0,
+          "team_seconds": 34860.0,
+          "games": 12
+        },
+        "DAL": {
+          "lineup_seconds": 40320.0,
+          "team_seconds": 40320.0,
+          "games": 14
+        },
+        "DEN": {
+          "lineup_seconds": 31980.0,
+          "team_seconds": 31980.0,
+          "games": 11
+        },
+        "GSW": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "HOU": {
+          "lineup_seconds": 37440.0,
+          "team_seconds": 37440.0,
+          "games": 13
+        },
+        "LAC": {
+          "lineup_seconds": 34860.0,
+          "team_seconds": 34860.0,
+          "games": 12
+        },
+        "LAL": {
+          "lineup_seconds": 40320.0,
+          "team_seconds": 40320.0,
+          "games": 14
+        },
+        "MIA": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "MIL": {
+          "lineup_seconds": 37440.0,
+          "team_seconds": 37440.0,
+          "games": 13
+        },
+        "MIN": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "BKN": {
+          "lineup_seconds": 34860.0,
+          "team_seconds": 34860.0,
+          "games": 12
+        },
+        "NYK": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "ORL": {
+          "lineup_seconds": 34860.0,
+          "team_seconds": 34860.0,
+          "games": 12
+        },
+        "IND": {
+          "lineup_seconds": 40320.0,
+          "team_seconds": 40320.0,
+          "games": 14
+        },
+        "PHI": {
+          "lineup_seconds": 40320.0,
+          "team_seconds": 40320.0,
+          "games": 14
+        },
+        "PHX": {
+          "lineup_seconds": 34560.0,
+          "team_seconds": 34560.0,
+          "games": 12
+        },
+        "POR": {
+          "lineup_seconds": 34560.0,
+          "team_seconds": 34560.0,
+          "games": 12
+        },
+        "SAC": {
+          "lineup_seconds": 37440.0,
+          "team_seconds": 37440.0,
+          "games": 13
+        },
+        "SAS": {
+          "lineup_seconds": 40620.0,
+          "team_seconds": 40620.0,
+          "games": 14
+        },
+        "OKC": {
+          "lineup_seconds": 40320.0,
+          "team_seconds": 40320.0,
+          "games": 14
+        },
+        "TOR": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "UTA": {
+          "lineup_seconds": 40920.0,
+          "team_seconds": 40920.0,
+          "games": 14
+        },
+        "MEM": {
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
+        },
+        "WAS": {
+          "lineup_seconds": 40920.0,
+          "team_seconds": 40920.0,
+          "games": 14
+        },
+        "DET": {
+          "lineup_seconds": 35160.0,
+          "team_seconds": 35160.0,
+          "games": 12
+        },
+        "CHA": {
+          "lineup_seconds": 37440.0,
+          "team_seconds": 37440.0,
+          "games": 13
+        }
+      },
+      "source_metadata": {
+        "provider": "sportsdataverse",
+        "source": "sportsdataverse_lineup",
+        "season": 2027,
+        "captured_at": "2026-11-17T13:13:30.071643+00:00",
+        "lineups": {
+          "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_game_lineups/nba_lineups_2027.csv.gz",
+          "sha256": "d055d48507a206aa6035057dd5ce3d12e0e12923997c535691637273b9c25f02",
+          "last_modified": "Mon, 16 Nov 2026 15:16:25 GMT",
+          "bytes": 310454
+        },
+        "pbp": {
+          "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_pbp/nba_play_by_play_2027.csv.gz",
+          "sha256": "44b8bd87e29265ce24236ee66c446f61c0917f5b89315541c017feb2e58c1d9f",
+          "last_modified": "Mon, 16 Nov 2026 15:16:12 GMT",
+          "bytes": 3423430
+        },
+        "source_event_rows": 102796,
+        "source_lineup_rows": 102796,
+        "duplicate_lineup_rows_deduplicated": 5247,
+        "games": 196,
+        "source_games": 197,
+        "excluded_games": [
+          {
+            "game_id": "0022600138",
+            "reason": "invalid_five_distinct_positive_duration_lineup",
+            "invalid_seconds": 145.79999999999998,
+            "invalid_positive_rows": 12
+          }
+        ],
+        "invalid_zero_duration_rows_ignored": 8,
+        "teams": 30,
+        "period_totals_verified": true,
+        "join": "exact game_id/action_number; identical lineup duplicates collapsed; PBP remains ordered",
+        "duration_policy": "previous_clock_minus_current_clock assigned to current-row lineup",
+        "games_summary": [
+          {
+            "game_id": "0022600001",
+            "home_team_id": 1610612765,
+            "away_team_id": 1610612738,
+            "home_score": 121,
+            "away_score": 113,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600002",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612755,
+            "home_score": 100,
+            "away_score": 106,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600003",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612760,
+            "home_score": 104,
+            "away_score": 116,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600004",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612750,
+            "home_score": 106,
+            "away_score": 131,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600005",
+            "home_team_id": 1610612747,
+            "away_team_id": 1610612744,
+            "home_score": 127,
+            "away_score": 105,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600006",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612739,
+            "home_score": 114,
+            "away_score": 106,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600007",
+            "home_team_id": 1610612760,
+            "away_team_id": 1610612743,
+            "home_score": 96,
+            "away_score": 84,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600008",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612752,
+            "home_score": 107,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600009",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612745,
+            "home_score": 110,
+            "away_score": 114,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600015",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612766,
+            "home_score": 95,
+            "away_score": 79,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600016",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612741,
+            "home_score": 125,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600017",
+            "home_team_id": 1610612751,
+            "away_team_id": 1610612765,
+            "home_score": 94,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0000000000014
+          },
+          {
+            "game_id": "0022600018",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612752,
+            "home_score": 98,
+            "away_score": 93,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600019",
+            "home_team_id": 1610612761,
+            "away_team_id": 1610612753,
+            "home_score": 114,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600020",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612754,
+            "home_score": 145,
+            "away_score": 125,
+            "periods": 4,
+            "team_seconds": 2880.0000000000014
+          },
+          {
+            "game_id": "0022600021",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612745,
+            "home_score": 116,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600022",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612746,
+            "home_score": 127,
+            "away_score": 101,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600023",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612747,
+            "home_score": 112,
+            "away_score": 95,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600024",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612743,
+            "home_score": 120,
+            "away_score": 127,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600025",
+            "home_team_id": 1610612737,
+            "away_team_id": 1610612764,
+            "home_score": 139,
+            "away_score": 132,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600026",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612738,
+            "home_score": 80,
+            "away_score": 119,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600027",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612755,
+            "home_score": 119,
+            "away_score": 95,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600028",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612762,
+            "home_score": 112,
+            "away_score": 100,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600029",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612760,
+            "home_score": 97,
+            "away_score": 128,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600030",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612761,
+            "home_score": 107,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600031",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612750,
+            "home_score": 109,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600032",
+            "home_team_id": 1610612747,
+            "away_team_id": 1610612757,
+            "home_score": 124,
+            "away_score": 118,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600033",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612759,
+            "home_score": 109,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600034",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612752,
+            "home_score": 106,
+            "away_score": 104,
+            "periods": 4,
+            "team_seconds": 2880.0000000000014
+          },
+          {
+            "game_id": "0022600035",
+            "home_team_id": 1610612753,
+            "away_team_id": 1610612749,
+            "home_score": 107,
+            "away_score": 99,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600036",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612739,
+            "home_score": 133,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600037",
+            "home_team_id": 1610612741,
+            "away_team_id": 1610612737,
+            "home_score": 125,
+            "away_score": 117,
+            "periods": 5,
+            "team_seconds": 3180.000000000001
+          },
+          {
+            "game_id": "0022600038",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612763,
+            "home_score": 111,
+            "away_score": 142,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600039",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612762,
+            "home_score": 125,
+            "away_score": 118,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600040",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612744,
+            "home_score": 123,
+            "away_score": 85,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600041",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612757,
+            "home_score": 107,
+            "away_score": 120,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600042",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612760,
+            "home_score": 113,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600085",
+            "home_team_id": 1610612753,
+            "away_team_id": 1610612737,
+            "home_score": 125,
+            "away_score": 132,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600086",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612749,
+            "home_score": 128,
+            "away_score": 116,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600087",
+            "home_team_id": 1610612751,
+            "away_team_id": 1610612766,
+            "home_score": 103,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600088",
+            "home_team_id": 1610612761,
+            "away_team_id": 1610612741,
+            "home_score": 135,
+            "away_score": 92,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600089",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612762,
+            "home_score": 123,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2879.9999999999986
+          },
+          {
+            "game_id": "0022600090",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612754,
+            "home_score": 120,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600091",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612742,
+            "home_score": 128,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600092",
+            "home_team_id": 1610612757,
+            "away_team_id": 1610612756,
+            "home_score": 124,
+            "away_score": 83,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600093",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612758,
+            "home_score": 121,
+            "away_score": 96,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600094",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612737,
+            "home_score": 81,
+            "away_score": 128,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600095",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612742,
+            "home_score": 105,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600096",
+            "home_team_id": 1610612753,
+            "away_team_id": 1610612750,
+            "home_score": 93,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600097",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612761,
+            "home_score": 102,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600098",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612765,
+            "home_score": 111,
+            "away_score": 128,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600099",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612741,
+            "home_score": 125,
+            "away_score": 132,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600100",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612740,
+            "home_score": 120,
+            "away_score": 119,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600101",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612763,
+            "home_score": 106,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600102",
+            "home_team_id": 1610612747,
+            "away_team_id": 1610612746,
+            "home_score": 125,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600103",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612757,
+            "home_score": 120,
+            "away_score": 128,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600104",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612748,
+            "home_score": 115,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600105",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612751,
+            "home_score": 125,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600106",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612749,
+            "home_score": 127,
+            "away_score": 116,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600107",
+            "home_team_id": 1610612737,
+            "away_team_id": 1610612745,
+            "home_score": 114,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600108",
+            "home_team_id": 1610612741,
+            "away_team_id": 1610612764,
+            "home_score": 120,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600109",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612759,
+            "home_score": 106,
+            "away_score": 122,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600110",
+            "home_team_id": 1610612743,
+            "away_team_id": 1610612740,
+            "home_score": 141,
+            "away_score": 135,
+            "periods": 5,
+            "team_seconds": 3179.9999999999995
+          },
+          {
+            "game_id": "0022600111",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612744,
+            "home_score": 131,
+            "away_score": 122,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600112",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612747,
+            "home_score": 123,
+            "away_score": 132,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600113",
+            "home_team_id": 1610612751,
+            "away_team_id": 1610612754,
+            "home_score": 109,
+            "away_score": 136,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600114",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612753,
+            "home_score": 102,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600115",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612761,
+            "home_score": 117,
+            "away_score": 94,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600116",
+            "home_team_id": 1610612760,
+            "away_team_id": 1610612746,
+            "home_score": 108,
+            "away_score": 101,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600117",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612765,
+            "home_score": 93,
+            "away_score": 106,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600118",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612763,
+            "home_score": 112,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600119",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612764,
+            "home_score": 110,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600120",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612750,
+            "home_score": 127,
+            "away_score": 125,
+            "periods": 5,
+            "team_seconds": 3180.0000000000005
+          },
+          {
+            "game_id": "0022600121",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612741,
+            "home_score": 134,
+            "away_score": 99,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600122",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612742,
+            "home_score": 109,
+            "away_score": 113,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600123",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612754,
+            "home_score": 110,
+            "away_score": 102,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600124",
+            "home_team_id": 1610612760,
+            "away_team_id": 1610612756,
+            "home_score": 125,
+            "away_score": 114,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600125",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612737,
+            "home_score": 120,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600126",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612763,
+            "home_score": 105,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600127",
+            "home_team_id": 1610612743,
+            "away_team_id": 1610612744,
+            "home_score": 114,
+            "away_score": 134,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600128",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612751,
+            "home_score": 125,
+            "away_score": 124,
+            "periods": 5,
+            "team_seconds": 3180.0
+          },
+          {
+            "game_id": "0022600129",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612765,
+            "home_score": 111,
+            "away_score": 97,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600130",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612758,
+            "home_score": 130,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600131",
+            "home_team_id": 1610612747,
+            "away_team_id": 1610612757,
+            "home_score": 129,
+            "away_score": 136,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600132",
+            "home_team_id": 1610612737,
+            "away_team_id": 1610612748,
+            "home_score": 117,
+            "away_score": 129,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600133",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612764,
+            "home_score": 121,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600134",
+            "home_team_id": 1610612765,
+            "away_team_id": 1610612766,
+            "home_score": 97,
+            "away_score": 89,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600135",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612755,
+            "home_score": 109,
+            "away_score": 114,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600136",
+            "home_team_id": 1610612761,
+            "away_team_id": 1610612753,
+            "home_score": 129,
+            "away_score": 99,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600137",
+            "home_team_id": 1610612741,
+            "away_team_id": 1610612752,
+            "home_score": 127,
+            "away_score": 133,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600139",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612744,
+            "home_score": 114,
+            "away_score": 119,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600140",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612743,
+            "home_score": 91,
+            "away_score": 104,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600141",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612759,
+            "home_score": 111,
+            "away_score": 117,
+            "periods": 5,
+            "team_seconds": 3179.999999999999
+          },
+          {
+            "game_id": "0022600142",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612760,
+            "home_score": 120,
+            "away_score": 96,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600143",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612747,
+            "home_score": 87,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600144",
+            "home_team_id": 1610612737,
+            "away_team_id": 1610612739,
+            "home_score": 114,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600145",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612758,
+            "home_score": 132,
+            "away_score": 120,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600146",
+            "home_team_id": 1610612757,
+            "away_team_id": 1610612763,
+            "home_score": 103,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600147",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612757,
+            "home_score": 90,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600148",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612755,
+            "home_score": 104,
+            "away_score": 109,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600149",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612737,
+            "home_score": 121,
+            "away_score": 99,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600150",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612758,
+            "home_score": 136,
+            "away_score": 105,
+            "periods": 4,
+            "team_seconds": 2880.0000000000014
+          },
+          {
+            "game_id": "0022600151",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612739,
+            "home_score": 111,
+            "away_score": 136,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600152",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612750,
+            "home_score": 121,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600153",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612760,
+            "home_score": 119,
+            "away_score": 98,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600154",
+            "home_team_id": 1610612753,
+            "away_team_id": 1610612738,
+            "home_score": 97,
+            "away_score": 108,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600155",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612751,
+            "home_score": 90,
+            "away_score": 98,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600156",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612746,
+            "home_score": 124,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600157",
+            "home_team_id": 1610612747,
+            "away_team_id": 1610612761,
+            "home_score": 131,
+            "away_score": 125,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600158",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612760,
+            "home_score": 112,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600159",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612765,
+            "home_score": 91,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600160",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612737,
+            "home_score": 104,
+            "away_score": 108,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600161",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612751,
+            "home_score": 103,
+            "away_score": 90,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600162",
+            "home_team_id": 1610612753,
+            "away_team_id": 1610612764,
+            "home_score": 94,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600163",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612741,
+            "home_score": 126,
+            "away_score": 107,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600164",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612758,
+            "home_score": 100,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600165",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612740,
+            "home_score": 134,
+            "away_score": 135,
+            "periods": 5,
+            "team_seconds": 3180.0
+          },
+          {
+            "game_id": "0022600166",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612749,
+            "home_score": 112,
+            "away_score": 100,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600167",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612738,
+            "home_score": 109,
+            "away_score": 93,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600168",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612762,
+            "home_score": 119,
+            "away_score": 97,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600169",
+            "home_team_id": 1610612743,
+            "away_team_id": 1610612757,
+            "home_score": 110,
+            "away_score": 118,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600170",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612756,
+            "home_score": 116,
+            "away_score": 113,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600171",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612761,
+            "home_score": 118,
+            "away_score": 125,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600172",
+            "home_team_id": 1610612747,
+            "away_team_id": 1610612748,
+            "home_score": 138,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600173",
+            "home_team_id": 1610612765,
+            "away_team_id": 1610612755,
+            "home_score": 106,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600174",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612737,
+            "home_score": 105,
+            "away_score": 120,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600175",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612749,
+            "home_score": 109,
+            "away_score": 102,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600176",
+            "home_team_id": 1610612751,
+            "away_team_id": 1610612766,
+            "home_score": 114,
+            "away_score": 104,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600177",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612741,
+            "home_score": 135,
+            "away_score": 105,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600178",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612754,
+            "home_score": 103,
+            "away_score": 107,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600179",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612762,
+            "home_score": 120,
+            "away_score": 113,
+            "periods": 5,
+            "team_seconds": 3180.0
+          },
+          {
+            "game_id": "0022600180",
+            "home_team_id": 1610612760,
+            "away_team_id": 1610612739,
+            "home_score": 124,
+            "away_score": 116,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600181",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612750,
+            "home_score": 107,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600182",
+            "home_team_id": 1610612743,
+            "away_team_id": 1610612761,
+            "home_score": 128,
+            "away_score": 109,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600183",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612757,
+            "home_score": 119,
+            "away_score": 132,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600184",
+            "home_team_id": 1610612759,
+            "away_team_id": 1610612742,
+            "home_score": 112,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600185",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612747,
+            "home_score": 103,
+            "away_score": 116,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600186",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612748,
+            "home_score": 116,
+            "away_score": 117,
+            "periods": 5,
+            "team_seconds": 3180.0
+          },
+          {
+            "game_id": "0022600187",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612753,
+            "home_score": 117,
+            "away_score": 104,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600188",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612748,
+            "home_score": 120,
+            "away_score": 100,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600189",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612743,
+            "home_score": 102,
+            "away_score": 114,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600190",
+            "home_team_id": 1610612737,
+            "away_team_id": 1610612751,
+            "home_score": 124,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600191",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612752,
+            "home_score": 97,
+            "away_score": 109,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600192",
+            "home_team_id": 1610612760,
+            "away_team_id": 1610612764,
+            "home_score": 114,
+            "away_score": 75,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600193",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612753,
+            "home_score": 126,
+            "away_score": 119,
+            "periods": 5,
+            "team_seconds": 3179.999999999998
+          },
+          {
+            "game_id": "0022600194",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612745,
+            "home_score": 102,
+            "away_score": 99,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600195",
+            "home_team_id": 1610612757,
+            "away_team_id": 1610612759,
+            "home_score": 103,
+            "away_score": 125,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600196",
+            "home_team_id": 1610612741,
+            "away_team_id": 1610612755,
+            "home_score": 121,
+            "away_score": 127,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600197",
+            "home_team_id": 1610612765,
+            "away_team_id": 1610612747,
+            "home_score": 116,
+            "away_score": 121,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600198",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612762,
+            "home_score": 115,
+            "away_score": 100,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600199",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612751,
+            "home_score": 130,
+            "away_score": 93,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600200",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612738,
+            "home_score": 97,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600201",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612740,
+            "home_score": 139,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600202",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612748,
+            "home_score": 108,
+            "away_score": 114,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600203",
+            "home_team_id": 1610612737,
+            "away_team_id": 1610612747,
+            "home_score": 114,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600204",
+            "home_team_id": 1610612766,
+            "away_team_id": 1610612739,
+            "home_score": 124,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600205",
+            "home_team_id": 1610612765,
+            "away_team_id": 1610612764,
+            "home_score": 122,
+            "away_score": 111,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600206",
+            "home_team_id": 1610612761,
+            "away_team_id": 1610612763,
+            "home_score": 102,
+            "away_score": 118,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600207",
+            "home_team_id": 1610612742,
+            "away_team_id": 1610612754,
+            "home_score": 125,
+            "away_score": 122,
+            "periods": 4,
+            "team_seconds": 2880.000000000002
+          },
+          {
+            "game_id": "0022600208",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612743,
+            "home_score": 110,
+            "away_score": 100,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600209",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612759,
+            "home_score": 96,
+            "away_score": 122,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600210",
+            "home_team_id": 1610612744,
+            "away_team_id": 1610612740,
+            "home_score": 138,
+            "away_score": 87,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600211",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612749,
+            "home_score": 117,
+            "away_score": 85,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600212",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612738,
+            "home_score": 101,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600213",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612746,
+            "home_score": 133,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600214",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612748,
+            "home_score": 109,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600215",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612753,
+            "home_score": 100,
+            "away_score": 107,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600216",
+            "home_team_id": 1610612757,
+            "away_team_id": 1610612760,
+            "home_score": 123,
+            "away_score": 103,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600217",
+            "home_team_id": 1610612754,
+            "away_team_id": 1610612764,
+            "home_score": 114,
+            "away_score": 101,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600218",
+            "home_team_id": 1610612752,
+            "away_team_id": 1610612739,
+            "home_score": 107,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600219",
+            "home_team_id": 1610612761,
+            "away_team_id": 1610612738,
+            "home_score": 93,
+            "away_score": 98,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600220",
+            "home_team_id": 1610612741,
+            "away_team_id": 1610612759,
+            "home_score": 119,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600221",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612743,
+            "home_score": 118,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2880.0000000000014
+          },
+          {
+            "game_id": "0022600222",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612747,
+            "home_score": 112,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600223",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612751,
+            "home_score": 111,
+            "away_score": 145,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600224",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612753,
+            "home_score": 108,
+            "away_score": 123,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600225",
+            "home_team_id": 1610612745,
+            "away_team_id": 1610612744,
+            "home_score": 115,
+            "away_score": 108,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600226",
+            "home_team_id": 1610612757,
+            "away_team_id": 1610612760,
+            "home_score": 118,
+            "away_score": 108,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600227",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612761,
+            "home_score": 123,
+            "away_score": 112,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600228",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612765,
+            "home_score": 140,
+            "away_score": 144,
+            "periods": 6,
+            "team_seconds": 3480.000000000001
+          },
+          {
+            "game_id": "0022600229",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612742,
+            "home_score": 133,
+            "away_score": 94,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600230",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612766,
+            "home_score": 101,
+            "away_score": 96,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600231",
+            "home_team_id": 1610612740,
+            "away_team_id": 1610612743,
+            "home_score": 108,
+            "away_score": 116,
+            "periods": 4,
+            "team_seconds": 2879.999999999999
+          },
+          {
+            "game_id": "0022600232",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612742,
+            "home_score": 127,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600233",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612765,
+            "home_score": 137,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600234",
+            "home_team_id": 1610612763,
+            "away_team_id": 1610612751,
+            "home_score": 129,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600235",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612741,
+            "home_score": 106,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2880.000000000001
+          },
+          {
+            "game_id": "0022600236",
+            "home_team_id": 1610612755,
+            "away_team_id": 1610612754,
+            "home_score": 131,
+            "away_score": 124,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600237",
+            "home_team_id": 1610612756,
+            "away_team_id": 1610612747,
+            "home_score": 123,
+            "away_score": 131,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600238",
+            "home_team_id": 1610612746,
+            "away_team_id": 1610612766,
+            "home_score": 113,
+            "away_score": 105,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600239",
+            "home_team_id": 1610612762,
+            "away_team_id": 1610612759,
+            "home_score": 102,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600240",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612742,
+            "home_score": 131,
+            "away_score": 94,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600241",
+            "home_team_id": 1610612761,
+            "away_team_id": 1610612752,
+            "home_score": 108,
+            "away_score": 112,
+            "periods": 5,
+            "team_seconds": 3179.999999999999
+          },
+          {
+            "game_id": "0022600242",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612745,
+            "home_score": 119,
+            "away_score": 147,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600243",
+            "home_team_id": 1610612749,
+            "away_team_id": 1610612737,
+            "home_score": 106,
+            "away_score": 113,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600244",
+            "home_team_id": 1610612758,
+            "away_team_id": 1610612760,
+            "home_score": 103,
+            "away_score": 125,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          }
+        ],
+        "coverage_note": "Provider game IDs and period totals verified; official latest-game coverage must be compared separately; no inferred through date"
+      },
+      "coverage_basis": "Provider coverage may lag official completed games"
     }
   }
 }
