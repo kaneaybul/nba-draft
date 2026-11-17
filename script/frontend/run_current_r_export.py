@@ -108,7 +108,9 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
     injury_time=injury["generated_at"]
     if injury.get("season")!=season or datetime.fromisoformat(injury_time.replace("Z","+00:00")).astimezone(ZoneInfo("America/New_York")).date().isoformat()!=asof:
         raise ValueError("R injury date or season differs from native role")
-    tracked={"signed_book":player_book,"injuries":injury_file,"role":role_file,
+    ratings_file=repo/"raw/live/ratings.json"
+    skills_file=repo/"raw/live/skill_stats.json"
+    tracked={"ratings":ratings_file,"skills":skills_file,"signed_book":player_book,"injuries":injury_file,"role":role_file,
              "healthy_role_proof":role_proof,"native_receipt":native_receipt,"source_r_receipt":source_r_receipt,
              "player_quote_receipt":player_quote_receipt,
              "demographics":Path(r["demographics"]["path"]),"calendar":Path(r["schedule"]["path"])}
@@ -128,8 +130,19 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
     if any(r.get("schedule_as_of")!=asof for r in load(shards["team_projections"])
            if r.get("year")==season and r.get("scenario_id")=="base"):
         raise ValueError("R forecast date does not match the daily pick input")
+    # Ingestion cannot validate this file: apply_live_expected_ratings writes it
+    # during the R export. Bind it to the actual ratings and skill inputs here.
+    live_status=data/"live_status.json"
+    status, ratings, skills=map(load,(live_status,ratings_file,skills_file))
+    if (status.get("schema_version")!=2 or status.get("season")!=season
+            or any(not ratings.get(k) or status.get(k)!=ratings[k]
+                   for k in ("generated_at","epm_as_of","darko_through"))
+            or not skills.get("generated_at")
+            or status.get("skill_stats_fetched_at")!=skills["generated_at"]
+            or not status.get("matched_players",0)):
+        raise ValueError("R live status does not match the collected ratings and skill inputs")
     # The static manifest and full exports feed existing downstream checks/build.
-    artifact_files=[*shards.values(),*(data/f"{k}.json" for k in
+    artifact_files=[live_status,*shards.values(),*(data/f"{k}.json" for k in
        ("manifest","impact_players","team_projections","team_lineups","team_schedules","pick_assets","draft_prospects"))]
     report=dict(schema="nba-daily-role-r-export-v1", asof=asof, season=season,
                  model_sha256=MODEL, healthy_bridge_sha256=hashes["role"],
