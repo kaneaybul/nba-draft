@@ -10,6 +10,7 @@ import subprocess
 from zoneinfo import ZoneInfo
 
 from dated_source_receipts import bind, write_new
+from daily_ev2.pending_contracts import memberships
 
 MODEL="fb08a02655155274d902433d6d35727fede1b45c1c7871977338e34138cc775f"
 EVIDENCE="sparse-observed-role-evidence-v2-transient-roster"
@@ -37,10 +38,12 @@ def owners(rows, field="team"):
     return pairs
 
 
-def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, season, injury_time):
-    rows=[r for r in load(players_file) if r.get("year")==season and r.get("pool_status")=="roster"]
+def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, season, injury_time, pending_owners=None):
+    pending_owners=pending_owners or {}
+    rows=[r for r in load(players_file) if r.get("year")==season and r.get("pool_status") in ("roster","contract_pending")]
+    expected={**book_owners,**pending_owners}
     actual=owners(rows)
-    if actual!=book_owners or owners(rows, "team_projection_base")!=book_owners:
+    if set(book_owners)&set(pending_owners) or actual!=expected or owners(rows, "team_projection_base")!=expected:
         raise ValueError("R projected owners differ from the signed book")
     by_team=defaultdict(list)
     for row in rows:
@@ -64,7 +67,7 @@ def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, s
         raise ValueError("Incomplete R team calendar")
     if any(r.get("is_completed") is True and r.get("date","9999")>asof for r in current_schedule):
         raise ValueError("R calendar contains future finals")
-    return dict(teams=30,roster_count=len(book_owners),team_budget_max_error=max_error)
+    return dict(teams=30,roster_count=len(book_owners),participant_count=len(rows),contract_pending_count=len(pending_owners),team_budget_max_error=max_error)
 
 
 def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, player_quote_receipt):
@@ -102,6 +105,7 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
     if book.get("as_of")!=asof or book.get("season")!=season or book.get("complete") is not True:
         raise ValueError("Signed book is stale")
     book_owners=owners(book["players"])
+    _,pending_owners=memberships(book,asof)
     if owners(b["players"])!=book_owners:
         raise ValueError("Role roster differs from the signed book")
     injury=load(injury_file)
@@ -126,7 +130,7 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
         raise ValueError("R source changed during computation")
     data=repo/"frontend/public/data"
     shards={x:data/"v2"/x/f"{season}.json" for x in ("impact_players","team_projections","team_schedules")}
-    qa=verify_outputs(*shards.values(),book_owners,asof,season,injury_time)
+    qa=verify_outputs(*shards.values(),book_owners,asof,season,injury_time,pending_owners)
     if any(r.get("schedule_as_of")!=asof for r in load(shards["team_projections"])
            if r.get("year")==season and r.get("scenario_id")=="base"):
         raise ValueError("R forecast date does not match the daily pick input")
@@ -157,3 +161,4 @@ if __name__=="__main__":
     for name in ("repo","work","native-receipt","role-file","role-proof","source-r-receipt","player-quote-receipt"):
         p.add_argument("--"+name,type=Path,required=True)
     run(**vars(p.parse_args()))
+

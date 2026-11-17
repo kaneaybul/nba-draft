@@ -35,6 +35,7 @@ export type StaticDataManifest = {
 };
 
 export type PlayerImpact = {
+  contract_pending?: boolean;
   contract_cap_salary?: number | null;
   asset_valuation?: {
     date: string;
@@ -628,6 +629,7 @@ export type CapTrackerContractCell = {
 };
 
 export type CapTrackerContractRow = {
+  contract_pending?: boolean;
   id: string;
   nba_id?: number | null;
   player_name: string;

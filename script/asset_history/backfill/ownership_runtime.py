@@ -12,6 +12,7 @@ ALIASES={
  # NBA profile verifies the new signing before any rating/stat appearance.
  # https://www.nba.com/player/1643563/richie-saunders
  'richiesaunders':1643563,
+ 'rafaelcastro':1643572,
  'bjboston':1630527,'brandonboston':1630527,
  'ejharkless':1641989,'elijahharkless':1641989,
  'cameronchristie':1642353,'camchristie':1642353,
@@ -22,6 +23,10 @@ ALIASES={
 # Primary announcements omitted from the transaction-page prose. These are
 # dated inventory facts, not inferences from later roster absence.
 SUPPLEMENTAL_EVENTS=[
+ {'date':'2026-11-16','event_id':'PRIMARY_CASTRO_ATL_20261116','text':'Rafael Castro signed a two-way contract with the Atlanta Hawks.',
+  'players':[{'name':'Rafael Castro','nba_id':1643572,'realgm_url':None}],
+  'teams':[],'parsed_status':'signing','parsed_actions':[{'player_name':'Rafael Castro','nba_id':1643572,'to_team':'ATL','action':'add','two_way':True}],
+  'source':'https://www.nba.com/hawks/news/atlanta-hawks-sign-rafael-castro-to-a-two-way-contract'},
  {'date':'2024-07-08','event_id':'PRIMARY_GRAY_CHI_20240708','text':'Raiquan Gray was acquired by the Chicago Bulls.',
   'players':[{'name':'Raiquan Gray','nba_id':1630564,'realgm_url':'https://basketball.realgm.com/player/Raiquan-Gray/Summary/104922'}],
   'teams':[],'parsed_status':'simple_two_team_trade','parsed_actions':[],
@@ -148,3 +153,4 @@ def reconcile_current(previous,pool,asof):
         if existing and existing['team']!=p['team']:
             changes.append({'nba_id':pid,'name':p['player_name'],'feed_team':p['team'],'dated_team':existing['team'],'action':'retained_dated_ownership'})
     return rows,changes
+

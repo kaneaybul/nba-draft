@@ -1402,7 +1402,7 @@ function PlayerTable({
                   </span>
                 </div>
               </td>
-              <td className="money-text group-end-cell"><div className="cell-stage money-stage">{formatMoney(playerFourYearAssetValue(player))}</div></td>
+              <td className="money-text group-end-cell"><div className="cell-stage money-stage">{player.contract_pending ? "TBD" : formatMoney(playerFourYearAssetValue(player))}</div></td>
               <td className="skill-fingerprint-cell">
                 <SkillLedger
                   aggregates={playerSkillAggregates(player)}
@@ -1587,7 +1587,7 @@ function PlayerDetail({ player, allPlayers, careerHistory, careerHistoryError, i
             </div>
             <div className="mc">
               <span>Asset Value</span>
-              <strong>{formatMoney(playerFourYearAssetValue(player))}</strong>
+              <strong>{player.contract_pending ? "TBD" : formatMoney(playerFourYearAssetValue(player))}</strong>
             </div>
             <div className="mc">
               <span>Scalability</span>
@@ -2718,6 +2718,7 @@ function TradeWorkspace({ data, season }: { data: AppData; season: number }) {
     else setThirdPickBuilder((current) => ({ ...current, ...patch }));
   };
   const togglePlayer = (side: "left" | "right" | "third", player: PlayerImpact) => {
+    if (player.contract_pending) return;
     const target = side === "left" ? leftSide : side === "right" ? rightSide : thirdSide;
     if (!target) return;
     const oppositeSides = activeSides.filter((item) => item.team !== target.team);
@@ -3575,7 +3576,7 @@ function TradeSide({
             <button
               key={player.nba_id}
               className={cls("trade-roster-row", selectedHere && "selected", selectedElsewhere && "disabled")}
-              disabled={selectedElsewhere}
+              disabled={selectedElsewhere || player.contract_pending}
               onClick={() => onTogglePlayer(player)}
             >
               <PlayerHeadshot player={player} />
@@ -3585,7 +3586,7 @@ function TradeSide({
               </span>
               <span className="trade-roster-money">
                 <strong>{formatContractValue(player)}</strong>
-                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / 4Y trade {formatMoney(playerTradeValue(player))}</small>
+                <small>{tradeContractSummary(player)?.years ?? "-"} yrs / 4Y trade {player.contract_pending ? "TBD" : formatMoney(playerTradeValue(player))}</small>
               </span>
             </button>
           );
@@ -6458,11 +6459,13 @@ function formatSigned(value: number | null | undefined, digits = 1): string {
 }
 
 function formatSeasonValueAdd(player: PlayerImpact): string {
+  if (player.contract_pending) return "TBD";
   if (player.availability_status === "DNQ") return "DNQ";
   return formatSignedMoney(currentValueAdd(player));
 }
 
 function formatContractValue(player: PlayerImpact): string {
+  if (player.contract_pending) return "TBD";
   if (isOpenMarketContractStatus(player)) return "-";
   const salary = formatMoney(player.contract);
   if (salary !== "-") return salary;
@@ -6478,11 +6481,13 @@ function isOpenMarketContractStatus(player: PlayerImpact): boolean {
 }
 
 function currentValueAdd(player: PlayerImpact): number | null {
+  if (player.contract_pending) return null;
   if (isOpenMarketContractStatus(player)) return null;
   return impactNumber(player, "value_add");
 }
 
 function currentScale(player: PlayerImpact): number {
+  if (player.contract_pending) return NaN;
   if (isOpenMarketContractStatus(player)) return 0.8;
   return impactNumber(player, "scalability") ?? 0;
 }
@@ -6757,6 +6762,7 @@ function buildTradeMachineResult(
   const capSeason = capTrackerSeasonForYear(data.capTracker, season);
   if (!capSeason) return null;
   if (sides.length < 2) return null;
+  if (sides.some(side => side.assets.some(asset => asset.player?.contract_pending))) return null;
   const machineSides = sides.map<TradeMachineSide>((side) => {
     const context = tradeTeamContextFromCapTracker(data.capTracker, side.team, season, tradeRoster(players, side.team).length)
       ?? fallbackTradeMachineContext(side.team, season, players);
@@ -7182,7 +7188,7 @@ function tradeRecommendationNeedLabels(team: TeamProjection): string[] {
 
 function tradeSuggestionRoster(players: PlayerImpact[], team: string, limit = TRADE_SUGGESTION_ROSTER_LIMIT): PlayerImpact[] {
   return tradeRoster(players, team)
-    .filter((player) => !isOpenMarketContractStatus(player))
+    .filter((player) => !player.contract_pending && !isOpenMarketContractStatus(player))
     .filter((player) => tradeSalaryForPlayer(player) > 0 && playerTradeValue(player) > 0)
     .filter((player) => player.availability_status !== "DNQ")
     .slice(0, limit);
@@ -7541,6 +7547,7 @@ function tradeMachineAssets(assets: TradeAsset[], team: string, season: number, 
 
 function tradeMachineAsset(asset: TradeAsset, team: string, season: number, contractMap: Map<string, CapTrackerContractRow>): TradeMachineAsset | null {
   if (asset.kind === "player" && asset.player) {
+    if (asset.player.contract_pending) return null;
     const playerAsset = playerTradeMachineAsset(asset.player, team, 1);
     const contractRow = tradeContractRowForPlayer(asset.player, team, contractMap);
     return {
@@ -8331,6 +8338,7 @@ function roundTo(value: number, digits: number): number {
 }
 
 function formatSalarySlot(player: PlayerImpact): string {
+  if (player.contract_pending) return "TBD";
   const status = player.contract_status?.trim();
   if (status === "Team Option" || status === "Player Option") return status;
   const salary = formatMoney(player.contract);
@@ -8753,6 +8761,7 @@ function tradeContractSummary(player: PlayerImpact): { years: number; total: num
 }
 
 function tradeContractSummaryLabel(player: PlayerImpact): string {
+  if (player.contract_pending) return "Contract TBD; not available as a trade asset";
   const summary = tradeContractSummary(player);
   if (!summary) return formatSalarySlot(player);
   const years = `${summary.years} yr${summary.years === 1 ? "" : "s"}`;

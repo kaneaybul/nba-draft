@@ -314,6 +314,7 @@ export function CapTrackerWorkspace({ data }: { data: AppData }) {
                 ))}
               </tbody>
             </table>
+            {allContractRows.some(row => row.contract_pending) && <p className="empty">Contract terms pending: totals include known salaries only and exclude TBD players.</p>}
             {contractRows.length === 0 && <p className="empty">No contract rows match these filters.</p>}
           </div>
         </section>
@@ -607,6 +608,7 @@ function ContractCell({
   onDecision: (row: CapTrackerContractRow, cell: CapTrackerContractCell, action: string) => void;
   onResetDecision: (row: CapTrackerContractRow, cell: CapTrackerContractCell) => void;
 }) {
+  if (row.contract_pending) return <td className="cap-cell" title="Confirmed roster member; contract terms pending. Excluded from known signed salary totals.">TBD</td>;
   if (!cell.amount) return <td className="cap-cell empty">-</td>;
   const renounced = holdTreatment === "renounce" && cell.kind === "cap_hold";
   const badge = cell.label || cellBadges[cell.kind] || cell.status;

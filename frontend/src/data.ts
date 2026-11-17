@@ -309,7 +309,7 @@ function applyOffseasonTruth(players: PlayerImpact[], lineups: TeamLineupRow[], 
     const hasSeasonContract = isActiveRoster && seasonContract !== null && seasonContract > 0;
     const status = hasSeasonContract ? normalizeSeasonContractStatus(player.contract_status, currentTeam) : truthStatus;
     const isContractControlled = isContractControlledStatus(status);
-    const contract = hasSeasonContract ? seasonContract : (isContractControlled ? numberValue(row.guaranteed_salary) ?? 0 : player.contract ?? null);
+    const contract = player.contract_pending ? null : hasSeasonContract ? seasonContract : (isContractControlled ? numberValue(row.guaranteed_salary) ?? 0 : player.contract ?? null);
     const normalized: PlayerImpact = {
       ...player,
       current_roster_team: currentTeam,

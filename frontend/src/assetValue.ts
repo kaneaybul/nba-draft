@@ -90,6 +90,7 @@ function playerAnnualValue(player: PlayerImpact, horizon: number, forward = fals
 }
 
 export function playerSeasonAssetValue(player: PlayerImpact, horizon = 0): number | null {
+  if (player.contract_pending) return null;
   const canonical = player.asset_valuation?.annual.find((row) => row.season === player.year + horizon);
   if (canonical && Number.isFinite(canonical.asset)) return canonical.asset;
   if (player.valuation_quote_required) return null;
@@ -97,6 +98,7 @@ export function playerSeasonAssetValue(player: PlayerImpact, horizon = 0): numbe
 }
 
 export function playerFourYearAssetValue(player: PlayerImpact): number | null {
+  if (player.contract_pending) return null;
   if (player.asset_valuation && Number.isFinite(player.asset_valuation.value)) return player.asset_valuation.value;
   if (player.valuation_quote_required) return null;
   const rows: AnnualAssetValue[] = [];
@@ -150,7 +152,7 @@ export function withAssetValueContext(players: PlayerImpact[], capTracker?: CapT
   return players.map((player) => ({
     ...player,
     valuation_quote_required: valuations !== undefined,
-    asset_valuation: player.year === valuations?.season
+    asset_valuation: !player.contract_pending && player.year === valuations?.season
       ? valuations.players[String(player.source_nba_id ?? player.nba_id)] ?? valuations.players[String(player.nba_id)]
       : undefined,
     valuation_salary_caps: Array.from({ length: 5 }, (_, horizon) => {

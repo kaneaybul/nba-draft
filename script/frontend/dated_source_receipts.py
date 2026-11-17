@@ -11,7 +11,7 @@ def bind(path, asof=None):
     return row if asof is None else {**row, "asof": asof}
 
 
-def make_ownership_receipt(output, ledger, source_audit, signed_book, asof, season, native_terms=None, ownership_events=None):
+def make_ownership_receipt(output, ledger, source_audit, signed_book, asof, season, native_terms=None, ownership_events=None, recent_contract_terms=None):
     if str(date.fromisoformat(asof)) != asof or type(season) is not int:
         raise ValueError("Invalid ownership receipt date or season")
     book = json.loads(Path(signed_book).read_bytes())
@@ -28,6 +28,8 @@ def make_ownership_receipt(output, ledger, source_audit, signed_book, asof, seas
         packet["native_terms"]={name:bind(path) for name,path in native_terms.items()}
     if ownership_events is not None:
         packet["ownership_events"]=bind(ownership_events)
+    if recent_contract_terms is not None:
+        packet["recent_contract_terms"]={**bind(recent_contract_terms),"reviewed":True}
     write_new(output, packet)
 
 
@@ -49,3 +51,4 @@ def write_new(output, packet):
     with Path(output).open("x") as stream:
         json.dump(packet, stream, indent=2, allow_nan=False)
         stream.write("\n")
+

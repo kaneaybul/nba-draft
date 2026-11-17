@@ -50,16 +50,60 @@ def _iso_date(value):
  if not isinstance(value,str) or date.fromisoformat(value).isoformat()!=value:raise ValueError('Invalid observation date')
  return value
 
+CONTRACT_PENDING_TRANSITION='current-v19-to-e-v2-contract-pending-once'
+
+def _verify_ui_policy(dist,old,new,proof):
+ # This proof is inside the independently SHA-bound review, not generated or
+ # trusted by a routine daily run. Two clean builds must agree byte for byte.
+ from html.parser import HTMLParser
+ required={'schema','kind','source_sha256','build_command','first_build','second_build'}
+ if not isinstance(proof,dict) or set(proof)!=required or proof['schema']!=1 or proof['kind']!='contract-pending-ui-clean-build-v1':raise ValueError('Missing reviewed UI build proof')
+ if not re.fullmatch(r'[0-9a-f]{64}',proof['source_sha256'] or '') or not isinstance(proof['build_command'],list) or not proof['build_command'] or not all(isinstance(x,str) and x for x in proof['build_command']):raise ValueError('Invalid UI build provenance')
+ built=proof['first_build']
+ if not isinstance(built,dict) or built!=proof['second_build'] or 'index.html' not in built:raise ValueError('UI builds differ or lack index')
+ active=set(built)-{'index.html'}
+ if not active or any(not re.fullmatch(r'assets/[A-Za-z0-9_.-]+-[A-Za-z0-9_-]{6,}[.](js|css)',n) for n in active):raise ValueError('Unreviewed UI asset path')
+ if any(not re.fullmatch(r'[0-9a-f]{64}',v or '') for v in built.values()):raise ValueError('Invalid UI digest')
+ old_files=old.get('protected_files',{})
+ if 'index.html' not in old_files:raise ValueError('Old UI index must be pinned')
+ expected=dict(old_files)
+ for name,sha in built.items():
+  if name!='index.html' and name in expected and expected[name]!=sha:raise ValueError('Retained hashed asset changed')
+  expected[name]=sha
+ if new.get('protected_files')!=expected:raise ValueError('UI policy changes exceed reviewed index and active assets')
+ class References(HTMLParser):
+  def __init__(self):super().__init__();self.paths=set()
+  def handle_starttag(self,tag,attrs):
+   attrs=dict(attrs)
+   path=attrs.get('src') if tag=='script' else attrs.get('href') if tag=='link' else None
+   if path and (tag=='script' or attrs.get('rel') in ('stylesheet','modulepreload')):
+    if path.startswith('/'):path=path[1:]
+    if path.startswith('./'):path=path[2:]
+    self.paths.add(path)
+ root=Path(dist);parser=References();parser.feed((root/'index.html').read_text())
+ # Reviewed extra hashes cover lazy chunks not directly named by index.html.
+ # Every extra is double-build and whole-candidate bound, never inferred from
+ # unreviewed files. All direct references must still be present.
+ if not parser.paths or not parser.paths<=active:raise ValueError('Built index references missing from reviewed active UI assets')
+ for name,sha in built.items():
+  path=root/name
+  if path.is_symlink() or not path.is_file() or _digest(path.read_bytes())!=sha:raise ValueError('Reviewed UI bytes changed: '+name)
+
 def verify_transition(dist,old_policy_bytes,new_policy_bytes,canonical,latest,review_bytes,review_sha256,evidence_bytes):
  if not re.fullmatch(r'[0-9a-f]{64}',review_sha256 or '') or _digest(review_bytes)!=review_sha256:raise ValueError('Unreviewed transition definition')
  review=json.loads(review_bytes);old=json.loads(old_policy_bytes);new=json.loads(new_policy_bytes)
  required={'schema','kind','old_policy_sha256','new_policy_sha256','canonical','candidate_files','evidence_sha256','as_of'}
- if set(review)!=required or review['schema']!=1 or review['kind']!='current-v19-to-e-v2-once':raise ValueError('Invalid transition definition')
+ ui_transition=review.get('kind')==CONTRACT_PENDING_TRANSITION
+ if ui_transition:required.add('ui_build_proof')
+ if set(review)!=required or review['schema']!=1 or review['kind'] not in ('current-v19-to-e-v2-once',CONTRACT_PENDING_TRANSITION):raise ValueError('Invalid transition definition')
  if review['old_policy_sha256']!=_digest(old_policy_bytes) or review['new_policy_sha256']!=_digest(new_policy_bytes):raise ValueError('Policy digest mismatch')
  if old.get('current_method')!=CURRENT_V19 or new.get('current_method')!=CURRENT_EV2:raise ValueError('Unsupported current transition')
  # Exact equality protects every hash, origin, schema field and namespace. Only
  # current method and observation floor may differ, with no silent additions.
  allowed={'current_method','current_observation_date'}
+ if ui_transition:
+  _verify_ui_policy(dist,old,new,review['ui_build_proof'])
+  allowed.add('protected_files')
  if {k:v for k,v in old.items() if k not in allowed}!={k:v for k,v in new.items() if k not in allowed}:raise ValueError('Immutable policy set changed')
  if _iso_date(new['current_observation_date'])<_iso_date(old['current_observation_date']):raise ValueError('Policy floor regression')
  if review['canonical']!=canonical:raise ValueError('Transition bound to different canonical')
@@ -78,4 +122,5 @@ def verify_transition(dist,old_policy_bytes,new_policy_bytes,canonical,latest,re
  current=json.loads((root/'data/asset_valuation.json').read_text())
  if current.get('current_observation_date')!=asof:raise ValueError('Mixed candidate/evidence dates')
  result=_verify(root,new,canonical,CURRENT_V19)
- return {**result,'transition':'current-v19-to-e-v2-once','review_sha256':review_sha256,'evidence_sha256':review['evidence_sha256'],'candidate_files':len(inventory),'requires_exclusive_publisher':True}
+ return {**result,'transition':review['kind'],'review_sha256':review_sha256,'evidence_sha256':review['evidence_sha256'],'candidate_files':len(inventory),'requires_exclusive_publisher':True}
+

@@ -13,7 +13,7 @@ from materialize import materialize
 from run_player_refresh import unpack
 from ownership_runtime import refresh_events,replay,restore_events
 from espn_ownership import capture_additions
-from build_shared_contracts import build,write
+from build_shared_contracts import build,read_json,write
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--repo',type=Path,default=ROOT)
@@ -36,12 +36,49 @@ if source.get('mode')=='espn_dated_fallback' and capture_additions(runtime,pool,
 if audit.get('unresolved_events'):
     raise ValueError('Unresolved signed ownership; retain the last successful release')
 capture={'date':asof,'roster':json.loads(roster_path.read_text())}
-write(repo,build(repo,capture=capture))
+events_path=roster_path.with_name('league_events.json')
+events=json.loads(events_path.read_text())
+# A dated transaction can establish ownership before salary terms arrive.
+# A roster observation alone is not independent confirmation of a signing.
+confirmed={e['event_id'] for e in events if e.get('source') and not e.get('roster_capture')}
+contracts=repo/'processed/asset_history/contracts'
+saved=read_json(contracts/'contract_agreements.json')
+cache=repo/'processed/contracts/reconciled_recent_agreements.json'
+recent=read_json(cache) if cache.exists() else []
+if not isinstance(recent,list):
+    raise ValueError('Malformed reviewed recent contract cache')
+def current_book(terms):
+    return build(repo,agreements=saved+terms,capture=capture,confirmed_transactions=confirmed)
+book=current_book(recent)
+if book['contract_pending']:
+    from recheck_pending_contracts import recheck
+    # Verified NBA profile bridge for a player whose old provider profile may
+    # not be in this checkout. Keep identity evidence private to the lookup.
+    verified_profiles={1643572:('2003-03-30','https://www.nba.com/player/1643572/rafael-castro')}
+    lookup=[]
+    for row in book['contract_pending']:
+        profile=verified_profiles.get(row['nba_id'])
+        lookup.append({**row,'verified_official_birthdate':profile[0],
+            'official_identity_source':profile[1]} if profile else row)
+    checked=recheck(lookup,saved+recent,asof,repo=repo)
+    additions=checked['reviewed_additions']
+    if additions:
+        recent=recent+additions
+        candidate=current_book(recent)
+        resolved={r['nba_id'] for r in book['contract_pending']}-{r['nba_id'] for r in candidate['contract_pending']}
+        if resolved!={int(a['nba_id']) for a in additions}:
+            raise ValueError('Rechecked terms did not match the confirmed pending signings')
+        book=candidate
+        cache.parent.mkdir(parents=True,exist_ok=True)
+        temp=cache.with_suffix('.tmp')
+        temp.write_text(json.dumps(recent,separators=(',',':'),allow_nan=False)+'\n')
+        temp.replace(cache)
+write(repo,book)
 if args.dated_receipt is not None:
     from dated_source_receipts import make_ownership_receipt
-    contracts=repo/'processed/asset_history/contracts'
     make_ownership_receipt(args.dated_receipt,roster_path,roster_path.with_name('roster_refresh_source.json'),
         repo/'processed/contracts/current.json',asof,int(pool['season']),
         native_terms={key:contracts/(key+'.json') for key in ('contract_agreements','contract_adjustments')},
-        ownership_events=roster_path.with_name('league_events.json'))
-print('Signed ownership prepared before projections; saved contract terms preserved.')
+        ownership_events=events_path,recent_contract_terms=cache if recent else None)
+print('Signed ownership prepared; pending terms excluded from pricing:',len(book['contract_pending']))
+
