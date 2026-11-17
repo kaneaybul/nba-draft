@@ -1,23 +1,40 @@
 #!/usr/bin/env python3
 """Package the active static release without unused historical method copies."""
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
 import zipfile
-from history_release_guard import versions, verify
+from history_release_guard import versions, verify, verify_transition
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dist', type=Path, default=Path('frontend/dist'))
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--history-policy', type=Path, required=True)
 parser.add_argument('--canonical-observation', type=Path, required=True)
+parser.add_argument('--transition-review',type=Path)
+parser.add_argument('--transition-review-sha256')
+parser.add_argument('--previous-history-policy',type=Path)
+parser.add_argument('--latest-canonical-observation',type=Path)
+parser.add_argument('--computation-evidence',type=Path)
 args = parser.parse_args()
 dist = args.dist.resolve()
 metadata = json.loads((dist/'data/asset_valuation.json').read_text())
 version = metadata['history_version']
 metadata, history, retained_history = versions(dist)
-verify(dist, json.loads(args.history_policy.read_text()), json.loads(args.canonical_observation.read_text()))
+transition_args=[args.transition_review,args.transition_review_sha256,args.previous_history_policy,args.latest_canonical_observation,args.computation_evidence]
+if any(x is not None for x in transition_args) and not all(x is not None for x in transition_args):raise ValueError('All reviewed transition inputs are required')
+policy_bytes=args.history_policy.read_bytes()
+policy=json.loads(policy_bytes)
+protected_names=set(policy['protected_files'])
+if any(x is not None for x in transition_args):
+    if not all(x is not None for x in transition_args):raise ValueError('All reviewed transition inputs are required')
+    verify_transition(dist,args.previous_history_policy.read_bytes(),policy_bytes,
+        json.loads(args.canonical_observation.read_text()),json.loads(args.latest_canonical_observation.read_text()),
+        args.transition_review.read_bytes(),args.transition_review_sha256,args.computation_evidence.read_bytes())
+else:
+    verify(dist,policy,json.loads(args.canonical_observation.read_text()))
 if any(not isinstance(v, str) or not v.startswith('v') or not v[1:].isdigit() for v in (version, history)):
     raise ValueError('Invalid active asset-history version')
 files = []
@@ -26,11 +43,12 @@ for p in sorted(dist.rglob('*')):
         continue
     relative = p.relative_to(dist)
     parts = relative.parts
-    if len(parts) > 2 and parts[:2] == ('data','asset_history') and parts[2] not in retained_history:
+    protected = relative.as_posix() in protected_names
+    if not protected and len(parts) > 2 and parts[:2] == ('data','asset_history') and parts[2] not in retained_history:
         continue
-    if len(parts) > 2 and parts[:2] == ('data','asset_valuations') and parts[2] != version:
+    if not protected and len(parts) > 2 and parts[:2] == ('data','asset_valuations') and parts[2] != version:
         continue
-    if p.name.endswith('.json.gz'):
+    if not protected and p.name.endswith('.json.gz'):
         continue
     if p.stat().st_size > 25 * 1024 * 1024:
         raise ValueError(f'Asset exceeds the Pages limit: {relative}')
@@ -58,10 +76,17 @@ if history != version:
     if len(teams) != 30:
         raise ValueError('Incomplete active Asset History team list')
     required.update(f'data/asset_history/{history}/{kind}/{team}.json' for kind in ('teams','attribution') for team in teams)
+if not protected_names <= names:
+    raise ValueError('Protected policy files omitted from package')
 if not required <= names or len(files) > 20000:
     raise ValueError('Incomplete static release')
 args.output.parent.mkdir(parents=True,exist_ok=True)
 with zipfile.ZipFile(args.output,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
     for p,name in files:
         archive.write(p,name)
+with zipfile.ZipFile(args.output) as archive:
+    if not protected_names <= set(archive.namelist()):raise ValueError('Protected files absent from final archive')
+    for name,digest in policy['protected_files'].items():
+        if hashlib.sha256(archive.read(name)).hexdigest()!=digest:raise ValueError('Protected archive bytes changed: '+name)
 print(json.dumps({'version':version,'asset_history_version':history,'files':len(files),'zip_bytes':args.output.stat().st_size,'output':str(args.output.resolve())}))
+

@@ -50,7 +50,7 @@ export async function loadAppData(cacheBust?: string): Promise<AppData> {
 export async function loadNewerAppData(current: Manifest): Promise<AppData | null> {
   const manifest = await loadJson<Manifest>("/data/manifest.json", String(Date.now()));
   const valuations = await loadAssetValuations(String(Date.now()));
-  if (manifest.generated_at === current.generated_at && (!valuations || valuations.generated_at === current.valuation_generated_at)) return null;
+  if (manifest.generated_at === current.generated_at && (!valuations || assetValuationStamp(valuations) === current.valuation_generated_at)) return null;
   return isStaticManifest(manifest) ? loadStaticInitialData(manifest) : loadLegacyAppData(manifest);
 }
 
@@ -176,7 +176,7 @@ async function loadStaticInitialData(manifest: Manifest & { static_data: NonNull
     loadOptionalSingleton<CapTrackerData>(manifest, "cap_tracker", cacheBust),
     loadAssetValuations(cacheBust)
   ]);
-  return emptyAppData({ ...manifest, valuation_generated_at: valuations?.generated_at }, {
+  return emptyAppData({ ...manifest, valuation_generated_at: assetValuationStamp(valuations) }, {
     players: withAssetValueContext(players, capTracker, valuations), injuryOutlook, capTracker
   });
 }
@@ -201,14 +201,27 @@ async function loadLegacyAppData(manifest: Manifest, cacheBust?: string): Promis
   const normalized = applyOffseasonTruth(players, lineups, offseasonTruth);
   const injuryOutlook = await loadOptionalSingleton<InjuryOutlookData>(manifest, "injury_outlook", cacheBust);
   const valuations = await loadAssetValuations(cacheBust);
-  return { manifest: { ...manifest, valuation_generated_at: valuations?.generated_at }, players: withAssetValueContext(normalized.players, capTracker, valuations), teams, lineups: normalized.lineups, schedules, picks: withAssetPickValues(picks, valuations), prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview, injuryOutlook };
+  return { manifest: { ...manifest, valuation_generated_at: assetValuationStamp(valuations) }, players: withAssetValueContext(normalized.players, capTracker, valuations), teams, lineups: normalized.lineups, schedules, picks: withAssetPickValues(picks, valuations), prospects, trackerBoardSummary, trackerBoardScores, trackerProspectScores, modelSummary, offseasonTruth, capTracker, capReview, injuryOutlook };
+}
+
+const DAILY_ROLE_SOURCE = "peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster";
+const DAILY_ROLE_METHOD = DAILY_ROLE_SOURCE + "-current";
+function assetValuationStamp(data?: AssetValuationData): string | undefined {
+  return data?.method === DAILY_ROLE_METHOD ? data.current_generated_at : data?.generated_at;
 }
 
 async function loadAssetValuations(cacheBust?: string, season?: number): Promise<AssetValuationData | undefined> {
   const data = await loadJson<AssetValuationData>("/data/asset_valuation.json", cacheBust ?? "current");
   const currentRolling = data.method === "peak4-payroll-0.8-v18-current-rolling-role" || data.method === "peak4-payroll-0.8-v19-current-direct-rolling-role";
+  const currentRole = data.method === DAILY_ROLE_METHOD;
   const historicalRelease = data.historical_quote_release ?? data;
-  if ((!currentRolling && data.method !== "peak4-payroll-0.8-v16") || data.history_version !== "v16"
+  if (currentRole && (!/^\d{4}-\d{2}-\d{2}$/.test(data.observation_date)
+    || data.current_observation_date !== data.observation_date || data.pick_observation_date !== data.observation_date
+    || data.current_quote_source_method !== DAILY_ROLE_SOURCE || data.asset_history_version !== "v20"
+    || !data.current_generated_at || !Number.isFinite(Date.parse(data.current_generated_at)))) {
+    throw new Error("The current asset valuation release has inconsistent source dates. Reload after the update finishes.");
+  }
+  if ((!currentRole && !currentRolling && data.method !== "peak4-payroll-0.8-v16") || data.history_version !== "v16"
     || historicalRelease.method !== "peak4-payroll-0.8-v16" || historicalRelease.history_version !== "v16") {
     throw new Error("The current asset valuation release is unavailable. Reload after the update finishes.");
   }

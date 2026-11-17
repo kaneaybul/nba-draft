@@ -15,14 +15,14 @@ def versions(dist):
  if any(not isinstance(v,str) or not re.fullmatch(r'v[0-9]+',v) for v in keep):raise ValueError('Invalid release version')
  return current,history,keep
 
-def verify(dist,policy,canonical):
+def _verify(dist,policy,canonical,expected_canonical_method):
  dist=Path(dist);current,history,keep=versions(dist)
  if policy.get('schema')!=1 or not policy.get('protected_files'):raise ValueError('Missing durable release policy')
  if not canonical.get('deployment_id'):raise ValueError('Fresh canonical deployment observation required')
  if canonical.get('history_selector_sha256')!=policy['selector_sha256'] or canonical.get('history_manifest_sha256')!=policy['history_manifest_sha256']:raise ValueError('Canonical selector/manifest changed')
  if history!=policy['history_version']:raise ValueError('Historical selector regression')
  if current.get('method')!=policy['current_method']:raise ValueError('Current model changed without reviewed policy advance')
- if canonical.get('current_method')!=policy['current_method'] or not canonical.get('current_observation_date'):raise ValueError('Canonical current release changed or observation incomplete')
+ if canonical.get('current_method')!=expected_canonical_method or not canonical.get('current_observation_date'):raise ValueError('Canonical current release changed or observation incomplete')
  if current.get('current_observation_date',current.get('observation_date',''))<max(policy['current_observation_date'],canonical['current_observation_date']):raise ValueError('Current date regression')
  for name,sha in policy['protected_files'].items():
   if name.startswith('/') or '..' in Path(name).parts:raise ValueError('Unsafe protected path')
@@ -31,7 +31,51 @@ def verify(dist,policy,canonical):
  if 'data/asset_history_release.json' not in policy['protected_files'] or f'data/asset_history/{history}/manifest.json' not in policy['protected_files']:raise ValueError('Incomplete policy')
  return {'passed':True,'history_version':history,'retained_history_versions':sorted(keep),'protected_files':len(policy['protected_files']),'canonical_deployment':canonical['deployment_id'],'scope':'Preflight only; publisher must serialize promotion and reobserve before/after'}
 
+def verify(dist,policy,canonical):
+ return _verify(dist,policy,canonical,policy.get('current_method'))
+
 def verify_no_drift(initial,latest):
  for key in ['deployment_id','history_selector_sha256','history_manifest_sha256','current_method','current_observation_date']:
   if not initial.get(key) or initial.get(key)!=latest.get(key):raise ValueError('Promotion race detected: '+key)
  return True
+
+
+# One-time first promotion only. Digests originate in separately reviewed source;
+# neither the routine nor this validator grants permission to publish.
+CURRENT_EV2='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster-current'
+CURRENT_V19='peak4-payroll-0.8-v19-current-direct-rolling-role'
+def _digest(raw):return hashlib.sha256(raw).hexdigest()
+def _iso_date(value):
+ from datetime import date
+ if not isinstance(value,str) or date.fromisoformat(value).isoformat()!=value:raise ValueError('Invalid observation date')
+ return value
+
+def verify_transition(dist,old_policy_bytes,new_policy_bytes,canonical,latest,review_bytes,review_sha256,evidence_bytes):
+ if not re.fullmatch(r'[0-9a-f]{64}',review_sha256 or '') or _digest(review_bytes)!=review_sha256:raise ValueError('Unreviewed transition definition')
+ review=json.loads(review_bytes);old=json.loads(old_policy_bytes);new=json.loads(new_policy_bytes)
+ required={'schema','kind','old_policy_sha256','new_policy_sha256','canonical','candidate_files','evidence_sha256','as_of'}
+ if set(review)!=required or review['schema']!=1 or review['kind']!='current-v19-to-e-v2-once':raise ValueError('Invalid transition definition')
+ if review['old_policy_sha256']!=_digest(old_policy_bytes) or review['new_policy_sha256']!=_digest(new_policy_bytes):raise ValueError('Policy digest mismatch')
+ if old.get('current_method')!=CURRENT_V19 or new.get('current_method')!=CURRENT_EV2:raise ValueError('Unsupported current transition')
+ # Exact equality protects every hash, origin, schema field and namespace. Only
+ # current method and observation floor may differ, with no silent additions.
+ allowed={'current_method','current_observation_date'}
+ if {k:v for k,v in old.items() if k not in allowed}!={k:v for k,v in new.items() if k not in allowed}:raise ValueError('Immutable policy set changed')
+ if _iso_date(new['current_observation_date'])<_iso_date(old['current_observation_date']):raise ValueError('Policy floor regression')
+ if review['canonical']!=canonical:raise ValueError('Transition bound to different canonical')
+ verify_no_drift(canonical,latest)
+ if canonical.get('current_method')!=CURRENT_V19:raise ValueError('Transition already consumed or wrong source model')
+ if _digest(evidence_bytes)!=review['evidence_sha256']:raise ValueError('Unreviewed computation evidence')
+ evidence=json.loads(evidence_bytes)
+ if evidence.get('passed') is not True or evidence.get('as_of')!=review['as_of'] or evidence.get('current_method')!=CURRENT_EV2:raise ValueError('Invalid fresh computation receipt')
+ if evidence.get('evidence_policy')!='sparse-observed-role-evidence-v2-transient-roster' or evidence.get('fresh_inputs_verified') is not True:raise ValueError('Frozen or wrong-policy evidence')
+ asof=_iso_date(review['as_of'])
+ if asof<max(_iso_date(canonical['current_observation_date']),new['current_observation_date']):raise ValueError('Stale transition evidence')
+ root=Path(dist)
+ if root.is_symlink() or any(p.is_symlink() for p in root.rglob('*')):raise ValueError('Symlink in candidate')
+ inventory={p.relative_to(root).as_posix():_digest(p.read_bytes()) for p in root.rglob('*') if p.is_file()}
+ if not inventory or inventory!=review['candidate_files']:raise ValueError('Candidate differs from reviewed byte inventory')
+ current=json.loads((root/'data/asset_valuation.json').read_text())
+ if current.get('current_observation_date')!=asof:raise ValueError('Mixed candidate/evidence dates')
+ result=_verify(root,new,canonical,CURRENT_V19)
+ return {**result,'transition':'current-v19-to-e-v2-once','review_sha256':review_sha256,'evidence_sha256':review['evidence_sha256'],'candidate_files':len(inventory),'requires_exclusive_publisher':True}

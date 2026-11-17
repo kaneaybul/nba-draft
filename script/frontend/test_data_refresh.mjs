@@ -98,7 +98,27 @@ try {
   await assert.rejects(loadNewerAppData(current), /current asset valuation release/);
   serve(updated, { ...initialValuations, method: 'peak4-payroll-0.8-v5' });
   await assert.rejects(loadAppData('wrong-method'), /current asset valuation release/);
-  console.log('Projection and valuation refresh, versioned loading, required-feed outage, method consistency, and connection recovery passed.');
+  const roleSource = 'peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster';
+  const newRole = { ...valuations, method: roleSource + '-current', current_quote_source_method: roleSource,
+    asset_history_version: 'v20', current_generated_at: '2026-11-17T14:00:00Z', observation_date: '2026-11-17',
+    current_observation_date: '2026-11-17', pick_observation_date: '2026-11-17',
+    historical_quote_release: { method, history_version: historyVersion, generated_at: valuations.generated_at } };
+  serve(updated, newRole);
+  const role = await loadAppData('new-role');
+  assert.equal(role.players[0].asset_valuation.value, 12345);
+  assert.equal(role.manifest.valuation_generated_at, newRole.current_generated_at);
+  serve(updated, newRole);
+  assert.equal(await loadNewerAppData(role.manifest), null);
+  serve(updated, { ...newRole, current_generated_at: '2026-11-18T14:00:00Z', observation_date: '2026-11-18',
+    current_observation_date: '2026-11-18', pick_observation_date: '2026-11-18' });
+  assert.equal((await loadNewerAppData(role.manifest)).manifest.valuation_generated_at, '2026-11-18T14:00:00Z');
+  serve(updated, { ...newRole, pick_observation_date: '2026-11-16' });
+  await assert.rejects(loadAppData('mixed-e-v2'), /inconsistent source dates/);
+  serve(updated, { ...newRole, current_quote_source_method: 'not-e-v2' });
+  await assert.rejects(loadAppData('wrong-e-v2-source'), /inconsistent source dates/);
+  serve(updated, { ...newRole, historical_quote_release: { ...newRole.historical_quote_release, history_version: 'v20' } });
+  await assert.rejects(loadAppData('bad-legacy-selector'), /current asset valuation release/);
+  console.log('Projection refresh, legacy history, actual e-v2 freshness stamp, required-feed outage, and mixed-method rejection passed.');
 } finally {
   globalThis.fetch = originalFetch;
 }

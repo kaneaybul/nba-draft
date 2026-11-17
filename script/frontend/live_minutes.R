@@ -103,6 +103,10 @@ apply_live_minute_inputs <- function(rows,base_dir) {
   probability <- gp_prior/82
   rows$minutes_play_probability <- ifelse(roster & rows$minutes_input_mpg>0,probability,0)
   rows$minutes_expected_mpg <- rows$minutes_input_mpg*rows$minutes_play_probability
+  role_feed <- read_rolling_minute_feed(base_dir)
+  if (!is.null(role_feed)) {
+    rows <- apply_rolling_minute_cell(rows,role_feed,rebalance=FALSE,require_complete=TRUE)
+  }
   for(idx in split(which(roster),rows$team_projection_base[roster])) {
     rows$minutes_expected_mpg[idx] <- balance_live_minutes(rows$minutes_expected_mpg[idx],baseline_cap*rows$minutes_play_probability[idx])
   }
@@ -123,5 +127,50 @@ apply_live_minute_inputs <- function(rows,base_dir) {
   rows$minutes_note[!roster] <- 'No current NBA roster spot: actual minutes retained, no future team minutes assigned.'
   message('Live minutes: ',paste(names(table(rows$minutes_source[roster])),table(rows$minutes_source[roster]),collapse='; '),
     '; trained GP participation rate; dated injuries applied to remaining games')
+  rows
+}
+
+
+read_rolling_minute_feed <- function(base_dir) {
+  path <- Sys.getenv("NBA_ROLLING_ROLE_FILE")
+  expected_date <- Sys.getenv("NBA_ROLLING_ROLE_AS_OF")
+  if (!nzchar(path) && !nzchar(expected_date)) return(NULL)
+  if (!startsWith(path, "/") || !file.exists(path) || dir.exists(path)) stop("Expected a readable absolute rolling role file")
+  if (!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", expected_date) ||
+      is.na(as.Date(expected_date, format="%Y-%m-%d"))) stop("Expected the reviewed rolling role date")
+  x <- jsonlite::fromJSON(path,simplifyVector=FALSE)
+  if (!identical(x$asof, expected_date)) stop("Rolling role file does not match the reviewed date")
+  if(!identical(x$policy,'sparse-eligible-preacute-evidence-v2-transient-roster') || !identical(x$acute_overlay_applied,FALSE)) stop('Expected pre-injury direct role input')
+  if(!identical(x$model_sha256,'fb08a02655155274d902433d6d35727fede1b45c1c7871977338e34138cc775f')) stop('Unapproved model hash')
+  if(!identical(x$evidence_policy,'sparse-observed-role-evidence-v2-transient-roster')) stop('Wrong evidence policy')
+  if(!identical(x$allocation_applied,FALSE)) stop('Refusing already allocated role input')
+  if(length(unique(vapply(x$players,function(p)p$team,character(1))))!=30L) stop('Incomplete direct role input')
+  x$keys <- vapply(x$players,function(p)paste(p$team,if(is.null(p$nba_id)) paste0('name:',p$name) else paste0('id:',p$nba_id),sep='|'),character(1))
+  if(anyDuplicated(x$keys)) stop('Duplicate direct role identity')
+  expected_teams <- strsplit("ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS", " ")[[1]]
+  if (!setequal(vapply(x$players,function(p)p$team,character(1)),expected_teams)) stop("Wrong teams in direct role input")
+  x
+}
+apply_rolling_minute_cell <- function(rows,feed,ordinal=rep(1L,nrow(rows)),rebalance=TRUE,require_complete=FALSE) {
+  ids <- rows$nba_id
+  if('source_nba_id'%in%names(rows)) { ok <- is.finite(rows$source_nba_id);ids[ok] <- rows$source_nba_id[ok] }
+  team <- if('team_projection_base'%in%names(rows)) rows$team_projection_base else rows$team
+  keys <- paste(team,ifelse(is.finite(ids),paste0('id:',format(ids,scientific=FALSE,trim=TRUE)),paste0('name:',rows$player_name)),sep='|')
+  found <- match(keys,feed$keys);roster <- !is.na(rows$pool_status)&rows$pool_status=='roster'&team!='FA'
+  if(any(roster&is.na(found))) stop('Missing direct role for roster player: ',paste(rows$player_name[roster&is.na(found)],collapse=', '))
+  if (require_complete && (anyDuplicated(keys[roster]) || !setequal(keys[roster],feed$keys))) {
+    stop("Direct role ownership differs from the healthy R roster")
+  }
+  for(i in which(roster)) {
+    k <- as.integer(ordinal[i]); p <- feed$players[[found[i]]]
+    if(!identical(p$sparse_eligible,TRUE)) next
+    if (!identical(p$asof, feed$asof) || !identical(p$model_sha256, feed$model_sha256)) stop("Direct role row date or model mismatch")
+    if(!is.finite(k)||k<1||k>length(p$cells)) stop('Role cell outside source horizon')
+    v <- as.numeric(unlist(p$cells[[k]]))
+    if(length(v)!=3||any(!is.finite(v))||v[1]<0||v[1]>1+1e-8||v[2]<0||v[2]>38+1e-8||abs(v[1]*v[2]-v[3])>1e-7) stop('Invalid direct role cell')
+    rows$minutes_play_probability[i] <- v[1];rows$minutes_input_mpg[i] <- v[2];rows$minutes_expected_mpg[i] <- v[3]
+  }
+  if(rebalance) for(idx in split(which(roster),team[roster])) rows$minutes_expected_mpg[idx] <- balance_live_minutes(rows$minutes_expected_mpg[idx],38*rows$minutes_play_probability[idx])
+  rows$minutes_healthy_mpg <- ifelse(rows$minutes_play_probability>0,rows$minutes_expected_mpg/rows$minutes_play_probability,0)
   rows
 }

@@ -180,12 +180,20 @@ apply_injury_projections <- function(players, schedules, outlook) {
     players$availability_status %in% c("projected", "rookie_projection")
   } else rep(FALSE, nrow(players))
   indices <- which(players$year == outlook$season & projected)
-  if (!length(indices)) return(list(players = players, schedules = schedules))
+  requested_role <- nzchar(Sys.getenv("NBA_ROLLING_ROLE_FILE")) || nzchar(Sys.getenv("NBA_ROLLING_ROLE_AS_OF"))
+  if (!length(indices)) {
+    if (requested_role) stop("No projected roster for the requested rolling role forecast")
+    return(list(players = players, schedules = schedules))
+  }
   forecast <- assign_team_projection_scenario(players[indices, , drop = FALSE], "base")
   live_minutes <- "minutes_source" %in% names(forecast) && any(!is.na(forecast$minutes_source))
   as_of_time <- as.POSIXct(outlook$generated_at, format = "%Y-%m-%dT%H:%M:%OS", tz = "UTC")
   as_of <- as.Date(format(as_of_time, "%Y-%m-%d", tz = "America/New_York"))
   if (is.na(as_of)) stop("Invalid injury snapshot date.")
+  if (requested_role && !live_minutes) stop("Requested rolling role forecast did not receive live minutes")
+  role_feed <- if (requested_role) read_rolling_minute_feed(resolve_base_dir()) else NULL
+  rolling_role <- !is.null(role_feed)
+  if (rolling_role && role_feed$asof != as.character(as_of)) stop("Role/injury knowledge date mismatch")
   calendar <- injury_projection_calendar(schedules, outlook$season)
   team_calendars <- split(calendar, calendar$team)
   missing_teams <- setdiff(unique(forecast$team[forecast$team != "FA"]), names(team_calendars))
@@ -224,10 +232,18 @@ apply_injury_projections <- function(players, schedules, outlook) {
   # exposure uses the same healthy budget reconciliation as future rotations,
   # so mixing completed and remaining games cannot reintroduce that excess.
   baseline_rotation <- allocate_injury_rotation(forecast, rep(1, nrow(forecast)))
+  total_healthy_minutes <- total_healthy_games <- rep(0,nrow(forecast))
   dates <- sort(unique(c(calendar$date, schedules$date[future_schedule])))
   for (date in dates) {
     factors <- vapply(plans, injury_availability_on_date, numeric(1), date = date)
-    rotation <- allocate_injury_rotation(forecast, factors)
+    dated_forecast <- forecast
+    if(rolling_role) {
+      ordinal <- vapply(forecast$team,function(team) if(team=='FA') 1L else 1L+sum(!team_calendars[[team]]$completed & as.Date(team_calendars[[team]]$date)>=as_of & as.Date(team_calendars[[team]]$date)<as.Date(date)),integer(1))
+      # Past dates have no future exposure; clamp only those before today's clock.
+      dated_forecast <- apply_rolling_minute_cell(forecast,role_feed,ordinal)
+    }
+    if (rolling_role) healthy_rotation <- allocate_injury_rotation(dated_forecast,rep(1,nrow(dated_forecast)))
+    rotation <- allocate_injury_rotation(dated_forecast, factors)
     today <- calendar[calendar$date == date, , drop = FALSE]
     for (team in unique(today$team)) {
       selected <- which(forecast$team == team)
@@ -235,6 +251,10 @@ apply_injury_projections <- function(players, schedules, outlook) {
       past <- sum(completed | as.Date(date) < as_of)
       future <- length(completed) - past
       if(live_minutes) {
+        if (rolling_role) {
+          total_healthy_minutes[selected] <- total_healthy_minutes[selected]+healthy_rotation$minutes[selected]*future
+          total_healthy_games[selected] <- total_healthy_games[selected]+healthy_rotation$games[selected]*future
+        }
         total_minutes[selected] <- total_minutes[selected] + rotation$minutes[selected] * future
         total_games[selected] <- total_games[selected] + rotation$games[selected] * future
       } else {
@@ -246,7 +266,7 @@ apply_injury_projections <- function(players, schedules, outlook) {
     }
     game_indices <- which(future_schedule & schedules$date == date)
     if (!length(game_indices)) next
-    dated_players <- forecast
+    dated_players <- dated_forecast
     dated_players$Minutes <- rotation$minutes
     dated_players$games <- rotation$games
     dated_players$lineup_adjusted_minutes <- rotation$minutes
@@ -297,8 +317,13 @@ apply_injury_projections <- function(players, schedules, outlook) {
     players$minutes_remaining_games[indices] <- remaining_games
     players$minutes_remaining_mpg[indices] <- ifelse(remaining_games>0,remaining_minutes/remaining_games,0)
     players$minutes_remaining_team_games[indices] <- remaining_count
-    players$injury_base_minutes[indices] <- forecast$minutes_actual+baseline_rotation$minutes/82*remaining_count
-    players$injury_base_games[indices] <- forecast$minutes_actual_games+forecast$minutes_play_probability*remaining_count
+    if (rolling_role) {
+      players$injury_base_minutes[indices] <- forecast$minutes_actual+total_healthy_minutes/82
+      players$injury_base_games[indices] <- forecast$minutes_actual_games+total_healthy_games/82
+    } else {
+      players$injury_base_minutes[indices] <- forecast$minutes_actual+baseline_rotation$minutes/82*remaining_count
+      players$injury_base_games[indices] <- forecast$minutes_actual_games+forecast$minutes_play_probability*remaining_count
+    }
     for(idx in split(seq_len(nrow(forecast)),forecast$team)) {
       players$minutes_team_budget[indices[idx]] <- sum(forecast$minutes_actual[idx])+240*max(remaining_count[idx])
     }
@@ -370,3 +395,4 @@ apply_injury_projections <- function(players, schedules, outlook) {
     sum(schedules$injury_adjusted), " dated game forecasts rebuilt.")
   list(players = players, schedules = schedules)
 }
+
