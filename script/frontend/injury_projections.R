@@ -233,6 +233,8 @@ apply_injury_projections <- function(players, schedules, outlook) {
   # so mixing completed and remaining games cannot reintroduce that excess.
   baseline_rotation <- allocate_injury_rotation(forecast, rep(1, nrow(forecast)))
   total_healthy_minutes <- total_healthy_games <- rep(0,nrow(forecast))
+  capacity_shortfalls <- list()
+  evidence_path <- Sys.getenv("NBA_MINUTE_CAPACITY_EVIDENCE")
   dates <- sort(unique(c(calendar$date, schedules$date[future_schedule])))
   for (date in dates) {
     factors <- vapply(plans, injury_availability_on_date, numeric(1), date = date)
@@ -250,6 +252,24 @@ apply_injury_projections <- function(players, schedules, outlook) {
       completed <- today$completed[today$team == team]
       past <- sum(completed | as.Date(date) < as_of)
       future <- length(completed) - past
+      if (live_minutes && nzchar(evidence_path) && future > 0L) {
+        allocated <- sum(rotation$minutes[selected])/82
+        if (allocated < 240-1e-8) {
+          probability <- dated_forecast$minutes_play_probability[selected]*pmax(0,pmin(1,factors[selected]))
+          hard_capacity <- sum(48*probability)
+          if (!is.finite(hard_capacity) || hard_capacity >= 240 ||
+              abs(allocated-hard_capacity)>1e-7) stop("Unexplained dated minute shortfall: ",team," ",date)
+          ids <- dated_forecast$nba_id[selected]
+          if ("source_nba_id" %in% names(dated_forecast)) {
+            src <- dated_forecast$source_nba_id[selected]; known <- is.finite(src); ids[known] <- src[known]
+          }
+          capacity_shortfalls[[length(capacity_shortfalls)+1L]] <- list(
+            team=team,date=as.character(date),games=as.integer(future),allocated=allocated,
+            hard_capacity=hard_capacity,shortfall=240-allocated,
+            participants=lapply(seq_along(selected),function(j) list(
+              nba_id=as.integer(ids[j]),probability=probability[j])))
+        }
+      }
       if(live_minutes) {
         if (rolling_role) {
           total_healthy_minutes[selected] <- total_healthy_minutes[selected]+healthy_rotation$minutes[selected]*future
@@ -393,6 +413,12 @@ apply_injury_projections <- function(players, schedules, outlook) {
   message("Injury-aware minutes: ", sum(!is.na(matches)), " matched players; ",
     sum(abs(players$injury_minutes_delta[indices]) >= 1), " minute forecasts changed; ",
     sum(schedules$injury_adjusted), " dated game forecasts rebuilt.")
+  if (nzchar(evidence_path)) {
+    if (!startsWith(evidence_path,"/") || file.exists(evidence_path)) stop("Use a new absolute minute evidence path")
+    jsonlite::write_json(list(schema="nba-minute-capacity-evidence-v1",asof=as.character(as_of),
+      season=outlook$season,injury_time=outlook$generated_at,complete=TRUE,shortfalls=capacity_shortfalls),
+      evidence_path,auto_unbox=TRUE,digits=15,na="null")
+  }
   list(players = players, schedules = schedules)
 }
 
