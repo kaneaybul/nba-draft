@@ -4,9 +4,9 @@ Use an exclusively assigned isolated Work copy; hash checks are NOT a lock.
 import argparse, hashlib, json, os, subprocess
 from pathlib import Path
 from datetime import date, datetime, timezone
-ALLOW=tuple('raw/live/'+x+'.json' for x in ('ratings','skill_stats','player_pool','results','positions','position_status'))+('frontend/public/data/injury_outlook.json','raw/bref_position_estimates.csv','raw/switch/player_positions.rds')
-COMMANDS=[['python3','script/data/refresh_player_pool.py'],['node','--test','script/data/test_live_ratings.mjs'],['node','script/data/refresh_live_ratings.mjs'],['python3','script/data/refresh_injury_outlook.py','--results-output','raw/live/results.json'],['Rscript','script/data/pull_bref_position_estimates.R'],['python3','script/data/refresh_live_skill_stats.py'],['Rscript','script/frontend/refresh_live_switch.R'],['python3','script/data/refresh_player_pool.py','--enrich']]
-BLOCK_SHA='48e253621417f137a24163613843492556c66197e6745125d7c8c95395bc2a70'
+ALLOW=tuple('raw/live/'+x+'.json' for x in ('ratings','skill_stats','player_pool','results','positions','position_status'))+('frontend/public/data/injury_outlook.json','raw/live/pbp_position_estimates.csv','raw/switch/player_positions.rds')
+COMMANDS=[['python3','script/data/refresh_player_pool.py'],['node','--test','script/data/test_live_ratings.mjs'],['node','script/data/refresh_live_ratings.mjs'],['python3','script/data/refresh_injury_outlook.py','--results-output','raw/live/results.json'],['python3','script/data/refresh_pbp_position_estimates.py'],['python3','script/data/refresh_live_skill_stats.py'],['Rscript','script/frontend/refresh_live_switch.R'],['python3','script/data/refresh_player_pool.py','--enrich']]
+BLOCK_SHA='3cce129713d06d5dd5b68fa1ca99a1b1df18ed81ed7c52dba4aee76e0e60f182'
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 def workflow_block(repo):
  text=(repo/'script/frontend/run_work_refresh.sh').read_text()
@@ -84,7 +84,7 @@ def run(repo,out,asof,season,execute=False,coverage=None,runner=subprocess.run):
  (out/'plan.json').write_text(json.dumps(plan,indent=2))
  if not execute:return plan
  # Inherit existing authorized process authentication without reading/printing it.
- env=os.environ.copy();env.update(TZ='UTC',CURRENT_ROSTER_YEAR=str(season-1),BREF_POSITION_YEARS=str(season),BREF_POSITION_REFRESH='true',PYTHONDONTWRITEBYTECODE='1')
+ env=os.environ.copy();env.update(TZ='UTC',CURRENT_ROSTER_YEAR=str(season-1),PYTHONDONTWRITEBYTECODE='1')
  error=None
  try:
   for i,cmd in enumerate(COMMANDS):
