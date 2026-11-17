@@ -9,6 +9,11 @@ export type AnnualAssetValue = { production: number; asset: number; exposure: nu
 export type AssetValuationData = {
   method?: string;
   history_version?: string;
+  asset_history_version?: string;
+  current_generated_at?: string;
+  current_quote_source_method?: string;
+  current_observation_date?: string;
+  pick_observation_date?: string;
   historical_quote_release?: { method: string; history_version: string; generated_at: string };
   generated_at: string;
   observation_date: string;
