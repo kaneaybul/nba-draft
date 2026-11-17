@@ -26,6 +26,14 @@ if [[ ! -x "$runtime/nba-r/bin/Rscript" ]]; then
   "$runtime/bin/micromamba" create -y -r "$runtime/mamba" -p "$runtime/nba-r" \
     --file "$repo/script/frontend/work_r_packages.lock"
 fi
+# Older reusable runtimes may contain rvest 1.0.5, which needs xml2 >= 1.4.0.
+# Repair just the HTML reader instead of rebuilding the pinned R environment.
+rvest_url="$(grep -E '/r-rvest-[^/]+\.conda$' "$repo/script/frontend/work_r_packages.lock")"
+rvest_package="${rvest_url##*/}"
+if [[ ! -f "$runtime/nba-r/conda-meta/${rvest_package%.conda}.json" ]]; then
+  "$runtime/bin/micromamba" install -y --no-deps -r "$runtime/mamba" -p "$runtime/nba-r" "$rvest_url"
+fi
+"$runtime/nba-r/bin/Rscript" --vanilla -e 'stopifnot(requireNamespace("rvest", quietly = TRUE))'
 if [[ ! -x "$runtime/nba-python/bin/python3" ]]; then
   python3 -m venv --system-site-packages "$runtime/nba-python"
 fi

@@ -4,7 +4,7 @@ Use an exclusively assigned isolated Work copy; hash checks are NOT a lock.
 import argparse, hashlib, json, os, subprocess
 from pathlib import Path
 from datetime import date, datetime, timezone
-ALLOW=tuple('raw/live/'+x+'.json' for x in ('ratings','skill_stats','player_pool','results','positions','position_status'))+('frontend/public/data/injury_outlook.json','frontend/public/data/live_status.json','raw/bref_position_estimates.csv','raw/switch/player_positions.rds')
+ALLOW=tuple('raw/live/'+x+'.json' for x in ('ratings','skill_stats','player_pool','results','positions','position_status'))+('frontend/public/data/injury_outlook.json','raw/bref_position_estimates.csv','raw/switch/player_positions.rds')
 COMMANDS=[['python3','script/data/refresh_player_pool.py'],['node','--test','script/data/test_live_ratings.mjs'],['node','script/data/refresh_live_ratings.mjs'],['python3','script/data/refresh_injury_outlook.py','--results-output','raw/live/results.json'],['Rscript','script/data/pull_bref_position_estimates.R'],['python3','script/data/refresh_live_skill_stats.py'],['Rscript','script/frontend/refresh_live_switch.R'],['python3','script/data/refresh_player_pool.py','--enrich']]
 BLOCK_SHA='48e253621417f137a24163613843492556c66197e6745125d7c8c95395bc2a70'
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
@@ -44,7 +44,7 @@ def inspect_sources(repo,asof,season,coverage=None):
     status=d.get('seasons',{}).get(str(season),{});f['season_status']=status.get('status')
     if status.get('status') not in ('ok','updated','success'):issues.append('position_provider_not_fresh')
     continue
-   if d.get('schema_version')!=(2 if rel.endswith('live_status.json') else 1) or d.get('season')!=season:issues.append('schema_or_season:'+rel)
+   if d.get('schema_version')!=1 or d.get('season')!=season:issues.append('schema_or_season:'+rel)
    for key in ('epm_as_of','darko_through','source_updated_at','held_components','held_skill_components','completed_games_at_fetch','teams_checked','review_pending','provisional_ids'):
     if key in d:f[key]=d[key]
    for key in ('epm_as_of','darko_through'):
