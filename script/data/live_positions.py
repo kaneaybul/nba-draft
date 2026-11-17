@@ -1,6 +1,6 @@
 """Shared daily positions for the app, matchup opponents and perimeter controls.
 
-PBP Stats supplies the five-player lineups; the position shares are inferred.
+SportsDataverse supplies NBA five-player lineups and clocks; positions are inferred.
 ESPN and saved positions cover players with no current lineup evidence.
 """
 import csv, json, math, re, unicodedata
@@ -73,14 +73,16 @@ def build_positions(stats, season, root):
                 values = normalized_shares(p)
                 if pid < 1 or pid in pbp or values is None:
                     raise ValueError('Invalid or duplicate NBA id in PBP position estimates')
-                pbp[pid] = values
+                source = p.get('source')
+                if source not in ('sdv_nba_lineup_inferred', 'pbpstats_lineup'):
+                    raise ValueError('Unrecognized position estimate provenance')
+                pbp[pid] = (values, source)
     rows = []
     for app_id, record in records.items():
         pid = record.get('nba_id')
         stat = stat_by_id.get(pid, {})
         old = old_by_id.get(app_id, {})
-        values = pbp.get(pid)
-        source = 'pbpstats_lineup' if values is not None else None
+        values, source = pbp.get(pid, (None, None))
         # Preserve a precise daily roster label; generic G/F labels do not
         # overwrite a precise current-stat or previously published position.
         for label, origin in [(record.get('position'), 'espn_roster'),
@@ -103,7 +105,7 @@ def build_positions(stats, season, root):
         row.update(dict(zip(SHARES, values or [0]*5)))
         rows.append(row)
     return dict(schema_version=1, season=season, generated_at=datetime.now(timezone.utc).isoformat(),
-                method='PBP Stats five-man lineup seconds with inferred position shares; daily ESPN roster, current stats and published-position fallbacks.',
+                method='SportsDataverse NBA lineups and play-by-play clocks with inferred position shares; daily ESPN roster, current stats and published-position fallbacks.',
                 sources=dict(Counter(p['source'] for p in rows)), players=rows,
                 position_status=read_json(root/'raw/live/position_status.json', {}))
 

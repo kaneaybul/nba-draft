@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PBP Stats lineup-constrained positional inference, not observed labelled positions.
+"""Lineup-constrained positional inference, not observed labelled positions.
 No fitting: each five-player lineup has one PG/SG/SF/PF/C in every assignment.
 Dated priors inform assignment ambiguity; posterior seconds yield player shares.
 """
@@ -30,7 +30,7 @@ def prior_table(path):
   v=[x/sum(v)for x in v];priors[str(r['nba_id'])]=[(1-5*FLOOR)*x+FLOOR for x in v];names[str(r['nba_id'])]=r.get('player_name','')
  return priors,names,stamp
 
-def infer(payloads,priors,names,season,stamp):
+def infer(payloads,priors,names,season,stamp,source='pbpstats_lineup'):
  accum={};audit={'lineups':0,'lineup_seconds':0.,'max_slot_mass_error':0.,'unknown_prior_ids':set()}
  for team,payload in payloads:
   rows=payload.get('multi_row_table_data');seen=set()
@@ -54,7 +54,7 @@ def infer(payloads,priors,names,season,stamp):
  out=[]
  for pid,a in sorted(accum.items(),key=lambda x:int(x[0])):
   shares=[x/a['seconds']for x in a['mass']];entropy=-sum(x*math.log(x)for x in shares if x>0)/math.log(5)
-  out.append(dict(nba_id=int(pid),player_name=a['name'],name=a['name'],year=season,team=next(iter(a['teams']))if len(a['teams'])==1 else 'TOT',**dict(zip(FIELDS,shares)),position_estimate=POS[max(range(5),key=lambda k:shares[k])],position_entropy=entropy,position_index=sum((k+1)*x for k,x in enumerate(shares)),minutes=a['seconds']/60,source='pbpstats_lineup',prior_asof=stamp,prior_available=pid in priors,uncertain=pid not in priors or a['seconds']<600 or max(shares)<.5))
+  out.append(dict(nba_id=int(pid),player_name=a['name'],name=a['name'],year=season,team=next(iter(a['teams']))if len(a['teams'])==1 else 'TOT',**dict(zip(FIELDS,shares)),position_estimate=POS[max(range(5),key=lambda k:shares[k])],position_entropy=entropy,position_index=sum((k+1)*x for k,x in enumerate(shares)),minutes=a['seconds']/60,source=source,prior_asof=stamp,prior_available=pid in priors,uncertain=pid not in priors or a['seconds']<600 or max(shares)<.5))
  audit['unknown_prior_ids']=sorted(audit['unknown_prior_ids']);audit['players']=len(out);audit['uncertain_players']=sum(r['uncertain']for r in out);return out,audit
 
 def load_api(url):
@@ -85,17 +85,27 @@ def main():
  if not a.season:p.error('--season or CURRENT_ROSTER_YEAR required')
  if a.input_json and not a.team:p.error('--input-json requires --team')
  prior=a.prior or a.repo/f'raw/pbp_position_prior_{a.season}.json';priors,names,stamp=prior_table(prior);teams=[a.team]if a.team else list(TEAMS)
- if a.input_json:payloads=[(a.team,json.loads(a.input_json.read_text()))]
+ source='sdv_nba_lineup_inferred';metadata={}
+ if not (a.input_json or a.team or a.team_totals_json):
+  from sdv_position_lineups import load_lineups
+  payloads,totals,metadata=load_lineups(a.season)
  else:
-  with ThreadPoolExecutor(max_workers=3)as pool:payloads=list(pool.map(lambda t:fetch(t,a.season),teams))
- if a.team_totals_json:totals=json.loads(a.team_totals_json.read_text())
- elif not a.input_json:
-  url='https://api.pbpstats.com/get-totals/nba?'+urllib.parse.urlencode({'Season':f'{a.season-1}-{str(a.season)[-2:]}','SeasonType':'Regular Season','Type':'Team'})
-  totals=load_api(url)
- else:raise ValueError('Saved sample requires --team-totals-json for independent seconds reconciliation')
+  source='pbpstats_lineup'
+  if a.input_json:payloads=[(a.team,json.loads(a.input_json.read_text()))]
+  else:
+   with ThreadPoolExecutor(max_workers=3)as pool:payloads=list(pool.map(lambda t:fetch(t,a.season),teams))
+  if a.team_totals_json:totals=json.loads(a.team_totals_json.read_text())
+  elif not a.input_json:
+   url='https://api.pbpstats.com/get-totals/nba?'+urllib.parse.urlencode({'Season':f'{a.season-1}-{str(a.season)[-2:]}','SeasonType':'Regular Season','Type':'Team'})
+   totals=load_api(url)
+  else:raise ValueError('Saved sample requires --team-totals-json for independent seconds reconciliation')
  reconciled=coverage(payloads,totals)
- rows,audit=infer(payloads,priors,names,a.season,stamp);audit['pbp_team_coverage']=reconciled;audit['coverage_basis']='PBP provider team totals; may lag official completed games';target=a.repo/'raw/live';target.mkdir(parents=True,exist_ok=True);out=target/'pbp_position_estimates.csv';tmp=out.with_suffix('.tmp')
+ if not a.team and set(reconciled)!=set(TEAMS):raise ValueError('Position season must cover all 30 teams')
+ rows,audit=infer(payloads,priors,names,a.season,stamp,source)
+ audit['team_coverage']=reconciled
+ audit['source_metadata']={k:v for k,v in metadata.items() if k!='player_seconds_by_game'}
+ audit['coverage_basis']='Provider coverage may lag official completed games';target=a.repo/'raw/live';target.mkdir(parents=True,exist_ok=True);out=target/'pbp_position_estimates.csv';tmp=out.with_suffix('.tmp')
  with tmp.open('w',newline='')as f:w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
- tmp.replace(out);now=datetime.now(timezone.utc).isoformat();status={'checked_at':now,'seasons':{str(a.season):{'year':a.season,'status':'ok'if len(teams)==30 else 'partial','source':'pbpstats_lineup','method':'seconds_weighted_legal_lineup_permutation_posterior','teams_checked':len(teams),'rows':len(rows),'prior_asof':stamp,'note':'Inferred positions conditional on dated priors, not independent positional observations; capture time does not prove completed-game coverage',**audit}}}
+ tmp.replace(out);now=datetime.now(timezone.utc).isoformat();status={'checked_at':now,'seasons':{str(a.season):{'year':a.season,'status':'ok'if len(teams)==30 else 'partial','source':source,'method':'seconds_weighted_legal_lineup_permutation_posterior','teams_checked':len(reconciled),'rows':len(rows),'prior_asof':stamp,'note':'Inferred positions conditional on dated priors, not independent positional observations; capture time does not prove completed-game coverage',**audit}}}
  s=target/'position_status.json';stmp=s.with_suffix('.tmp');stmp.write_text(json.dumps(status,indent=2));stmp.replace(s);print(json.dumps(status))
 if __name__=='__main__':main()

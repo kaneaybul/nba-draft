@@ -42,7 +42,7 @@ def inspect_sources(repo,asof,season,coverage=None):
    if not stamp or day(stamp)!=asof:issues.append('observation_date:'+rel)
    if rel.endswith('position_status.json'):
     status=d.get('seasons',{}).get(str(season),{});f['season_status']=status.get('status')
-    if status.get('status') not in ('ok','updated','success'):issues.append('position_provider_not_fresh')
+    if status.get('status')!='ok' or status.get('source')!='sdv_nba_lineup_inferred' or status.get('teams_checked')!=30:issues.append('position_provider_not_fresh')
     continue
    if d.get('schema_version')!=1 or d.get('season')!=season:issues.append('schema_or_season:'+rel)
    for key in ('epm_as_of','darko_through','source_updated_at','held_components','held_skill_components','completed_games_at_fetch','teams_checked','review_pending','provisional_ids'):
