@@ -1,3 +1,22 @@
+apply_confirmed_contract_pending <- function(rows, base_dir) {
+  rows$contract_pending <- FALSE
+  path <- file.path(base_dir, "processed", "contracts", "current.json")
+  if (!file.exists(path)) return(rows)
+  book <- jsonlite::fromJSON(path, simplifyVector=FALSE)
+  if (is.null(book$contract_pending) || !length(book$contract_pending)) return(rows)
+  ids <- rows$nba_id
+  if ("source_nba_id" %in% names(rows)) { ok <- is.finite(rows$source_nba_id); ids[ok] <- rows$source_nba_id[ok] }
+  for (p in book$contract_pending) {
+    hit <- !is.na(ids) & ids == as.numeric(p$nba_id) & rows$year == as.integer(book$season)
+    rows$contract_pending[hit] <- TRUE
+    for (k in intersect(c("team","current_roster_team","team_projection_base","incumbent_team"),names(rows))) rows[[k]][hit] <- p$team
+    for (k in intersect(c("contract","contract_cap_salary","value_add","trade_value","scalability",grep("^projection_(effective_)?contract_y",names(rows),value=TRUE)),names(rows))) rows[[k]][hit] <- NA_real_
+    rows$contract_status[hit] <- "Contract Pending"
+    rows$pool_status[hit] <- "roster"
+  }
+  rows
+}
+
 get_script_dir <- function() {
   cmd_args <- commandArgs(trailingOnly = FALSE)
   file_arg <- "--file="
@@ -2585,6 +2604,7 @@ build_projected_2027_rows <- function(x, base_dir, cap_assumptions, contract_yea
   if (!nrow(rows)) return(rows)
   rows <- recalculate_projected_skill_rollups(rows, x)
   rows <- apply_live_player_pool(rows, x, base_dir)
+  rows <- apply_confirmed_contract_pending(rows, base_dir)
   rows <- apply_live_positions(rows, base_dir)
   rows <- apply_live_expected_ratings(rows, base_dir)
 
@@ -3914,7 +3934,7 @@ build_impact_players <- function(base_dir) {
   for (col in pool_character_fields) x[[col]] <- NA_character_
   for (col in live_minute_numeric_fields) x[[col]] <- NA_real_
   for (col in live_minute_character_fields) x[[col]] <- NA_character_
-  x$pool_review_pending <- FALSE; x$source_nba_id <- NA_real_
+  x$contract_pending <- FALSE; x$pool_review_pending <- FALSE; x$source_nba_id <- NA_real_
   x$contract_cap_salary <- NA_real_; x$contract_source <- NA_character_
   projected_2027 <- build_projected_2027_rows(x, base_dir, cap_assumptions, contract_year, contract_scale_model)
   if (nrow(projected_2027) > 0) {
@@ -3923,6 +3943,7 @@ build_impact_players <- function(base_dir) {
 
   x <- enforce_roster_truth_placements(x, contract_year)
 
+  x <- apply_confirmed_contract_pending(x, base_dir)
   x$source_note <- "Impact uses 40% EPM, 40% DPM, and 20% skill model output. Skill dimensions use a current-season-first 4,000-minute stabilized window with 0.75 per-season prior decay, light draft priors for first-year players, and low-sample shrinkage. Position is built from Basketball-Reference play-by-play position-share estimates when available, and replacement is a trailing 3-year plurality-position cutoff at the 75th rotation-useful player per position-season; each player's replacement value is then weighted by his position shares. Raw value live-casts current impact over blended expected minutes; Szn VA is season-produced value above available salary; FA value uses projected TIMIN, salary floors, max caps, market redistribution, and unmodeled roster reserves. Future scale uses known future contracts when available and otherwise estimates contract from a smoothed value-to-contract curve, with max salary only when projected value is at least the player's legal max."
 
   live_note <- x$year == contract_year + 1L & is.finite(x$live_current_weight)
@@ -3938,7 +3959,7 @@ build_impact_players <- function(base_dir) {
     "live_switch_evidence_minutes", "live_switch_current_weight", "live_switch_coverage_games", "live_switch_stats_games", "live_switch_status", "live_switch_observed_at",
     "pool_status", "pool_note", "pool_checked_at", "pool_identity_status", "pool_review_pending", "source_nba_id",
     "skill_source", "skill_source_year", "timin", "season_value", "raw_minutes", "raw_timin",
-    "value", "contract", "contract_cap_salary", "contract_source", "contract_status", "value_add", "trade_value",
+    "value", "contract_pending", "contract", "contract_cap_salary", "contract_source", "contract_status", "value_add", "trade_value",
     "fa_value", "fa_raw_value", "fa_uncapped_value", "fa_min_salary", "fa_max_salary",
     "fa_market_adjustment", "fa_projected_timin", "fa_missing_roster_slots", "fa_is_max",
     "fa_max_tier", "scalability", "skill_model_off", "skill_model_def", "skill_off_total", "skill_def_total",

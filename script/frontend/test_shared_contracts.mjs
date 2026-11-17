@@ -16,6 +16,12 @@ assert.equal(merged.find(p=>p.nba_id===1).cells[1].kind,'cap_hold');
 assert.equal(merged.find(p=>p.nba_id===1).cells[1].source,'cached');
 assert.equal(merged.length,2);
 assert.throws(()=>mergeSharedContracts({...fixture,complete:false},prior,[2027],p=>p.nba_id,s=>s),/Incomplete/);
+const pendingFixture={...fixture,contract_pending:[{nba_id:3,team:'UTA',player_name:'Pending',known_from:'2026-11-04'}]};
+const capped=mergeSharedContracts(pendingFixture,[...prior,{id:'old-pending',nba_id:3,player_name:'Pending',team:'UTA',
+ cells:[{year:2027,amount:999,kind:'guaranteed'}]}],[2027],p=>'player-'+p.nba_id,s=>s.toLowerCase());
+assert.equal(capped.find(p=>p.nba_id===3).cells[0].amount,null);
+assert.equal(capped.find(p=>p.nba_id===3).contract_pending,true);
+assert.equal(capCells(capped,2027).reduce((n,c)=>n+(c.amount??0),0),90);
 
 if(process.argv.includes('--require-export')) {
  const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -23,7 +29,15 @@ if(process.argv.includes('--require-export')) {
  const cap=JSON.parse(fs.readFileSync(path.join(root,'frontend/public/data/cap_tracker.json'),'utf8'));
  const players=JSON.parse(fs.readFileSync(path.join(root,`frontend/public/data/v2/impact_players/${book.season}.json`),'utf8'));
  const active=players.filter(p=>p.pool_status==='roster');
- assert.equal(active.length,book.players.length,'Current roster and the dated contract book must agree');
+ const pending=book.contract_pending??[];
+ assert.equal(active.length,book.players.length+pending.length,'Current roster and its priced plus confirmed pending book must agree');
+ for(const p of pending){
+   const id=r=>(r.source_nba_id??r.nba_id)===p.nba_id;
+   const row=active.find(id);
+   assert(row?.contract_pending&&row.team===p.team&&row.contract==null,'Contract-pending signing must appear on roster without salary');
+   const c=cap.contracts.find(r=>r.nba_id===p.nba_id&&r.team===p.team);
+   assert(c?.contract_pending&&c.cells.every(x=>x.amount==null&&x.counts_against_cap===false),'Pending signing must not contribute to cap totals');
+ }
  for(const p of book.players){
    const row=active.find(r=>(r.source_nba_id??r.nba_id)===p.nba_id);
    assert.ok(row,`Missing active contract player: ${p.player_name}`);
@@ -48,3 +62,4 @@ if(process.argv.includes('--require-export')) {
  console.log(`Complete contract coverage passed: ${book.players.length}/${book.players.length} roster players, 30 teams, all known salary years, and zero missing salaries.`);
 }
 console.log('Shared contract identity, guaranteed pay, cap charges, retained holds and two-way exemptions passed.');
+

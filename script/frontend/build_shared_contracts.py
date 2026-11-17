@@ -13,7 +13,7 @@ def read_json(path):
     if not path.exists() and path.with_suffix(path.suffix+'.gz').exists():path=path.with_suffix(path.suffix+'.gz')
     return json.loads(gzip.decompress(path.read_bytes()) if path.suffix=='.gz' else path.read_text())
 
-def build(repo,agreements=None,capture=None):
+def build(repo,agreements=None,capture=None,confirmed_transactions=None):
     agreements=agreements or read_json(repo/'processed/asset_history/contracts/contract_agreements.json')
     adjustments=repo/'processed/asset_history/contracts/contract_adjustments.json'
     if adjustments.exists():
@@ -29,17 +29,31 @@ def build(repo,agreements=None,capture=None):
         return caps[prior]*1.05**(y-prior)
     metadata={int(p['nba_id']):p for p in pool['players']if p.get('nba_id')is not None}
     roster=next(s['roster'] for s in capture['roster']if s['cutoff_date']==day)
-    records=[];dormant=[]
+    records=[];dormant=[];pending=[]
     for owned in roster:
         if owned.get('draft_rights'):continue
         pid=owned.get('nba_id')
         if pid is None:raise ValueError('Owned current contract needs a verified NBA identity: '+owned['player_name'])
-        cells,complete,agreement=agreements_at(agreements,owned['player_name'],pid,day,key,cap_for_year)
+        observed=owned.get('known_from','')
+        confirmed_new_signing=(observed>='2026-11-16' and owned.get('arrival_kind')=='add'
+            and owned.get('event_id') in (confirmed_transactions or ()) and bool(owned.get('source')))
+        # An older or different-team contract is not evidence of this new
+        # agreement. Keep legacy and traded schedules on their usual path.
+        eligible=agreements
+        if confirmed_new_signing:
+            eligible=[a for a in agreements if a['known_from']>=observed
+                and (a.get('adjustment_only') or a.get('signing_team')==owned['team'])]
+        cells,complete,agreement=agreements_at(eligible,owned['player_name'],pid,day,key,cap_for_year)
         current=next((c for c in cells if c['year']==year and c.get('amount')is not None),None)
         if not current and owned.get('rfa_pending'):
             dormant.append(dict(nba_id=pid,player_name=owned['player_name'],reason='Retained rights without a current signed NBA salary'))
             continue
         if not complete or not current or not current['amount']>0:
+            if confirmed_new_signing:
+                pending.append(dict(nba_id=int(pid),player_name=owned['player_name'],team=owned['team'],
+                    known_from=observed,source=owned['source'],two_way=owned.get('two_way',False),
+                    event_id=owned['event_id']))
+                continue
             raise ValueError('Incomplete dated contract: '+owned['player_name'])
         title=agreement.get('contract_type','');two_way='TWO-WAY'in title.upper()
         out=[]
@@ -68,7 +82,7 @@ def build(repo,agreements=None,capture=None):
             contract_type=title,two_way=two_way,position=meta.get('position'),source=agreement['source'],
             known_from=agreement['known_from'],ownership_source=owned.get('source'),cells=out,
             current_salary=next(c['amount']for c in out if c['year']==year),current_status=next(c['status']for c in out if c['year']==year)))
-    ids=[r['nba_id']for r in records]
+    ids=[r['nba_id']for r in records+pending]
     if any(not r['current_salary']or r['current_salary']<=0 for r in records):raise ValueError('Missing signed player salary')
     if len(ids)!=len(set(ids)):raise ValueError('Duplicate contract ownership')
     teams=sorted({r['team']for r in records})
@@ -77,8 +91,10 @@ def build(repo,agreements=None,capture=None):
         for p in pool['players']if p.get('pool_status')=='roster'and p.get('nba_id')is not None and int(p['nba_id'])not in ids]
     audit=read_json(repo/'processed/asset_history/contracts/refresh_audit.json')if(repo/'processed/asset_history/contracts/refresh_audit.json').exists()else{}
     return dict(schema_version=1,as_of=day,season=year,generated_at=datetime.now(timezone.utc).isoformat(),
-        complete=True,teams=teams,players=records,inactive_registry_records=inactive,dormant_rights=dormant,
-        coverage=dict(active_players=len(records),priced_players=len(records),missing_players=[],teams=30),
+        complete=True,teams=teams,players=records,contract_pending=pending,
+        inactive_registry_records=inactive,dormant_rights=dormant,
+        coverage=dict(active_players=len(ids),priced_players=len(records),missing_players=[],
+            pending_players=len(pending),teams=30),
         source_refresh=dict(checked_at=audit.get('generated_at'),available_players=audit.get('available_players'),
             retained_agreements=audit.get('retained_agreements',[]),source_failures=audit.get('optional_source_failures',[])))
 
@@ -110,3 +126,4 @@ def write(repo,data):
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--repo',type=Path,default=ROOT);args=parser.parse_args()
     write(args.repo,build(args.repo))
+

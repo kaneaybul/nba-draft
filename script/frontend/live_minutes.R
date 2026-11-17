@@ -157,6 +157,8 @@ apply_rolling_minute_cell <- function(rows,feed,ordinal=rep(1L,nrow(rows)),rebal
   team <- if('team_projection_base'%in%names(rows)) rows$team_projection_base else rows$team
   keys <- paste(team,ifelse(is.finite(ids),paste0('id:',format(ids,scientific=FALSE,trim=TRUE)),paste0('name:',rows$player_name)),sep='|')
   found <- match(keys,feed$keys);roster <- !is.na(rows$pool_status)&rows$pool_status=='roster'&team!='FA'
+  participant_roster <- roster
+  if ('contract_pending' %in% names(rows)) roster <- roster & !rows$contract_pending
   if(any(roster&is.na(found))) stop('Missing direct role for roster player: ',paste(rows$player_name[roster&is.na(found)],collapse=', '))
   if (require_complete && (anyDuplicated(keys[roster]) || !setequal(keys[roster],feed$keys))) {
     stop("Direct role ownership differs from the healthy R roster")
@@ -170,7 +172,8 @@ apply_rolling_minute_cell <- function(rows,feed,ordinal=rep(1L,nrow(rows)),rebal
     if(length(v)!=3||any(!is.finite(v))||v[1]<0||v[1]>1+1e-8||v[2]<0||v[2]>38+1e-8||abs(v[1]*v[2]-v[3])>1e-7) stop('Invalid direct role cell')
     rows$minutes_play_probability[i] <- v[1];rows$minutes_input_mpg[i] <- v[2];rows$minutes_expected_mpg[i] <- v[3]
   }
-  if(rebalance) for(idx in split(which(roster),team[roster])) rows$minutes_expected_mpg[idx] <- balance_live_minutes(rows$minutes_expected_mpg[idx],38*rows$minutes_play_probability[idx])
+  if(rebalance) for(idx in split(which(participant_roster),team[participant_roster])) rows$minutes_expected_mpg[idx] <- balance_live_minutes(rows$minutes_expected_mpg[idx],38*rows$minutes_play_probability[idx])
   rows$minutes_healthy_mpg <- ifelse(rows$minutes_play_probability>0,rows$minutes_expected_mpg/rows$minutes_play_probability,0)
   rows
 }
+

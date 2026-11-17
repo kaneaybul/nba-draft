@@ -3,8 +3,9 @@ export function mergeSharedContracts(snapshot, previous, years, idFor, normalize
   if (!snapshot?.complete || snapshot.players.length !== snapshot.coverage.priced_players || snapshot.coverage.missing_players.length) {
     throw new Error('Incomplete shared contract publication');
   }
-  const ids = new Set(snapshot.players.map(p => p.nba_id));
-  const keys = new Set(snapshot.players.map(p => `${p.team}||${normalize(p.player_name)}`));
+  const pending = snapshot.contract_pending ?? [];
+  const ids = new Set([...snapshot.players, ...pending].map(p => p.nba_id));
+  const keys = new Set([...snapshot.players, ...pending].map(p => `${p.team}||${normalize(p.player_name)}`));
   const existing = new Map(previous.map(p => [`${p.team}||${normalize(p.player_name)}`, p]));
   const result = previous.filter(p => !ids.has(p.nba_id) && !keys.has(`${p.team}||${normalize(p.player_name)}`))
     .map(p => ({...p, cells:p.cells.map(c => c.kind === 'cap_hold' ? {...c, source:'cached', source_quality:'cached', note:'Retained cap-hold estimate from the prior cap source'} : {year:c.year,amount:null,kind:'empty',status:null})}))
@@ -24,6 +25,13 @@ export function mergeSharedContracts(snapshot, previous, years, idFor, normalize
       contract_notes:`Signed agreement known from ${p.known_from}; ownership verified ${snapshot.as_of}${review ? '; source revision held for review; last validated schedule retained' : ''}`,
       is_two_way:p.two_way,cells});
   }
+  for (const p of pending) {
+    result.push({id:idFor(p,p.team),canonical_key:idFor(p,p.team),nba_id:p.nba_id,
+      player_name:p.player_name,team:p.team,row_type:'player',contract_pending:true,
+      source:p.source,source_quality:'unavailable',contract_as_of:snapshot.as_of,
+      contract_notes:`Confirmed roster member from ${p.known_from}; contract terms TBD; excluded from signed totals`,
+      is_two_way:p.two_way,cells:years.map(year=>({year,amount:null,kind:'empty',status:'Contract Pending',source:'unavailable',counts_against_cap:false}))});
+  }
   if (new Set(result.map(r => r.id)).size !== result.length) throw new Error('Duplicate shared contract identity');
   return result;
 }
@@ -33,3 +41,4 @@ export function capCells(rows, year) {
     .map(c => ({...c, amount:c.cap_amount ?? c.amount,
       guaranteed_amount:c.guaranteed_amount == null ? null : Math.min(c.cap_amount ?? c.amount ?? 0,c.guaranteed_amount)}));
 }
+

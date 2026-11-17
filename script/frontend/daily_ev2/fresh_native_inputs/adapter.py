@@ -5,6 +5,8 @@ from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent/'phase2'))
 from source_injury_metadata import prepare as prepare_acute
 import injury_calendar
+sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
+from pending_contracts import memberships,priced_roster,native_asset_ledger,overlay_recent_terms
 TEAMS=set('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split())
 MODEL='fb08a02655155274d902433d6d35727fede1b45c1c7871977338e34138cc775f'
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
@@ -23,7 +25,7 @@ def certify(repo,demographics,schedule,model,asof,season):
   if v.get('season')!=season:raise ValueError('Wrong source season: '+k)
   if k in ('roster','results','injuries') and v['teams_checked']!=30:raise ValueError('Incomplete source: '+k)
  if (date.fromisoformat(source['ratings']['epm_as_of'])-timedelta(days=1)).isoformat()>asof or source['ratings']['darko_through']>asof:raise ValueError('Future provider performance')
- book=source['ownership'];owners={(int(r['nba_id']),r['team']) for r in book['players']}
+ book=source['ownership'];signed,pending=memberships(book,asof);owners=set(signed.items())
  if not book['complete'] or len(owners)!=len(book['players']) or {t for _,t in owners}!=TEAMS:raise ValueError('Incomplete signed ownership')
  rows=json.loads(demographics.read_text());games=json.loads(schedule.read_text());seen=set()
  if not games or any(g.get('season')!=season for g in games):raise ValueError('Wrong schedule season')
@@ -36,19 +38,19 @@ def certify(repo,demographics,schedule,model,asof,season):
   pid=r.get('source_nba_id') or r['nba_id']
   if pid in seen:raise ValueError('Duplicate demographic identity')
   seen.add(pid)
-  if r.get('pool_status')=='roster':
-   if (int(pid),r['team']) not in owners:raise ValueError('Unapproved demographic owner')
+  if r.get('pool_status') in ('roster','contract_pending'):
+   if (int(pid),r['team']) not in owners|set(pending.items()):raise ValueError('Unapproved demographic owner')
    old=prior.get(int(pid),{});age=r.get('age');yoe=r.get('yoe');position=r.get('Pos1') or r.get('position') or old.get('position')
    if age is None and old:age=float(old['age'])+season-int(old['season'])
    rookie=int(old['rookie_season']) if old else season-int(yoe)+1 if yoe is not None else None
    if not isinstance(age,(int,float)) or not math.isfinite(age) or rookie is None or not position:raise ValueError('Missing source demographic: '+r['player_name'])
    if yoe is None:fallback.append({'nba_id':int(pid),'field':'rookie_season','source_cutoff':old['cutoff']})
- if {(int(r.get('source_nba_id') or r['nba_id']),r['team']) for r in rows if r.get('pool_status')=='roster'}!=owners:raise ValueError('Incomplete demographic ownership')
- acute=prepare_acute([r for r in rows if r.get('pool_status')=='roster'],source['injuries'],games,asof,injury_calendar);byid={r['nba_id']:r for r in acute}
+ priced=priced_roster(rows,book,asof)
+ acute=prepare_acute(priced,source['injuries'],games,asof,injury_calendar);byid={r['nba_id']:r for r in acute}
  metadata=[byid.get(r['nba_id'],r) for r in rows]
  resultgames=[g for g in source['results']['games'] if g.get('is_completed')]
  if any(g['date']>asof for g in resultgames):raise ValueError('Future completed game')
- receipt={'asof':asof,'scope':'dated-native-inputs-only-not-replayed-not-priced-not-published','season':season,'model_sha256':MODEL,'sources':{k:{'path':str(p.resolve()),'sha256':sha(p)} for k,p in files.items()},'demographics_sha256':sha(demographics),'schedule_sha256':sha(schedule),'native_existing_demographic_fallbacks':fallback,'prior_darko_sha256':sha(history),'owned_players':len(owners),'demographic_players':len(rows),'source_performance':{'epm_pregame':source['ratings']['epm_as_of'],'darko_through':source['ratings']['darko_through'],'latest_completed_game':max(g['date'] for g in resultgames),'completed_games':len(resultgames)}}
+ receipt={'asof':asof,'scope':'dated-native-inputs-only-not-replayed-not-priced-not-published','season':season,'model_sha256':MODEL,'sources':{k:{'path':str(p.resolve()),'sha256':sha(p)} for k,p in files.items()},'demographics_sha256':sha(demographics),'schedule_sha256':sha(schedule),'native_existing_demographic_fallbacks':fallback,'prior_darko_sha256':sha(history),'owned_players':len(owners),'contract_pending_players':len(pending),'contract_pending_ids':sorted(pending),'contract_pending_policy':'display_TBD_excluded_from_native_assets','demographic_players':len(rows),'source_performance':{'epm_pregame':source['ratings']['epm_as_of'],'darko_through':source['ratings']['darko_through'],'latest_completed_game':max(g['date'] for g in resultgames),'completed_games':len(resultgames)}}
  return metadata,games,receipt
 
 METHOD='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster'
@@ -82,14 +84,20 @@ def validate_bundle(native,source,demographics,schedule,collector_receipt,owners
  dated=[x for x in load(ledger)if x['cutoff_date']==asof]
  if len(dated)!=1:raise ValueError('Missing or duplicate dated ownership ledger')
  ledger_owners={(int(r['nba_id']),r['team'])for r in dated[0]['roster']if r.get('nba_id')is not None and not r.get('draft_rights') and not r.get('rfa_pending')}
- signed={(int(r['nba_id']),r['team'])for r in load(book)['players']}
- if ledger_owners!=signed:raise ValueError('Ledger/signed book ownership mismatch')
+ signed_map,pending_map=memberships(load(book),asof)
+ signed=set(signed_map.items());pending=set(pending_map.items())
+ if ledger_owners!=signed|pending:raise ValueError('Ledger/signed and confirmed pending ownership mismatch')
  # Metadata/calendar provenance must be explicitly bound, not a renamed frozen output.
  rp=load(r_receipt)
  if rp.get('schema')!='nba-source-r-demographics-calendar-v1' or rp.get('asof')!=asof or rp.get('season')!=season:raise ValueError('Missing R provenance binding')
  for key,path in [('demographics',demographics),('schedule',schedule)]:
   item=rp.get(key,{})
   if item.get('asof')!=asof or checked_file(item)!=Path(path).resolve():raise ValueError('Unbound dated '+key)
+ recent=o.get('recent_contract_terms')
+ if recent:
+  if recent.get('reviewed')is not True:raise ValueError('Unreviewed recent contract terms')
+  terms_path=checked_file(recent)
+  overlay_recent_terms(load(native/'repo/processed/asset_history/contracts/contract_agreements.json'),load(terms_path),load(events),load(book),asof)
  rows,games,r=certify(source,Path(demographics),Path(schedule),native/'runtime/sparse_role_models.json',asof,season)
  def game_map(rows):
   out={}
@@ -102,6 +110,7 @@ def validate_bundle(native,source,demographics,schedule,collector_receipt,owners
  expected=game_map(games);actual=game_map(load(source/'raw/live/results.json')['games'])
  if not expected or expected!=actual:raise ValueError('Independent schedule/result matchup or score mismatch')
  r.update(method=METHOD,collector_receipt_sha256=sha(collector_receipt),ownership_receipt_sha256=sha(ownership_receipt),dated_ledger_sha256=sha(ledger),dated_ownership_audit_sha256=sha(audit),ownership_events_sha256=sha(events),native_terms_sha256={k:v['sha256']for k,v in o['native_terms'].items()},native_code_sha256={str(p.relative_to(native/'repo')):sha(p)for p in (native/'repo/script/asset_history').rglob('*.py')},demographic_calendar_binding=rp,r_provenance_receipt_sha256=sha(r_receipt),retained_non_signed_rights=[r for r in dated[0]['roster']if r.get('rfa_pending') or r.get('draft_rights')])
+ if recent:r['recent_contract_terms']={'path':str(terms_path),'sha256':sha(terms_path),'reviewed':True}
  return rows,games,r,ledger,audit
 
 def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True):
@@ -117,7 +126,16 @@ def prepare(native,source,demographics,schedule,collector_receipt,ownership_rece
   if sha(p)!=expected:raise ValueError('Source changed during copy')
  for rel,data in [(f'impact_players/{season}.json',rows),(f'team_schedules/{season}.json',games)]:
   p=repo/'frontend/public/data/v2'/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(data,allow_nan=False))
- target=runtime/'monthly_reconstruction/league_ownership';shutil.copy2(ledger,target/'monthly_league_rosters.json');shutil.copy2(audit,target/'roster_refresh_source.json');shutil.copy2(checked_file(load(ownership_receipt)['ownership_events']),target/'league_events.json')
+ target=runtime/'monthly_reconstruction/league_ownership';shutil.copy2(audit,target/'roster_refresh_source.json');shutil.copy2(checked_file(load(ownership_receipt)['ownership_events']),target/'league_events.json')
+ # Keep the authoritative ledger intact; derive only this isolated current asset roster.
+ pending_ids=set(r['contract_pending_ids']);native_ledger=native_asset_ledger(load(ledger),asof,pending_ids)
+ (target/'monthly_league_rosters.json').write_text(json.dumps(native_ledger))
+ r['native_pending_exclusion']={'asof':asof,'ids':sorted(pending_ids),'authoritative_ledger_sha256':sha(ledger),'derived_ledger_sha256':sha(target/'monthly_league_rosters.json'),'policy':'confirmed_contract_pending_not_priced'}
+ if r.get('recent_contract_terms'):
+  recent=checked_file(r['recent_contract_terms']);p=repo/'processed/asset_history/contracts/contract_agreements.json';base_hash=sha(p)
+  merged=overlay_recent_terms(load(p),load(recent),load(target/'league_events.json'),load(repo/'processed/contracts/current.json'),asof)
+  p.write_text(json.dumps(merged,allow_nan=False))
+  r['native_terms_overlay']={'base_sha256':base_hash,'reviewed_artifact_sha256':sha(recent),'staged_sha256':sha(p),'scope':'verified event-linked episodes only; frozen source unchanged'}
  # Strip same/future provider fallback rows in isolated copy only.
  p=runtime/'monthly_reconstruction/darko/end_of_month/darko_monthly.csv';records=list(csv.DictReader(p.open()));fields=list(records[0]);records=[x for x in records if x['cutoff']<asof]
  with p.open('w')as f:w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(records)
