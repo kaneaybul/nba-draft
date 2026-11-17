@@ -3,7 +3,7 @@
 No fitting: each five-player lineup has one PG/SG/SF/PF/C in every assignment.
 Dated priors inform assignment ambiguity; posterior seconds yield player shares.
 """
-import argparse,csv,itertools,json,math,os,urllib.request,urllib.parse
+import argparse,csv,itertools,json,math,os,time,urllib.error,urllib.request,urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime,timezone
 from pathlib import Path
@@ -57,10 +57,20 @@ def infer(payloads,priors,names,season,stamp):
   out.append(dict(nba_id=int(pid),player_name=a['name'],name=a['name'],year=season,team=next(iter(a['teams']))if len(a['teams'])==1 else 'TOT',**dict(zip(FIELDS,shares)),position_estimate=POS[max(range(5),key=lambda k:shares[k])],position_entropy=entropy,position_index=sum((k+1)*x for k,x in enumerate(shares)),minutes=a['seconds']/60,source='pbpstats_lineup',prior_asof=stamp,prior_available=pid in priors,uncertain=pid not in priors or a['seconds']<600 or max(shares)<.5))
  audit['unknown_prior_ids']=sorted(audit['unknown_prior_ids']);audit['players']=len(out);audit['uncertain_players']=sum(r['uncertain']for r in out);return out,audit
 
+def load_api(url):
+ req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'})
+ for delay in (0,2,5):
+  if delay:time.sleep(delay)
+  try:
+   with urllib.request.urlopen(req,timeout=30)as response:return json.load(response)
+  except urllib.error.HTTPError as ex:
+   if ex.code not in (429,500,502,503,504) or delay==5:raise
+  except (urllib.error.URLError,TimeoutError):
+   if delay==5:raise
+
 def fetch(team,season):
  query=urllib.parse.urlencode({'Season':f'{season-1}-{str(season)[-2:]}','SeasonType':'Regular Season','Type':'Lineup','TeamId':TEAMS[team]})
- req=urllib.request.Request('https://api.pbpstats.com/get-totals/nba?'+query,headers={'User-Agent':'Mozilla/5.0'})
- with urllib.request.urlopen(req,timeout=45)as response:return team,json.load(response)
+ return team,load_api('https://api.pbpstats.com/get-totals/nba?'+query)
 
 def coverage(payloads,totals):
  byid={str(r['TeamId']):r for r in totals['multi_row_table_data']};proof={}
@@ -77,11 +87,11 @@ def main():
  prior=a.prior or a.repo/f'raw/pbp_position_prior_{a.season}.json';priors,names,stamp=prior_table(prior);teams=[a.team]if a.team else list(TEAMS)
  if a.input_json:payloads=[(a.team,json.loads(a.input_json.read_text()))]
  else:
-  with ThreadPoolExecutor(max_workers=5)as pool:payloads=list(pool.map(lambda t:fetch(t,a.season),teams))
+  with ThreadPoolExecutor(max_workers=3)as pool:payloads=list(pool.map(lambda t:fetch(t,a.season),teams))
  if a.team_totals_json:totals=json.loads(a.team_totals_json.read_text())
  elif not a.input_json:
   url='https://api.pbpstats.com/get-totals/nba?'+urllib.parse.urlencode({'Season':f'{a.season-1}-{str(a.season)[-2:]}','SeasonType':'Regular Season','Type':'Team'})
-  with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'}),timeout=45)as response:totals=json.load(response)
+  totals=load_api(url)
  else:raise ValueError('Saved sample requires --team-totals-json for independent seconds reconciliation')
  reconciled=coverage(payloads,totals)
  rows,audit=infer(payloads,priors,names,a.season,stamp);audit['pbp_team_coverage']=reconciled;audit['coverage_basis']='PBP provider team totals; may lag official completed games';target=a.repo/'raw/live';target.mkdir(parents=True,exist_ok=True);out=target/'pbp_position_estimates.csv';tmp=out.with_suffix('.tmp')
