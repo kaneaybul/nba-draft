@@ -81,6 +81,38 @@ new_pool_player <- function(template,record,history,season,providers) {
   row
 }
 
+resolve_pool_registry_aliases <- function(players, shared) {
+  # Resolve identities BEFORE signed ownership rewrites erase FA/roster evidence.
+  if (is.null(shared)) return(list(players=players, suppressed_app_ids=numeric()))
+  approved <- c(shared$players, shared$contract_pending)
+  approved_by_id <- setNames(approved, vapply(approved, function(p) as.character(p$nba_id), character(1)))
+  ids <- vapply(players, function(p) as.character(pool_scalar(p$nba_id, NA_real_)), character(1))
+  keep <- rep(TRUE, length(players)); suppressed_app_ids <- numeric()
+  for (id in unique(ids[!is.na(ids) & ids != 'NA'])) {
+    idx <- which(ids == id)
+    if (length(idx) < 2L) next
+    group <- players[idx]
+    active <- vapply(group, function(p) pool_scalar(p$pool_status, '') %in% c('roster','contract_pending'), logical(1))
+    owner <- approved_by_id[[id]]
+    # Unowned non-roster duplicates cannot be promoted by the signed loop.
+    if (is.null(owner) && !any(active)) next
+    aliases <- group[!active]
+    valid_aliases <- vapply(aliases, function(p) identical(pool_scalar(p$team, ''), 'FA') &&
+      pool_scalar(p$pool_status, '') %in% c('inactive','free_agent'), logical(1))
+    if (sum(active) != 1L || is.null(owner) ||
+        !identical(group[[which(active)[1]]]$team, owner$team) || !all(valid_aliases)) {
+      stop('Conflicting player registry identity: ', id)
+    }
+    keep[idx[!active]] <- FALSE
+    suppressed_app_ids <- c(suppressed_app_ids, vapply(aliases, function(p) as.numeric(p$app_nba_id), numeric(1)))
+    message('Player registry: retained verified ', owner$team, ' identity ', id,
+            '; suppressed ', length(aliases), ' non-roster FA alias(es)')
+  }
+  retained <- players[keep]
+  retained_ids <- vapply(retained, function(p) as.numeric(p$app_nba_id), numeric(1))
+  list(players=retained, suppressed_app_ids=setdiff(suppressed_app_ids, retained_ids))
+}
+
 apply_live_player_pool <- function(rows,history,base_dir) {
   path <- file.path(base_dir,'raw/live/player_pool.json')
   if(!file.exists(path)) stop('Daily player registry is required')
@@ -95,6 +127,9 @@ apply_live_player_pool <- function(rows,history,base_dir) {
   if(!is.null(shared)) {
     stopifnot(isTRUE(shared$complete),shared$coverage$priced_players==length(shared$players),length(shared$coverage$missing_players)==0L)
     if(shared$as_of > substr(registry$generated_at,1,10)) stop('Shared contracts are newer than the current roster capture')
+    resolved <- resolve_pool_registry_aliases(registry$players, shared)
+    registry$players <- resolved$players
+    rows <- rows[!rows$nba_id %in% resolved$suppressed_app_ids,,drop=FALSE]
     registry$source <- paste('Dated signed-agreement ownership ledger',shared$as_of)
     shared_by_id <- setNames(shared$players,vapply(shared$players,function(p)as.character(p$nba_id),character(1)))
     seen <- character()
