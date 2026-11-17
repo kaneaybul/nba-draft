@@ -608,7 +608,7 @@ function ContractCell({
   onDecision: (row: CapTrackerContractRow, cell: CapTrackerContractCell, action: string) => void;
   onResetDecision: (row: CapTrackerContractRow, cell: CapTrackerContractCell) => void;
 }) {
-  if (row.contract_pending) return <td className="cap-cell" title="Confirmed roster member; contract terms pending. Excluded from known signed salary totals.">TBD</td>;
+  if (isPendingContractCell(row, cell)) return <td className="cap-cell" title="Confirmed roster member; contract terms pending. Excluded from known signed salary totals.">TBD</td>;
   if (!cell.amount) return <td className="cap-cell empty">-</td>;
   const renounced = holdTreatment === "renounce" && cell.kind === "cap_hold";
   const badge = cell.label || cellBadges[cell.kind] || cell.status;
@@ -708,7 +708,7 @@ function SelectionPanel({ tracker, row, seasons, moneyDisplay }: { tracker: CapT
       </SidePanel>
     );
   }
-  const visibleCells = row.cells.filter((cell) => seasons.includes(cell.year) && cell.amount > 0);
+  const visibleCells = row.cells.filter((cell) => seasons.includes(cell.year) && cellIsVisible(row, cell));
   return (
     <section className="cap-side-panel cap-selection-panel">
       <div className="panel-heading">
@@ -723,7 +723,7 @@ function SelectionPanel({ tracker, row, seasons, moneyDisplay }: { tracker: CapT
           <FactRow
             key={`${row.id}-${cell.year}`}
             label={`${seasonLabel(tracker, cell.year)} ${cell.label || cellBadges[cell.kind] || cell.status}`}
-            value={formatMoneyMode(cell.amount, moneyDisplay)}
+            value={isPendingContractCell(row, cell) ? "TBD" : formatMoneyMode(cell.amount, moneyDisplay)}
             detail={[cell.status, sourceLabel(cell.source), cell.note].filter(Boolean).join(" / ")}
           />
         ))}
@@ -792,12 +792,21 @@ function defaultTeamForTracker(tracker: CapTrackerData | undefined) {
   return preferredDefaultTeams.find((item) => tracker.teams.some((team) => team.team === item)) ?? tracker.teams[0].team;
 }
 
+function isPendingContractCell(row: CapTrackerContractRow, cell: CapTrackerContractCell) {
+  return row.contract_pending === true && cell.status === "Contract Pending";
+}
+
+function cellIsVisible(row: CapTrackerContractRow, cell: CapTrackerContractCell) {
+  return cell.amount > 0 || isPendingContractCell(row, cell);
+}
+
 function rowHasMoneyInRange(row: CapTrackerContractRow, startYear: number, endYear: number) {
-  return row.cells.some((cell) => cell.year >= startYear && cell.year <= endYear && cell.amount > 0);
+  return row.cells.some((cell) => cell.year >= startYear && cell.year <= endYear && cellIsVisible(row, cell));
 }
 
 function rowMatchesFilters(row: CapTrackerContractRow, startYear: number, endYear: number, search: string, kindFilter: string, sourceFilter: string) {
-  const visibleCells = row.cells.filter((cell) => cell.year >= startYear && cell.year <= endYear && cell.amount > 0);
+  const visibleCells = row.cells.filter((cell) => cell.year >= startYear && cell.year <= endYear && cellIsVisible(row, cell));
+  if (visibleCells.length === 0) return false;
   const searchKey = search.trim().toLowerCase();
   if (searchKey) {
     const haystack = [
