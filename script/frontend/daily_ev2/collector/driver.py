@@ -55,7 +55,11 @@ def inspect_sources(repo,asof,season,coverage=None):
     if not isinstance(rows,list) or not rows:issues.append('empty_players:'+rel);continue
     ids=[(r.get('team'),r.get('name_key')) if rel.endswith('injury_outlook.json') else (r.get('app_nba_id') or r.get('nba_id')) for r in rows]
     if any(x is None or (isinstance(x,tuple) and None in x) for x in ids) or len(set(map(str,ids)))!=len(ids):issues.append('unresolved_or_duplicate_id:'+rel)
-   if rel.endswith('player_pool.json') and (d.get('review_pending') or d.get('provisional_ids')):issues.append('ownership_identity_review_pending')
+   # ESPN's registry is not the signed book. Keep its exceptions visible, but
+   # let prepare_work_contracts and the native binding check actual ownership.
+   # Both still require exact, complete ownership before any valuation export.
+   if rel.endswith('player_pool.json'):
+    f['ownership_identity_review_pending']=bool(d.get('review_pending') or d.get('provisional_ids'))
    if rel.endswith('positions.json') and any(r.get('primary_position') not in ('PG','SG','SF','PF','C') for r in d['players']):issues.append('missing_primary_position')
   except (ValueError,TypeError,KeyError,AttributeError) as e:issues.append('invalid_source:'+rel+':'+type(e).__name__)
  results=loaded.get('raw/live/results.json',{});games=results.get('games',[])
