@@ -7,6 +7,7 @@ import math
 import os
 from pathlib import Path
 import subprocess
+import warnings
 from zoneinfo import ZoneInfo
 
 from dated_source_receipts import bind, write_new
@@ -38,7 +39,73 @@ def owners(rows, field="team"):
     return pairs
 
 
-def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, season, injury_time, pending_owners=None):
+def verify_minute_budgets(by_team, evidence_file, expected, asof, season, injury_time, current_schedule):
+    # Only tiny deficits proven by the actual dated allocator may be warnings.
+    tolerance=1e-6
+    deficits={team:240*max(x[1] for x in values)-sum(x[0] for x in values)
+              for team,values in by_team.items()}
+    evidence=load(evidence_file) if evidence_file is not None else None
+    records=[]
+    if evidence is not None:
+        if (evidence.get("schema"),evidence.get("asof"),evidence.get("season"),
+            evidence.get("injury_time"),evidence.get("complete")) != (
+                "nba-minute-capacity-evidence-v1",asof,season,injury_time,True):
+            raise ValueError("Invalid minute capacity evidence binding")
+        records=evidence.get("shortfalls")
+        if not isinstance(records,list):
+            raise ValueError("Invalid minute capacity evidence records")
+    explained=defaultdict(float); seen=set()
+    for r in records:
+        team,date=r.get("team"),r.get("date")
+        key=(team,date)
+        if team not in TEAMS or not isinstance(date,str) or date<asof or key in seen:
+            raise ValueError("Invalid or duplicate minute capacity evidence date/team")
+        seen.add(key)
+        games=r.get("games")
+        calendar_games=sum(1 for g in current_schedule
+            if g.get("date")==date and g.get("season_type")=="Regular Season"
+            and g.get("is_completed") is not True
+            and (g.get("selected_team")==team if g.get("is_placeholder") is True
+                 else team in (g.get("home_team"),g.get("away_team"))))
+        if type(games) is not int or games<1 or games!=calendar_games:
+            raise ValueError("Minute capacity evidence calendar mismatch")
+        values=[r.get(k) for k in ("allocated","hard_capacity","shortfall")]
+        if any(type(v) not in (int,float) or not math.isfinite(v) for v in values):
+            raise ValueError("Invalid minute capacity evidence numbers")
+        allocated,capacity,shortfall=values
+        participants=r.get("participants")
+        if not isinstance(participants,list):
+            raise ValueError("Missing minute capacity participants")
+        probabilities={}
+        for row in participants:
+            pid,probability=row.get("nba_id"),row.get("probability")
+            if (type(pid) is not int or pid in probabilities or expected.get(pid)!=team
+                or type(probability) not in (int,float) or not math.isfinite(probability)
+                or not 0<=probability<=1):
+                raise ValueError("Invalid minute capacity participant")
+            probabilities[pid]=probability
+        if set(probabilities)!={pid for pid,owner in expected.items() if owner==team}:
+            raise ValueError("Incomplete minute capacity participants")
+        if (not 0<shortfall<=3 or allocated<0 or capacity>=240
+            or abs(capacity-48*sum(probabilities.values()))>tolerance
+            or abs(allocated-capacity)>tolerance or abs(shortfall-(240-allocated))>tolerance):
+            raise ValueError("Unexplained or excessive dated minute shortfall")
+        explained[team]+=games*shortfall
+    notes=[]
+    for team,deficit in deficits.items():
+        if abs(deficit)<=tolerance and abs(explained[team])<=tolerance:
+            continue
+        if (not 0<deficit<=3 or explained[team]>3
+            or abs(deficit-explained[team])>tolerance):
+            raise ValueError(f"R minutes do not reconcile team budgets: {team}, deficit={deficit:.9f}")
+        note=dict(team=team,shortfall=deficit,reason="verified dated hard-cap shortage",
+                  evidence_games=[r for r in records if r["team"]==team])
+        notes.append(note)
+        warnings.warn(f"{team}: {deficit:.6f} remaining minutes unallocated; verified dated hard-cap shortage", RuntimeWarning)
+    return max(abs(v) for v in deficits.values()),notes
+
+
+def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, season, injury_time, pending_owners=None, budget_evidence_file=None):
     pending_owners=pending_owners or {}
     rows=[r for r in load(players_file) if r.get("year")==season and r.get("pool_status") in ("roster","contract_pending")]
     expected={**book_owners,**pending_owners}
@@ -56,9 +123,6 @@ def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, s
         if total+1e-6<actual or abs(total-actual-remaining)>.11 or games!=int(games) or games>82:
             raise ValueError("R minute clock or reconciliation failed")
         by_team[row["team"]].append((remaining,games))
-    max_error=max(abs(sum(x[0] for x in rows)-240*max(x[1] for x in rows)) for rows in by_team.values())
-    if max_error>1e-6:
-        raise ValueError("R minutes do not reconcile all 30 team budgets")
     team_rows=[r.get("team") for r in load(teams_file) if r.get("year")==season and r.get("scenario_id")=="base"]
     if len(team_rows)!=30 or set(team_rows)!=TEAMS:
         raise ValueError("Incomplete base-team R projections")
@@ -67,7 +131,8 @@ def verify_outputs(players_file, teams_file, schedule_file, book_owners, asof, s
         raise ValueError("Incomplete R team calendar")
     if any(r.get("is_completed") is True and r.get("date","9999")>asof for r in current_schedule):
         raise ValueError("R calendar contains future finals")
-    return dict(teams=30,roster_count=len(book_owners),participant_count=len(rows),contract_pending_count=len(pending_owners),team_budget_max_error=max_error)
+    max_error,minute_warnings=verify_minute_budgets(by_team,budget_evidence_file,expected,asof,season,injury_time,current_schedule)
+    return dict(teams=30,roster_count=len(book_owners),participant_count=len(rows),contract_pending_count=len(pending_owners),team_budget_max_error=max_error,minute_budget_warnings=minute_warnings)
 
 
 def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, player_quote_receipt):
@@ -121,16 +186,18 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
     hashes={k:sha(p) for k,p in tracked.items()}
     work.mkdir(exist_ok=False)
     write_new(work/"claim.json",dict(asof=asof,season=season,input_sha256=hashes))
+    budget_evidence=work/"minute_capacity_evidence.json"
     with (work/"r_export.log").open("x") as log:
         subprocess.run(["Rscript","--vanilla","script/frontend/export_frontend_data.R"], cwd=repo,
                        stdout=log,stderr=subprocess.STDOUT,check=True,timeout=900,
                        env={**os.environ,"TZ":"UTC","NBA_REFRESH_SCHEDULES":"false",
-                            "NBA_ROLLING_ROLE_FILE":str(role_file),"NBA_ROLLING_ROLE_AS_OF":asof})
+                            "NBA_ROLLING_ROLE_FILE":str(role_file),"NBA_ROLLING_ROLE_AS_OF":asof,
+                            "NBA_MINUTE_CAPACITY_EVIDENCE":str(budget_evidence)})
     if hashes!={k:sha(p) for k,p in tracked.items()}:
         raise ValueError("R source changed during computation")
     data=repo/"frontend/public/data"
     shards={x:data/"v2"/x/f"{season}.json" for x in ("impact_players","team_projections","team_schedules")}
-    qa=verify_outputs(*shards.values(),book_owners,asof,season,injury_time,pending_owners)
+    qa=verify_outputs(*shards.values(),book_owners,asof,season,injury_time,pending_owners,budget_evidence)
     if any(r.get("schedule_as_of")!=asof for r in load(shards["team_projections"])
            if r.get("year")==season and r.get("scenario_id")=="base"):
         raise ValueError("R forecast date does not match the daily pick input")
@@ -150,6 +217,7 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
        ("manifest","impact_players","team_projections","team_lineups","team_schedules","pick_assets","draft_prospects"))]
     report=dict(schema="nba-daily-role-r-export-v1", asof=asof, season=season,
                  model_sha256=MODEL, healthy_bridge_sha256=hashes["role"],
+                 minute_capacity_evidence=bind(budget_evidence,asof),
                  signed_book_sha256=hashes["signed_book"], inputs={k+"_sha256":v for k,v in hashes.items()},
                  outputs={str(p.relative_to(repo)):sha(p) for p in artifact_files},production=False, **qa)
     write_new(work/"receipt.json",report)
