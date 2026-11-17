@@ -1,7 +1,7 @@
 """Shared daily positions for the app, matchup opponents and perimeter controls.
 
-Keep the existing Basketball-Reference PBP share method. ESPN's daily roster
-position supplies players without a current PBP estimate, including rookies.
+PBP Stats supplies the five-player lineups; the position shares are inferred.
+ESPN and saved positions cover players with no current lineup evidence.
 """
 import csv, json, math, re, unicodedata
 from collections import Counter, defaultdict
@@ -62,23 +62,25 @@ def build_positions(stats, season, root):
             by_canonical[pid] = record
     stat_by_id = {int(p['nba_id']): p for p in stats}
     old_by_id = {p['nba_id']: p for p in published}
-    bref = defaultdict(list)
-    path = root/'raw/bref_position_estimates.csv'
+    pbp = {}
+    path = root/'raw/live/pbp_position_estimates.csv'
     if path.exists():
         with path.open() as f:
             for p in csv.DictReader(f):
-                if int(p['year']) == season and normalized_shares(p):
-                    bref[name_key(p['player_name'])].append(p)
-    # A name collision is not permission to assign another player's position.
-    bref = {k: v[0] for k, v in bref.items() if len(v) == 1}
+                if int(p['year']) != season:
+                    raise ValueError('PBP position season mismatch')
+                pid = int(p['nba_id'])
+                values = normalized_shares(p)
+                if pid < 1 or pid in pbp or values is None:
+                    raise ValueError('Invalid or duplicate NBA id in PBP position estimates')
+                pbp[pid] = values
     rows = []
     for app_id, record in records.items():
         pid = record.get('nba_id')
         stat = stat_by_id.get(pid, {})
         old = old_by_id.get(app_id, {})
-        current = bref.get(name_key(record['player_name']))
-        values = normalized_shares(current) if current else None
-        source = 'bref_pbp' if values else None
+        values = pbp.get(pid)
+        source = 'pbpstats_lineup' if values is not None else None
         # Preserve a precise daily roster label; generic G/F labels do not
         # overwrite a precise current-stat or previously published position.
         for label, origin in [(record.get('position'), 'espn_roster'),
@@ -101,9 +103,9 @@ def build_positions(stats, season, root):
         row.update(dict(zip(SHARES, values or [0]*5)))
         rows.append(row)
     return dict(schema_version=1, season=season, generated_at=datetime.now(timezone.utc).isoformat(),
-                method='Current Basketball-Reference PBP position shares; daily ESPN roster, current stats and published-position fallbacks.',
+                method='PBP Stats five-man lineup seconds with inferred position shares; daily ESPN roster, current stats and published-position fallbacks.',
                 sources=dict(Counter(p['source'] for p in rows)), players=rows,
-                bref_status=read_json(root/'raw/live/position_status.json', {}))
+                position_status=read_json(root/'raw/live/position_status.json', {}))
 
 def enrich_stats_positions(stats, positions):
     lookup = {p['nba_id']: p for p in positions['players'] if p.get('nba_id') is not None}
