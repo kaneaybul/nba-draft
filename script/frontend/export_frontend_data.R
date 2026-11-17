@@ -1,15 +1,26 @@
+read_confirmed_contract_pending <- function(base_dir, season = NULL) {
+  path <- file.path(base_dir, "processed", "contracts", "current.json")
+  if (!file.exists(path)) return(NULL)
+  book <- jsonlite::fromJSON(path, simplifyVector=FALSE)
+  if (!isTRUE(book$complete) || (!is.null(season) && as.integer(book$season) != season) ||
+      !length(book$contract_pending)) return(NULL)
+  book
+}
+
 apply_confirmed_contract_pending <- function(rows, base_dir) {
   rows$contract_pending <- FALSE
-  path <- file.path(base_dir, "processed", "contracts", "current.json")
-  if (!file.exists(path)) return(rows)
-  book <- jsonlite::fromJSON(path, simplifyVector=FALSE)
-  if (is.null(book$contract_pending) || !length(book$contract_pending)) return(rows)
+  book <- read_confirmed_contract_pending(base_dir)
+  if (is.null(book)) return(rows)
   ids <- rows$nba_id
   if ("source_nba_id" %in% names(rows)) { ok <- is.finite(rows$source_nba_id); ids[ok] <- rows$source_nba_id[ok] }
   for (p in book$contract_pending) {
-    hit <- !is.na(ids) & ids == as.numeric(p$nba_id) & rows$year == as.integer(book$season)
+    hit <- which(!is.na(ids) & ids == as.numeric(p$nba_id) & rows$year == as.integer(book$season))
     rows$contract_pending[hit] <- TRUE
-    for (k in intersect(c("team","current_roster_team","team_projection_base","incumbent_team"),names(rows))) rows[[k]][hit] <- p$team
+    for (k in intersect(c("team","current_roster_team","team_projection_base","incumbent_team",
+                         "market_team","roster_truth_team","rights_team"),names(rows))) rows[[k]][hit] <- p$team
+    if ("projection_roster_status" %in% names(rows)) rows$projection_roster_status[hit] <- "signed"
+    if ("roster_state" %in% names(rows)) rows$roster_state[hit] <- "active"
+    if ("roster_status_source" %in% names(rows)) rows$roster_status_source[hit] <- p$source
     for (k in intersect(c("contract","contract_cap_salary","value_add","trade_value","scalability",grep("^projection_(effective_)?contract_y",names(rows),value=TRUE)),names(rows))) rows[[k]][hit] <- NA_real_
     rows$contract_status[hit] <- "Contract Pending"
     rows$pool_status[hit] <- "roster"
@@ -3210,6 +3221,18 @@ load_current_roster_truth <- function(base_dir, roster_year) {
   out$roster_truth_team[is_blank_text(out$roster_truth_team)] <- "FA"
   out$rights_team[is_blank_text(out$rights_team)] <- ifelse(out$roster_truth_team == "FA", "FA", out$roster_truth_team)
   out <- out[nzchar(out$name_key), , drop = FALSE]
+  # This exact dated signing is stronger than a lagging provider's FA row.
+  # Feed the same approved current placement to both roster projection and audit.
+  book <- read_confirmed_contract_pending(base_dir, roster_year)
+  if (!is.null(book)) {
+    pending <- do.call(rbind, lapply(book$contract_pending, function(p) data.frame(
+      nba_id = as.integer(p$nba_id), player_name = p$player_name, name_key = normalize_name(p$player_name),
+      roster_truth_team = p$team, rights_team = p$team, roster_contract_status = "Contract Pending",
+      roster_state = "active", roster_truth_source = p$source, roster_truth_pulled_at = book$as_of,
+      stringsAsFactors = FALSE
+    )))
+    out <- rbind(pending, out[!out$nba_id %in% pending$nba_id, , drop = FALSE])
+  }
   out <- out[order(is.na(out$nba_id), out$nba_id, out$name_key), , drop = FALSE]
   out[!duplicated(ifelse(!is.na(out$nba_id), paste0("id:", out$nba_id), paste0("name:", out$name_key))), , drop = FALSE]
 }
@@ -5228,6 +5251,7 @@ injury_projections <- with_frontend_timing(base_dir, "frontend_export", "apply_i
 players <- injury_projections$players
 active_pool <- which(players$year == 2027)
 players[active_pool,] <- season_pool_scores(players[active_pool,], base_dir)
+players <- apply_confirmed_contract_pending(players, base_dir)
 schedules <- injury_projections$schedules
 teams <- with_frontend_timing(base_dir, "frontend_export", "build_team_projections", build_team_projections(players))
 team_lineups <- with_frontend_timing(base_dir, "frontend_export", "build_team_lineups", build_team_lineups(players))
