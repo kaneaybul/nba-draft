@@ -10,6 +10,26 @@ from pending_contracts import memberships,priced_roster,native_asset_ledger,over
 TEAMS=set('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split())
 MODEL='fb08a02655155274d902433d6d35727fede1b45c1c7871977338e34138cc775f'
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+def resolve_demographic_aliases(rows, approved):
+ """Keep exactly one proven roster participant over non-roster FA aliases."""
+ grouped={}
+ active={'roster','contract_pending'}
+ for row in rows:
+  pid=int(row.get('source_nba_id') or row['nba_id'])
+  grouped.setdefault(pid,[]).append(row)
+ keep=[];suppressed=[]
+ for pid, matches in grouped.items():
+  if len(matches)==1:
+   keep.append(matches[0]);continue
+  roster=[r for r in matches if r.get('pool_status') in active]
+  if (len(roster)!=1 or approved.get(pid)!=roster[0].get('team') or
+      any(r.get('team')!='FA' or r.get('pool_status') in active for r in matches if r is not roster[0])):
+   raise ValueError('Conflicting demographic identity: '+str(pid))
+  keep.append(roster[0])
+  suppressed.append({'nba_id':pid,'team':roster[0]['team'],'ignored_free_agent_aliases':len(matches)-1})
+ return keep,suppressed
+
 def certify(repo,demographics,schedule,model,asof,season):
  date.fromisoformat(asof)
  if not isinstance(season,int):raise ValueError("Integer season required")
@@ -27,7 +47,8 @@ def certify(repo,demographics,schedule,model,asof,season):
  if (date.fromisoformat(source['ratings']['epm_as_of'])-timedelta(days=1)).isoformat()>asof or source['ratings']['darko_through']>asof:raise ValueError('Future provider performance')
  book=source['ownership'];signed,pending=memberships(book,asof);owners=set(signed.items())
  if not book['complete'] or len(owners)!=len(book['players']) or {t for _,t in owners}!=TEAMS:raise ValueError('Incomplete signed ownership')
- rows=json.loads(demographics.read_text());games=json.loads(schedule.read_text());seen=set()
+ rows,suppressed=resolve_demographic_aliases(json.loads(demographics.read_text()),{**signed,**pending})
+ games=json.loads(schedule.read_text())
  if not games or any(g.get('season')!=season for g in games):raise ValueError('Wrong schedule season')
  if any(g.get('is_completed') and g.get('date','9999')>asof for g in games):raise ValueError('Future schedule result')
  primary={int(r['nba_id']):r['primary_position'] for r in source['positions']['players'] if r.get('nba_id')}
@@ -36,8 +57,6 @@ def certify(repo,demographics,schedule,model,asof,season):
   if pid in primary:r['Pos1']=primary[pid]
  for r in rows:
   pid=r.get('source_nba_id') or r['nba_id']
-  if pid in seen:raise ValueError('Duplicate demographic identity')
-  seen.add(pid)
   if r.get('pool_status') in ('roster','contract_pending'):
    if (int(pid),r['team']) not in owners|set(pending.items()):raise ValueError('Unapproved demographic owner')
    old=prior.get(int(pid),{});age=r.get('age');yoe=r.get('yoe');position=r.get('Pos1') or r.get('position') or old.get('position')
@@ -51,6 +70,7 @@ def certify(repo,demographics,schedule,model,asof,season):
  resultgames=[g for g in source['results']['games'] if g.get('is_completed')]
  if any(g['date']>asof for g in resultgames):raise ValueError('Future completed game')
  receipt={'asof':asof,'scope':'dated-native-inputs-only-not-replayed-not-priced-not-published','season':season,'model_sha256':MODEL,'sources':{k:{'path':str(p.resolve()),'sha256':sha(p)} for k,p in files.items()},'demographics_sha256':sha(demographics),'schedule_sha256':sha(schedule),'native_existing_demographic_fallbacks':fallback,'prior_darko_sha256':sha(history),'owned_players':len(owners),'contract_pending_players':len(pending),'contract_pending_ids':sorted(pending),'contract_pending_policy':'display_TBD_excluded_from_native_assets','demographic_players':len(rows),'source_performance':{'epm_pregame':source['ratings']['epm_as_of'],'darko_through':source['ratings']['darko_through'],'latest_completed_game':max(g['date'] for g in resultgames),'completed_games':len(resultgames)}}
+ receipt['suppressed_non_roster_demographic_aliases']=suppressed
  return metadata,games,receipt
 
 METHOD='peak4-payroll-0.8-v20-sparse-direct-role-refit-20261116-evidence-v2-transient-roster'
