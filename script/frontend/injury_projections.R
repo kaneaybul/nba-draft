@@ -15,6 +15,8 @@ injury_date <- function(value) {
 read_injury_projection_outlook <- function(base_dir) {
   path <- file.path(base_dir, "frontend", "public", "data", "injury_outlook.json")
   if (!file.exists(path)) stop("Refresh the injury outlook before exporting projections: ", path)
+  admitted <- Sys.getenv("NBA_DAILY_OFFICIAL_OUTLOOK")
+  if (nzchar(admitted)) path <- admitted
   outlook <- jsonlite::fromJSON(path, simplifyVector = FALSE)
   if (is.null(outlook$season) || is.null(outlook$players) || outlook$teams_checked != 30L) {
     stop("Incomplete injury outlook; projections were not published.")
@@ -57,6 +59,23 @@ injury_projection_plan <- function(row, as_of, calendar) {
     plan$note <- "Reported season-ending absence: no remaining minutes."
     return(plan)
   }
+  if (as_of >= as.Date("2026-11-18")) {
+    official <- row$official_game_status
+    if (!is.null(official)) {
+      game_date <- injury_date(official$game_date)
+      if (is.na(game_date) || game_date != as_of ||
+          !(official$status %in% c("Out", "Doubtful", "Questionable"))) {
+        stop("Invalid dated official injury status")
+      }
+      plan$official_game_date <- game_date
+      plan$official_game_status <- official$status
+      if (identical(official$status, "Out")) plan$official_game_probability <- 0
+    }
+    if (identical(row$basis, "official_game_status_only")) {
+      if (!identical(plan$official_game_status, "Out")) stop("Missing confirmed same-game absence")
+      return(plan)
+    }
+  }
   earliest <- injury_date(row$return_earliest)
   latest <- injury_date(row$return_latest)
   expected <- injury_date(row$return_expected)
@@ -80,6 +99,11 @@ injury_projection_plan <- function(row, as_of, calendar) {
     plan$start <- max(as_of, provider - spread)
     plan$end <- provider + spread
     plan$note <- paste0("Low-confidence ESPN estimate; model uses a +/-", spread, " day availability window.")
+    if (identical(plan$official_game_status, "Questionable") && provider == as_of) {
+      # The original symmetric window gives its midpoint on the estimate date.
+      # The report rules out treating the player as confirmed out for this game.
+      plan$official_game_probability <- 0.5
+    }
   } else {
     plan$kind <- "uncertain"
     plan$start <- as_of
@@ -106,6 +130,9 @@ injury_availability_on_date <- function(plan, date) {
   date <- as.Date(date)
   if (plan$kind == "season_ending") return(0)
   if (!is.na(plan$minimum_through) && date <= plan$minimum_through) return(0)
+  if (!is.null(plan$official_game_probability) && date == plan$official_game_date) {
+    return(plan$official_game_probability)
+  }
   if (plan$kind == "window") {
     width <- as.numeric(plan$end - plan$start)
     if (width == 0) return(as.numeric(date >= plan$end))

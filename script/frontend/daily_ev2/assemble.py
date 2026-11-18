@@ -69,9 +69,14 @@ def assemble(config, work, execute=False, launch=command, skip_regression=False,
     frontend=repo/"script/frontend"
     source_r=work/"source_r";prepared=work/"prepared";cal=work/"calibration";native=work/"native";quotes=work/"quotes";r=work/"r"
     step("source_r",frontend/"prepare_role_sources.py",["--repo",repo,"--output",source_r,"--asof",asof,"--season",season])
+    official_args=[]
+    if config.get("official_injury_receipt"):
+        official_receipt=Path(config["official_injury_receipt"]).resolve(strict=True)
+        require(sha(official_receipt)==config["official_injury_receipt_sha256"],"Official game evidence changed")
+        official_args=["--official-injury-receipt",official_receipt]
     step("native_prepare",adapters/"fresh_native_inputs/adapter.py",[
        "--native",runtime,"--source",repo,"--demographics",source_r/"demographics.json","--schedule",source_r/"schedule.json",
-       "--ownership-receipt",ownership,"--collector-receipt",collection,"--r-receipt",source_r/"receipt.json","--asof",asof,"--season",season,"--work",prepared])
+       "--ownership-receipt",ownership,"--collector-receipt",collection,"--r-receipt",source_r/"receipt.json","--asof",asof,"--season",season,"--work",prepared,*official_args])
     prep=prepared/"source_preparation_receipt.json"
     step("calibration",adapters/"calibration/prepare_calibration.py",[
         "--repo",prepared/"repo","--runtime",prepared/"runtime","--prepared-receipt",prep,

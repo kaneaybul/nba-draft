@@ -72,7 +72,13 @@ def run(a,runner=subprocess.run,today=None):
     with f.open() as inp:
      for row in csv.DictReader(inp):need(row.get('cutoff_date',a.asof)==a.asof,'Mixed output date')
  out=inventory(batch/'output');need(all(len(k.split('/'))==2 for k in out),'Unexpected nested output')
+ official=p.get('official_injury_receipt')
+ if official:
+  need(sha(official['path'])==official['sha256'],'Official injury evidence receipt changed')
  r={'schema':'nba-daily-native-replay-v1','asof':a.asof,'season':p['season'],'method':METHOD,'model_sha256':MODEL,'evidence_policy':POLICY,'source_preparation_receipt_sha256':a.prepared_receipt_sha256,'signed_book_sha256':a.signed_book_sha256,'batch_manifest_sha256':sha(batch/'manifest.json'),'output_sha256':out,'prior_checkpoint':{'asof':prior['as_of'],'sha256':a.prior_checkpoint_sha256},'grade_checkpoint_sha256':a.grade_checkpoint_sha256,'teams':30,'complete':True,'production':False,'native_replay_invocations':1,'calibration_receipt_sha256':a.calibration_receipt_sha256}
+ if official:
+  r['official_injury_outlook']=p['sources']['injuries']
+  r['official_injury_receipt']=official
  path=a.output/'native_replay_receipt.json';path.write_text(json.dumps(r,sort_keys=True,indent=2)+'\n');return {'receipt':str(path),'batch':str(batch),'receipt_sha256':sha(path)}
 if __name__=='__main__':
  q=argparse.ArgumentParser()
