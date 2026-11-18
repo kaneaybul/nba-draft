@@ -17,6 +17,18 @@ def build_plan(row,as_of,future_dates):
  except (ValueError,TypeError):minimum=0
  plan={'kind':'none','start':str(as_of),'end':str(as_of),'half_life':0,'minimum_through':str(future[minimum-1]) if minimum else None,'status':row.get('status'),'basis':row.get('basis'),'source_url':row.get('source_url'),'policy':'existing_frontend_injury_date_v1'}
  if row.get('season_ending') is True:plan['kind']='season_ending';return plan
+ # BEGIN OFFICIAL GAME STATUS
+ if as_of>=date(2026,11,18):
+  official=row.get('official_game_status')
+  if official is not None:
+   if day(official.get('game_date'))!=as_of or official.get('status') not in ('Out','Doubtful','Questionable'):
+    raise ValueError('Invalid dated official injury status')
+   plan.update(official_game_date=str(as_of),official_game_status=official['status'])
+   if official['status']=='Out':plan['official_game_probability']=0.
+  if row.get('basis')=='official_game_status_only':
+   if plan.get('official_game_status')!='Out':raise ValueError('Missing confirmed same-game absence')
+   return plan
+ # END OFFICIAL GAME STATUS
  earliest,latest,expected,review,provider=(day(row.get(k)) for k in ('return_earliest','return_latest','return_expected','reevaluation_date','provider_return_date'))
  basis=row.get('basis');reported=basis in ('reported_window','reported_duration','reported_games')
  if reported and latest and latest>=as_of and earliest:
@@ -25,6 +37,11 @@ def build_plan(row,as_of,future_dates):
  elif basis=='provider_estimate' and provider and provider>=as_of:
   spread=7 if row.get('status')=='Out' else 3
   plan.update(kind='window',start=str(max(as_of,provider-timedelta(days=spread))),end=str(provider+timedelta(days=spread)))
+  # BEGIN OFFICIAL GAME STATUS
+  # The original symmetric estimate midpoint applies to this game only.
+  if plan.get('official_game_status')=='Questionable' and provider==as_of:
+   plan['official_game_probability']=0.5
+  # END OFFICIAL GAME STATUS
  else:
   plan.update(kind='uncertain',half_life=28 if row.get('status')=='Out' else 7)
   if basis=='reevaluation' and review:plan.update(start=str(max(as_of,review)),half_life=14)
@@ -35,6 +52,10 @@ def availability_on_date(plan,game_date):
  d=day(game_date)
  if plan['kind']=='season_ending':return 0.
  if plan.get('minimum_through') and d<=day(plan['minimum_through']):return 0.
+ # BEGIN OFFICIAL GAME STATUS
+ if 'official_game_probability' in plan and d==day(plan['official_game_date']):
+  return plan['official_game_probability']
+ # END OFFICIAL GAME STATUS
  if plan['kind']=='window':
   a,b=day(plan['start']),day(plan['end']);width=(b-a).days
   return float(d>=b) if width==0 else max(0.,min(1.,(d-a).days/width))

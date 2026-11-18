@@ -30,7 +30,7 @@ def resolve_demographic_aliases(rows, approved):
   suppressed.append({'nba_id':pid,'team':roster[0]['team'],'ignored_free_agent_aliases':len(matches)-1})
  return keep,suppressed
 
-def certify(repo,demographics,schedule,model,asof,season):
+def certify(repo,demographics,schedule,model,asof,season,official=None):
  date.fromisoformat(asof)
  if not isinstance(season,int):raise ValueError("Integer season required")
  history=model.parent/'monthly_reconstruction/darko/end_of_month/darko_monthly.csv'
@@ -38,6 +38,7 @@ def certify(repo,demographics,schedule,model,asof,season):
  fallback=[]
  if sha(model)!=MODEL:raise ValueError('Wrong fitted model')
  files={k:repo/v for k,v in {'ratings':'raw/live/ratings.json','skills':'raw/live/skill_stats.json','roster':'raw/live/player_pool.json','results':'raw/live/results.json','positions':'raw/live/positions.json','injuries':'frontend/public/data/injury_outlook.json','ownership':'processed/contracts/current.json'}.items()}
+ if official:files['injuries']=official
  source={k:json.loads(p.read_text()) for k,p in files.items()}
  for k,v in source.items():
   day=v['as_of'] if k=='ownership' else datetime.fromisoformat(v['generated_at'].replace('Z','+00:00')).date().isoformat()
@@ -81,7 +82,7 @@ def checked_file(item):
  if not p.is_file()or sha(p)!=item['sha256']:raise ValueError('Source receipt hash mismatch')
  return p
 
-def validate_bundle(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season):
+def validate_bundle(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,official_receipt=None):
  """Receipts prove identity of existing inputs, never grant provider/contract authority."""
  import runpy
  native=Path(native).resolve();source=Path(source).resolve()
@@ -118,7 +119,13 @@ def validate_bundle(native,source,demographics,schedule,collector_receipt,owners
   if recent.get('reviewed')is not True:raise ValueError('Unreviewed recent contract terms')
   terms_path=checked_file(recent)
   overlay_recent_terms(load(native/'repo/processed/asset_history/contracts/contract_agreements.json'),load(terms_path),load(events),load(book),asof)
- rows,games,r=certify(source,Path(demographics),Path(schedule),native/'runtime/sparse_role_models.json',asof,season)
+ official=None
+ if official_receipt:
+  from official_game_status import admit
+  official=admit(official_receipt,collector_receipt,source,Path(schedule),asof)
+ rows,games,r=certify(source,Path(demographics),Path(schedule),native/'runtime/sparse_role_models.json',asof,season,official)
+ if official:
+  r['official_injury_receipt']={'path':str(official_receipt.resolve()),'sha256':sha(official_receipt)}
  def game_map(rows):
   out={}
   for g in rows:
@@ -133,16 +140,20 @@ def validate_bundle(native,source,demographics,schedule,collector_receipt,owners
  if recent:r['recent_contract_terms']={'path':str(terms_path),'sha256':sha(terms_path),'reviewed':True}
  return rows,games,r,ledger,audit
 
-def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True):
+def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True,official_receipt=None):
  import shutil,subprocess,os
  native=Path(native).resolve();source=Path(source).resolve();work=Path(work).resolve()
  if work.exists() or work==native or native in work.parents or source in work.parents:raise ValueError('Fresh separate work directory required')
- rows,games,r,ledger,audit=validate_bundle(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season)
+ rows,games,r,ledger,audit=validate_bundle(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,official_receipt)
  shutil.copytree(native/'repo',work/'repo',ignore=shutil.ignore_patterns('__pycache__'));shutil.copytree(native/'runtime',work/'runtime',ignore=shutil.ignore_patterns('__pycache__'))
  repo=work/'repo';runtime=work/'runtime'
  for rel in DATA:
-  p=repo/rel;p.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source/rel,p)
-  expected=next(v['sha256']for v in r['sources'].values()if Path(v['path'])==source/rel)
+  p=repo/rel;p.parent.mkdir(parents=True,exist_ok=True)
+  if rel=='frontend/public/data/injury_outlook.json':
+   artifact=r['sources']['injuries'];shutil.copy2(artifact['path'],p);expected=artifact['sha256']
+  else:
+   shutil.copy2(source/rel,p)
+   expected=next(v['sha256']for v in r['sources'].values()if Path(v['path'])==source/rel)
   if sha(p)!=expected:raise ValueError('Source changed during copy')
  for rel,data in [(f'impact_players/{season}.json',rows),(f'team_schedules/{season}.json',games)]:
   p=repo/'frontend/public/data/v2'/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(data,allow_nan=False))
@@ -172,5 +183,6 @@ if __name__=='__main__':
  import argparse
  p=argparse.ArgumentParser()
  for k in ('native','source','demographics','schedule','collector-receipt','ownership-receipt','r-receipt','work'):p.add_argument('--'+k,type=Path,required=True)
+ p.add_argument('--official-injury-receipt',type=Path)
  p.add_argument('--asof',required=True);p.add_argument('--season',type=int,required=True);p.add_argument('--prepare-only',action='store_true')
- a=p.parse_args();r=prepare(a.native,a.source,a.demographics,a.schedule,a.collector_receipt,a.ownership_receipt,a.r_receipt,a.asof,a.season,a.work,not a.prepare_only);print(json.dumps({k:r[k]for k in ('asof','season','scope','extension_executed','native_replay_invocations','pricing_invocations','release_ready')}))
+ a=p.parse_args();r=prepare(a.native,a.source,a.demographics,a.schedule,a.collector_receipt,a.ownership_receipt,a.r_receipt,a.asof,a.season,a.work,not a.prepare_only,a.official_injury_receipt);print(json.dumps({k:r[k]for k in ('asof','season','scope','extension_executed','native_replay_invocations','pricing_invocations','release_ready')}))

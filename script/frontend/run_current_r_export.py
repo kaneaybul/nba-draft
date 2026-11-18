@@ -173,6 +173,11 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
     _,pending_owners=memberships(book,asof)
     if owners(b["players"])!=book_owners:
         raise ValueError("Role roster differs from the signed book")
+    official=n.get("official_injury_outlook")
+    if official:
+        injury_file=Path(official["path"])
+        if sha(injury_file)!=official["sha256"]:
+            raise ValueError("R official injury input differs from the native receipt")
     injury=load(injury_file)
     injury_time=injury["generated_at"]
     if injury.get("season")!=season or datetime.fromisoformat(injury_time.replace("Z","+00:00")).astimezone(ZoneInfo("America/New_York")).date().isoformat()!=asof:
@@ -192,7 +197,8 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
                        stdout=log,stderr=subprocess.STDOUT,check=True,timeout=900,
                        env={**os.environ,"TZ":"UTC","NBA_REFRESH_SCHEDULES":"false",
                             "NBA_ROLLING_ROLE_FILE":str(role_file),"NBA_ROLLING_ROLE_AS_OF":asof,
-                            "NBA_MINUTE_CAPACITY_EVIDENCE":str(budget_evidence)})
+                            "NBA_MINUTE_CAPACITY_EVIDENCE":str(budget_evidence),
+                            "NBA_DAILY_OFFICIAL_OUTLOOK":str(injury_file) if official else ""})
     if hashes!={k:sha(p) for k,p in tracked.items()}:
         raise ValueError("R source changed during computation")
     data=repo/"frontend/public/data"
@@ -212,9 +218,19 @@ def run(repo, work, native_receipt, role_file, role_proof, source_r_receipt, pla
             or status.get("skill_stats_fetched_at")!=skills["generated_at"]
             or not status.get("matched_players",0)):
         raise ValueError("R live status does not match the collected ratings and skill inputs")
-    # The static manifest and full exports feed existing downstream checks/build.
+    # The static manifest can retire the oversized aggregate after sharding.
+    # Bind the served player shard in either case and check its manifest entry.
+    impact_entries=load(data/"manifest.json")["static_data"]["datasets"]["impact_players"]["shards"]
+    current_entries=[entry for entry in impact_entries if entry.get("year")==season]
+    player_shard=shards["impact_players"]
+    if (len(current_entries)!=1 or current_entries[0].get("file")!=str(player_shard.relative_to(data))
+            or current_entries[0].get("sha256")!=sha(player_shard)
+            or current_entries[0].get("bytes")!=player_shard.stat().st_size):
+        raise ValueError("Static manifest does not describe the accepted current player shard")
     artifact_files=[live_status,*shards.values(),*(data/f"{k}.json" for k in
-       ("manifest","impact_players","team_projections","team_lineups","team_schedules","pick_assets","draft_prospects"))]
+       ("manifest","team_projections","team_lineups","team_schedules","pick_assets","draft_prospects"))]
+    if (data/"impact_players.json").is_file():
+        artifact_files.append(data/"impact_players.json")
     report=dict(schema="nba-daily-role-r-export-v1", asof=asof, season=season,
                  model_sha256=MODEL, healthy_bridge_sha256=hashes["role"],
                  minute_capacity_evidence=bind(budget_evidence,asof),

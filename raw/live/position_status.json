@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-11-17T13:13:30.804609+00:00",
+  "checked_at": "2026-11-18T13:17:03.105769+00:00",
   "seasons": {
     "2027": {
       "year": 2027,
@@ -10,12 +10,12 @@
       "rows": 471,
       "prior_asof": "2026-11-14T14:17:55.086194+00:00",
       "note": "Inferred positions conditional on dated priors, not independent positional observations; capture time does not prove completed-game coverage",
-      "lineups": 4346,
-      "lineup_seconds": 1136160.0000000016,
+      "lineups": 4446,
+      "lineup_seconds": 1176480.0000000016,
       "max_slot_mass_error": 6.661338147750939e-16,
       "unknown_prior_ids": [],
       "players": 471,
-      "uncertain_players": 75,
+      "uncertain_players": 73,
       "team_coverage": {
         "ATL": {
           "lineup_seconds": 40620.0,
@@ -23,14 +23,14 @@
           "games": 14
         },
         "BOS": {
-          "lineup_seconds": 37740.0,
-          "team_seconds": 37740.0,
-          "games": 13
-        },
-        "CLE": {
           "lineup_seconds": 40620.0,
           "team_seconds": 40620.0,
           "games": 14
+        },
+        "CLE": {
+          "lineup_seconds": 43500.0,
+          "team_seconds": 43500.0,
+          "games": 15
         },
         "NOP": {
           "lineup_seconds": 41220.0,
@@ -38,9 +38,9 @@
           "games": 14
         },
         "CHI": {
-          "lineup_seconds": 34860.0,
-          "team_seconds": 34860.0,
-          "games": 12
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
         },
         "DAL": {
           "lineup_seconds": 40320.0,
@@ -48,9 +48,9 @@
           "games": 14
         },
         "DEN": {
-          "lineup_seconds": 31980.0,
-          "team_seconds": 31980.0,
-          "games": 11
+          "lineup_seconds": 34860.0,
+          "team_seconds": 34860.0,
+          "games": 12
         },
         "GSW": {
           "lineup_seconds": 37740.0,
@@ -58,9 +58,9 @@
           "games": 13
         },
         "HOU": {
-          "lineup_seconds": 37440.0,
-          "team_seconds": 37440.0,
-          "games": 13
+          "lineup_seconds": 40320.0,
+          "team_seconds": 40320.0,
+          "games": 14
         },
         "LAC": {
           "lineup_seconds": 34860.0,
@@ -73,9 +73,9 @@
           "games": 14
         },
         "MIA": {
-          "lineup_seconds": 37740.0,
-          "team_seconds": 37740.0,
-          "games": 13
+          "lineup_seconds": 40620.0,
+          "team_seconds": 40620.0,
+          "games": 14
         },
         "MIL": {
           "lineup_seconds": 37440.0,
@@ -83,14 +83,14 @@
           "games": 13
         },
         "MIN": {
+          "lineup_seconds": 40620.0,
+          "team_seconds": 40620.0,
+          "games": 14
+        },
+        "BKN": {
           "lineup_seconds": 37740.0,
           "team_seconds": 37740.0,
           "games": 13
-        },
-        "BKN": {
-          "lineup_seconds": 34860.0,
-          "team_seconds": 34860.0,
-          "games": 12
         },
         "NYK": {
           "lineup_seconds": 37740.0,
@@ -98,9 +98,9 @@
           "games": 13
         },
         "ORL": {
-          "lineup_seconds": 34860.0,
-          "team_seconds": 34860.0,
-          "games": 12
+          "lineup_seconds": 37740.0,
+          "team_seconds": 37740.0,
+          "games": 13
         },
         "IND": {
           "lineup_seconds": 40320.0,
@@ -108,19 +108,19 @@
           "games": 14
         },
         "PHI": {
-          "lineup_seconds": 40320.0,
-          "team_seconds": 40320.0,
-          "games": 14
+          "lineup_seconds": 43200.0,
+          "team_seconds": 43200.0,
+          "games": 15
         },
         "PHX": {
-          "lineup_seconds": 34560.0,
-          "team_seconds": 34560.0,
-          "games": 12
+          "lineup_seconds": 37440.0,
+          "team_seconds": 37440.0,
+          "games": 13
         },
         "POR": {
-          "lineup_seconds": 34560.0,
-          "team_seconds": 34560.0,
-          "games": 12
+          "lineup_seconds": 37440.0,
+          "team_seconds": 37440.0,
+          "games": 13
         },
         "SAC": {
           "lineup_seconds": 37440.0,
@@ -148,14 +148,14 @@
           "games": 14
         },
         "MEM": {
-          "lineup_seconds": 37740.0,
-          "team_seconds": 37740.0,
-          "games": 13
+          "lineup_seconds": 40620.0,
+          "team_seconds": 40620.0,
+          "games": 14
         },
         "WAS": {
-          "lineup_seconds": 40920.0,
-          "team_seconds": 40920.0,
-          "games": 14
+          "lineup_seconds": 43800.0,
+          "team_seconds": 43800.0,
+          "games": 15
         },
         "DET": {
           "lineup_seconds": 35160.0,
@@ -172,24 +172,24 @@
         "provider": "sportsdataverse",
         "source": "sportsdataverse_lineup",
         "season": 2027,
-        "captured_at": "2026-11-17T13:13:30.071643+00:00",
+        "captured_at": "2026-11-18T13:17:02.358972+00:00",
         "lineups": {
           "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_game_lineups/nba_lineups_2027.csv.gz",
-          "sha256": "d055d48507a206aa6035057dd5ce3d12e0e12923997c535691637273b9c25f02",
-          "last_modified": "Mon, 16 Nov 2026 15:16:25 GMT",
-          "bytes": 310454
+          "sha256": "8b60da59ce74b5bc6b6e4cbc2752fb654d450919d73d1ca7cc751dcb2903df6c",
+          "last_modified": "Tue, 17 Nov 2026 15:16:38 GMT",
+          "bytes": 321508
         },
         "pbp": {
           "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/nba_stats_pbp/nba_play_by_play_2027.csv.gz",
-          "sha256": "44b8bd87e29265ce24236ee66c446f61c0917f5b89315541c017feb2e58c1d9f",
-          "last_modified": "Mon, 16 Nov 2026 15:16:12 GMT",
-          "bytes": 3423430
+          "sha256": "b9bd70b566da6ceacf734bb96d92343b102ad43bdef1402569e8496573b732e0",
+          "last_modified": "Tue, 17 Nov 2026 15:16:26 GMT",
+          "bytes": 3545081
         },
-        "source_event_rows": 102796,
-        "source_lineup_rows": 102796,
-        "duplicate_lineup_rows_deduplicated": 5247,
-        "games": 196,
-        "source_games": 197,
+        "source_event_rows": 106459,
+        "source_lineup_rows": 106459,
+        "duplicate_lineup_rows_deduplicated": 5431,
+        "games": 203,
+        "source_games": 204,
         "excluded_games": [
           {
             "game_id": "0022600138",
@@ -1967,6 +1967,69 @@
             "away_score": 125,
             "periods": 4,
             "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600245",
+            "home_team_id": 1610612738,
+            "away_team_id": 1610612753,
+            "home_score": 105,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2879.9999999999995
+          },
+          {
+            "game_id": "0022600246",
+            "home_team_id": 1610612739,
+            "away_team_id": 1610612741,
+            "home_score": 126,
+            "away_score": 115,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600247",
+            "home_team_id": 1610612764,
+            "away_team_id": 1610612763,
+            "home_score": 120,
+            "away_score": 136,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600248",
+            "home_team_id": 1610612751,
+            "away_team_id": 1610612755,
+            "home_score": 123,
+            "away_score": 135,
+            "periods": 4,
+            "team_seconds": 2880.0
+          },
+          {
+            "game_id": "0022600249",
+            "home_team_id": 1610612748,
+            "away_team_id": 1610612745,
+            "home_score": 128,
+            "away_score": 110,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600250",
+            "home_team_id": 1610612750,
+            "away_team_id": 1610612757,
+            "home_score": 106,
+            "away_score": 98,
+            "periods": 4,
+            "team_seconds": 2880.0000000000005
+          },
+          {
+            "game_id": "0022600252",
+            "home_team_id": 1610612743,
+            "away_team_id": 1610612756,
+            "home_score": 105,
+            "away_score": 117,
+            "periods": 4,
+            "team_seconds": 2880.0
           }
         ],
         "coverage_note": "Provider game IDs and period totals verified; official latest-game coverage must be compared separately; no inferred through date"
