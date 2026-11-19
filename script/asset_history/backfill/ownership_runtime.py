@@ -54,6 +54,66 @@ def save_events(runtime,state,seed_ids):
     events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
     (state/'ownership_events.json').write_text(json.dumps([e for e in events if e['event_id']not in seed_ids],separators=(',',':')))
 
+def bind_reviewed_signing_duplicates(events):
+    """Persist identity on exact duplicate signings, not merely replay's name map.
+
+    Only checked-in primary announcements can anchor this binding. Preserve both
+    sources and event IDs; never use a contract's requested ID as identity evidence.
+    """
+    import copy
+    from urllib.parse import urlsplit
+    def digest(value):
+        return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
+    def signature(event):
+        if event.get('parsed_status')!='signing' or event.get('roster_capture') or len(event.get('players',[]))!=1 or len(event.get('parsed_actions',[]))!=1:
+            return None
+        p=event['players'][0];a=event['parsed_actions'][0]
+        if a.get('action')!='add' or not p.get('name') or a.get('player_name')!=p['name'] or not a.get('to_team') or type(a.get('two_way')) is not bool:
+            return None
+        return (event.get('date'),p['name'],a['to_team'],a['two_way'])
+    anchors={}
+    for e in SUPPLEMENTAL_EVENTS:
+        sig=signature(e)
+        if sig is None:continue
+        url=urlsplit(e.get('source',''))
+        if url.scheme!='https' or url.hostname!='www.nba.com':continue
+        pid=e['players'][0].get('nba_id')
+        if type(pid) is not int or pid<=0 or e['parsed_actions'][0].get('nba_id')!=pid:
+            raise ValueError('Invalid reviewed signing identity')
+        if sig in anchors and anchors[sig]!=e:raise ValueError('Conflicting reviewed signing anchors')
+        anchors[sig]=e
+    out=copy.deepcopy(events);indexed={}
+    for e in out:
+        if e['event_id'] in indexed:raise ValueError('Duplicate ownership event identity')
+        indexed[e['event_id']]=e
+    for anchor in anchors.values():
+        actual=indexed.get(anchor['event_id'])
+        if actual!=anchor:raise ValueError('Reviewed signing anchor changed or missing')
+    bindings=[]
+    for e in out:
+        anchor=anchors.get(signature(e))
+        if anchor is None or e['event_id']==anchor['event_id']:continue
+        url=urlsplit(e.get('source',''))
+        # Only source-backed parsed duplicates, not observations, receive IDs.
+        if url.scheme!='https' or not url.hostname:continue
+        pid=anchor['players'][0]['nba_id']
+        for row in (e['players'][0],e['parsed_actions'][0]):
+            if row.get('nba_id') is not None and (type(row['nba_id']) is not int or row['nba_id']!=pid):
+                raise ValueError('Conflicting duplicate signing identity: '+e['event_id'])
+        proof=e.get('duplicate_identity_binding')
+        if proof is not None:
+            if proof.get('anchor_event_id')!=anchor['event_id'] or proof.get('anchor_sha256')!=digest(anchor) or proof.get('nba_id')!=pid:
+                raise ValueError('Conflicting duplicate signing binding')
+        if any(row.get('nba_id') is None for row in (e['players'][0],e['parsed_actions'][0])):
+            before=digest(e)
+            e['players'][0]['nba_id']=pid;e['parsed_actions'][0]['nba_id']=pid
+            e['duplicate_identity_binding']={'method':'exact-reviewed-primary-signing-v1',
+                'anchor_event_id':anchor['event_id'],'anchor_source':anchor['source'],
+                'anchor_sha256':digest(anchor),'original_event_sha256':before,'nba_id':pid}
+        if e.get('duplicate_identity_binding'):
+            bindings.append({'event_id':e['event_id'],**e['duplicate_identity_binding']})
+    return out,bindings
+
 def replay(runtime,dates):
     root=runtime/'monthly_reconstruction/league_ownership'
     sys.path.insert(0,str(root))
@@ -89,6 +149,7 @@ def replay(runtime,dates):
             ids[name]=pid
     present={r['event_id']for r in events}
     events += [r for r in SUPPLEMENTAL_EVENTS if r['event_id']not in present]
+    events,duplicate_bindings=bind_reviewed_signing_duplicates(events)
     (root/'league_events.json').write_text(json.dumps(events,indent=2))
     profiles={}
     for event in events:
@@ -121,7 +182,7 @@ def replay(runtime,dates):
             if pid in owned:raise ValueError(f'Duplicate NBA player ownership {cutoff} {pid}')
             owned[pid]=r['team']
     (root/'monthly_league_rosters.json').write_text(json.dumps([{'cutoff_date':d,'roster':v}for d,v in snapshots.items()],indent=2))
-    audit.update(identity_aliases=ALIASES,profile_identity_matches=sum(len(v)==1 for v in profiles.values()))
+    audit.update(duplicate_signing_identity_bindings=duplicate_bindings,identity_aliases=ALIASES,profile_identity_matches=sum(len(v)==1 for v in profiles.values()))
     (root/'ownership_runtime_audit.json').write_text(json.dumps(audit,indent=2))
     from draft_identity import update as update_actual_drafts
     audit['actual_draft_identity']=update_actual_drafts(runtime,events)
