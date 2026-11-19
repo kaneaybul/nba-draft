@@ -140,7 +140,7 @@ def validate_bundle(native,source,demographics,schedule,collector_receipt,owners
  if recent:r['recent_contract_terms']={'path':str(terms_path),'sha256':sha(terms_path),'reviewed':True}
  return rows,games,r,ledger,audit
 
-def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True,official_receipt=None):
+def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True,official_receipt=None,prior_dependencies=None,prior_dependencies_sha256=None,prior_checkpoint=None,prior_checkpoint_sha256=None):
  import shutil,subprocess,os
  native=Path(native).resolve();source=Path(source).resolve();work=Path(work).resolve()
  if work.exists() or work==native or native in work.parents or source in work.parents:raise ValueError('Fresh separate work directory required')
@@ -167,12 +167,18 @@ def prepare(native,source,demographics,schedule,collector_receipt,ownership_rece
   merged=overlay_recent_terms(load(p),load(recent),load(target/'league_events.json'),load(repo/'processed/contracts/current.json'),asof)
   p.write_text(json.dumps(merged,allow_nan=False))
   r['native_terms_overlay']={'base_sha256':base_hash,'reviewed_artifact_sha256':sha(recent),'staged_sha256':sha(p),'scope':'verified event-linked episodes only; frozen source unchanged'}
+ if prior_dependencies:
+  from continuation_inputs import restore
+  r['prior_observation_dependencies']=restore(runtime,prior_checkpoint,prior_dependencies,prior_dependencies_sha256,prior_checkpoint_sha256,asof)
  # Strip same/future provider fallback rows in isolated copy only.
  p=runtime/'monthly_reconstruction/darko/end_of_month/darko_monthly.csv';records=list(csv.DictReader(p.open()));fields=list(records[0]);records=[x for x in records if x['cutoff']<asof]
  with p.open('w')as f:w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(records)
  if execute_extension:
   cmd=[sys.executable,str(repo/'script/asset_history/backfill/extend_daily_inputs.py'),'--runtime',str(runtime),'--repo',str(repo),'--as-of',asof]
   with (work/'extension.log').open('w')as log:subprocess.run(cmd,check=True,stdout=log,stderr=subprocess.STDOUT,timeout=600,env={**os.environ,'PYTHONDONTWRITEBYTECODE':'1','OPENBLAS_NUM_THREADS':'1','OMP_NUM_THREADS':'1'})
+ if prior_dependencies:
+  from continuation_inputs import verify
+  verify(runtime,prior_dependencies)
  for rel,h in r['native_code_sha256'].items():
   if sha(repo/rel)!=h:raise ValueError('Native code changed during input preparation')
  r.update(evidence_policy='sparse-observed-role-evidence-v2-transient-roster',prepared_files_sha256={str(p.relative_to(work)):sha(p)for base in (repo,runtime)for p in base.rglob('*')if p.is_file()},extension_executed=execute_extension,native_replay_invocations=0,pricing_invocations=0,r_exports=0,release_ready=False)
@@ -184,5 +190,7 @@ if __name__=='__main__':
  p=argparse.ArgumentParser()
  for k in ('native','source','demographics','schedule','collector-receipt','ownership-receipt','r-receipt','work'):p.add_argument('--'+k,type=Path,required=True)
  p.add_argument('--official-injury-receipt',type=Path)
+ for k in ('prior-dependencies','prior-checkpoint'):p.add_argument('--'+k,type=Path)
+ for k in ('prior-dependencies-sha256','prior-checkpoint-sha256'):p.add_argument('--'+k)
  p.add_argument('--asof',required=True);p.add_argument('--season',type=int,required=True);p.add_argument('--prepare-only',action='store_true')
- a=p.parse_args();r=prepare(a.native,a.source,a.demographics,a.schedule,a.collector_receipt,a.ownership_receipt,a.r_receipt,a.asof,a.season,a.work,not a.prepare_only,a.official_injury_receipt);print(json.dumps({k:r[k]for k in ('asof','season','scope','extension_executed','native_replay_invocations','pricing_invocations','release_ready')}))
+ a=p.parse_args();r=prepare(a.native,a.source,a.demographics,a.schedule,a.collector_receipt,a.ownership_receipt,a.r_receipt,a.asof,a.season,a.work,not a.prepare_only,a.official_injury_receipt,a.prior_dependencies,a.prior_dependencies_sha256,a.prior_checkpoint,a.prior_checkpoint_sha256);print(json.dumps({k:r[k]for k in ('asof','season','scope','extension_executed','native_replay_invocations','pricing_invocations','release_ready')}))

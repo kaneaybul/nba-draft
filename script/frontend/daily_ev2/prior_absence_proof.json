@@ -1,0 +1,55 @@
+{
+  "source_commit": "745fb5dfc0099f9e898d559e77dd0895ae408ab7",
+  "files": [
+    {
+      "name": "player_pool.json",
+      "git_blob_sha": "c205938c83919e5d32b15888c6c91faef4f81e0d",
+      "sha256": "3ff115d3fac8070b67107dd459c78ac334d3b0557548cb10f582af3929455e43",
+      "bytes": 318910,
+      "generated_at": "2026-11-18T13:15:45.999635+00:00",
+      "epm_as_of": null,
+      "darko_through": null,
+      "players": 641
+    },
+    {
+      "name": "positions.json",
+      "git_blob_sha": "a40d30a05c33ed24a0b11ef6e5f44342fc105160",
+      "sha256": "99c1222152b7f304fb1f1ddc1a56aa4092c52630a99e860dacc6a4623e6f4c8b",
+      "bytes": 213056,
+      "generated_at": "2026-11-18T13:17:09.822954+00:00",
+      "epm_as_of": null,
+      "darko_through": null,
+      "players": 641
+    },
+    {
+      "name": "ratings.json",
+      "git_blob_sha": "a3502f343dbd9450419f472591e78ae6bbc509ad",
+      "sha256": "521024e8bda946176b0308c7a103d340afb2b2d8eddd9b265d8fdd822dd95ffe",
+      "bytes": 88234,
+      "generated_at": "2026-11-18T13:16:17.225Z",
+      "epm_as_of": "2026-11-18",
+      "darko_through": "2026-11-16",
+      "players": 523
+    },
+    {
+      "name": "results.json",
+      "git_blob_sha": "86db5f8b21619c86e5425b52af59fd0f6289b828",
+      "sha256": "1d8f90a3810ef7f1e051440e95136a8bb628aa4e8d66999ff57aa221ae28e8a4",
+      "bytes": 34763,
+      "generated_at": "2026-11-18T13:16:40.752650+00:00",
+      "epm_as_of": null,
+      "darko_through": null,
+      "players": 0
+    },
+    {
+      "name": "skill_stats.json",
+      "git_blob_sha": "cffb9a05272c8dd641277f78b944ea48b9b25330",
+      "sha256": "9b40cac8d7a07fe8b7382e3dd16d3a4d1d99199833a735450f8274557748e1a2",
+      "bytes": 625270,
+      "generated_at": "2026-11-18T13:17:10.008639+00:00",
+      "epm_as_of": null,
+      "darko_through": null,
+      "players": 471
+    }
+  ]
+}

@@ -40,6 +40,13 @@ def validate(a,today=None):
  need(sha(runtime/'sparse_role_models.json')==MODEL,'Wrong fitted model bytes')
  prior=read(a.prior_checkpoint/'manifest.json');need(date.fromisoformat(prior['as_of'])<day,'Prior checkpoint must precede date')
  need(checkpoint_hash(a.prior_checkpoint)==a.prior_checkpoint_sha256,'Prior checkpoint changed')
+ sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
+ from continuation_inputs import require_present
+ if getattr(a,'prior_absence_ratings',None):
+  if a.asof!='2026-11-19' or prior['as_of']!='2026-11-18':raise ValueError('Prior absence bootstrap date out of scope')
+  from prior_absence_team_runner import evidence
+  evidence(a.prior_absence_ratings,a.prior_checkpoint)
+ else:require_present(runtime,prior['as_of'])
  need(sha(a.grades)==a.grade_checkpoint_sha256,'Grade checkpoint changed')
  need(sha(a.calibration_receipt)==a.calibration_receipt_sha256,'Calibration receipt changed')
  cal=read(a.calibration_receipt)
@@ -57,6 +64,9 @@ def run(a,runner=subprocess.run,today=None):
  initial=a.output/'initial';shutil.copytree(a.prior_checkpoint/'states',initial);shutil.copy2(a.prior_checkpoint/'manifest.json',initial/'ownership_manifest.json')
  source=a.prepared_root/'repo/script/asset_history/backfill';runtime=a.prepared_root/'runtime'
  cmd=[sys.executable,str(source/'run_owner_replay.py'),'--canonical',str(runtime),'--repo',str(a.prepared_root/'repo'),'--output',str(a.output/'replay'),'--initial-state',str(initial),'--injuries',str(a.injuries),'--calibration-cache',str(a.calibration),'--through',a.asof,'--max-dates','1','--workers','4']
+ if getattr(a,'prior_absence_ratings',None):
+  wrapper=Path(__file__).resolve().parent.parent/'prior_absence_owner_runner.py'
+  cmd=[sys.executable,str(wrapper),'--native-runner',str(source/'run_owner_replay.py'),'--prior-absence-ratings',str(a.prior_absence_ratings),*cmd[2:]]
  with (a.output/'native.log').open('w') as log:runner(cmd,check=True,stdout=log,stderr=subprocess.STDOUT,timeout=900,env={**os.environ,'OPENBLAS_NUM_THREADS':'1','OMP_NUM_THREADS':'1','PYTHONDONTWRITEBYTECODE':'1'})
  validate(a,today) # never issue a receipt after input mutation
  batch=a.output/'replay/batches'/a.asof;manifest=read(batch/'manifest.json');need(manifest.get('as_of')==a.asof,'Wrong native date')
@@ -71,6 +81,14 @@ def run(a,runner=subprocess.run,today=None):
    if name.endswith('.csv'):
     with f.open() as inp:
      for row in csv.DictReader(inp):need(row.get('cutoff_date',a.asof)==a.asof,'Mixed output date')
+ if getattr(a,'prior_absence_ratings',None):
+  from prior_absence_team_runner import evidence,RAW,PRIOR
+  admitted_ids=evidence(a.prior_absence_ratings,a.prior_checkpoint)
+  for t in TEAMS:
+   witness=read(batch/'output'/t/'prior_absence_witness.json')
+   need(witness.get('schema')=='nba-prior-absence-query-witness-v1' and witness.get('team')==t and witness.get('raw_sha256')==RAW and witness.get('checkpoint_sha256')==PRIOR and witness.get('runner_sha256')==sha(Path(__file__).resolve().parent.parent/'prior_absence_team_runner.py'),'Missing or changed team absence witness')
+   for q in witness.get('queries',[]):
+    need(type(q.get('nba_id'))is int and q['nba_id']>0 and q['nba_id']not in admitted_ids and q.get('prior_date')=='2026-11-18' and q.get('current_date')==a.asof and q.get('query_rows')==0 and q.get('raw_sha256')==RAW and q.get('checkpoint_sha256')==PRIOR,'Unproven predecessor absence query')
  out=inventory(batch/'output');need(all(len(k.split('/'))==2 for k in out),'Unexpected nested output')
  official=p.get('official_injury_receipt')
  if official:
@@ -79,9 +97,15 @@ def run(a,runner=subprocess.run,today=None):
  if official:
   r['official_injury_outlook']=p['sources']['injuries']
   r['official_injury_receipt']=official
+ sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
+ from continuation_inputs import capture
+ if getattr(a,'prior_absence_ratings',None):
+  r['prior_absence_bootstrap']={'scope':'numeric-absent-arrival-query-only','raw_sha256':sha(a.prior_absence_ratings),'checkpoint_sha256':a.prior_checkpoint_sha256,'witnesses':[k for k in out if k.endswith('/prior_absence_witness.json')]}
+ r['continuation_inputs']=capture(runtime,batch,a.prepared_receipt,batch/'continuation_inputs.json')
  path=a.output/'native_replay_receipt.json';path.write_text(json.dumps(r,sort_keys=True,indent=2)+'\n');return {'receipt':str(path),'batch':str(batch),'receipt_sha256':sha(path)}
 if __name__=='__main__':
  q=argparse.ArgumentParser()
+ q.add_argument('--prior-absence-ratings',type=lambda s:Path(s).resolve())
  for k in ('prepared-root','prepared-receipt','prior-checkpoint','grades','calibration','calibration-receipt','injuries','signed-book','output'):q.add_argument('--'+k,type=lambda s:Path(s).resolve(),required=True)
  for k in ('asof','prepared-receipt-sha256','prior-checkpoint-sha256','grade-checkpoint-sha256','calibration-receipt-sha256','signed-book-sha256'):q.add_argument('--'+k,required=True)
  print(json.dumps(run(q.parse_args())))

@@ -74,9 +74,14 @@ def assemble(config, work, execute=False, launch=command, skip_regression=False,
         official_receipt=Path(config["official_injury_receipt"]).resolve(strict=True)
         require(sha(official_receipt)==config["official_injury_receipt_sha256"],"Official game evidence changed")
         official_args=["--official-injury-receipt",official_receipt]
+    dependency_args=[]
+    if config.get("prior_dependencies_sha256"):
+        dependency_path=Path(config.get("prior_dependencies",prior/"continuation_inputs.json")).resolve(strict=True)
+        require(sha(dependency_path)==config["prior_dependencies_sha256"],"Prior observation dependencies changed")
+        dependency_args=["--prior-dependencies",dependency_path,"--prior-dependencies-sha256",config["prior_dependencies_sha256"],"--prior-checkpoint",prior,"--prior-checkpoint-sha256",config["prior_checkpoint_sha256"]]
     step("native_prepare",adapters/"fresh_native_inputs/adapter.py",[
        "--native",runtime,"--source",repo,"--demographics",source_r/"demographics.json","--schedule",source_r/"schedule.json",
-       "--ownership-receipt",ownership,"--collector-receipt",collection,"--r-receipt",source_r/"receipt.json","--asof",asof,"--season",season,"--work",prepared,*official_args])
+       "--ownership-receipt",ownership,"--collector-receipt",collection,"--r-receipt",source_r/"receipt.json","--asof",asof,"--season",season,"--work",prepared,*official_args,*dependency_args])
     prep=prepared/"source_preparation_receipt.json"
     step("calibration",adapters/"calibration/prepare_calibration.py",[
         "--repo",prepared/"repo","--runtime",prepared/"runtime","--prepared-receipt",prep,
@@ -85,13 +90,19 @@ def assemble(config, work, execute=False, launch=command, skip_regression=False,
         "--prior-episodes-sha256",config["prior_injuries_sha256"],"--base-injuries",base_injury,
         "--base-injuries-sha256",config["base_injuries_sha256"],"--asof",asof,"--out",cal,"--reviewed"])
     cal_receipt=cal/"calibration_receipt.json"
+    absence_args=[]
+    if config.get("prior_absence_ratings"):
+        require(not config.get("prior_dependencies_sha256"),"Choose full exact dependencies or explicit absence bootstrap, not both")
+        absence_path=Path(config["prior_absence_ratings"]).resolve(strict=True)
+        require(asof=="2026-11-19" and sha(absence_path)=="521024e8bda946176b0308c7a103d340afb2b2d8eddd9b265d8fdd822dd95ffe","Unapproved prior absence evidence")
+        absence_args=["--prior-absence-ratings",absence_path]
     step("native_replay",adapters/"native_invoker/invoke_current_native.py",[
         "--prepared-root",prepared,"--prepared-receipt",prep,"--prepared-receipt-sha256",sha(prep),
         "--prior-checkpoint",prior,"--prior-checkpoint-sha256",config["prior_checkpoint_sha256"],
         "--grades",grades,"--grade-checkpoint-sha256",config["grade_checkpoint_sha256"],
         "--calibration",cal/"calibration.json","--calibration-receipt",cal_receipt,"--calibration-receipt-sha256",sha(cal_receipt),
         "--injuries",cal/"injuries/combined_injury_episodes.json","--signed-book",signed,"--signed-book-sha256",sha(signed),
-        "--asof",asof,"--output",native])
+        "--asof",asof,"--output",native,*absence_args])
     native_report=native/"native_replay_receipt.json"
     step("player_quotes",adapters/"player_quotes/generate.py",[
         "--lane","fresh","--asof",asof,"--repo",prepared/"repo","--runtime",prepared/"runtime",
@@ -181,8 +192,25 @@ def assemble(config, work, execute=False, launch=command, skip_regression=False,
     if ui_proof is not None:
         _verify_ui_policy(dist,h,proposed,ui_proof)
     completed.append("frontend_checks")
+    # Export an explicit archive-ready continuation, not merely a transient batch.
+    # Publication remains external; consumers must verify this manifest against
+    # the successful release receipt before accepting its dependency digest.
+    native_binding=read(native_report)
+    dependency=native_binding["continuation_inputs"]
+    dependency_file=Path(dependency["path"])
+    require(sha(dependency_file)==dependency["sha256"],"Continuation inputs changed")
+    continuation=work/"continuation"/asof
+    batch=native/"replay/batches"/asof
+    shutil.copytree(batch/"states",continuation/"states")
+    shutil.copy2(batch/"manifest.json",continuation/"manifest.json")
+    shutil.copy2(dependency_file,continuation/"continuation_inputs.json")
+    shutil.copy2(native_report,continuation/"native_replay_receipt.json")
+    continuation_files={str(p.relative_to(continuation)):sha(p) for p in continuation.rglob("*") if p.is_file()}
+    continuation_manifest=continuation/"continuation_manifest.json"
+    write(continuation_manifest,{"schema":"nba-archive-ready-continuation-v1","asof":asof,"checkpoint_sha256":dependency["checkpoint_sha256"],"files":continuation_files,"production":False})
     report=dict(schema="nba-e-v2-current-assembly-v1",asof=asof,season=season,completed=completed,
                 candidate_index_sha256=sha(index),signed_book_sha256=sha(signed),r_receipt_sha256=sha(r/"receipt.json"),
+                continuation={"path":str(continuation),"manifest_sha256":sha(continuation_manifest),"checkpoint_sha256":dependency["checkpoint_sha256"],"dependencies_sha256":dependency["sha256"]},
                 native_receipt_sha256=sha(native_report),player_receipt_sha256=sha(qreceipt),
                 pick_receipt_sha256=sha(picks.with_suffix(".proof.json")),production=False,release_ready=False,regression_checks_skipped=skip_regression,contract_pending_ui_transition=ui_proof is not None)
     write(work/"assembly_receipt.json",report)
