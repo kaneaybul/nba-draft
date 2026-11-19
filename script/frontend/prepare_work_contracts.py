@@ -19,15 +19,26 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--repo',type=Path,default=ROOT)
 parser.add_argument('--work-dir',type=Path,required=True)
 parser.add_argument('--dated-receipt',type=Path,help='Optional new local receipt for a separately validated native source stage')
+parser.add_argument('--official-transactions-start',help='Inclusive NBA.com movement check from prior verified coverage (YYYY-MM-DD)')
 args=parser.parse_args()
 repo=args.repo.resolve()
-pool=json.loads((repo/'raw/live/player_pool.json').read_text())
+pool_path=repo/'raw/live/player_pool.json'
+pool=json.loads(pool_path.read_text())
+# Certified source bytes are immutable at this consumer boundary.
+# Install reviewed mappings during normal collection, before its receipt.
+sys.path.insert(0,str(repo/'script/data'))
+from official_player_identity import require_collected_identities
+require_collected_identities(repo,pool)
 asof=pool['generated_at'][:10]
 runtime=args.work_dir.resolve()/'runtime'
 materialize(repo)
 unpack(repo/'processed/asset_history/canonical_runtime_seed.zip',runtime)
 restore_events(runtime,repo/'processed/asset_history/player_state')
 source=refresh_events(runtime,asof,repo=repo)
+if args.official_transactions_start:
+    from official_nba_transactions import refresh as add_official_movements
+    add_official_movements(runtime,asof,start=args.official_transactions_start)
+    source=json.loads((runtime/'monthly_reconstruction/league_ownership/roster_refresh_source.json').read_text())
 roster_path=runtime/'monthly_reconstruction/league_ownership/monthly_league_rosters.json'
 dates={s['cutoff_date'] for s in json.loads(roster_path.read_text())}|{asof}
 _,audit=replay(runtime,dates)

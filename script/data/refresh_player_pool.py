@@ -154,6 +154,9 @@ def main():
     if '--enrich' in sys.argv:
         if not previous:raise ValueError('Roster refresh must run before enrichment')
         previous['players']=seed_registry(ROOT,season,previous['players'])
+        # Resolve newcomers without changing signed ownership or salary terms.
+        from official_player_identity import prepare_identities
+        previous=prepare_identities(ROOT,previous,now=now)
         for p in previous['players']:
             if p.get('pool_status')!='roster' and not p.get('inactive_confirmed') and (p.get('last_nba_season') or 0)>=season-1:
                 p.update(pool_status='free_agent',team='FA')

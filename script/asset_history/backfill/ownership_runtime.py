@@ -4,7 +4,7 @@ A current roster feed is supporting evidence; it cannot resurrect a player
 after a dated waiver or replace a signed player with an unverified free agent.
 """
 from __future__ import annotations
-import importlib.util,json,sys,hashlib
+import importlib.util,json,sys,hashlib,re
 from datetime import datetime,timezone
 from pathlib import Path
 
@@ -64,7 +64,25 @@ def replay(runtime,dates):
     # The fallback's verified NBA identities may be newer than the runtime seed.
     # Do not infer identity from a same-name player or overwrite a known conflict.
     for event in events:
-        if event.get('identity_source')!='verified_live_player_pool':continue
+        origin=event.get('identity_source')
+        if origin not in ('verified_live_player_pool','official_nba_transaction_feed'):continue
+        if origin=='official_nba_transaction_feed':
+            endpoint='https://stats.nba.com/js/data/playermovement/NBA_Player_Movement.json'
+            proof=event.get('official_transaction',{})
+            if event.get('source')!=endpoint or proof.get('source_url')!=endpoint or not proof.get('row_sha256'):
+                raise ValueError('Unbound official transaction identity')
+            if proof.get('date')!=event.get('date') or len(event.get('players',[]))!=1 or event['players'][0].get('nba_id')!=proof.get('player_id'):
+                raise ValueError('Official transaction actor/date mismatch')
+            from datetime import date
+            date.fromisoformat(proof['date'])
+            action=event.get('parsed_actions',[])
+            if proof.get('type') not in ('Signing','Waive') or len(action)!=1 or action[0].get('nba_id')!=proof['player_id'] or action[0].get('to_team')!=proof.get('to_team') or action[0].get('action')!=proof.get('action') or proof['action']!=('add' if proof['type']=='Signing' else 'remove'):
+                raise ValueError('Official transaction action mismatch')
+            official_teams={1610612737: 'ATL', 1610612738: 'BOS', 1610612739: 'CLE', 1610612740: 'NOP', 1610612741: 'CHI', 1610612742: 'DAL', 1610612743: 'DEN', 1610612744: 'GSW', 1610612745: 'HOU', 1610612746: 'LAC', 1610612747: 'LAL', 1610612748: 'MIA', 1610612749: 'MIL', 1610612750: 'MIN', 1610612751: 'BKN', 1610612752: 'NYK', 1610612753: 'ORL', 1610612754: 'IND', 1610612755: 'PHI', 1610612756: 'PHX', 1610612757: 'POR', 1610612758: 'SAC', 1610612759: 'SAS', 1610612760: 'OKC', 1610612761: 'TOR', 1610612762: 'UTA', 1610612763: 'MEM', 1610612764: 'WAS', 1610612765: 'DET', 1610612766: 'CHA'}
+            if official_teams.get(proof.get('team_id'))!=proof.get('to_team') or action[0].get('player_name')!=event['players'][0]['name'] or source.key(event['players'][0]['name'])!=source.key(proof.get('player_slug','')):
+                raise ValueError('Official transaction team/name mismatch')
+            if type(proof['player_id']) is not int or proof['player_id']<=0 or type(proof.get('team_id')) is not int or not re.fullmatch('[0-9a-f]{64}',proof['row_sha256']):
+                raise ValueError('Invalid official transaction provenance')
         for player in event['players']:
             name=source.key(player['name']);pid=int(player['nba_id'])
             if name in ids and ids[name]!=pid:raise ValueError('Conflicting fallback player identity: '+player['name'])
