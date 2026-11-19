@@ -10,5 +10,17 @@
     "nba_id": 1643572,
     "player_name": "Rafael Castro",
     "source_url": "https://www.nba.com/player/1643572/rafael-castro"
+  },
+  {
+    "app_nba_id": -1004684682,
+    "nba_id": 1643265,
+    "player_name": "Jonas Aidoo",
+    "source_url": "https://www.nba.com/player/1643265/jonas-aidoo/profile"
+  },
+  {
+    "app_nba_id": -1004702099,
+    "nba_id": 1643113,
+    "player_name": "Zack Austin",
+    "source_url": "https://www.nba.com/player/1643113"
   }
 ]
