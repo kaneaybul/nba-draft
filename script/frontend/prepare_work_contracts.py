@@ -20,6 +20,7 @@ parser.add_argument('--repo',type=Path,default=ROOT)
 parser.add_argument('--work-dir',type=Path,required=True)
 parser.add_argument('--dated-receipt',type=Path,help='Optional new local receipt for a separately validated native source stage')
 parser.add_argument('--official-transactions-start',help='Inclusive NBA.com movement check from prior verified coverage (YYYY-MM-DD)')
+parser.add_argument('--predecessor-handoff',type=Path,help='Optional reviewed exact predecessor snapshot receipt')
 args=parser.parse_args()
 repo=args.repo.resolve()
 pool_path=repo/'raw/live/player_pool.json'
@@ -46,6 +47,9 @@ if source.get('mode')=='espn_dated_fallback' and capture_additions(runtime,pool,
     _,audit=replay(runtime,dates)
 if audit.get('unresolved_events'):
     raise ValueError('Unresolved signed ownership; retain the last successful release')
+if args.predecessor_handoff:
+    from predecessor_ownership import apply as apply_predecessor_handoff
+    apply_predecessor_handoff(runtime,args.predecessor_handoff,asof)
 capture={'date':asof,'roster':json.loads(roster_path.read_text())}
 events_path=roster_path.with_name('league_events.json')
 events=json.loads(events_path.read_text())
