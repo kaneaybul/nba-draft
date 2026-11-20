@@ -37,10 +37,15 @@ def old_terms_on_new_basis(opening, closing):
     return {**closing, "annual":rows}
 
 
-def snapshot(ledger, batch, runtime, asof):
+def snapshot(ledger, batch, runtime, asof, released_quotes=None):
     classes = bind(runtime)
     forecasts = read_ledger(ledger)
     output = {"asof":asof,"version":VERSION,"players":{},"draft_window":[]}
+    published = None
+    if released_quotes is not None:
+        published = json.loads(released_quotes.read_text())
+        if published.get("observation_date")!=asof:
+            raise ValueError("Released quote packet has the wrong observation date")
     for folder in sorted(batch.iterdir()):
         if not (folder/"monthly_quote_carry_states.csv").is_file():
             continue
@@ -61,15 +66,23 @@ def snapshot(ledger, batch, runtime, asof):
             f = forecasts[pid]
             knots = json.loads(source["impact_path_knots_json"])
             if (f.clock!=float(source["impact_team_game_clock"]) or f.asof.isoformat()!=asof
-                    or f.team!=folder.name or pid in output["players"]):
+                    or f.version!=VERSION or f.team!=folder.name or pid in output["players"]):
                 raise ValueError(f"Inconsistent dated owner or clock for {pid}")
             fields = ("season","in_original_draft_window","scale_budget_scenario","salary_cap_scenario",
                       "replacement","league_timin","is_unsigned_market_year","forecast_yos",
                       "league_reference_year","app_effective_contract","waiver_option_verified",
                       "waiver_guaranteed_amount_asof")
             basis = dict(knots=knots,annual=[{k:r[k] for k in fields} for r in rows],
-                         contracts=curves,reporting_cap=164961000.,team=f.team)
+                         contracts=curves,reporting_cap=164961000.,team=f.team,
+                         coordinate_offset=float(source["impact_coordinate_offset"]),
+                         coordinate_lineage=source["impact_coordinate_lineage"])
             basis["quote"] = price(basis,classes)(f.clock,f.window(f.clock)[-1],impact_per_game(knots,f.clock))
+            if published is not None:
+                original = published["players"][str(pid)]
+                if original["date"]!=asof:
+                    raise ValueError("Mixed quote packet observation dates")
+                basis["same_date_prior_method"] = dict(method=published["method"],value=original["value"],
+                                                        revision=basis["quote"]-original["value"])
             output["players"][pid] = basis
     if not output["players"]:
         raise ValueError("No dated player quotes")
@@ -86,15 +99,29 @@ def price_changes(old_dir, new_dir, runtime):
     for key in sorted(old["players"].keys() & new["players"].keys()):
         pid=int(key)
         left,right=old["players"][key],new["players"][key]
-        if a[pid].team!=b[pid].team:
-            result["transfers"].append(pid)
-            continue
+        if left["coordinate_lineage"]!=right["coordinate_lineage"]:
+            raise ValueError("Native ownership lineage mismatch")
+        shift=right["coordinate_offset"]-left["coordinate_offset"]
         if str(a[pid].asof)!=old["asof"] or str(b[pid].asof)!=new["asof"]:
             raise ValueError("Ledger and price dates differ")
-        result["players"][key]=bridge(a[pid],b[pid],left["knots"],right["knots"],
-                                      price(left,classes),price(right,classes),
-                                      opening_mark=left["quote"],closing_mark=right["quote"],
-                                      closing_price_old_contract=price(old_terms_on_new_basis(left,right),classes))
+        opening_price=price(left,classes)
+        parts=bridge(a[pid],b[pid],left["knots"],right["knots"],
+                     opening_price,price(right,classes),opening_mark=left["quote"],
+                     closing_mark=right["quote"],coordinate_shift=shift,
+                     closing_price_old_contract=price(old_terms_on_new_basis(left,right),classes))
+        before=a[pid].clock
+        after=b[pid].clock-int(shift)
+        def opening_parts(clock):
+            return opening_price.parts(clock,a[pid].window(clock)[-1],
+                                       impact_per_game(left["knots"],clock))
+        initial,carried=opening_parts(before),opening_parts(after)
+        aging=carried["production_quote"]-initial["production_quote"]
+        parts["contract_window_mix"]=parts.pop("expected_aging_and_window")-aging
+        parts["expected_aging"]=aging
+        if a[pid].team!=b[pid].team:
+            result["transfers"].append(dict(player=pid,from_team=a[pid].team,to_team=b[pid].team,
+                                            outgoing=-carried["quote"],incoming=carried["quote"]))
+        result["players"][key]=parts
     return result
 
 
@@ -105,13 +132,14 @@ if __name__=="__main__":
     for key in ("ledger","batch","runtime"):
         build.add_argument(key,type=Path)
     build.add_argument("asof")
+    build.add_argument("--released-quotes",type=Path)
     compare=modes.add_parser("bridge")
     for key in ("opening","closing","runtime"):
         compare.add_argument(key,type=Path)
     for cmd in (build,compare):
         cmd.add_argument("output",type=Path)
     a=p.parse_args()
-    result=(snapshot(a.ledger,a.batch,a.runtime,a.asof) if a.action=="snapshot"
+    result=(snapshot(a.ledger,a.batch,a.runtime,a.asof,a.released_quotes) if a.action=="snapshot"
             else price_changes(a.opening,a.closing,a.runtime))
     with a.output.open("x") as stream:
         json.dump(result,stream,allow_nan=False,separators=(",",":"))
