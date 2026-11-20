@@ -16,6 +16,10 @@ keys <- vapply(outlook$players,function(r) paste(r$team,r$name_key),character(1)
 if(anyDuplicated(keys) || anyDuplicated(players$id) || anyDuplicated(roles[c("nba_id","game")])) stop("Duplicate forecast identity")
 if(!setequal(players$id,roles$nba_id)) stop("Incomplete player forecast")
 roles$expected_minutes <- roles$probability*roles$conditional_mpg
+roles$baseline_minutes <- roles$expected_minutes
+roles$baseline_probability <- roles$probability
+roles$healthy_rotation <- roles$direct_minutes <- roles$availability <- NA_real_
+roles$team_game_clock <- NA_integer_
 for(team in unique(roles$team)) {
   roster <- players[players$team==team,]
   team_calendar <- calendar[calendar$team==team,]
@@ -37,6 +41,7 @@ for(team in unique(roles$team)) {
       roster$minutes_expected_mpg <- balance_live_minutes(base, 38*prob)
       roster$minutes_healthy_mpg <- ifelse(prob>0,roster$minutes_expected_mpg/prob,0)
       factor <- vapply(plans,injury_availability_on_date,numeric(1),date=dates[game])
+      healthy <- allocate_live_rotation(roster, rep(1, nrow(roster)))$minutes/82
       rotation <- allocate_live_rotation(roster,factor)
       mins <- rotation$minutes/82
       prob <- rotation$games/82
@@ -47,7 +52,13 @@ for(team in unique(roles$team)) {
       # retain expected minutes for incoming or currently unidentified players.
       mins <- pmin(48*prob,pmax(0,base+carry*2^(-(game-length(dates))/41)))
       if(sum(mins)>240) mins <- mins*(240/sum(mins))
+      healthy <- mins
+      factor <- rep(1, nrow(roster))
     }
+    roles$healthy_rotation[idx] <- healthy
+    roles$availability[idx] <- factor
+    roles$direct_minutes[idx] <- healthy*factor
+    roles$team_game_clock[idx] <- 82L*(outlook$season-2000L) + 82L-length(dates) + game-1L
     roles$probability[idx] <- prob
     roles$expected_minutes[idx] <- mins
     roles$conditional_mpg[idx] <- ifelse(prob>0,mins/prob,0)
