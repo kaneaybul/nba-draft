@@ -79,6 +79,10 @@ def assemble(config, work, execute=False, launch=command, skip_regression=False,
         dependency_path=Path(config.get("prior_dependencies",prior/"continuation_inputs.json")).resolve(strict=True)
         require(sha(dependency_path)==config["prior_dependencies_sha256"],"Prior observation dependencies changed")
         dependency_args=["--prior-dependencies",dependency_path,"--prior-dependencies-sha256",config["prior_dependencies_sha256"],"--prior-checkpoint",prior,"--prior-checkpoint-sha256",config["prior_checkpoint_sha256"]]
+    if config.get("prior_prepared_receipt"):
+        prior_prep=Path(config["prior_prepared_receipt"]).resolve(strict=True)
+        require(sha(prior_prep)==config["prior_prepared_receipt_sha256"],"Prior preparation receipt changed")
+        dependency_args += ["--prior-prepared-receipt",prior_prep]
     step("native_prepare",adapters/"fresh_native_inputs/adapter.py",[
        "--native",runtime,"--source",repo,"--demographics",source_r/"demographics.json","--schedule",source_r/"schedule.json",
        "--ownership-receipt",ownership,"--collector-receipt",collection,"--r-receipt",source_r/"receipt.json","--asof",asof,"--season",season,"--work",prepared,*official_args,*dependency_args])

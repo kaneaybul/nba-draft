@@ -86,3 +86,26 @@ def require_present(runtime,day):
         rows,_,_=read_records(root/rel,spec)
         if rel!='ledger/monthly_inventory.json' and not any(r.get(spec[1])==day for r in rows):missing.append(rel)
     if missing:raise ValueError('Exact prior observation dependencies missing for '+day+': '+', '.join(missing))
+
+def prior_priced_ledger(authority,bundle,bundle_sha,prior,prior_sha,prepared_receipt):
+    """Project only the authenticated prior slice; never mutate authority rows."""
+    from collections import Counter
+    day,pin=checkpoint(prior)
+    if pin!=prior_sha or sha(bundle)!=bundle_sha:raise ValueError('Unverified prior priced dependency binding')
+    b=json.loads(Path(bundle).read_bytes());proof=json.loads(Path(prepared_receipt).read_bytes())
+    if b['checkpoint_sha256']!=pin or b['asof']!=day or sha(prepared_receipt)!=b['prepared_receipt_sha256']or proof['asof']!=day:raise ValueError('Prior preparation binding mismatch')
+    saved=b['files']['league_ownership/monthly_league_rosters.json'];want=saved['rows']
+    if digest(want)!=saved['rows_sha256']or len(want)!=1 or want[0]['cutoff_date']!=day:raise ValueError('Invalid exact prior ownership slice')
+    actual=[x for x in authority if x['cutoff_date']==day]
+    if len(actual)!=1:raise ValueError('Missing or duplicate authoritative predecessor date')
+    exclusions=proof.get('native_pending_exclusion',{})
+    if exclusions.get('asof')!=day or exclusions.get('policy')!='confirmed_contract_pending_not_priced':raise ValueError('Undocumented prior pending exclusion')
+    ids=exclusions['ids'];removed=[r for r in actual[0]['roster']if r.get('nba_id')in ids]
+    if len(removed)!=len(ids)or {r['nba_id']for r in removed}!=set(ids):raise ValueError('Prior pending identities differ')
+    expected=copy.deepcopy(actual[0]);expected['roster']=[r for r in expected['roster']if r.get('nba_id')not in ids]
+    canon=lambda rows:Counter(json.dumps(r,sort_keys=True,separators=(',',':'),allow_nan=False)for r in rows)
+    if {k:v for k,v in expected.items()if k!='roster'}!={k:v for k,v in want[0].items()if k!='roster'}or canon(expected['roster'])!=canon(want[0]['roster']):raise ValueError('Prior priced rows conflict with authoritative ownership')
+    result=copy.deepcopy(authority)
+    for i,row in enumerate(result):
+        if row['cutoff_date']==day:result[i]=copy.deepcopy(want[0])
+    return result,{'asof':day,'dependency_sha256':bundle_sha,'checkpoint_sha256':pin,'prior_prepared_receipt_sha256':sha(prepared_receipt),'documented_pending_ids':ids,'authority_unchanged':True,'exact_prior_slice_restored':True}
