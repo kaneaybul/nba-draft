@@ -1,0 +1,102 @@
+"""Create dated mature-player quotes or bridge a pair of independently priced assemblies."""
+import argparse
+import csv
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from shared_minutes_accounting import bridge, impact_per_game, read_ledger, VERSION
+
+
+def bind(runtime):
+    sys.path.insert(0,str(runtime.resolve()/"monthly_reconstruction/projections"))
+    from expected_contracts import ExpectedContracts
+    from shared_mature_quote import MatureQuote
+    return ExpectedContracts,MatureQuote
+
+
+def price(basis, classes):
+    market,quote = classes
+    model = market({})
+    model.cache = {int(k):v for k,v in basis["contracts"].items()}
+    return quote(basis["annual"],model,basis["reporting_cap"])
+
+
+def snapshot(ledger, batch, runtime, asof):
+    classes = bind(runtime)
+    forecasts = read_ledger(ledger)
+    output = {"asof":asof,"version":VERSION,"players":{},"draft_window":[]}
+    for folder in sorted(batch.iterdir()):
+        if not (folder/"monthly_quote_carry_states.csv").is_file():
+            continue
+        curves = json.loads((folder/"asof_expected_contract_curves.json").read_text())
+        with (folder/"monthly_player_values.csv").open() as stream:
+            people = {row["player_name"]:row for row in csv.DictReader(stream) if row["cutoff_date"]==asof}
+        groups = {}
+        with (folder/"monthly_quote_carry_states.csv").open() as stream:
+            for row in csv.DictReader(stream):
+                if row["cutoff_date"]==asof and row["active_asset"]=="True" and row["asset_type"] in ("roster_contract","two_way"):
+                    groups.setdefault(row["player_name"],[]).append(row)
+        for name,rows in groups.items():
+            source = people[name]
+            pid = int(float(source["source_nba_id"] or source["ledger_nba_id"]))
+            if any(float(r["exposure"])>0 and r["in_original_draft_window"]=="True" for r in rows):
+                output["draft_window"].append(pid)
+                continue
+            f = forecasts[pid]
+            knots = json.loads(source["impact_path_knots_json"])
+            if (f.clock!=float(source["impact_team_game_clock"]) or f.asof.isoformat()!=asof
+                    or f.team!=folder.name or pid in output["players"]):
+                raise ValueError(f"Inconsistent dated owner or clock for {pid}")
+            fields = ("season","in_original_draft_window","scale_budget_scenario","salary_cap_scenario",
+                      "replacement","league_timin","is_unsigned_market_year","forecast_yos",
+                      "league_reference_year","app_effective_contract","waiver_option_verified",
+                      "waiver_guaranteed_amount_asof")
+            basis = dict(knots=knots,annual=[{k:r[k] for k in fields} for r in rows],
+                         contracts=curves,reporting_cap=164961000.,team=f.team)
+            basis["quote"] = price(basis,classes)(f.clock,f.window(f.clock)[-1],impact_per_game(knots,f.clock))
+            output["players"][pid] = basis
+    if not output["players"]:
+        raise ValueError("No dated player quotes")
+    return output
+
+
+def price_changes(old_dir, new_dir, runtime):
+    classes=bind(runtime)
+    old,new=[json.loads((p/"mature_quotes.json").read_text()) for p in (old_dir,new_dir)]
+    if old["version"]!=new["version"]:
+        raise ValueError("A valuation-method migration requires a same-date opening restatement")
+    a,b=[read_ledger(p/"resolved.csv") for p in (old_dir,new_dir)]
+    result={"opening_date":old["asof"],"closing_date":new["asof"],"players":{},"transfers":[]}
+    for key in sorted(old["players"].keys() & new["players"].keys()):
+        pid=int(key)
+        left,right=old["players"][key],new["players"][key]
+        if a[pid].team!=b[pid].team:
+            result["transfers"].append(pid)
+            continue
+        if str(a[pid].asof)!=old["asof"] or str(b[pid].asof)!=new["asof"]:
+            raise ValueError("Ledger and price dates differ")
+        result["players"][key]=bridge(a[pid],b[pid],left["knots"],right["knots"],
+                                      price(left,classes),price(right,classes),
+                                      opening_mark=left["quote"],closing_mark=right["quote"])
+    return result
+
+
+if __name__=="__main__":
+    p=argparse.ArgumentParser(description=__doc__)
+    modes=p.add_subparsers(dest="action",required=True)
+    build=modes.add_parser("snapshot")
+    for key in ("ledger","batch","runtime"):
+        build.add_argument(key,type=Path)
+    build.add_argument("asof")
+    compare=modes.add_parser("bridge")
+    for key in ("opening","closing","runtime"):
+        compare.add_argument(key,type=Path)
+    for cmd in (build,compare):
+        cmd.add_argument("output",type=Path)
+    a=p.parse_args()
+    result=(snapshot(a.ledger,a.batch,a.runtime,a.asof) if a.action=="snapshot"
+            else price_changes(a.opening,a.closing,a.runtime))
+    with a.output.open("x") as stream:
+        json.dump(result,stream,allow_nan=False,separators=(",",":"))
