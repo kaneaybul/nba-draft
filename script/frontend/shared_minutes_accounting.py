@@ -38,7 +38,7 @@ def read_ledger(path):
             clock = int(first["team_game_clock"])
             if key in result or any(int(r["team_game_clock"]) != clock+i or
                                     int(r["game"]) != i+1 or r["asof"] != first["asof"] or
-                                    r["team"] != first["team"] for i,r in enumerate(group)):
+                                    r["team"] != first["team"] or r["forecast_version"] != first["forecast_version"] for i,r in enumerate(group)):
                 raise ValueError(f"Duplicate, mixed or discontinuous ledger for {key}")
             values = np.array([[float(r[k]) for r in group] for k in STAGES])
             p, m, availability, base_p = np.array([
@@ -53,7 +53,7 @@ def read_ledger(path):
                     or not np.allclose(values[3], p*m, rtol=0, atol=1e-8)):
                 raise ValueError(f"Invalid forecast or injury reconciliation for {key}")
             values.setflags(write=False)
-            result[key] = Snapshot(key, first["team"], date.fromisoformat(first["asof"]), clock, values)
+            result[key] = Snapshot(key, first["team"], date.fromisoformat(first["asof"]), clock, values, first["forecast_version"])
     return result
 
 
