@@ -42,5 +42,8 @@ class MatureQuote:
             output.append((production*self.reporting_cap/cap,asset*self.reporting_cap/cap,exposure))
         return output
 
+    def parts(self, clock, minutes, impact):
+        return quote_window(*zip(*self.annual(clock, minutes, impact)))
+
     def __call__(self, clock, minutes, impact):
-        return quote_window(*zip(*self.annual(clock, minutes, impact)))["quote"]
+        return self.parts(clock,minutes,impact)["quote"]
