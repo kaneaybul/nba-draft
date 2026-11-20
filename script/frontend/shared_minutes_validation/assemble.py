@@ -22,7 +22,8 @@ def assemble(repo, assembly, asof, season, out, previous=None):
     ]
     prices = scripts/"shared_minutes_validation/price_bridge.py"
     runtime = assembly/"prepared/runtime"
-    commands.append([sys.executable,prices,"snapshot",final,batch,runtime,asof,out/"mature_quotes.json"])
+    commands.append([sys.executable,prices,"snapshot",final,batch,runtime,asof,out/"mature_quotes.json",
+                     "--released-quotes",assembly/"quotes/current_players.json"])
     if previous is not None:
         commands.extend([
             [sys.executable,scripts/"shared_minutes_validation/compare_ledgers.py",
