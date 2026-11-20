@@ -16,6 +16,7 @@ keys <- vapply(outlook$players,function(r) paste(r$team,r$name_key),character(1)
 if(anyDuplicated(keys) || anyDuplicated(players$id) || anyDuplicated(roles[c("nba_id","game")])) stop("Duplicate forecast identity")
 if(!setequal(players$id,roles$nba_id)) stop("Incomplete player forecast")
 roles$expected_minutes <- roles$probability*roles$conditional_mpg
+roles$forecast_version <- "shared-minutes-comparables-career-v1"
 roles$baseline_minutes <- roles$expected_minutes
 roles$baseline_probability <- roles$probability
 roles$healthy_rotation <- roles$direct_minutes <- roles$availability <- NA_real_
