@@ -140,7 +140,7 @@ def validate_bundle(native,source,demographics,schedule,collector_receipt,owners
  if recent:r['recent_contract_terms']={'path':str(terms_path),'sha256':sha(terms_path),'reviewed':True}
  return rows,games,r,ledger,audit
 
-def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True,official_receipt=None,prior_dependencies=None,prior_dependencies_sha256=None,prior_checkpoint=None,prior_checkpoint_sha256=None):
+def prepare(native,source,demographics,schedule,collector_receipt,ownership_receipt,r_receipt,asof,season,work,execute_extension=True,official_receipt=None,prior_dependencies=None,prior_dependencies_sha256=None,prior_checkpoint=None,prior_checkpoint_sha256=None,prior_prepared_receipt=None):
  import shutil,subprocess,os
  native=Path(native).resolve();source=Path(source).resolve();work=Path(work).resolve()
  if work.exists() or work==native or native in work.parents or source in work.parents:raise ValueError('Fresh separate work directory required')
@@ -160,6 +160,9 @@ def prepare(native,source,demographics,schedule,collector_receipt,ownership_rece
  target=runtime/'monthly_reconstruction/league_ownership';shutil.copy2(audit,target/'roster_refresh_source.json');shutil.copy2(checked_file(load(ownership_receipt)['ownership_events']),target/'league_events.json')
  # Keep the authoritative ledger intact; derive only this isolated current asset roster.
  pending_ids=set(r['contract_pending_ids']);native_ledger=native_asset_ledger(load(ledger),asof,pending_ids)
+ if prior_dependencies and prior_prepared_receipt:
+  from continuation_inputs import prior_priced_ledger
+  native_ledger,r['prior_priced_ownership_projection']=prior_priced_ledger(native_ledger,prior_dependencies,prior_dependencies_sha256,prior_checkpoint,prior_checkpoint_sha256,prior_prepared_receipt)
  (target/'monthly_league_rosters.json').write_text(json.dumps(native_ledger))
  r['native_pending_exclusion']={'asof':asof,'ids':sorted(pending_ids),'authoritative_ledger_sha256':sha(ledger),'derived_ledger_sha256':sha(target/'monthly_league_rosters.json'),'policy':'confirmed_contract_pending_not_priced'}
  if r.get('recent_contract_terms'):
@@ -190,7 +193,7 @@ if __name__=='__main__':
  p=argparse.ArgumentParser()
  for k in ('native','source','demographics','schedule','collector-receipt','ownership-receipt','r-receipt','work'):p.add_argument('--'+k,type=Path,required=True)
  p.add_argument('--official-injury-receipt',type=Path)
- for k in ('prior-dependencies','prior-checkpoint'):p.add_argument('--'+k,type=Path)
+ for k in ('prior-dependencies','prior-checkpoint','prior-prepared-receipt'):p.add_argument('--'+k,type=Path)
  for k in ('prior-dependencies-sha256','prior-checkpoint-sha256'):p.add_argument('--'+k)
  p.add_argument('--asof',required=True);p.add_argument('--season',type=int,required=True);p.add_argument('--prepare-only',action='store_true')
- a=p.parse_args();r=prepare(a.native,a.source,a.demographics,a.schedule,a.collector_receipt,a.ownership_receipt,a.r_receipt,a.asof,a.season,a.work,not a.prepare_only,a.official_injury_receipt,a.prior_dependencies,a.prior_dependencies_sha256,a.prior_checkpoint,a.prior_checkpoint_sha256);print(json.dumps({k:r[k]for k in ('asof','season','scope','extension_executed','native_replay_invocations','pricing_invocations','release_ready')}))
+ a=p.parse_args();r=prepare(a.native,a.source,a.demographics,a.schedule,a.collector_receipt,a.ownership_receipt,a.r_receipt,a.asof,a.season,a.work,not a.prepare_only,a.official_injury_receipt,a.prior_dependencies,a.prior_dependencies_sha256,a.prior_checkpoint,a.prior_checkpoint_sha256,a.prior_prepared_receipt);print(json.dumps({k:r[k]for k in ('asof','season','scope','extension_executed','native_replay_invocations','pricing_invocations','release_ready')}))

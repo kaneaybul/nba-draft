@@ -21,6 +21,8 @@ parser.add_argument('--work-dir',type=Path,required=True)
 parser.add_argument('--dated-receipt',type=Path,help='Optional new local receipt for a separately validated native source stage')
 parser.add_argument('--official-transactions-start',help='Inclusive NBA.com movement check from prior verified coverage (YYYY-MM-DD)')
 parser.add_argument('--predecessor-handoff',type=Path,help='Optional reviewed exact predecessor snapshot receipt')
+for key in ('prior-authority-calendar','prior-authority-publication'):parser.add_argument('--'+key,type=Path)
+for key in ('prior-authority-calendar-sha256','prior-authority-publication-sha256'):parser.add_argument('--'+key)
 args=parser.parse_args()
 repo=args.repo.resolve()
 pool_path=repo/'raw/live/player_pool.json'
@@ -50,6 +52,11 @@ if audit.get('unresolved_events'):
 if args.predecessor_handoff:
     from predecessor_ownership import apply as apply_predecessor_handoff
     apply_predecessor_handoff(runtime,args.predecessor_handoff,asof)
+baseline=(args.prior_authority_calendar,args.prior_authority_calendar_sha256,args.prior_authority_publication,args.prior_authority_publication_sha256)
+if any(baseline):
+    if not all(baseline):raise ValueError('All authenticated prior authority bindings required')
+    from ownership_calendar import apply as carry_authority_calendar
+    carry_authority_calendar(runtime,*baseline,asof)
 capture={'date':asof,'roster':json.loads(roster_path.read_text())}
 events_path=roster_path.with_name('league_events.json')
 events=json.loads(events_path.read_text())
