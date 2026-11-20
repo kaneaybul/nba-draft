@@ -9,7 +9,8 @@ For the mature-player dollar replay, November 17 signed terms and the completed-
 | Tre Jones | Change in four-year candidate value |
 |---|---:|
 | Opening quote | $55,729,590 |
-| Advance the opening forecast one team game | −$339,024 |
+| Expected production aging | −$199,867 |
+| Change in remaining contract-year mix | −$139,157 |
 | Per-minute impact revision | +$7,567,870 |
 | Games and conditional MPG forecast | +$455,716 |
 | Healthy team rotation | +$474,474 |
@@ -22,3 +23,5 @@ For the mature-player dollar replay, November 17 signed terms and the completed-
 The original November 17 quote was $32,276,670. Its $23,452,920 same-date difference from the candidate opening quote belongs to the methodology change. The November 19 published quote was $35,241,634.
 
 The standard candidate assembly writes the resolved player-game ledger, consumer inputs and mature-player pricing basis. Passing the previous candidate assembly with `--previous` also writes the two dated bridges. Candidate output is separate from the published valuation and history selectors.
+
+The archived draft appraisals end in 2031 for 43 players, 2032 for 45, 2033 for 53 and 2034 for 53. The candidate ledger in this replay ends in 2031. An endpoint replay therefore needs service beyond the ledger for 151 of the 194 players, as well as the original draft expectations and dated calibration for all 194.
