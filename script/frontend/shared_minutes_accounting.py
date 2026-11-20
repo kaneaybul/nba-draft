@@ -69,7 +69,7 @@ def impact_per_game(knots, start):
 
 
 def bridge(opening, closing, opening_knots, closing_knots, opening_price, closing_price,
-           *, opening_mark, closing_mark, coordinate_shift=None):
+           *, opening_mark, closing_mark, coordinate_shift=None, closing_price_old_contract=None):
     """Price callback takes (absolute clock, 328 expected minutes, 328 per-minute impacts).
 
     Supply the same pricing function used for each endpoint, including its contracts,
@@ -113,7 +113,13 @@ def bridge(opening, closing, opening_knots, closing_knots, opening_price, closin
     end_value = closing_price(closing.clock, new[-1], new_impact)
     if not isclose(end_value, closing_mark, rel_tol=0, abs_tol=.005):
         raise ValueError("Closing quote fails independent reconstruction")
-    components["pricing_basis_change"] = end_value-value(new[-1], new_impact)
+    before_basis_change = value(new[-1], new_impact)
+    if closing_price_old_contract is None:
+        components["pricing_basis_change"] = end_value-before_basis_change
+    else:
+        old_terms = closing_price_old_contract(closing.clock, new[-1], new_impact)
+        components["pricing_and_market_calibration"] = old_terms-before_basis_change
+        components["contract_terms"] = end_value-old_terms
     if (not all(map(isfinite, components.values())) or
             not isclose(sum(components.values()), closing_mark-opening_mark, rel_tol=0, abs_tol=.011)):
         raise ValueError("Price bridge does not reconcile")
