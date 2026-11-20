@@ -1,0 +1,112 @@
+"""Build healthy role curves from dated roster inputs and completed annual player exports."""
+import argparse
+import csv
+import json
+from datetime import date
+from pathlib import Path
+import numpy as np
+from shared_minutes import ComparableGames, project_path
+
+
+def read_history(directory, season):
+    panel = {}
+    for path in sorted(directory.glob("*.json")):
+        if not path.stem.isdigit() or int(path.stem) >= season:
+            continue
+        year = int(path.stem)
+        rows = {}
+        for r in json.loads(path.read_text()):
+            games = r.get("games") or 0
+            if games <= 0 or any(r.get(k) is None for k in ("age", "Minutes", "total")):
+                continue
+            # Shortened-season normalization matches the dated benchmark.
+            scale = 82 / {2020: 72, 2021: 72}.get(year, 82)
+            rows[r["nba_id"]] = dict(age=r["age"], experience=r["yoe"] or 0,
+                                     games=min(82, games*scale), mpg=r["Minutes"]/games,
+                                     impact=r["total"])
+        panel[year] = rows
+    return panel
+
+
+def healthy_roles(history, players, season, horizon=None, audit=None):
+    total_length, anchor_map, outcomes = horizon if horizon is not None else (410, None, None)
+    count = len(next(iter(anchor_map.values()))) if anchor_map else 5
+    model = ComparableGames(history, season-1, horizons=count, complete_outcomes=outcomes)
+    if audit is not None:
+        audit.update(anchor_count=count, season_game_horizon=total_length,
+                     completed_outcomes=[len(y) for _,y in model.samples],
+                     excluded_unknown_outcomes=model.excluded_unknown)
+    for row in players:
+        if row["pool_status"] != "roster":
+            continue
+        pid = row.get("source_nba_id") or row["nba_id"]
+        prior = history[season-1].get(pid)
+        elapsed = 82-int(row["minutes_remaining_team_games"])
+        near_gp = row["minutes_gp_prior"]
+        # A trade changes the team's clock. Do not treat pre-trade appearances
+        # as extra opportunities or infer absences from an incomplete stint.
+        observed_gp = row.get("minutes_actual_games") or 0
+        near_mpg = row["minutes_mpg_prior"]
+        if observed_gp:
+            near_mpg = (10*near_mpg + row["minutes_actual"])/(10+observed_gp)
+        if prior and prior["games"] >= 5:
+            features = model.features(history, season-1, pid)
+        else:
+            features = [row["age"], near_gp, near_mpg, row["total"], 0, row["yoe"] or 0]
+        anchors = model.predict(features)
+        roles = [row["minutes_mpg_prior"]]
+        for i in range(1,5):
+            next_role = row.get(f"projection_mpg_y{i}")
+            roles.append(roles[-1] if next_role is None else next_role)
+        if anchor_map is not None:
+            roles = anchor_map[int(pid)]
+        curve = project_path(anchors, roles, near_gp, min(48, near_mpg), elapsed,
+                             length=total_length-elapsed,
+                             require_right_support=anchor_map is not None)
+        yield pid, row["team"], curve
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("history", type=Path)
+    parser.add_argument("roster", type=Path)
+    parser.add_argument("asof", type=date.fromisoformat)
+    parser.add_argument("out", type=Path)
+    parser.add_argument("--horizon-receipt", type=Path)
+    parser.add_argument("--horizon-receipt-sha256")
+    args = parser.parse_args()
+    if bool(args.horizon_receipt) != bool(args.horizon_receipt_sha256):
+        parser.error("Provide both horizon receipt path and independently pinned hash")
+    roster = json.loads(args.roster.read_text())
+    seasons = {r["year"] for r in roster if r["pool_status"]=="roster"}
+    if len(seasons) != 1:
+        raise ValueError("Supply a single season of dated roster inputs")
+    for r in roster:
+        if r["pool_status"]=="roster" and (r.get("minutes_checked_at") or "")[:10] != args.asof.isoformat():
+            raise ValueError("Roster snapshot and forecast observation dates differ")
+    season = seasons.pop()
+    horizon = None
+    if args.horizon_receipt:
+        from shared_minutes_horizon import VERSION_BY_MPG_METHOD, load_horizon, read_pin
+        horizon = load_horizon(args.horizon_receipt, args.horizon_receipt_sha256, args.history,
+                               args.roster, args.asof.isoformat(), season, roster)
+        version = VERSION_BY_MPG_METHOD[json.loads(read_pin(args.horizon_receipt,args.horizon_receipt_sha256))["mpg_method"]]
+    audit = {} if horizon is not None else None
+    paths = list(healthy_roles(read_history(args.history,season), roster,season,horizon=horizon,audit=audit))
+    if len({pid for pid,_,_ in paths}) != len(paths):
+        raise ValueError("Duplicate roster identity")
+    with args.out.open("x",newline="") as stream:
+        writer = csv.writer(stream)
+        suffix = [version] if horizon is not None else []
+        writer.writerow(["asof","team","nba_id","game","probability","conditional_mpg"] + (["forecast_version"] if suffix else []))
+        for pid,team,curve in paths:
+            for i,(p,m) in enumerate(zip(curve.probability,curve.conditional_mpg),1):
+                writer.writerow([args.asof,team,pid,i,p,m] + suffix)
+
+    if audit is not None:
+        with args.out.with_suffix(".audit.json").open("x") as stream:
+            json.dump(dict(audit,asof=args.asof.isoformat(),version=version,
+                           horizon_input_receipt_sha256=args.horizon_receipt_sha256),stream,allow_nan=False)
+
+if __name__ == "__main__":
+    main()

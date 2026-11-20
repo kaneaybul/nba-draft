@@ -1,0 +1,16 @@
+--- a/script/frontend/export_frontend_data.R
++++ b/script/frontend/export_frontend_data.R
+@@ -2627,6 +2627,13 @@
+   rows$timin <- round((rows$total - rows$replacement_total) * pmax(0, rows$Minutes), 1)
+   rows <- season_pool_scores(rows, base_dir)
+   minute_rows <- assign_team_projection_scenario(rows, "base")
++  # Private pre-minutes capture, provided only by the dedicated staging driver.
++  capture <- getOption("nba.shared_minutes_input_capture")
++  if (!is.null(capture)) {
++    if (!is.function(capture)) stop("Invalid shared minutes input capture")
++    capture(minute_rows)
++    stop("Shared minutes input capture must terminate the private producer")
++  }
+   if(Sys.getenv("LIVE_MINUTES_METHOD") == "legacy") {
+     minute_rows <- apply_lineup_minute_adjustment(minute_rows, adjust_free_agents = TRUE)
+   } else {

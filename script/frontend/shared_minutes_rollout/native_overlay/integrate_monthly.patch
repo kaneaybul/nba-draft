@@ -1,0 +1,98 @@
+--- a/monthly_reconstruction/projections/integrate_monthly.py
++++ b/monthly_reconstruction/projections/integrate_monthly.py
+@@ -19,7 +19,10 @@
+ from rolling_role import RolePath
+ from direct_role_model import observed_role
+ from sparse_role_model import SparseRoleModel, available_fit_year
+-from joint_pricing import POLICY as JOINT_POLICY, integrate as joint_integrate, make_injury_intervals
++from joint_pricing import POLICY as JOINT_POLICY, integrate as _native_joint_integrate, make_injury_intervals
++from shared_joint_adapter import POLICY as SHARED_POLICY, configured_context, healthy_context, dispatch
++def joint_integrate(context,*args,**kwargs):
++    return dispatch(_native_joint_integrate,context,*args,**kwargs)
+ from adaptive_calibration import AdaptiveCalibration
+ 
+ HERE=Path(__file__).resolve().parent
+@@ -529,6 +532,12 @@
+                     joint_context['injury_intervals']=make_injury_intervals(team_clock,82*(current_year+1-2000),games_future,
+                         lambda game:src.injury(canonical,k,cutoff,current_year,[game],observed_games)[0],episode)
+                 flags.append('joint_rolling_GP_MPG_impact_injury_once')
++            shared_context=None
++            if active and asset['asset_type']!='unsigned_draft_right':
++                shared_context=configured_context(canonical,getattr(src,'shared_native_team',None),team_clock,cutoff_s)
++                if shared_context is not None:
++                    joint_context=shared_context
++                    flags.append('shared_minutes_resolved_native_quote_opt_in')
+             schedule={int(r['year']):r for r in asset.get('contract_schedule',[]) if r.get('known_from','9999')<=cutoff_s}
+             totals={'raw_production':0.,'unblended_signed':0.,'blended_known':0.,'blended_priced_exposure':0.,'unpriced_exposure':0.,'unpriced_retention_exposure':0.,
+                     'app_unblended':0.,'app_blended':0.,'app_priced_exposure':0.,'app_unpriced_exposure':0.,'app_market_contract_exposure':0.,'known_contract_stock':0.,
+@@ -536,7 +545,18 @@
+             raw_complete=True
+             person_annual=[]
+             exposure_by_year=dict(exposures)
+-            for year in range(current_year,current_year+projection_years+1):
++            last_annual=current_year+projection_years
++            if shared_context is not None:
++                horizon_end=int(shared_context['cells'][-1][0])+1
++                last_complete=horizon_end//82+1999
++                required_end=max(82*(y-2000)+1 for y in exposure_by_year if exposure_by_year[y]>0)
++                required_end=max(required_end,team_clock+328)
++                if draft and current_year<=draft[0]+4:
++                    required_end=max(required_end,82*(int(draft[0])+9-2000))
++                if horizon_end<required_end:
++                    raise ValueError(f'Missing required shared-pricing horizon {cutoff_s} {n}: {horizon_end} < {required_end}')
++                last_annual=min(last_annual,last_complete)
++            for year in range(current_year,last_annual+1):
+                 exposure=exposure_by_year.get(year,0.)
+                 st=path.get(year)
+                 # Impact is averaged over this salary bucket's ACTUAL future
+@@ -555,7 +575,7 @@
+                     lo=max(team_clock,82*(year-2000));hi=min(82*(year+1-2000),team_clock+328) if exposure>0 else 82*(year+1-2000)
+                     if hi>lo:
+                         joint_price=joint_integrate(joint_context,impact_path.knots,lo,hi,replacement)
+-                        healthy=dict(joint_context,injury_intervals=[])
++                        healthy=healthy_context(joint_context)
+                         healthy_price=joint_integrate(healthy,impact_path.knots,lo,hi,replacement)
+                         service_minutes=joint_price['annual_minutes']
+                         effective_total=replacement+joint_price['annual_impact_minutes']/service_minutes if service_minutes>0 else impact_path.mean(lo,hi)
+@@ -662,23 +682,33 @@
+                 # Preserve ordinary pricing and the impact-state role inputs.
+                 # The fixed Y4 endpoint alone needs the authoritative role tail,
+                 # which was formerly omitted from the five-year CSV export.
+-                endpoint_role_minutes=None
++                endpoint_role_minutes=None;endpoint_service=None
+                 if active and draft and current_year<=draft[0]+4 and draft[0]+5<=year<=draft[0]+8:
+-                    endpoint_role=smoothed_roles.get((cutoff_s,n,year))
+-                    if endpoint_role is None:
+-                        raise ValueError(f'Missing anchored endpoint role {cutoff_s} {n} {year}')
+-                    endpoint_role_minutes=num(endpoint_role.get('endpoint_forecast_annual_minutes'))
+-                    if endpoint_role_minutes is None:
+-                        raise ValueError(f'Missing endpoint-only overlay {cutoff_s} {n} {year}')
++                    if shared_context is not None:
++                        # Appraisal seasons are always full 82-game intervals.
++                        if impact_path is None or replacement is None:
++                            raise ValueError(f'Missing shared endpoint impact {cutoff_s} {n} {year}')
++                        endpoint_service=joint_integrate(shared_context,impact_path.knots,
++                            82*(year-2000),82*(year+1-2000),replacement)
++                        endpoint_role_minutes=endpoint_service['annual_minutes']
++                    else:
++                        endpoint_role=smoothed_roles.get((cutoff_s,n,year))
++                        if endpoint_role is None:
++                            raise ValueError(f'Missing anchored endpoint role {cutoff_s} {n} {year}')
++                        endpoint_role_minutes=num(endpoint_role.get('endpoint_forecast_annual_minutes'))
++                        if endpoint_role_minutes is None:
++                            raise ValueError(f'Missing endpoint-only overlay {cutoff_s} {n} {year}')
+                 record={'cutoff_date':cutoff_s,'player_name':n,'ledger_nba_id':pid,'source_nba_id':canonical,'asset_type':asset['asset_type'],'active_asset':active,
+                         'season':year,'exposure':exposure,'latent_total':st.total if st else None,'latent_annual_minutes':st.minutes if st else None,
+                         'latent_annual_games':st.games if st else None,'latent_conditional_MPG':st.minutes/st.games if st and st.games else (0. if st else None),
+                         'forecast_yos':max(0,(yoe or 0)+(year-current_year)-1),
+                         'endpoint_role_annual_minutes':endpoint_role_minutes,
++                        **({'endpoint_shared_annual_impact_minutes':endpoint_service['annual_impact_minutes'],
++                            'endpoint_shared_forecast_version':shared_context['forecast_version']} if endpoint_service is not None else {}),
+                         'waiver_option_verified':c.get('waiver_option_verified',False) if c else False,
+                         'waiver_guaranteed_amount_asof':c.get('waiver_guaranteed_amount_asof') if c else None,
+                         'availability_overlay':availability,'forecast_annual_minutes':service_minutes if st else None,'replacement':replacement,
+-                        'joint_pricing_policy':JOINT_POLICY if joint_price else None,'joint_annual_impact_minutes':joint_price['annual_impact_minutes']if joint_price else None,
++                        'joint_pricing_policy':joint_price['policy'] if joint_price else None,'joint_annual_impact_minutes':joint_price['annual_impact_minutes']if joint_price else None,
+                         'salary_cap_scenario':cap,'scale_budget_scenario':budget,'payroll_opportunity_scale':PAYROLL_OPPORTUNITY_SCALE,'league_reference_year':completed,'league_timin':calibration['league_timin'],
+                         'calibration_cutoff':cutoff_s,'calibration_method':calibration['method'],
+                         'forecast_input_signature':forecast_signature,'source_profile_season':source_year,
