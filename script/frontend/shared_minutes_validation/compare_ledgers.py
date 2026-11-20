@@ -16,6 +16,8 @@ def compare(opening, closing):
               "exits": sorted(old.keys()-new.keys())}
     for pid in old.keys() & new.keys():
         a,b = old[pid],new[pid]
+        if a.version!=b.version:
+            raise ValueError("Rebuild opening on the closing basis before attributing minutes")
         if a.asof>=b.asof:
             raise ValueError("Opening observation must precede closing observation")
         if a.team != b.team:
