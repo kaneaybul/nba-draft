@@ -23,6 +23,20 @@ def price(basis, classes):
     return quote(basis["annual"],model,basis["reporting_cap"])
 
 
+def old_terms_on_new_basis(opening, closing):
+    old = {row["season"]:row for row in opening["annual"]}
+    terms = ("app_effective_contract","is_unsigned_market_year","waiver_option_verified",
+             "waiver_guaranteed_amount_asof")
+    rows = []
+    for row in closing["annual"]:
+        prior = old.get(row["season"])
+        if prior is None:
+            # Only matched seasons can enter this counterfactual.
+            continue
+        rows.append({**row, **{field:prior[field] for field in terms}})
+    return {**closing, "annual":rows}
+
+
 def snapshot(ledger, batch, runtime, asof):
     classes = bind(runtime)
     forecasts = read_ledger(ledger)
@@ -79,7 +93,8 @@ def price_changes(old_dir, new_dir, runtime):
             raise ValueError("Ledger and price dates differ")
         result["players"][key]=bridge(a[pid],b[pid],left["knots"],right["knots"],
                                       price(left,classes),price(right,classes),
-                                      opening_mark=left["quote"],closing_mark=right["quote"])
+                                      opening_mark=left["quote"],closing_mark=right["quote"],
+                                      closing_price_old_contract=price(old_terms_on_new_basis(left,right),classes))
     return result
 
 
