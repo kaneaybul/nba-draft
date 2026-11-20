@@ -1,0 +1,179 @@
+{
+  "schema": "nba-shared-r-team-pick-stage-config-v1",
+  "asof": "YYYY-MM-DD",
+  "season": 2027,
+  "forecast_version": "shared-minutes-comparables-career-v3-conditional-tail",
+  "first_history_season": 2016,
+  "ledger": {
+    "path": "/private/ledger",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "ledger_receipt": {
+    "path": "/private/ledger_receipt",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "roster": {
+    "path": "/private/roster",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "schedule": {
+    "path": "/private/schedule",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "outlook": {
+    "path": "/private/outlook",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "control_impact": {
+    "path": "/private/control_impact",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "control_r_receipt": {
+    "path": "/private/control_r_receipt",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "rscript": {
+    "path": "/private/rscript",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "pick_reference_receipt": {
+    "path": "/private/pick_reference_receipt",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "ownership_events": {
+    "path": "/private/ownership_events",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "signed_book": {
+    "path": "/private/signed_book",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "ownership_receipt": {
+    "path": "/private/ownership_receipt",
+    "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+  },
+  "sources": {
+    "exporter": {
+      "path": "/private/script/frontend/export_frontend_data.R",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "pool_r": {
+      "path": "/private/script/frontend/player_pool.R",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "shared_injury_r": {
+      "path": "/private/script/frontend/injury_projections.R",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "caps": {
+      "path": "/private/processed/livedata/impactrefresh/salary_cap_assumptions.csv",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "preseason": {
+      "path": "/private/frontend/public/data/archive/2027-preseason/impact_players.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "pick_generate": {
+      "path": "/private/script/frontend/daily_ev2/pick_seam/generate.py",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "pick_attach": {
+      "path": "/private/script/frontend/daily_ev2/pick_seam/attach.py",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "pick_model": {
+      "path": "/private/processed/asset_history/picks/trained_pick_model.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "results": {
+      "path": "/private/raw/live/results.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    }
+  },
+  "history": {
+    "2016": {
+      "path": "/private/history/2016.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2017": {
+      "path": "/private/history/2017.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2018": {
+      "path": "/private/history/2018.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2019": {
+      "path": "/private/history/2019.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2020": {
+      "path": "/private/history/2020.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2021": {
+      "path": "/private/history/2021.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2022": {
+      "path": "/private/history/2022.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2023": {
+      "path": "/private/history/2023.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2024": {
+      "path": "/private/history/2024.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2025": {
+      "path": "/private/history/2025.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "2026": {
+      "path": "/private/history/2026.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    }
+  },
+  "pick_inputs": {
+    "opening_baseline": {
+      "path": "/private/processed/asset_history/picks/opening_baseline.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "dated_events": {
+      "path": "/private/processed/asset_history/picks/dated_events.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "dated_orders": {
+      "path": "/private/processed/asset_history/picks/dated_orders.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "daily_team_rating_anchor": {
+      "path": "/private/processed/asset_history/picks/daily_team_rating_anchor.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "forecast_inputs": {
+      "path": "/private/processed/asset_history/picks/forecast_inputs.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    }
+  },
+  "pick_source": {
+    "script/asset_history/backfill/run_pick_refresh.py": {
+      "path": "/private/script/asset_history/backfill/run_pick_refresh.py",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    },
+    "script/asset_history/backfill/reviewed_trade_packages.json": {
+      "path": "/private/script/asset_history/backfill/reviewed_trade_packages.json",
+      "sha256": "REPLACE_WITH_TRUSTED_EXACT_SHA256"
+    }
+  },
+  "adapter_sha256": {
+    "run_next.py": "58141cfe4c2963599695a3262d054315676bcbb679a2bcee00344216b86cf7b5",
+    "run_team.R": "bd61543092a69347402fd91e0620e7a5223213a4745ddbbfcedee061a21740d2",
+    "run_economics.R": "72887f6267f3ccd88bdce01d00a01ca59a1e90a29b444aef46405fece1050284",
+    "run_lineups.R": "dcf60827cb3f44b9b9cc94427928a0a733a987ef5a13c1b5b466af4794ccd8bc",
+    "shared_team_game_rotation.R": "426cb69945cd44fdc848641fc54ecd70f911b27ee76bf4a9c25a300e6e8cdc74",
+    "finalize.py": "951507923265ccd7844cca816399ab342e35957c00ebd32fee4cc84f09bdf434"
+  }
+}
