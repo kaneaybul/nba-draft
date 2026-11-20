@@ -1,0 +1,55 @@
+{
+  "opening": "2026-11-17",
+  "closing": "2026-11-19",
+  "continuing_minute_bridges": 524,
+  "eligible_verified_dollar_bridges": 328,
+  "unpriced_draft_window_endpoints": 194,
+  "ending_endpoint_year_counts": {
+    "2031": 43,
+    "2032": 45,
+    "2033": 53,
+    "2034": 53
+  },
+  "current_release_updated": false,
+  "tre_jones": {
+    "nba_id": 1630200,
+    "opening_candidate": 55729589.723428145,
+    "closing_candidate": 63948624.15503237,
+    "opening_live": 32276670.115891892,
+    "opening_restatement": 23452919.607536253,
+    "components": {
+      "ownership_clock": 0.0,
+      "impact_revision": 7567870.29485425,
+      "role_forecast": 455715.6188157797,
+      "healthy_team_rotation": 474474.3143038973,
+      "direct_injury": 0.0,
+      "redistribution": -18696.73287558928,
+      "pricing_and_market_calibration": 78695.20039681345,
+      "contract_terms": 0.0,
+      "contract_window_mix": -139156.77587299794,
+      "expected_aging": -199867.48801793158
+    },
+    "minutes": {
+      "opening": 4817.988641877892,
+      "closing": 4840.20590593219,
+      "components": {
+        "role_forecast": 19.555358086899105,
+        "healthy_team_rotation": 18.46969121361053,
+        "direct_injury": 0.0,
+        "redistribution": -0.6937199528902056,
+        "expected_window_change": -15.1140652933218
+      }
+    }
+  },
+  "source_hashes": {
+    "opening_roster": "a4d183f5c2daaa4e18cef6ea06379c11e49f222d74eb0ba57633e8a43a248bd8",
+    "closing_roster": "d7d977a550ee4dac81ba6ce9a981c890f3a1b7809798cb9bb031b448c8bd6055",
+    "opening_schedule": "476d2d78e3788676732434ae760d62e4ca47113f090a40e38b1281c9a73f2dec",
+    "closing_schedule": "246391d0df5049f971d9dd66d6c4f814e1d13b040f7929a8313f7f2d31360e36",
+    "opening_outlook": "0cf1b9363f8f91ca9b8dd66869c9bac6ca74e1a35a951d62e2b76d53a851a75d",
+    "closing_outlook": "c69f05b8cade2c6b2547a3f5ef76f06018481887eb41c844e3d0d869b120ba55",
+    "opening_quotes": "bde9fa494b20be146d8433dbd7f3f057469d41eef6a5c6819adc78a63ddbc4df",
+    "closing_quotes": "f5e838e6cd5bab217cbb7f6d4a71adc0966566bac205dcbffec4974b1cb4f26b",
+    "closing_continuation": "f9bee5fb119fee3b9dfe82eb108500a172dd3de9c8d13eba582e54f4dd97cce0"
+  }
+}
