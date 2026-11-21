@@ -51,6 +51,56 @@ def patch_aggregate(old,fresh,year,name):
 def pick_keys(i):
  keys={(r['team'],r['origin'],r['year'],r['round'])for r in i['picks']};need(len(keys)==len(i['picks']),'Nonunique legal pick keys');return keys
 
+def pick_rows(control,picks,proof,support=None):
+ """Keep legal-inventory drift distinct from simulation support drift."""
+ base=pick_keys(control)
+ by={(t,r['physical_origin'],r['draft_year'],r['round']):r for t,ps in picks['teams'].items() for r in ps}
+ need(sum(map(len,picks['teams'].values()))==len(by),'Duplicate simulated pick claim')
+ added=set(by)-base; missing=base-set(by)
+ if added or missing or support is not None:
+  need(support is not None,'Legal-pick claims changed; independent support review required')
+  need(support['schema']=='nba-reviewed-pick-support-delta-v1' and support['asof']==picks['date']==proof['asof']==control['pick_observation_date'] and picks['complete'] is True and proof['source_mode']=='same_date_native_current','Wrong support-review date/mode')
+  need(support['pick_model_sha256']==proof['pick_model_sha256']==control['current_pick_model_sha256'] and support['source_fingerprint']==proof['source_fingerprint']==picks['source_fingerprint'] and support['draws']==proof['draws']==picks['draws'],'Wrong support-review model, source or draws')
+  need(support['pick_packet_sha256']==proof['pick_packet_sha256'],'Wrong reviewed pick packet')
+  entries=support['additions']
+  reviewed={tuple(x['key']):x for x in entries}
+  need(len(reviewed)==len(entries) and set(reviewed)==added and sorted(missing)==sorted(map(tuple,support['zero_draw_removals'])),'Unreviewed support delta')
+  need(not missing,'Zero-draw removals require an explicit proven zero-support policy')
+  need(len(base)==support['base_claims'] and len(by)==support['candidate_claims'],'Reviewed claims count differs')
+  physical={p[1:] for p in base}
+  need({p[1:] for p in by}==physical and len(physical)==support['physical_picks'],'Physical pick inventory changed')
+  teams={p[0] for p in base};need(len(teams)==30 and set(picks['teams'])==teams,'Pick teams missing or changed')
+  mass={}
+  for (team,origin,year,rnd),r in by.items():
+   n=r['holding_probability']*picks['draws']
+   need(r['id']==f'pick:{origin}:{year}:{rnd}' and r['kind']=='pick' and math.isfinite(r['value']) and math.isfinite(n) and 1<=round(n)<=picks['draws'] and math.isclose(n,round(n),rel_tol=0,abs_tol=1e-8),'Invalid owner-draw count or quote')
+   physical_id=(origin,year,rnd);mass[physical_id]=mass.get(physical_id,0)+round(n)
+  need(set(mass.values())=={picks['draws']},'Physical picks do not conserve all reviewed owner draws')
+  need(math.isfinite(picks['total']) and math.isclose(math.fsum(r['value'] for r in by.values()),picks['total'],rel_tol=0,abs_tol=.01),'Pick EV does not conserve producer total')
+  for k,x in reviewed.items():
+   r=by[k]
+   need(x['legal_rule_ids'] and x['source_urls'] and round(r['holding_probability']*picks['draws'])==x['holding_draws'] and r['expected_selection_if_held']==x['expected_selection_if_held'] and r['value']==x['value'],'Added quote does not match reviewed legal support')
+ def key(r):return (r['team'],r['origin'],r['year'],r['round'])
+ def update(rows):
+  need(all(key(r) in by for r in rows),'Missing previously reviewed pick metadata')
+  return [dict(r,value=by[key(r)]['value']) for r in rows]
+ rows=update(control['picks'])
+ for t,o,y,j in sorted(added):
+  rows.append(dict(team=t,origin=o,year=y,round=j,value=by[t,o,y,j]['value']))
+ return rows,update(control['reviewed_pick_ownership'])
+
+def bound_pick_support(bindings):
+ """The review authorizes only these immutable control/proof/source bytes."""
+ ctrl,pick,proof=(bindings[k] for k in ('same_date_control','picks','pick_proof'))
+ support=json.loads(binding(bindings['pick_support_review']))
+ pins={'same_date_control_sha256':ctrl['sha256'],'pick_packet_sha256':pick['sha256'],'pick_proof_sha256':proof['sha256']}
+ need(all(support[k]==v for k,v in pins.items()),'Support review does not authorize these inputs')
+ # All three bytes are checked here as well as in finish, so independent
+ # assembly cannot trust a consumer assertion about the candidate.
+ picks=json.loads(binding(pick));receipt=json.loads(binding(proof));binding(ctrl)
+ need(all(receipt['inputs'][k]['sha256']==v for k,v in support['legal_source_sha256'].items()) and set(support['legal_source_sha256'])=={'events','reviewed_trades','opening_baseline','dated_events','dated_orders'},'Support review legal sources changed')
+ return picks,receipt,support
+
 def build(c,out):
  d=c['asof'];date.fromisoformat(d);y=c['season'];stamp=c['generated_at'];datetime.fromisoformat(stamp.replace('Z','+00:00'));need(y==int(d[:4])+(int(d[5:7])>=7),'Season differs')
  proof=json.loads(binding(c['baseline_proof']));need(proof['asof']<=d and proof['deployment_id']==c['baseline_deployment'],'Invalid canonical base date/deployment')
@@ -69,7 +119,14 @@ def build(c,out):
  expected={'asset_index',*DATASETS};need(set(c['inputs'])==expected and set(packet['outputs_sha256'])==expected,'Missing atomic consumer outputs')
  actual={k:binding(x) for k,x in c['inputs'].items()};need(all(sha(b)==packet['outputs_sha256'][k]for k,b in actual.items()),'Companion packet bytes changed')
  idx=json.loads(actual['asset_index']);need(idx['method']==METHOD and idx['current_observation_date']==idx['pick_observation_date']==d,'Index not fresh shared player + legal pick')
- need(idx['asset_history_version']==base_index['asset_history_version'] and idx['seasons']==base_index['seasons'],'Historic valuation lineage diverged');need(set(idx['players'])==set(control['players'])and pick_keys(idx)==pick_keys(control),'Signed ownership or legal pick IDs differ from same-date legacy')
+ need(idx['asset_history_version']==base_index['asset_history_version'] and idx['seasons']==base_index['seasons'],'Historic valuation lineage diverged');need(set(idx['players'])==set(control['players']),'Signed ownership differs from same-date legacy')
+ support_bind=c.get('pick_support_bindings')
+ if support_bind is None:
+  need(pick_keys(idx)==pick_keys(control),'Legal pick IDs differ from same-date legacy')
+ else:
+  need(support_bind['same_date_control']==c['same_date_control'] and all(packet['inputs'].get(k)==v for k,v in support_bind.items()),'Pick support not bound to atomic consumer receipt')
+  validated=bound_pick_support(support_bind);rows,reviewed=pick_rows(control,*validated)
+  need(idx['picks']==rows and idx['reviewed_pick_ownership']==reviewed,'Index did not retain precisely all verified legal pick quotes and metadata')
  owners=json.loads(binding(c['scope']));need(owners['asof']==d and {i for i,row in owners['players'].items()if not row['contract_pending']}==set(idx['players']),'Current signed owner scope differs');
  for k,o in idx['players'].items():need(o['date']==d and math.isfinite(o['value']),'Invalid fresh player quote '+k)
  rebase={'schema':'nba-shared-minutes-same-date-rebase-v1','asof':d,'old_method':control['method'],'new_method':METHOD,'forecast_version':VERSION,'ledger_sha256':L,'new_index_sha256':sha(actual['asset_index']),'not_development_or_trade':True,'players':{i:{'team':owners['players'][i]['team'],'name':c.get('names',{}).get(i),'old_value':control['players'][i]['value'],'new_value':p['value'],'same_date_method_change':p['value']-control['players'][i]['value']} for i,p in idx['players'].items()}}

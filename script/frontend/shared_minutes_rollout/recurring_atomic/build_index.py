@@ -1,9 +1,9 @@
 """Build atomic public player/pick index from genuine native inputs, not a publisher."""
 from pathlib import Path
 import argparse,copy,json,math
-from assemble import VERSION,METHOD,enc,sha,pin,need,rd,pick_keys
+from assemble import VERSION,METHOD,enc,sha,pin,need,rd,pick_rows
 
-def build(base,packet,picks,pick_proof,scope,ledger,source_sha,stamp):
+def build(base,packet,picks,pick_proof,scope,ledger,source_sha,stamp,pick_support=None):
  d=scope['asof'];y=scope['season'];need(base['current_observation_date']==base['pick_observation_date']==picks['date']==pick_proof['asof']==d,'Mixed player/pick/base date');need(picks['complete'] is True and pick_proof['pick_model_sha256']==base['current_pick_model_sha256'],'Wrong legal-pick model')
  if 'players' in packet:
   need(packet['asof']==d and packet['ledger_sha256']==ledger and packet['model_forecast_version']==VERSION,'Wrong native ledger/version/date')
@@ -24,7 +24,7 @@ def build(base,packet,picks,pick_proof,scope,ledger,source_sha,stamp):
    else:grade=copy.deepcopy(old.get('draft_development'))
    new[pid]={'date':d,'value':float(asset['value']),'annual':annual,'draft_development':grade,'raw_annual_production':details['raw_annual_production'],'role_minutes_policy':VERSION};names[pid]=asset['name']
  need(set(new)==expected and n1==sum(bool(scopep[x]['appraisal_seasons'])for x in expected),'Native signed/appraisal coverage drift')
- picks_by={(t,p['physical_origin'],p['draft_year'],p['round']):p for t,ps in picks['teams'].items() for p in ps};need(set(picks_by)==pick_keys(base) and sum(len(ps)for ps in picks['teams'].values())==len(picks_by),'Legal-pick claims changed');newp=[dict(r,value=picks_by[(r['team'],r['origin'],r['year'],r['round'])]['value'])for r in base['picks']]
+ newp,reviewed=pick_rows(base,picks,pick_proof,pick_support)
  out=copy.deepcopy(base);out.update(players=new,picks=newp,method=METHOD,current_method_scope='same_date_shared_minutes_native_player_and_legal_pick_quotes',current_source_sha256=source_sha,current_generated_at=stamp,current_role_initialization='same_date_verified_shared_player_game_ledger',current_quote_source_method=METHOD.removesuffix('-current'),current_pick_source_fingerprint=picks['source_fingerprint'],shared_minutes_release={'schema':1,'asof':d,'season':y,'forecast_version':VERSION,'ledger_sha256':ledger})
- out['reviewed_pick_ownership']=[dict(r,value=picks_by[(r['team'],r['origin'],r['year'],r['round'])]['value'])for r in base['reviewed_pick_ownership']]
+ out['reviewed_pick_ownership']=reviewed
  return out,names,{'players':len(new),'picks':len(newp),'completed_preserved':n0,'open_appraisals_priced':n1}

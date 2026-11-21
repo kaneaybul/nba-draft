@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-from assemble import VERSION, build, binding, enc, need, rd, sha, pin
+from assemble import VERSION, build, binding, enc, need, rd, sha, pin, bound_pick_support
 from build_index import build as build_index
 
 def sign(p):
@@ -48,7 +48,12 @@ def finish(c, out):
         need(r['outputs'][filename] == bindings[label]['sha256'], 'R consumer bytes changed: '+filename)
     picks, pick_proof = read(bindings['picks']), read(bindings['pick_proof'])
     need(pick_proof['asof'] == d and pick_proof['inputs']['team_projections']['sha256'] == bindings['team_projections']['sha256'] and pick_proof['pick_packet_sha256'] == bindings['picks']['sha256'], 'Picks do not use these team projections')
-    idx, names, counts = build_index(control, priced, picks, pick_proof, scope, ledger, bindings['native_source']['sha256'], c['generated_at'])
+    support_bindings = None
+    support = None
+    if 'pick_support_review' in bindings:
+        support_bindings = {k: bindings[k] for k in ('same_date_control','picks','pick_proof','pick_support_review')}
+        _, _, support = bound_pick_support(support_bindings)
+    idx, names, counts = build_index(control, priced, picks, pick_proof, scope, ledger, bindings['native_source']['sha256'], c['generated_at'], support)
     for row in read(bindings['impact_players']):
         key = str(row.get('source_nba_id') or row['nba_id'])
         if key in names and not names[key]:
@@ -64,6 +69,8 @@ def finish(c, out):
     proof = rec/'consumer_receipt.json'
     proof.write_bytes(enc(dict(asof=d, ledger_sha256=ledger, forecast_version=VERSION, outputs_sha256={k:v['sha256'] for k,v in packet.items()}, inputs=bindings, inventory_counts=counts, production_ready=False)))
     a = {**c['overlay'], 'asof': d, 'season': y, 'generated_at': c['generated_at'], 'ledger_receipt': bindings['ledger_receipt'], 'ledger_sha256': ledger, 'same_date_control': bindings['same_date_control'], 'consumer_receipt': sign(proof), 'inputs': packet, 'scope': bindings['scope'], 'names': names}
+    if support_bindings is not None:
+        a['pick_support_bindings'] = support_bindings
     (rec/'input_config.json').write_bytes(enc(a))
     return build(a, out)
 
