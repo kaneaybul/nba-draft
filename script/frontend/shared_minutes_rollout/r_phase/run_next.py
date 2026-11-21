@@ -73,8 +73,26 @@ def prepare(c, out):
  need(not out.exists(),'Fresh private output directory required')
  return paths,files,history,pick,picksrc
 
-def inspect_ledger(c, p):
- r=read(p['roster']); base=read(p['control_impact']); calendar=read(p['schedule'])
+def dated_roster(c, p):
+ # Existing producer certifies the observation at the packet boundary, not
+ # in every row. Accept that exact shape, never a mixed or mismatched date.
+ day,season=c['asof'],c['season']
+ for key in ('roster','ledger','ledger_receipt','control_impact','control_r_receipt','schedule','outlook'):
+  need(sha(p[key])==c[key]['sha256'],f'R roster date binding changed: {key}')
+ receipt=read(p['ledger_receipt']); control=read(p['control_r_receipt'])
+ need((receipt['schema'],receipt['asof'],receipt['season'],receipt['production'])==('nba-shared-daily-resolved-v1',day,season,False),'Roster date not bound by resolved ledger receipt')
+ need((control['schema'],control['asof'],control['season'])==('nba-daily-role-r-export-v1',day,season),'Roster date not bound by R control receipt')
+ need(control['outputs'][f'frontend/public/data/v2/impact_players/{season}.json']==c['control_impact']['sha256'] and control['inputs']['calendar_sha256']==c['schedule']['sha256'] and control['inputs']['injuries_sha256']==c['outlook']['sha256'],'R control receipt does not bind observed rows/calendar/outlook')
+ need(receipt['outputs']['resolved.csv']==c['ledger']['sha256'] and all(receipt['inputs'][k]['sha256']==c[k]['sha256'] for k in ('roster','schedule','outlook')),'Roster date receipt does not bind exact ledger inputs')
+ rows=read(p['roster'])
+ need(isinstance(rows,list) and rows and all(isinstance(row,dict) for row in rows),'Expected a nonempty R roster')
+ tagged=sum('asof' in row for row in rows)
+ need(tagged in (0,len(rows)) and all(row.get('asof',day)==day for row in rows),'Mixed or wrong explicit date in roster')
+ return ([{**row,'asof':day} for row in rows] if not tagged else rows),len(rows)-tagged
+
+def inspect_ledger(c, p, dated=None):
+ r=dated_roster(c,p)[0] if dated is None else dated
+ base=read(p['control_impact']); calendar=read(p['schedule'])
  roster={pid(x):x for x in r}
  active={pid(x):x for x in base if x['pool_status']=='roster'}
  need(roster.keys()==active.keys() and len(roster)==len(r) and len(active)==sum(x['pool_status']=='roster' for x in base),'Roster identity differs')
@@ -117,9 +135,19 @@ def inspect_ledger(c, p):
 
 def main(cfg,pin,out,check=False):
  config=Path(cfg); c=read(pinned({'path':str(config),'sha256':pin}))
- out=Path(out).resolve(); p,s,h,pk,ps=prepare(c,out); audit=inspect_ledger(c,p)
- if check:return {'asof':c['asof'],'preflight':True,**audit}
+ out=Path(out).resolve(); p,s,h,pk,ps=prepare(c,out)
+ roster_rows,dates_bound=dated_roster(c,p); audit=inspect_ledger(c,p,roster_rows)
+ if check:return {'asof':c['asof'],'preflight':True,'roster_dates_bound':dates_bound,**audit}
  out.mkdir(parents=True)
+ # Keep the producer's exact file/path as the authoritative input. R consumes
+ # a distinct, private derivative whose only possible doc change is row asof.
+ r_roster=out/'roster-r-input.json'
+ put(r_roster,roster_rows)
+ roster_view={'schema':'nba-shared-r-roster-dated-view-v1','asof':c['asof'],
+  'rows':len(roster_rows),'dates_bound_from_receipt':dates_bound,
+  'original_roster_sha256':c['roster']['sha256'],'derived_roster_sha256':sha(r_roster),
+  'ledger_sha256':c['ledger']['sha256'],'ledger_receipt_sha256':c['ledger_receipt']['sha256'],
+  'control_r_receipt_sha256':c['control_r_receipt']['sha256']}
  rr=out/'r-repo'; pr=out/'pick-repo'; hist=out/'history'; result=out/'outputs'; season=c['season']; d=c['asof']
  for k,path in s.items():
   rel=SOURCE_FILES[k].format(season=season)
@@ -134,7 +162,7 @@ def main(cfg,pin,out,check=False):
   with (out/f'{name}.log').open('x') as log:
    subprocess.run(list(map(str,args)),cwd=out,env=env,check=True,stdout=log,stderr=subprocess.STDOUT)
  def R(name,*args):call(name,p['rscript'],'--vanilla',HERE/f'{name}.R',*args)
- R('run_team',rr,HERE/'shared_team_game_rotation.R',p['control_impact'],p['roster'],p['schedule'],p['outlook'],p['ledger'],result,c['forecast_version'],d,season)
+ R('run_team',rr,HERE/'shared_team_game_rotation.R',p['control_impact'],r_roster,p['schedule'],p['outlook'],p['ledger'],result,c['forecast_version'],d,season)
  R('run_economics',rr,p['control_impact'],result/'player_minutes_witness.json',p['ledger'],hist,result/'impact-active.json',c['first_history_season'],season)
  impact=result/f'impact_players_{season}.json'
  merge(p['control_impact'],result/'impact-active.json',impact)
@@ -145,10 +173,10 @@ def main(cfg,pin,out,check=False):
  teams=read(result/'team_projections.json'); sched=read(result/'team_schedules.json'); lineups=read(result/'team_lineups.json')
  orig_sched=read(p['schedule']); completed=lambda rows:{v['game_id']:{k:v[k] for k in ('date','home_team','away_team','home_score','away_score','result')} for v in rows if v['is_completed']}
  need(len(teams)==90 and sum(v['scenario_id']=='base' and v['schedule_as_of']==d for v in teams)==30 and len(lineups)==900 and len(sched)==len(orig_sched) and completed(sched)==completed(orig_sched),'Team/lineup coverage or completed results changed')
- need(all(sha(v)==c[k]['sha256'] for k,v in p.items()) and all(sha(v)==c['sources'][k]['sha256'] for k,v in s.items()) and sha(config)==pin,'A certified input changed while preparing the stage')
+ need(all(sha(v)==c[k]['sha256'] for k,v in p.items()) and all(sha(v)==c['sources'][k]['sha256'] for k,v in s.items()) and sha(config)==pin and sha(r_roster)==roster_view['derived_roster_sha256'],'A certified input changed while preparing the stage')
 
  need(picks['complete'] is True and picks['date']==d and len(picks['teams'])==30 and picks['draws']==10000 and pp['pick_packet_sha256']==sha(result/'picks.json') and pp['inputs']['team_projections']['sha256']==sha(result/'team_projections.json'),'Incomplete or unlinked legal pick output')
- rc={'schema':'nba-shared-r-team-pick-stage-v1','asof':d,'season':season,'forecast_version':c['forecast_version'],'config_sha256':pin,'inputs':{k:c[k]['sha256'] for k in p},'ledger_sha256':c['ledger']['sha256'],'ledger_receipt_sha256':c['ledger_receipt']['sha256'],'control_r_receipt_sha256':c['control_r_receipt']['sha256'],'audit':audit,'production':False,'release_ready':False,'outputs':{x.name:sha(x) for x in result.glob('*.json') if x.name!='impact-active.json'}}
+ rc={'schema':'nba-shared-r-team-pick-stage-v1','asof':d,'season':season,'forecast_version':c['forecast_version'],'config_sha256':pin,'inputs':{k:c[k]['sha256'] for k in p},'ledger_sha256':c['ledger']['sha256'],'ledger_receipt_sha256':c['ledger_receipt']['sha256'],'control_r_receipt_sha256':c['control_r_receipt']['sha256'],'audit':audit,'r_roster_view':roster_view,'production':False,'release_ready':False,'outputs':{x.name:sha(x) for x in result.glob('*.json') if x.name!='impact-active.json'}}
  put(out/'receipt.json',rc)
  return rc
 if __name__=='__main__':
