@@ -15,13 +15,13 @@ def versions(dist):
  if any(not isinstance(v,str) or not re.fullmatch(r'v[0-9]+',v) for v in keep):raise ValueError('Invalid release version')
  return current,history,keep
 
-def _verify(dist,policy,canonical,expected_canonical_method):
+def _verify(dist,policy,canonical,expected_canonical_method,expected_current_method=None):
  dist=Path(dist);current,history,keep=versions(dist)
  if policy.get('schema')!=1 or not policy.get('protected_files'):raise ValueError('Missing durable release policy')
  if not canonical.get('deployment_id'):raise ValueError('Fresh canonical deployment observation required')
  if canonical.get('history_selector_sha256')!=policy['selector_sha256'] or canonical.get('history_manifest_sha256')!=policy['history_manifest_sha256']:raise ValueError('Canonical selector/manifest changed')
  if history!=policy['history_version']:raise ValueError('Historical selector regression')
- if current.get('method')!=policy['current_method']:raise ValueError('Current model changed without reviewed policy advance')
+ if current.get('method')!=(policy['current_method'] if expected_current_method is None else expected_current_method):raise ValueError('Current model changed without reviewed policy advance')
  if canonical.get('current_method')!=expected_canonical_method or not canonical.get('current_observation_date'):raise ValueError('Canonical current release changed or observation incomplete')
  if current.get('current_observation_date',current.get('observation_date',''))<max(policy['current_observation_date'],canonical['current_observation_date']):raise ValueError('Current date regression')
  for name,sha in policy['protected_files'].items():
@@ -51,6 +51,54 @@ def _iso_date(value):
  return value
 
 CONTRACT_PENDING_TRANSITION='current-v19-to-e-v2-contract-pending-once'
+
+CURRENT_SHARED='peak4-payroll-0.8-v20-shared-minutes-comparables-career-v3-conditional-tail-current'
+
+def verify_shared_current(dist,policy_bytes,canonical,gate_bytes,gate_sha256,proof_bytes,proof_sha256):
+ """Only repeat an already-published shared method; history policy stays exact."""
+ if (_digest(gate_bytes)!=gate_sha256 or _digest(proof_bytes)!=proof_sha256):
+  raise ValueError('Unreviewed shared current release evidence')
+ policy=json.loads(policy_bytes);p=json.loads(proof_bytes);g=json.loads(gate_bytes)
+ if policy.get('current_method')!=CURRENT_EV2 or canonical.get('current_method')!=CURRENT_SHARED:
+  raise ValueError('Shared packaging works only after verified cutover')
+ keys={'deployment_id':'deployment_id','asof':'current_observation_date','selector_sha256':'history_selector_sha256','historical_manifest_sha256':'history_manifest_sha256'}
+ if (p.get('schema')!='nba-shared-canonical-promotion-proof-v1' or p.get('canonical_success_verified') is not True
+     or p.get('method')!=CURRENT_SHARED or p.get('history_policy_sha256')!=_digest(policy_bytes)
+     or any(not p.get(k) or p[k]!=canonical.get(v) for k,v in keys.items())):
+  raise ValueError('Canonical shared proof does not match fresh history/index observation')
+ from datetime import datetime,timezone
+ def aware(x):
+  stamp=datetime.fromisoformat(x.replace('Z','+00:00'))
+  if stamp.tzinfo is None:raise ValueError('Canonical observation requires timezone')
+  return stamp
+ if not canonical.get('observed_at') or not p.get('observed_at') or not aware(p['observed_at'])<=aware(canonical['observed_at'])<=datetime.now(timezone.utc):
+  raise ValueError('Fresh canonical observation required after published proof')
+ if (g.get('active_publication_lane')!='shared' or g.get('shared_cutover_enabled') is not True
+     or Path(g['dist']).resolve(strict=True)!=Path(dist).resolve(strict=True)
+     or g['history_policy']['sha256']!=_digest(policy_bytes)
+     or p.get('asset_index_sha256')!=g['canonical_index']['sha256']
+     or p.get('current_index_sha256',p['asset_index_sha256'])!=p['asset_index_sha256']
+     or p.get('data_manifest_sha256')!=g['canonical_manifest']['sha256']):
+  raise ValueError('Shared gate is not bound to these exact package and canonical bytes')
+ from shared_minutes_rollout.daily.daily_gate import verify as verify_daily
+ daily=verify_daily(g)
+ if (daily['canonical_method']!=CURRENT_SHARED or daily['canonical_asof']!=p['asof']
+     or daily['history_policy_sha256']!=_digest(policy_bytes)):
+  raise ValueError('Shared daily gate differs from authenticated canonical')
+ root=Path(dist); history=policy['history_version']
+ selector_path='data/asset_history_release.json'; history_path=f'data/asset_history/{history}/manifest.json'
+ attrib_path=f'data/asset_history/{history}/attribution/manifest.json'
+ selector,manifest,attrib=(json.loads((root/name).read_bytes()) for name in (selector_path,history_path,attrib_path))
+ if (policy['protected_files'].get(selector_path)!=policy['selector_sha256']
+     or policy['protected_files'].get(history_path)!=policy['history_manifest_sha256']
+     or not policy['protected_files'].get(attrib_path)
+     or selector.get('method')!=policy['historical_method'] or manifest.get('method')!=policy['historical_method']
+     or selector.get('attribution_method')!=policy['historical_attribution_method']
+     or attrib.get('method')!=policy['historical_attribution_method']):
+  raise ValueError('Historical policy/manifest/attribution changed')
+ if _digest((root/'data/shared_minutes_rebase.json').read_bytes())!=p.get('rebase_sha256'):
+  raise ValueError('Frozen rebase differs from canonical publication proof')
+ return _verify(root,policy,canonical,CURRENT_SHARED,CURRENT_SHARED)
 
 def _verify_ui_policy(dist,old,new,proof):
  # This proof is inside the independently SHA-bound review, not generated or
