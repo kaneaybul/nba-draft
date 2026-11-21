@@ -6,7 +6,7 @@ import json
 import re
 from pathlib import Path
 import zipfile
-from history_release_guard import versions, verify, verify_transition
+from history_release_guard import versions, verify, verify_transition, verify_shared_current
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dist', type=Path, default=Path('frontend/dist'))
@@ -18,6 +18,10 @@ parser.add_argument('--transition-review-sha256')
 parser.add_argument('--previous-history-policy',type=Path)
 parser.add_argument('--latest-canonical-observation',type=Path)
 parser.add_argument('--computation-evidence',type=Path)
+parser.add_argument('--shared-current-gate',type=Path)
+parser.add_argument('--shared-current-gate-sha256')
+parser.add_argument('--shared-canonical-proof',type=Path)
+parser.add_argument('--shared-canonical-proof-sha256')
 args = parser.parse_args()
 dist = args.dist.resolve()
 metadata = json.loads((dist/'data/asset_valuation.json').read_text())
@@ -25,6 +29,9 @@ version = metadata['history_version']
 metadata, history, retained_history = versions(dist)
 transition_args=[args.transition_review,args.transition_review_sha256,args.previous_history_policy,args.latest_canonical_observation,args.computation_evidence]
 if any(x is not None for x in transition_args) and not all(x is not None for x in transition_args):raise ValueError('All reviewed transition inputs are required')
+shared_args=[args.shared_current_gate,args.shared_current_gate_sha256,args.shared_canonical_proof,args.shared_canonical_proof_sha256]
+if any(x is not None for x in shared_args) and (not all(x is not None for x in shared_args) or any(x is not None for x in transition_args)):
+    raise ValueError('Shared current packaging needs both exact evidence pairs and cannot be a first transition')
 policy_bytes=args.history_policy.read_bytes()
 policy=json.loads(policy_bytes)
 protected_names=set(policy['protected_files'])
@@ -33,6 +40,10 @@ if any(x is not None for x in transition_args):
     verify_transition(dist,args.previous_history_policy.read_bytes(),policy_bytes,
         json.loads(args.canonical_observation.read_text()),json.loads(args.latest_canonical_observation.read_text()),
         args.transition_review.read_bytes(),args.transition_review_sha256,args.computation_evidence.read_bytes())
+elif all(x is not None for x in shared_args):
+    verify_shared_current(dist,policy_bytes,json.loads(args.canonical_observation.read_text()),
+        args.shared_current_gate.read_bytes(),args.shared_current_gate_sha256,
+        args.shared_canonical_proof.read_bytes(),args.shared_canonical_proof_sha256)
 else:
     verify(dist,policy,json.loads(args.canonical_observation.read_text()))
 if any(not isinstance(v, str) or not v.startswith('v') or not v[1:].isdigit() for v in (version, history)):
