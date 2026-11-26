@@ -55,7 +55,9 @@ def preserved_history_route(public):
     manifest=public/'asset_history'/version/'manifest.json'
     if not manifest.exists():raise ValueError('Selected Asset History payload is missing')
     published=json.loads(manifest.read_text())
-    if published.get('method')!='peak4-payroll-0.8-'+version or len(published.get('teams',[]))!=30:
+    prefix='peak4-payroll-0.8-'+version
+    method=published.get('method','')
+    if not isinstance(method,str) or (method!=prefix and not method.startswith(prefix+'-')) or len(published.get('teams',[]))!=30:
         raise ValueError('Selected Asset History manifest is incompatible')
     return version
 
