@@ -1,0 +1,78 @@
+name: Daily Refresh and Deploy
+
+on:
+  schedule:
+    # 13:15 UTC daily (6:15 AM MT / 7:15 AM MDT)
+    - cron: "15 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-refresh-deploy
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Cache pinned R and Python runtime
+        uses: actions/cache@v4
+        with:
+          path: .work-runtime
+          key: work-runtime-linux-v1-${{ hashFiles('script/frontend/work_r_packages.lock', 'script/asset_history/requirements.txt') }}
+
+      - name: Prepare R and Python runtime
+        run: bash script/frontend/setup_work_runtime.sh
+
+      - name: Install frontend dependencies
+        run: |
+          source .work-runtime/environment.sh
+          npm ci --prefix frontend --no-audit --no-fund
+
+      - name: Run full data refresh, validation, and frontend build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABALLR_API_KEY: ${{ secrets.DATABALLR_API_KEY }}
+          DATABALLR_SIGNING_SECRET: ${{ secrets.DATABALLR_SIGNING_SECRET }}
+        run: |
+          source .work-runtime/environment.sh
+          NBA_REFRESH_WORK_DIR="$RUNNER_TEMP/work-refresh" bash script/frontend/run_work_refresh.sh
+
+      - name: Deploy validated build to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }} --branch=main
+
+      - name: Commit validated data updates back to main
+        run: |
+          set -euo pipefail
+          # Re-compact materialized team JSONs before committing
+          python3 script/asset_history/materialize.py --repo . --compact || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A raw/live processed/ frontend/public/data/
+          if git diff --cached --quiet; then
+            echo "No validated data changes to commit."
+            exit 0
+          fi
+          today="$(date -u +%Y-%m-%d)"
+          git commit -m "Daily automated NBA refresh ${today} [skip ci]"
+          git push origin HEAD:main
