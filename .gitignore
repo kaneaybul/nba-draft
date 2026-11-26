@@ -18,10 +18,12 @@ tmp/
 # Frontend generated files
 frontend/node_modules/
 frontend/dist/
+# Python bytecode
+__pycache__/
+
 # Asset histories and large seed inputs are committed in compact form.
 frontend/public/data/asset_history/v2/teams/*.json
+frontend/public/data/asset_history/v16/teams/*.json
+frontend/public/data/draft_class_results.json
 processed/asset_history/contracts/contract_agreements.json
 processed/asset_history/canonical_runtime_seed.zip
-frontend/public/data/asset_history/v3/teams/*.json
-frontend/public/data/asset_history/v10/teams/*.json
-frontend/public/data/asset_history/v12/teams/*.json
