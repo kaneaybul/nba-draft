@@ -1,0 +1,114 @@
+name: Publish Externalized Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Which release to publish: active (artifacts-active-v1) or legacy-archive (archive-legacy-2026-11)"
+        required: true
+        default: "active"
+        type: choice
+        options:
+          - active
+          - legacy-archive
+      legacy_ref:
+        description: "Git commit SHA to archive when mode=legacy-archive"
+        required: false
+        default: "9392c5c"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish active static artifacts (artifacts-active-v1)
+        if: ${{ inputs.mode == 'active' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/artifacts-active-v1"
+          mkdir -p "$out"
+          tar -czf "$out/rolling-pricing-v16.tar.gz" processed/asset_history/rolling_pricing/v16
+          tar -czf "$out/asset-history-v15.tar.gz" frontend/public/data/asset_history/v15
+          tar -czf "$out/asset-history-v16.tar.gz" frontend/public/data/asset_history/v16
+          tar -czf "$out/career-projection-models.tar.gz" processed/modelresults/career_projection_models.rds
+          tar -czf "$out/ref-oldfrontend.tar.gz" ref/oldfrontend
+          tar -czf "$out/runtime-seed.tar.gz" processed/asset_history/runtime_seed
+          (cd "$out" && sha256sum *.tar.gz > SHA256SUMS.txt)
+          cat "$out/SHA256SUMS.txt"
+          gh release delete artifacts-active-v1 --yes --cleanup-tag || true
+          gh release create artifacts-active-v1 \
+            --target "${{ github.sha }}" \
+            --title "Active Static Artifacts (v1)" \
+            --notes "Pinned static binary/data artifacts synced via script/sync_artifacts.py and verified against script/artifact_manifest.json." \
+            "$out"/*.tar.gz "$out/SHA256SUMS.txt"
+
+      - name: Publish legacy archive (archive-legacy-2026-11)
+        if: ${{ inputs.mode == 'legacy-archive' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git checkout "${{ inputs.legacy_ref }}"
+          out="$RUNNER_TEMP/archive-legacy-2026-11"
+          mkdir -p "$out"
+          tar -czf "$out/legacy-asset-history-v1-v14-v17-v18.tar.gz" \
+            frontend/public/data/asset_history/v1 \
+            frontend/public/data/asset_history/v3 \
+            frontend/public/data/asset_history/v4 \
+            frontend/public/data/asset_history/v5 \
+            frontend/public/data/asset_history/v6 \
+            frontend/public/data/asset_history/v7 \
+            frontend/public/data/asset_history/v8 \
+            frontend/public/data/asset_history/v9 \
+            frontend/public/data/asset_history/v10 \
+            frontend/public/data/asset_history/v11 \
+            frontend/public/data/asset_history/v12 \
+            frontend/public/data/asset_history/v13 \
+            frontend/public/data/asset_history/v14 \
+            frontend/public/data/asset_history/v17 \
+            frontend/public/data/asset_history/v18
+          tar -czf "$out/legacy-asset-valuations-v8-v15.tar.gz" \
+            frontend/public/data/asset_valuations/v8 \
+            frontend/public/data/asset_valuations/v9 \
+            frontend/public/data/asset_valuations/v10 \
+            frontend/public/data/asset_valuations/v11 \
+            frontend/public/data/asset_valuations/v12 \
+            frontend/public/data/asset_valuations/v13 \
+            frontend/public/data/asset_valuations/v14 \
+            frontend/public/data/asset_valuations/v15
+          tar -czf "$out/legacy-rolling-pricing-v13-v15.tar.gz" \
+            processed/asset_history/rolling_pricing/v13 \
+            processed/asset_history/rolling_pricing/v14 \
+            processed/asset_history/rolling_pricing/v15
+          tar -czf "$out/legacy-draft-experiments-and-backups.tar.gz" \
+            processed/draft/scv_whatif_20260506_220929 \
+            processed/draft/switch_perimeter_defense_experiment \
+            processed/draft/switch_perimeter_defense_experiment_original193 \
+            processed/draft/switch_perimeter_defense_experiment_original193_fullpanel \
+            processed/draft/matchup_height_experiment \
+            processed/draft/switch_mix_experiment \
+            processed/draft/rimpro_points_saved_experiment \
+            processed/draft/target_comparison \
+            processed/draft/no_college_impute_experiment_20260430_105924 \
+            processed/draft/no_college_impute_backup_20260430_105924 \
+            processed/draft/college_model_no_college_backup_20260430_112016 \
+            processed/modelresults/mistaken_retrain_backup_20260508_222302 \
+            .codex-pet-runs
+          (cd "$out" && sha256sum *.tar.gz > SHA256SUMS.txt)
+          cat "$out/SHA256SUMS.txt"
+          gh release delete archive-legacy-2026-11 --yes --cleanup-tag || true
+          gh release create archive-legacy-2026-11 \
+            --target "${{ inputs.legacy_ref }}" \
+            --title "Legacy Artifact Archive (2026-11)" \
+            --notes "Full backup archive of superseded legacy artifacts removed in PR #39." \
+            "$out"/*.tar.gz "$out/SHA256SUMS.txt"
