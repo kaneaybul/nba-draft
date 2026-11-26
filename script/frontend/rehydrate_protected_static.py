@@ -9,7 +9,7 @@ HOSTING={'_headers':'19a6b9d0c6397525a189cbbb43b32273c7f60995','_redirects':'779
 class NoRedirect(urllib.request.HTTPRedirectHandler):
  def redirect_request(self,*args,**kwargs):raise ValueError('Redirect forbidden for pinned deployment')
 def download(url):
- req=urllib.request.Request(url,headers={'Accept-Encoding':'identity'})
+ req=urllib.request.Request(url,headers={'Accept-Encoding':'identity','User-Agent':'Mozilla/5.0'})
  with urllib.request.build_opener(NoRedirect).open(req,timeout=60) as r:
   if r.status!=200 or r.geturl()!=url:raise ValueError('Unexpected pinned response')
   data=r.read(MAX+1)
