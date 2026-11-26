@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "repository": "kaneaybul/nba-draft",
+  "release_tag": "artifacts-active-v1",
+  "bundles": {
+    "rolling-pricing-v16": {
+      "asset": "rolling-pricing-v16.tar.gz",
+      "sha256": "a9c3035db723d2395b80c026aade875760def68e6c2d3170c603b08ce90a2bee",
+      "bytes": 212106781,
+      "paths": [
+        "processed/asset_history/rolling_pricing/v16"
+      ],
+      "verify_files": {
+        "processed/asset_history/rolling_pricing/v16/ATL.json.gz": "5aff7b9657736eb4b6e596f21d40daf0ea87a65994b88bb026e7f5cd2bfbf8e4",
+        "processed/asset_history/rolling_pricing/v16/WAS.json.gz": "20a927075ecf105a6b48d139efb7c732e276981159478f4d42be18908ea768a2"
+      }
+    },
+    "asset-history-v15": {
+      "asset": "asset-history-v15.tar.gz",
+      "sha256": "39415124f0f2462cf69664aeb87d23200b00e6539ba94d33bc8ed2b3709afb7c",
+      "bytes": 26372220,
+      "paths": [
+        "frontend/public/data/asset_history/v15"
+      ],
+      "verify_files": {
+        "frontend/public/data/asset_history/v15/manifest.json": "025e02aecdccdebd74fe742daca98c46b9f2605903ec0345c9a00910f5c7be6c",
+        "frontend/public/data/asset_history/v15/teams/ATL.json": "5b94535014080092afebd35387a3b07a8f9f3be38d7990e5615587db91b6cdd9",
+        "frontend/public/data/asset_history/v15/attribution/manifest.json": "6e2e7566960fc700bda2eda4bcfda64577b937f35eb1891e15aee4b3dfc5e88e"
+      }
+    },
+    "asset-history-v16": {
+      "asset": "asset-history-v16.tar.gz",
+      "sha256": "bf5f81ad7d4e879e62758b71718097739ce9c5aeeceab72435790fa4ce36c0cc",
+      "bytes": 26298366,
+      "paths": [
+        "frontend/public/data/asset_history/v16"
+      ],
+      "verify_files": {
+        "frontend/public/data/asset_history/v16/manifest.json": "ca9ce2c106b68758b3bd924fd8c89c5706c374edaaf12bab80bf759e52ba6f54",
+        "frontend/public/data/asset_history/v16/teams/ATL.json.gz": "5b953162fa164ed92087a3134f3534fad97d8f720dc66d40f7151c14d831bea3",
+        "frontend/public/data/asset_history/v16/attribution/manifest.json": "a20943d29b6e1782095aeeb94f0711d482b3655bdf348bbd00c6177fcfc4b641"
+      }
+    },
+    "career-projection-models": {
+      "asset": "career-projection-models.tar.gz",
+      "sha256": "2b228a4330fbde96dc9b7f401e1a9976ad23dea056dcbebd8342489d8da1c239",
+      "bytes": 66991088,
+      "paths": [
+        "processed/modelresults/career_projection_models.rds"
+      ],
+      "verify_files": {
+        "processed/modelresults/career_projection_models.rds": "03aaadb90ac70eacdc77b88d05057ff5b2ef6ed06b68ac07c607ff34c08ae10d"
+      }
+    },
+    "ref-oldfrontend": {
+      "asset": "ref-oldfrontend.tar.gz",
+      "sha256": "f28fa447f0475ff4a5efc6018dc2d09fb20fbe9c414997b024d7e606403712e2",
+      "bytes": 63577013,
+      "paths": [
+        "ref/oldfrontend"
+      ],
+      "verify_files": {
+        "ref/oldfrontend/Draft Templates v19.xlsx": "c4458329d12f0c6a7d3815cf63d66c519fd54a93164d4ff11f153e3986878022",
+        "ref/oldfrontend/NBA Impact v4.xlsx": "438163769c2f0634ef57c3c21a5e6fc148826cb56610262ca324b8674974536f",
+        "ref/oldfrontend/Lineup Synergy Tool v12.xlsx": "67bacde885a1e57e28debbd1e611f3542c4c75b5c6fa75106d0dfb8d1d236036",
+        "ref/oldfrontend/NBA Draft Tracker.xlsx": "3428d5f84a45d1daccf600388cef56beaae2b0806fde92c56dc89eb85fb34636"
+      }
+    },
+    "runtime-seed": {
+      "asset": "runtime-seed.tar.gz",
+      "sha256": "f6960fda34dccc14ae9543f46aa1659969f0ca70dcf64c00eb7717f7deee0168",
+      "bytes": 32783408,
+      "paths": [
+        "processed/asset_history/runtime_seed"
+      ],
+      "verify_files": {
+        "processed/asset_history/runtime_seed/manifest.json": "bbf9296b39d781c355fe07f45ce4200cb6bf6c1f39e178a0d45fb8e4072b4b67",
+        "processed/asset_history/runtime_seed/part-000.bin": "6eeafb9d151bf41952060fae34a874115f385086dd0566a6b0372a04bd214589",
+        "processed/asset_history/runtime_seed/part-031.bin": "4fabc51ff46dce765d0975fe551fc37e8023078aab3e92283527703be41a3301"
+      }
+    }
+  }
+}

@@ -21,6 +21,9 @@ mkdir -p "$work_root"
 work="$(mktemp -d "$work_root/run-XXXXXX")"
 echo "Refresh scratch: $work"
 
+echo 'Syncing externalized static artifacts'
+python3 script/sync_artifacts.py --repo "$repo"
+
 echo 'Checking saved inputs and frozen preseason archive'
 node script/frontend/validate_preseason_archive.mjs
 Rscript script/frontend/test_contract_source_years.R
