@@ -1,10 +1,5 @@
 {
-  "checked_at": "2026-11-26T18:51:50.552561+00:00",
-  "status": "needs_review",
-  "pending": [
-    {
-      "stage": "asset_history_refresh",
-      "error": "ValueError:   src.skill=pd.read_csv(skill_dir/'monthly_blended_skills.csv');src.skill['key']=src.skill['name'].map(model.key)"
-    }
-  ]
+  "checked_at": "2026-11-26T20:22:17.311029+00:00",
+  "status": "clean",
+  "pending": []
 }

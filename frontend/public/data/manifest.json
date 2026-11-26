@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T18:50:19Z",
+  "generated_at": "2026-11-26T20:04:02Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -85,7 +85,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-11-26T18:51:50.868Z",
+    "generated_at": "2026-11-26T20:22:17.580Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -215,7 +215,7 @@
             "rows": 640,
             "file": "v2/impact_players/2027.json",
             "bytes": 4483926,
-            "sha256": "e7d6e3dd583d394e9577f9c932075c1987afe810f950a66a4074740258357f4f"
+            "sha256": "a275950004b0e2c5a224801cf6b9e5aa4e338f0da758797c5bbbf62975520808"
           }
         ]
       },
@@ -521,7 +521,7 @@
             "rows": 1260,
             "file": "v2/team_schedules/2027.json",
             "bytes": 851176,
-            "sha256": "5e9ddb594c9306be6bb4a8029fd70900429a2e35cb8e0619b472609da79ee96f"
+            "sha256": "8426073dacdf75ca66e9c0496758f34d7b6c6b5a79fe9dc0bef30c2ad5fece87"
           }
         ]
       },
@@ -530,7 +530,7 @@
         "rows": 94,
         "file": "injury_outlook.json",
         "bytes": 81919,
-        "sha256": "906fe88c73b3fb6fa53f317cc3c5e5115955ff1e88ca61f3966eb56f16af3389"
+        "sha256": "bc9d346c011ad0ba9ad6a76e12b2439151177930550aa93d12bb6c4e0111c65e"
       },
       "impact_player_history": {
         "strategy": "singleton",
@@ -593,14 +593,14 @@
         "rows": 533,
         "file": "offseason_truth.json",
         "bytes": 346168,
-        "sha256": "49c0c5c2d03628bad4d2ea6daab1e6162de62009ad2951b8599e5ceacf57cdaf"
+        "sha256": "368772a6a4cc48111a10ad810237b160b885f34b328e67c6c3c5bcb6c899b1f1"
       },
       "cap_tracker": {
         "strategy": "singleton",
         "rows": 150,
         "file": "cap_tracker.json",
         "bytes": 2177591,
-        "sha256": "94f69a4cc2e8f8fd4fddf785f9e8f2dfa7b4af301bdbc9f016122774944c9319"
+        "sha256": "bed590e2f999b71895ba92c038b1396db6ca4cf4461d719be63bbced8f6b3bea"
       },
       "cap_transaction_review": {
         "strategy": "singleton",
