@@ -116,10 +116,10 @@ def main():
     season=json.loads((ROOT/'raw/live/ratings.json').read_text())['season']
     dest=ROOT/'raw/live/skill_stats.json'
     previous=json.loads(dest.read_text()) if dest.exists() else {}
-    # Reuse existing connection material without logging it or copying it to outputs.
-    source=(ROOT/'script/data/pulldataballrstats.txt').read_text()
-    key=re.search(r'DATABALLR_API_KEY <- "([^"]+)"',source)[1]
-    secret=re.search(r'DATABALLR_SIGNING_SECRET <- "([^"]+)"',source)[1]
+    key=os.environ.get('DATABALLR_API_KEY','').strip()
+    secret=os.environ.get('DATABALLR_SIGNING_SECRET','').strip()
+    if not key or not secret:
+        raise RuntimeError('DATABALLR_API_KEY and DATABALLR_SIGNING_SECRET environment variables must be set')
     path='/api/supabase/player_stats_with_metrics'
     query=f'year={season}&playoffs=0&min_minutes=0&limit=2000&order_by=dpm&order_direction=desc'
     data=None

@@ -35,8 +35,11 @@ END_YEAR   <- as.integer(Sys.getenv("DATABALLR_END_YEAR", unset = "2026"))
 MIN_MINUTES <- as.integer(Sys.getenv("DATABALLR_MIN_MINUTES", unset = "0"))
 DATABALLR_LIMIT <- as.integer(Sys.getenv("DATABALLR_LIMIT", unset = "2000"))
 DATABALLR_API_BASE <- "https://api.databallr.com/api"
-DATABALLR_API_KEY <- "d4c3b65c6bc3db82b1bf0bcf11659bfe2413c5bfdfdec5f545941e2a93a848aa"
-DATABALLR_SIGNING_SECRET <- "a7f8e2c9d4b1f6a3e0c5d8b2f7a4e1c6d9b3f0a5e8c2d7b4f1a6e3c0d5b8f2a9"
+DATABALLR_API_KEY <- trimws(Sys.getenv("DATABALLR_API_KEY", unset = ""))
+DATABALLR_SIGNING_SECRET <- trimws(Sys.getenv("DATABALLR_SIGNING_SECRET", unset = ""))
+if (!nzchar(DATABALLR_API_KEY) || !nzchar(DATABALLR_SIGNING_SECRET)) {
+  stop("DATABALLR_API_KEY and DATABALLR_SIGNING_SECRET environment variables must be set.", call. = FALSE)
+}
 
 years <- START_YEAR:END_YEAR
 
