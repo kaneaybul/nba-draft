@@ -58,6 +58,33 @@ jobs:
           source .work-runtime/environment.sh
           npm ci --prefix frontend --no-audit --no-fund
 
+      - name: Hydrate verified pinned v19/v20 asset history into frontend/public
+        run: |
+          source .work-runtime/environment.sh
+          python3 - <<'PY'
+          import hashlib, json, pathlib, sys
+          sys.path.insert(0, 'script/frontend')
+          import rehydrate_protected_static as rps
+          policy = json.loads(pathlib.Path('script/frontend/history_release_policy.json').read_text())
+          origin = policy['restore_origin'].rstrip('/')
+          public = pathlib.Path('frontend/public')
+          count = 0
+          for name, digest in sorted(policy['protected_files'].items()):
+              if not name.startswith(('data/asset_history/v19/', 'data/asset_history/v20/')):
+                  continue
+              dest = public / name
+              if dest.is_file() and hashlib.sha256(dest.read_bytes()).hexdigest() == digest:
+                  count += 1
+                  continue
+              data = rps.download(f'{origin}/{name}')
+              if hashlib.sha256(data).hexdigest() != digest:
+                  raise ValueError(f'Pinned SHA-256 mismatch: {name}')
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              dest.write_bytes(data)
+              count += 1
+          print(f'Hydrated {count} verified v19/v20 pinned asset history files into frontend/public')
+          PY
+
       - name: Run full data refresh, validation, and frontend build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -67,15 +94,10 @@ jobs:
           source .work-runtime/environment.sh
           NBA_REFRESH_WORK_DIR="$RUNNER_TEMP/work-refresh" bash script/frontend/run_work_refresh.sh
 
-      - name: Attach verified pinned v19/v20 asset history to dist
+      - name: Prune unused legacy asset history from dist before Pages deploy
         run: |
-          source .work-runtime/environment.sh
           python3 - <<'PY'
-          import hashlib, json, pathlib, shutil, sys
-          sys.path.insert(0, 'script/frontend')
-          import rehydrate_protected_static as rps
-          policy = json.loads(pathlib.Path('script/frontend/history_release_policy.json').read_text())
-          origin = policy['restore_origin'].rstrip('/')
+          import pathlib, shutil
           dist = pathlib.Path('frontend/dist')
           ah_root = dist / 'data' / 'asset_history'
           if ah_root.exists():
@@ -84,18 +106,7 @@ jobs:
                       shutil.rmtree(child)
           for gz in dist.rglob('*.json.gz'):
               gz.unlink()
-          count = 0
-          for name, digest in sorted(policy['protected_files'].items()):
-              if not name.startswith(('data/asset_history/v19/', 'data/asset_history/v20/')):
-                  continue
-              data = rps.download(f'{origin}/{name}')
-              if hashlib.sha256(data).hexdigest() != digest:
-                  raise ValueError(f'Pinned SHA-256 mismatch: {name}')
-              dest = dist / name
-              dest.parent.mkdir(parents=True, exist_ok=True)
-              dest.write_bytes(data)
-              count += 1
-          print(f'Attached {count} verified v19/v20 pinned asset history files to frontend/dist')
+          print('Pruned unused legacy asset history and .json.gz files from frontend/dist')
           PY
 
       - name: Deploy validated build to Cloudflare Pages
