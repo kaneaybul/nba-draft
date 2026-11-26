@@ -48,7 +48,26 @@ run_wave1() {
 run_wave1 player_pool python3 script/data/refresh_player_pool.py
 run_wave1 live_ratings bash -c 'node --test script/data/test_live_ratings.mjs && node script/data/refresh_live_ratings.mjs'
 run_wave1 injury_outlook python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
-run_wave1 pbp_positions python3 script/data/refresh_pbp_position_estimates.py
+run_wave1 pbp_positions bash -c '
+  set -euo pipefail
+  if python3 script/data/refresh_pbp_position_estimates.py; then
+    exit 0
+  fi
+  echo "WARN: PBP position refresh failed; checking for valid same-season retained estimates..." >&2
+  python3 - <<'\''PY'\''
+import json, os, pathlib, sys
+season = str(int(os.environ["CURRENT_ROSTER_YEAR"]) + 1)
+status_path = pathlib.Path("raw/live/position_status.json")
+pos_path = pathlib.Path("raw/live/positions.json")
+if not (status_path.is_file() and pos_path.is_file()):
+    sys.exit("ERROR: No retained same-season position files available.")
+st = json.loads(status_path.read_text(encoding="utf-8"))
+entry = (st.get("seasons") or {}).get(season) or {}
+if entry.get("status") not in ("ok", "partial"):
+    sys.exit(f"ERROR: Retained position_status.json lacks valid season {season} entry.")
+print(f"Retained valid season {season} position estimates (checked_at={st.get(\"checked_at\")}, rows={entry.get(\"rows\")}).")
+PY
+'
 if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
   run_wave1 draft_2027 bash -c '
     set -euo pipefail
