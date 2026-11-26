@@ -5,7 +5,7 @@
   "bundles": {
     "rolling-pricing-v16": {
       "asset": "rolling-pricing-v16.tar.gz",
-      "sha256": "a9c3035db723d2395b80c026aade875760def68e6c2d3170c603b08ce90a2bee",
+      "sha256": "643a41fb51a02797daf160962f23510d98be1be2075ca328f248876d46cc41e9",
       "bytes": 212106781,
       "paths": [
         "processed/asset_history/rolling_pricing/v16"
@@ -17,7 +17,7 @@
     },
     "asset-history-v15": {
       "asset": "asset-history-v15.tar.gz",
-      "sha256": "39415124f0f2462cf69664aeb87d23200b00e6539ba94d33bc8ed2b3709afb7c",
+      "sha256": "bd71a5e0174b359d5fb4c142a9f2911f6f017420aae96a436ef8763920c2d69a",
       "bytes": 26372220,
       "paths": [
         "frontend/public/data/asset_history/v15"
@@ -30,20 +30,19 @@
     },
     "asset-history-v16": {
       "asset": "asset-history-v16.tar.gz",
-      "sha256": "bf5f81ad7d4e879e62758b71718097739ce9c5aeeceab72435790fa4ce36c0cc",
+      "sha256": "48413c3f3417ae627bff670b712b45761aa0baac14c0dc0e79a14dd3d6b1f97c",
       "bytes": 26298366,
       "paths": [
         "frontend/public/data/asset_history/v16"
       ],
       "verify_files": {
         "frontend/public/data/asset_history/v16/manifest.json": "ca9ce2c106b68758b3bd924fd8c89c5706c374edaaf12bab80bf759e52ba6f54",
-        "frontend/public/data/asset_history/v16/teams/ATL.json.gz": "5b953162fa164ed92087a3134f3534fad97d8f720dc66d40f7151c14d831bea3",
         "frontend/public/data/asset_history/v16/attribution/manifest.json": "a20943d29b6e1782095aeeb94f0711d482b3655bdf348bbd00c6177fcfc4b641"
       }
     },
     "career-projection-models": {
       "asset": "career-projection-models.tar.gz",
-      "sha256": "2b228a4330fbde96dc9b7f401e1a9976ad23dea056dcbebd8342489d8da1c239",
+      "sha256": "2d61e31d1ae5c974710b60678c72569ac40384cf305f9e9cab95ff6247e579e1",
       "bytes": 66991088,
       "paths": [
         "processed/modelresults/career_projection_models.rds"
@@ -54,7 +53,7 @@
     },
     "ref-oldfrontend": {
       "asset": "ref-oldfrontend.tar.gz",
-      "sha256": "f28fa447f0475ff4a5efc6018dc2d09fb20fbe9c414997b024d7e606403712e2",
+      "sha256": "a3193d6f6f00471a54b525bd387474a7f1626dba1de424a59eb81cd30d301533",
       "bytes": 63577013,
       "paths": [
         "ref/oldfrontend"
@@ -68,7 +67,7 @@
     },
     "runtime-seed": {
       "asset": "runtime-seed.tar.gz",
-      "sha256": "f6960fda34dccc14ae9543f46aa1659969f0ca70dcf64c00eb7717f7deee0168",
+      "sha256": "733a1eb5355dbea13534f27877d80cf3746a5cca62fe4bb874e7f5e283f9092a",
       "bytes": 32783408,
       "paths": [
         "processed/asset_history/runtime_seed"

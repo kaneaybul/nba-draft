@@ -103,8 +103,6 @@ jobs:
       - name: Commit validated data updates back to main
         run: |
           set -euo pipefail
-          # Re-compact materialized team JSONs before committing
-          python3 script/asset_history/materialize.py --repo . --compact || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A raw/live processed/ frontend/public/data/
