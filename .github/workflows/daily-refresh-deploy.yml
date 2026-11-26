@@ -31,14 +31,22 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Cache pinned R and Python runtime
-        uses: actions/cache@v4
+      - name: Restore pinned R and Python runtime cache
+        id: runtime-cache
+        uses: actions/cache/restore@v4
         with:
           path: .work-runtime
           key: work-runtime-linux-v1-${{ hashFiles('script/frontend/work_r_packages.lock', 'script/asset_history/requirements.txt') }}
 
       - name: Prepare R and Python runtime
         run: bash script/frontend/setup_work_runtime.sh
+
+      - name: Save pinned R and Python runtime cache
+        if: steps.runtime-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .work-runtime
+          key: ${{ steps.runtime-cache.outputs.cache-primary-key }}
 
       - name: Install frontend dependencies
         run: |
