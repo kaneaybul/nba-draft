@@ -52,7 +52,9 @@ def run(args):
             if prior:env['NBA_OWNER_PRIOR_BATCH']=str(prior)
             else:env.pop('NBA_OWNER_PRIOR_BATCH',None)
             with(batch/f'{team}.log').open('w')as log:code=subprocess.run(cmd,stdout=log,stderr=subprocess.STDOUT,env=env).returncode
-            if code:raise RuntimeError(f'{day} {team} failed; see {batch/team}.log')
+            if code:
+                tail=(batch/f'{team}.log').read_text(errors='replace').splitlines()[-15:]
+                raise RuntimeError(f'{day} {team} failed; see {batch/team}.log\n'+'\n'.join(tail))
             for name in('monthly_position_usage.csv','monthly_adaptive_calibration.csv'):
                 path=batch/'output'/team/name
                 if not path.exists():continue
