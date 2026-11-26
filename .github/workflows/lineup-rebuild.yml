@@ -91,6 +91,8 @@ jobs:
       - name: Refresh current skill statistics with conservative evidence weights
         env:
           SWITCH_DIAGNOSE: ${{ github.event_name == 'push' && '1' || '0' }}
+          DATABALLR_API_KEY: ${{ secrets.DATABALLR_API_KEY }}
+          DATABALLR_SIGNING_SECRET: ${{ secrets.DATABALLR_SIGNING_SECRET }}
         run: |
           python3 -m unittest discover -s script/data -p 'test_live_skill_stats.py'
           python3 -m unittest discover -s script/data -p "test_live_switch.py"

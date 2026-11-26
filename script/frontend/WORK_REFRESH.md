@@ -3,7 +3,7 @@
 The scheduled Work refresh owns collection, projection calculations, validation,
 and the frontend build. GitHub stores source and validated generated data.
 Production is the existing `nba-impact-lab` Cloudflare Pages project in account
-`REDACTED_CLOUDFLARE_ACCOUNT_ID`, branch `main`.
+`<CLOUDFLARE_ACCOUNT_ID>`, branch `main`.
 
 ## Recover source without a working ZIP download
 
