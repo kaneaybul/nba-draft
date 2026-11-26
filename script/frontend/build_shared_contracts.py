@@ -14,7 +14,15 @@ def read_json(path):
     return json.loads(gzip.decompress(path.read_bytes()) if path.suffix=='.gz' else path.read_text())
 
 def build(repo,agreements=None,capture=None,confirmed_transactions=None):
-    agreements=agreements or read_json(repo/'processed/asset_history/contracts/contract_agreements.json')
+    if agreements is None:
+        agreements=read_json(repo/'processed/asset_history/contracts/contract_agreements.json')
+        recent=repo/'processed/contracts/reconciled_recent_agreements.json'
+        if recent.exists():
+            agreements=agreements+read_json(recent)
+    if confirmed_transactions is None:
+        events_path=repo/'processed/asset_history/player_state/ownership_events.json'
+        if events_path.exists():
+            confirmed_transactions={e['event_id'] for e in read_json(events_path) if e.get('source') and not e.get('roster_capture')}
     adjustments=repo/'processed/asset_history/contracts/contract_adjustments.json'
     if adjustments.exists():
         agreements=agreements+[{**r,'adjustment_only':True,'salaries':[]}for r in read_json(adjustments)]
