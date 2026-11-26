@@ -15,6 +15,7 @@ export VITE_PUBLIC_READ_ONLY=true
 export TZ=UTC
 export FRONTEND_MAX_STATIC_ASSET_BYTES=26214400
 export FRONTEND_MAX_INITIAL_PAYLOAD_BYTES=8388608
+export NBA_AUTO_RESILIENT_TRADES="${NBA_AUTO_RESILIENT_TRADES:-1}"
 work_root="${NBA_REFRESH_WORK_DIR:-$repo/.work-refresh}"
 mkdir -p "$work_root"
 # Calibration caches are tied to exact inputs, including on same-day retries.
@@ -155,10 +156,21 @@ else
   echo 'Skipping asset_history/refresh.py while ownership/contract review is pending; last validated asset-history snapshot retained.'
 fi
 
-python3 - "$pending_reviews" <<'PY'
+python3 - "$pending_reviews" "$work" <<'PY'
 import json, pathlib, sys
 from datetime import datetime, timezone
 items = [json.loads(line) for line in pathlib.Path(sys.argv[1]).read_text(encoding='utf-8').splitlines() if line.strip()]
+work_dir = pathlib.Path(sys.argv[2])
+trade_review_path = work_dir / 'contracts/runtime/monthly_reconstruction/league_ownership/pending_trade_reviews.json'
+if trade_review_path.is_file():
+    data = json.loads(trade_review_path.read_text(encoding='utf-8'))
+    for tr in data.get('trades', []):
+        items.append({'stage': 'pending_trade_review', 'date': tr.get('date'), 'team': tr.get('team'), 'text': tr.get('text'), 'applied_player_transfers': tr.get('applied_player_transfers', [])})
+pick_review_path = work_dir / 'asset-history/pending_pick_review.json'
+if pick_review_path.is_file():
+    data = json.loads(pick_review_path.read_text(encoding='utf-8'))
+    for ev in data.get('events', []):
+        items.append({'stage': 'pending_pick_review', 'date': ev.get('known_from'), 'text': ev.get('source_text'), 'reason': ev.get('reason')})
 out = {
     'checked_at': datetime.now(timezone.utc).isoformat(),
     'status': 'needs_review' if items else 'clean',

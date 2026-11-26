@@ -97,7 +97,10 @@ def new_pick_actions(events,catalog,asof,first_display_year,reviews=None):
             extra.append(dict(event_id=event['event_id'],known_from=event['date'],reviewed=True,source=source,kind='add_rule',rule=rule))
     return extra,new_catalog,unknown
 
-def run(repo,runtime,asof,output,draws=10000,model_path=None,use_published_inputs=False):
+def run(repo,runtime,asof,output,draws=10000,model_path=None,use_published_inputs=False,allow_pending_picks=None):
+    import os
+    if allow_pending_picks is None:
+        allow_pending_picks=os.environ.get('NBA_AUTO_RESILIENT_TRADES')=='1'
     inputs=repo/'processed/asset_history/picks'
     baseline=json.loads((inputs/'opening_baseline.json').read_text());catalog=json.loads((inputs/'dated_events.json').read_text());orders=json.loads((inputs/'dated_orders.json').read_text());model=json.loads((inputs/'trained_pick_model.json').read_text());historical=json.loads((inputs/'forecast_inputs.json').read_text())
     if model_path is not None:model=json.loads(model_path.read_text())
@@ -108,9 +111,16 @@ def run(repo,runtime,asof,output,draws=10000,model_path=None,use_published_input
     events=json.loads((runtime/'monthly_reconstruction/league_ownership/league_events.json').read_text())
     fresh,new_catalog,unknown=new_pick_actions(events,catalog,asof,min(years))
     output.parent.mkdir(parents=True,exist_ok=True)
+    pending_path=output.with_name('pending_pick_review.json')
     if unknown:
-        output.with_name('pending_pick_review.json').write_text(json.dumps({'date':asof,'events':unknown},indent=2))
-        raise ValueError('New trade package or conditional pick terms require review; preserving last validated portfolio')
+        pending_path.write_text(json.dumps({'date':asof,'events':unknown},indent=2))
+        if not allow_pending_picks:
+            raise ValueError('New trade package or conditional pick terms require review; preserving last validated portfolio')
+        unknown_ids={(row.get('event_id'),row.get('known_from'),row.get('source_text'))for row in unknown}
+        new_catalog=[row for row in new_catalog if (row.get('event_id'),row.get('known_from'),row.get('source_text'))not in unknown_ids]
+        print(f'WARN: Deferring {len(unknown)} unreviewed trade pick package(s) to pending_pick_review.json; continuing with last validated conserved pick ownership.',flush=True)
+    elif pending_path.exists():
+        pending_path.unlink()
     view=active_rules(baseline,actions+fresh,asof,catalog+new_catalog)
     if not view['complete']:raise ValueError('Incomplete current legal pick view')
     if use_published_inputs:
@@ -122,6 +132,8 @@ def run(repo,runtime,asof,output,draws=10000,model_path=None,use_published_input
     sim=simulate(asof,ratings,standing,view['rules'],orders['orders'],historical['qualifiers'],draws,max(2033,max(years)))
     result=value_portfolio(asof,view,sim,model,years)
     result['assumptions'].append('Daily team-strength forecasts extend the last reconstructed rating using changes in the app’s team projections, preserving the source basis at the October2026 transition.')
+    if unknown:
+        result['assumptions'].append(f'{len(unknown)} unreviewed trade pick package(s) deferred to pending_pick_review.json while retaining last validated 30-team pick ownership.')
     result['source_fingerprint']=hashlib.sha256(json.dumps([ratings,standing,view],sort_keys=True,separators=(',',':')).encode()).hexdigest()
     from pick_forecast_capture import capture
     capture(inputs/'forecast_inputs.json',asof,ratings,standing)

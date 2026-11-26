@@ -75,6 +75,19 @@ class EspnOwnership(unittest.TestCase):
      if accepted:self.assertEqual(collect('2026-10-30'),([],stamp))
      else:
       with self.assertRaisesRegex(ValueError,'Stale or future'):collect('2026-10-30')
+ def test_resilient_mode_applies_player_transfers_and_logs_pending_trade(self):
+  rows=[
+   {'date':'2026-10-29','description':'Acquired Blake Wesley and a first-round pick.','team':{'abbreviation':'LAC'}},
+   {'date':'2026-10-29','description':'Traded Blake Wesley and a first-round pick to LAC.','team':{'abbreviation':'LAL'}},
+   {'date':'2026-10-29','description':'Traded a 2029 second-round pick for cash considerations.','team':{'abbreviation':'MIN'}},
+  ]
+  pending=[]
+  result=parse(rows,self.pool(),'2026-10-26','2026-10-30',allow_unreviewed_trades=True,pending_trades=pending)
+  self.assertEqual(len(result),1)
+  self.assertEqual(result[0]['parsed_status'],'trade')
+  self.assertTrue(result[0]['unreviewed_trade'])
+  self.assertEqual(result[0]['parsed_actions'],[{'player_name':'Blake Wesley','nba_id':4,'to_team':'LAC','action':'transfer','two_way':False}])
+  self.assertEqual(len(pending),3)
 
 if __name__=='__main__':unittest.main()
 
