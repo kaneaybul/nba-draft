@@ -33,29 +33,55 @@ sha256sum "processed/livedata/impactrefresh/current_rosters_${CURRENT_ROSTER_YEA
   processed/livedata/impactrefresh/spotrac_allteams_no_guarantees/scrape_audit.csv \
   processed/livedata/schedules/bref_team_schedules.csv > "$work/preserved-inputs.sha256"
 
-echo 'Refreshing player membership, ratings, results, and injuries'
-python3 script/data/refresh_player_pool.py
-node --test script/data/test_live_ratings.mjs
-node script/data/refresh_live_ratings.mjs
-python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
+echo 'Refreshing independent sources in parallel (Wave 1)'
+mkdir -p "$work/wave1"
+wave1_pids=()
+wave1_names=()
+run_wave1() {
+  local name="$1"
+  shift
+  "$@" > "$work/wave1/${name}.log" 2>&1 &
+  wave1_pids+=("$!")
+  wave1_names+=("$name")
+}
 
-echo 'Refreshing positions and current-season skill evidence'
-python3 script/data/refresh_pbp_position_estimates.py
+run_wave1 player_pool python3 script/data/refresh_player_pool.py
+run_wave1 live_ratings bash -c 'node --test script/data/test_live_ratings.mjs && node script/data/refresh_live_ratings.mjs'
+run_wave1 injury_outlook python3 script/data/refresh_injury_outlook.py --results-output raw/live/results.json
+run_wave1 pbp_positions python3 script/data/refresh_pbp_position_estimates.py
+if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
+  run_wave1 draft_2027 bash -c '
+    set -euo pipefail
+    python3 script/draft/refresh_2027_stats.py \
+      processed/draft/draft_consensus_projection_ranks_2027.csv "$1/draft-inputs.csv" \
+      --snapshot raw/draft_preview_2027_inputs.csv
+    if ! cmp -s "$1/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv; then
+      Rscript --vanilla script/draft/score_2027_preview.R "$1/draft-inputs.csv" "$1/draft-scores.csv"
+      cp "$1/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv
+      cp "$1/draft-scores.csv" processed/draft/draft_skill_preview_2027.csv
+    fi
+  ' _ "$work"
+fi
+
+wave1_failed=0
+for i in "${!wave1_pids[@]}"; do
+  if ! wait "${wave1_pids[$i]}"; then
+    echo "FAILED Wave 1 job: ${wave1_names[$i]}" >&2
+    cat "$work/wave1/${wave1_names[$i]}.log" >&2
+    wave1_failed=1
+  else
+    echo "Completed Wave 1 job: ${wave1_names[$i]}"
+    cat "$work/wave1/${wave1_names[$i]}.log"
+  fi
+done
+if [[ "$wave1_failed" -ne 0 ]]; then
+  exit 1
+fi
+
+echo 'Refreshing current-season skill evidence and SWITCH (Wave 2)'
 python3 script/data/refresh_live_skill_stats.py
 Rscript script/frontend/refresh_live_switch.R
 python3 script/data/refresh_player_pool.py --enrich
-
-echo 'Scoring the verified draft input snapshot'
-if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
-  python3 script/draft/refresh_2027_stats.py \
-    processed/draft/draft_consensus_projection_ranks_2027.csv "$work/draft-inputs.csv" \
-    --snapshot raw/draft_preview_2027_inputs.csv
-  if ! cmp -s "$work/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv; then
-    Rscript --vanilla script/draft/score_2027_preview.R "$work/draft-inputs.csv" "$work/draft-scores.csv"
-    cp "$work/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv
-    cp "$work/draft-scores.csv" processed/draft/draft_skill_preview_2027.csv
-  fi
-fi
 
 echo 'Resolving signed ownership using saved contract terms'
 python3 script/frontend/prepare_work_contracts.py --repo "$repo" --work-dir "$work/contracts"
