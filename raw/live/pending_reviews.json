@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-11-26T18:37:13.037971+00:00",
+  "checked_at": "2026-11-26T18:51:50.552561+00:00",
   "status": "needs_review",
   "pending": [
     {
       "stage": "asset_history_refresh",
-      "error": "ValueError: RuntimeError: 2026-11-26 ATL failed; see /home/runner/work/_temp/work-refresh/run-GVJVVP/asset-history/players/owner_replay/batches/2026-11-26/ATL.log"
+      "error": "ValueError:   src.skill=pd.read_csv(skill_dir/'monthly_blended_skills.csv');src.skill['key']=src.skill['name'].map(model.key)"
     }
   ]
 }

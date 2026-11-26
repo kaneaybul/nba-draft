@@ -1,1 +1,1 @@
-{"status":"retained_last_good","recorded_at":"2026-11-26T18:37:12.934695+00:00","reason":"RuntimeError: 2026-11-26 ATL failed; see /home/runner/work/_temp/work-refresh/run-GVJVVP/asset-history/players/owner_replay/batches/2026-11-26/ATL.log"}
+{"status":"retained_last_good","recorded_at":"2026-11-26T18:51:50.451057+00:00","reason":"  src.skill=pd.read_csv(skill_dir/'monthly_blended_skills.csv');src.skill['key']=src.skill['name'].map(model.key)"}
