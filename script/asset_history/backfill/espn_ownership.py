@@ -76,16 +76,22 @@ def parse(rows,pool,after,asof):
                     matched_pkg=pkg;break
             if matched_pkg is None:
                 raise ValueError('ESPN trade requires full player and pick direction review: '+text)
+            if matched_pkg['id'] in emitted_reviewed:continue
+            emitted_reviewed.add(matched_pkg['id'])
+            team_label=' / '.join(matched_pkg.get('team_names')or [])
+            actions=[];players_list=[]
             for name,dest_team in matched_pkg['player_destinations'].items():
-                marker=(matched_pkg['id'],name)
-                if marker in emitted_reviewed:continue
-                emitted_reviewed.add(marker)
                 matches=identities.get(key(name),[])
                 if len({p['nba_id']for p in matches})!=1:
                     raise ValueError('Unresolved reviewed trade player identity: '+name)
-                ev=event(day,f"Reviewed trade {matched_pkg['id']}: {name} to {dest_team}.",matches[0],dest_team,'add')
-                ev['parsed_status']='trade'
-                out.append(ev)
+                p=matches[0]
+                players_list.append({'name':p['player_name'],'nba_id':int(p['nba_id']),'realgm_url':None})
+                actions.append({'player_name':p['player_name'],'nba_id':int(p['nba_id']),'to_team':dest_team,'action':'transfer','two_way':False})
+            dest_desc=', '.join(f'{n} to {t}' for n,t in matched_pkg['player_destinations'].items())
+            rendered=f"Reviewed trade {matched_pkg['id']} ({team_label}): {dest_desc}."
+            ev=event(day,rendered,identities[key(next(iter(matched_pkg['player_destinations'])))][0],next(iter(matched_pkg['player_destinations'].values())),'add')
+            ev['parsed_status']='trade';ev['players']=players_list;ev['parsed_actions']=actions
+            out.append(ev)
             continue
         # Protect punctuation inside known player names before sentence splitting.
         tokens={}
