@@ -5,12 +5,13 @@ stop publication. A fresh roster capture can propose a new signing; its original
 contract must independently confirm the team and post-waiver signing date.
 """
 from __future__ import annotations
-import hashlib,json,re,unicodedata
+import hashlib,json,os,re,unicodedata
 from datetime import datetime,timezone
 from urllib.request import Request,urlopen
 
 API='https://site.api.espn.com/apis/site/v2/sports/basketball/nba'
 TEAM_ALIASES={'GS':'GSW','NO':'NOP','NY':'NYK','SA':'SAS','UTAH':'UTA','WSH':'WAS','PHO':'PHX'}
+NBA_TEAMS=set('ATL BKN BOS CHA CHI CLE DAL DEN DET GSW HOU IND LAC LAL MEM MIA MIL MIN NOP NYK OKC ORL PHI PHX POR SAC SAS TOR UTA WAS'.split())
 
 def key(value):
     value=unicodedata.normalize('NFKD',str(value)).encode('ascii','ignore').decode().lower()
@@ -55,12 +56,40 @@ def _reviewed_trades():
     if not path.is_file():return []
     return json.loads(path.read_text()).get('packages',[])
 
-def parse(rows,pool,after,asof):
+def _resolve_unreviewed_trade_players(text,team,identities):
+    """Extract unambiguous player transfers from an unreviewed ESPN trade row."""
+    masked=text;matched=[]
+    for name,players in sorted(identities.items(),key=lambda pair:len(pair[0]),reverse=True):
+        if len({p['nba_id']for p in players})>1:continue
+        p=players[0];literal=p['player_name']
+        if literal in masked:
+            pos=masked.index(literal)
+            masked=masked.replace(literal,' '*len(literal))
+            matched.append((pos,p))
+    matched.sort(key=lambda item:item[0])
+    # Determine whether players appear in the "Acquired ..." prefix (destination = row team).
+    acq_match=re.search(r'\bacquired\b',text,re.I)
+    for_match=re.search(r'\b(?:for|in exchange)\b',text,re.I)
+    transfers=[]
+    for pos,p in matched:
+        dest=None
+        if acq_match and pos>acq_match.start() and (for_match is None or pos<for_match.start()) and team in NBA_TEAMS:
+            dest=team
+        else:
+            live_team=TEAM_ALIASES.get(p.get('team',''),p.get('team',''))
+            if p.get('pool_status')=='roster' and live_team in NBA_TEAMS:
+                dest=live_team
+        if dest is not None:
+            transfers.append((p,dest))
+    return transfers
+
+def parse(rows,pool,after,asof,allow_unreviewed_trades=False,pending_trades=None):
     identities={}
     for player in pool['players']:
         if player.get('nba_id')is not None:identities.setdefault(key(player['player_name']),[]).append(player)
     reviewed=_reviewed_trades()
     emitted_reviewed=set()
+    emitted_unreviewed=set()
     out=[]
     for row in rows:
         day=row['date'][:10]
@@ -75,7 +104,23 @@ def parse(rows,pool,after,asof):
                 if dests and any(name in text for name in dests):
                     matched_pkg=pkg;break
             if matched_pkg is None:
-                raise ValueError('ESPN trade requires full player and pick direction review: '+text)
+                if not allow_unreviewed_trades:
+                    raise ValueError('ESPN trade requires full player and pick direction review: '+text)
+                transfers=_resolve_unreviewed_trade_players(text,team,identities)
+                sig=(day,frozenset((int(p['nba_id']),dest)for p,dest in transfers))
+                if pending_trades is not None:
+                    pending_trades.append({'date':day,'team':team,'text':text,
+                        'applied_player_transfers':[{'player':p['player_name'],'nba_id':int(p['nba_id']),'to_team':dest}for p,dest in transfers]})
+                if not transfers:
+                    continue
+                if sig in emitted_unreviewed:continue
+                emitted_unreviewed.add(sig)
+                players_list=[{'name':p['player_name'],'nba_id':int(p['nba_id']),'realgm_url':None}for p,_ in transfers]
+                actions=[{'player_name':p['player_name'],'nba_id':int(p['nba_id']),'to_team':dest,'action':'transfer','two_way':False}for p,dest in transfers]
+                ev=event(day,text,transfers[0][0],transfers[0][1],'add')
+                ev['parsed_status']='trade';ev['unreviewed_trade']=True;ev['players']=players_list;ev['parsed_actions']=actions
+                out.append(ev)
+                continue
             if matched_pkg['id'] in emitted_reviewed:continue
             emitted_reviewed.add(matched_pkg['id'])
             team_label=' / '.join(matched_pkg.get('team_names')or [])
@@ -173,7 +218,14 @@ def refresh(runtime,repo,asof,primary_error):
     rows,timestamp=collect(asof)
     if not rows or min(row['date'][:10]for row in rows)>after:
         raise ValueError('ESPN transaction history does not cover the ledger gap')
-    added=parse(rows,pool,after,asof)
+    allow_unreviewed=os.environ.get('NBA_AUTO_RESILIENT_TRADES')=='1'
+    pending_trades=[]
+    added=parse(rows,pool,after,asof,allow_unreviewed_trades=allow_unreviewed,pending_trades=pending_trades)
+    pending_path=root/'pending_trade_reviews.json'
+    if pending_trades:
+        pending_path.write_text(json.dumps({'date':asof,'trades':pending_trades},indent=2))
+    elif pending_path.exists():
+        pending_path.unlink()
     existing={e['event_id']for e in events};added=[e for e in added if e['event_id']not in existing]
     events+=added;events.sort(key=lambda e:(e['date'],e['text']))
     path.write_text(json.dumps(events,indent=2))
