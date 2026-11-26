@@ -105,7 +105,23 @@ Rscript script/frontend/refresh_live_switch.R
 python3 script/data/refresh_player_pool.py --enrich
 
 echo 'Resolving signed ownership using saved contract terms'
-python3 script/frontend/prepare_work_contracts.py --repo "$repo" --work-dir "$work/contracts"
+pending_reviews="$work/pending_reviews.jsonl"
+: > "$pending_reviews"
+contracts_refreshed=1
+if ! python3 script/frontend/prepare_work_contracts.py --repo "$repo" --work-dir "$work/contracts" > "$work/prepare_contracts.log" 2>&1; then
+  contracts_refreshed=0
+  cat "$work/prepare_contracts.log" >&2
+  echo "::warning::Ownership/contract refresh paused for review; retaining last validated contract book and continuing daily projection refresh."
+  python3 - "$work/prepare_contracts.log" "$pending_reviews" <<'PY'
+import json, pathlib, sys
+lines = [l.strip() for l in pathlib.Path(sys.argv[1]).read_text(encoding='utf-8', errors='replace').splitlines() if l.strip()]
+summary = lines[-1] if lines else 'prepare_work_contracts.py failed'
+with open(sys.argv[2], 'a', encoding='utf-8') as f:
+    f.write(json.dumps({'stage': 'prepare_work_contracts', 'error': summary}) + '\n')
+PY
+else
+  cat "$work/prepare_contracts.log"
+fi
 sha256sum processed/contracts/current.json processed/contracts/current.csv > "$work/signed-book.sha256"
 
 echo 'Exporting injury-aware player and team projections'
@@ -118,10 +134,39 @@ Rscript script/frontend/test_injury_projections.R --require-export
 
 echo 'Refreshing all 30 asset portfolios using saved contract terms'
 python3 script/asset_history/materialize.py --repo "$repo"
-python3 script/asset_history/refresh.py --repo "$repo" --work-dir "$work/asset-history" --skip-contract-refresh
-python3 script/frontend/build_shared_contracts.py --repo "$repo"
-sha256sum --check "$work/signed-book.sha256"
-python3 script/frontend/build_asset_value_data.py --repo "$repo"
+if [[ "$contracts_refreshed" -eq 1 ]]; then
+  if ! python3 script/asset_history/refresh.py --repo "$repo" --work-dir "$work/asset-history" --skip-contract-refresh > "$work/asset_refresh.log" 2>&1; then
+    cat "$work/asset_refresh.log" >&2
+    echo "::warning::Asset history refresh paused for review; retaining last validated asset-history snapshot."
+    python3 - "$work/asset_refresh.log" "$pending_reviews" <<'PY'
+import json, pathlib, sys
+lines = [l.strip() for l in pathlib.Path(sys.argv[1]).read_text(encoding='utf-8', errors='replace').splitlines() if l.strip()]
+summary = lines[-1] if lines else 'asset_history/refresh.py failed'
+with open(sys.argv[2], 'a', encoding='utf-8') as f:
+    f.write(json.dumps({'stage': 'asset_history_refresh', 'error': summary}) + '\n')
+PY
+  else
+    cat "$work/asset_refresh.log"
+    python3 script/frontend/build_shared_contracts.py --repo "$repo"
+    sha256sum --check "$work/signed-book.sha256"
+    python3 script/frontend/build_asset_value_data.py --repo "$repo"
+  fi
+else
+  echo 'Skipping asset_history/refresh.py while ownership/contract review is pending; last validated asset-history snapshot retained.'
+fi
+
+python3 - "$pending_reviews" <<'PY'
+import json, pathlib, sys
+from datetime import datetime, timezone
+items = [json.loads(line) for line in pathlib.Path(sys.argv[1]).read_text(encoding='utf-8').splitlines() if line.strip()]
+out = {
+    'checked_at': datetime.now(timezone.utc).isoformat(),
+    'status': 'needs_review' if items else 'clean',
+    'pending': items,
+}
+pathlib.Path('raw/live/pending_reviews.json').write_text(json.dumps(out, indent=2) + '\n', encoding='utf-8')
+PY
+
 node script/frontend/build_cap_tracker_spotrac_data.mjs
 node script/frontend/build_static_data_manifest.mjs
 
