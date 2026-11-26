@@ -73,9 +73,24 @@ def parse(rows,pool,after,asof):
         for clause in re.split(r'\.\s+|;\s*',text.strip()):
             clause=clause.strip().rstrip('.')
             if not clause:continue
-            match=re.match(r'^(Re-signed|Signed|Waived|Released|Retired|Claimed|Converted|Exercised|Declined)\b\s*(.*)',clause,re.I)
+            match=re.match(r'^(Re-signed|Signed|Waived|Released|Retired|Claimed|Converted|Exercised|Declined|Guaranteed)\b\s*(.*)',clause,re.I)
             if not match:raise ValueError('Unreviewed ESPN transaction clause: '+clause)
-            verb=match[1].lower();body=re.sub(r'^(?:[GFC](?:[/-][GFC])?\s+)+','',match[2])
+            verb=match[1].lower();body=re.sub(r'^(?:(?:P[GF]|S[GF]|[GFC])(?:[/-](?:P[GF]|S[GF]|[GFC]))?\s+)+','',match[2])
+            if verb=='guaranteed':
+                guar=re.fullmatch(r"(.+?)'s\s+(?:full\s+|partial\s+)?(?:contract|salary|deal)(?:\s+salary)?",body,re.I)
+                if not guar:raise ValueError('Unreviewed ESPN contract guarantee syntax: '+clause)
+                people=[(t,p)for t,p in tokens.items()if t in guar[1]]
+                remainder=guar[1]
+                for token,_ in people:remainder=remainder.replace(token,'')
+                remainder=re.sub(r'\b(?:(?:P[GF]|S[GF]|[GFC])(?:[/-](?:P[GF]|S[GF]|[GFC]))?s?|and)\b|[,\s&]','',remainder,flags=re.I)
+                if not people or remainder:raise ValueError('Unresolved ESPN contract guarantee identities: '+clause)
+                rendered=clause
+                for token,person in tokens.items():rendered=rendered.replace(token,person['player_name'])
+                contract=event(day,rendered+'.',people[0][1],team,'add')
+                contract.update(parsed_status='administrative',parsed_actions=[],
+                    players=[{'name':p['player_name'],'nba_id':int(p['nba_id']),'realgm_url':None}for _,p in people])
+                out.append(contract)
+                continue
             if verb in ('exercised','declined'):
                 option=re.fullmatch(r'the (third|fourth)[- ]year (team|player) options? on (.+)',body,re.I)
                 if not option:raise ValueError('Unreviewed ESPN contract option syntax: '+clause)
