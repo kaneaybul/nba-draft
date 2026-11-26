@@ -62,6 +62,34 @@ jobs:
           source .work-runtime/environment.sh
           NBA_REFRESH_WORK_DIR="$RUNNER_TEMP/work-refresh" bash script/frontend/run_work_refresh.sh
 
+      - name: Attach verified pinned v19/v20 asset history to dist
+        run: |
+          source .work-runtime/environment.sh
+          python3 - <<'PY'
+          import hashlib, pathlib, shutil, sys, tempfile
+          sys.path.insert(0, 'script/frontend')
+          import rehydrate_protected_static as rps
+          policy = pathlib.Path('script/frontend/history_release_policy.json')
+          sha = hashlib.sha256(policy.read_bytes()).hexdigest()
+          with tempfile.TemporaryDirectory(prefix='pinned-history-') as tmp:
+              out = pathlib.Path(tmp) / 'dist'
+              rps.restore(out, policy, sha, 'frontend/public')
+              ah_root = pathlib.Path('frontend/dist/data/asset_history')
+              if ah_root.exists():
+                  for child in list(ah_root.iterdir()):
+                      if child.is_dir() and child.name not in ('v19', 'v20'):
+                          shutil.rmtree(child)
+              for gz in pathlib.Path('frontend/dist').rglob('*.json.gz'):
+                  gz.unlink()
+              for ver in ('v19', 'v20'):
+                  src = out / 'data' / 'asset_history' / ver
+                  dst = ah_root / ver
+                  if dst.exists():
+                      shutil.rmtree(dst)
+                  shutil.copytree(src, dst)
+              print('Attached verified v19/v20 pinned asset history to frontend/dist')
+          PY
+
       - name: Deploy validated build to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
