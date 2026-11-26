@@ -32,7 +32,12 @@ jobs:
         working-directory: frontend
 
       - name: Validate frontend data contract
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          if [ -f ../script/sync_artifacts.py ]; then
+            python3 ../script/sync_artifacts.py --repo .. --only asset-history-v15 asset-history-v16 rolling-pricing-v16 runtime-seed
+          fi
           if [ -f ../script/asset_history/materialize.py ]; then
             python3 ../script/asset_history/materialize.py --repo ..
           fi

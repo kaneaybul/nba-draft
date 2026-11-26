@@ -1,9 +1,0 @@
-board,weighted_score,weighted_z,years,variant
-SCV Adjusted Model,0.555694982801867,0.751009713458682,7,current_targets
-SCV Base Model,0.53720792742134,0.313387680783433,7,current_targets
-NBA Draft - Actual,0.530311427927855,0.222609319289271,7,current_targets
-NBA Draft Room,0.531190092152456,0.150984388220465,7,current_targets
-Legacy Me Model,0.523818044931622,0.0669696906719058,7,current_targets
-NBADraft.net,0.513486092870113,-0.262721543799675,7,current_targets
-Kevin O'Connor,0.454722043515429,-0.5796724601145,7,current_targets
-Jonathan Wasserman,0.496789185711485,-0.662566788509579,7,current_targets

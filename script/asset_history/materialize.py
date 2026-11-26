@@ -6,7 +6,23 @@ from model_version import data_root
 def sources(repo):
     return [*(repo/'frontend/public/data/asset_history').glob('v*/teams/*.json.gz'),*(repo/'frontend/public/data/asset_history').glob('v*/draft_class_results.json.gz'),repo/'processed/asset_history/contracts/contract_agreements.json.gz',repo/'frontend/public/data/draft_class_results.json.gz']
 
+def ensure_synced(repo):
+    manifest = repo / 'script' / 'artifact_manifest.json'
+    if not manifest.is_file():
+        return
+    import sys
+    script_dir = str(repo / 'script')
+    if script_dir not in sys.path:
+        sys.path.insert(0, script_dir)
+    import sync_artifacts
+    sync_artifacts.sync(
+        repo,
+        manifest,
+        only=['asset-history-v15', 'asset-history-v16', 'rolling-pricing-v16', 'runtime-seed'],
+    )
+
 def materialize(repo):
+    ensure_synced(repo)
     count=0
     for source in sources(repo):
         if not source.exists():continue

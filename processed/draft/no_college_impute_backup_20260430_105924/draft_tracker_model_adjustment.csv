@@ -1,2 +1,0 @@
-version,fit_years,latest_impact_year,penalty_base,penalty_power,rank_cap,actual_score_note,b_age,b_pick,in_sample_weighted_score,in_sample_weighted_z
-tracker_v1_career_epm_dpm_sd_spread,"2016,2017,2018,2019,2020,2021,2022",2026,0.97,1.25,60,"Career actual uses minute-weighted EPM total and DPM total, blended with sqrt career-minute share by class, then top-weighted at exponent 1.35. Final adjustment is split to offense/defense and skills by within-class prediction spread.",-0.0249999999999999,0.4,0.578013683055327,1.4755324389885
