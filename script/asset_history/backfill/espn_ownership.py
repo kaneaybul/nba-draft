@@ -49,10 +49,18 @@ def event(day,text,player,team,action,two_way=False,capture=False):
       'parsed_actions':[{'player_name':name,'nba_id':int(identity),'to_team':team,'action':action,'two_way':two_way}],
       'identity_source':'verified_live_player_pool','roster_capture':capture}
 
+def _reviewed_trades():
+    import pathlib
+    path=pathlib.Path(__file__).with_name('reviewed_trade_packages.json')
+    if not path.is_file():return []
+    return json.loads(path.read_text()).get('packages',[])
+
 def parse(rows,pool,after,asof):
     identities={}
     for player in pool['players']:
         if player.get('nba_id')is not None:identities.setdefault(key(player['player_name']),[]).append(player)
+    reviewed=_reviewed_trades()
+    emitted_reviewed=set()
     out=[]
     for row in rows:
         day=row['date'][:10]
@@ -60,7 +68,25 @@ def parse(rows,pool,after,asof):
         team=TEAM_ALIASES.get(row['team']['abbreviation'],row['team']['abbreviation'])
         text=row['description']
         if re.search(r'\b(traded|acquired|exchange|picks?|draft)\b',text,re.I):
-            raise ValueError('ESPN trade requires full player and pick direction review: '+text)
+            matched_pkg=None
+            for pkg in reviewed:
+                if pkg.get('date')!=day or not pkg.get('pick_terms_complete'):continue
+                dests=pkg.get('player_destinations')or {}
+                if dests and any(name in text for name in dests):
+                    matched_pkg=pkg;break
+            if matched_pkg is None:
+                raise ValueError('ESPN trade requires full player and pick direction review: '+text)
+            for name,dest_team in matched_pkg['player_destinations'].items():
+                marker=(matched_pkg['id'],name)
+                if marker in emitted_reviewed:continue
+                emitted_reviewed.add(marker)
+                matches=identities.get(key(name),[])
+                if len({p['nba_id']for p in matches})!=1:
+                    raise ValueError('Unresolved reviewed trade player identity: '+name)
+                ev=event(day,f"Reviewed trade {matched_pkg['id']}: {name} to {dest_team}.",matches[0],dest_team,'add')
+                ev['parsed_status']='trade'
+                out.append(ev)
+            continue
         # Protect punctuation inside known player names before sentence splitting.
         tokens={}
         for name,players in sorted(identities.items(),key=lambda pair:len(pair[0]),reverse=True):
