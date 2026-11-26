@@ -65,7 +65,9 @@ st = json.loads(status_path.read_text(encoding="utf-8"))
 entry = (st.get("seasons") or {}).get(season) or {}
 if entry.get("status") not in ("ok", "partial"):
     sys.exit(f"ERROR: Retained position_status.json lacks valid season {season} entry.")
-print(f"Retained valid season {season} position estimates (checked_at={st.get(\"checked_at\")}, rows={entry.get(\"rows\")}).")
+checked = st.get("checked_at")
+rows = entry.get("rows")
+print("Retained valid season {} position estimates (checked_at={}, rows={}).".format(season, checked, rows))
 PY
 '
 if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
