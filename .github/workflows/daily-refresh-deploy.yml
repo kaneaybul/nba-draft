@@ -148,7 +148,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A raw/live processed/ frontend/public/data/
+          git add -A raw/live raw/draft_preview_2027_inputs.csv processed/ frontend/public/data/
           if git diff --cached --quiet; then
             echo "No validated data changes to commit."
             exit 0
@@ -166,7 +166,8 @@ jobs:
           d = json.loads(pathlib.Path('raw/live/pending_reviews.json').read_text())
           print(f"### Daily Refresh Status: `{d.get('status')}` ({d.get('checked_at')})")
           for item in d.get('pending', []):
-              print(f"- **{item['stage']}**: `{item['error']}`")
+              detail = item.get('error') or item.get('reason') or item.get('text') or ''
+              print(f"- **{item.get('stage', 'unknown')}**: `{detail}`")
           if not d.get('pending'):
               print("- All stages completed cleanly with zero pending reviews.")
           PY

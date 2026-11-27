@@ -71,15 +71,24 @@ rows = entry.get("rows")
 print("Retained valid season {} position estimates (checked_at={}, rows={}).".format(season, checked, rows))
 PY
 '
-if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
+if [[ -f processed/draft/draft_consensus_projection_ranks_2027.csv ]]; then
   run_wave1 draft_2027 bash -c '
     set -euo pipefail
-    python3 script/draft/refresh_2027_stats.py \
-      processed/draft/draft_consensus_projection_ranks_2027.csv "$1/draft-inputs.csv" \
-      --snapshot raw/draft_preview_2027_inputs.csv
+    if ! python3 script/draft/refresh_2027_stats.py \
+      processed/draft/draft_consensus_projection_ranks_2027.csv "$1/draft-inputs.csv"; then
+      echo "WARN: Live 2027 draft stat refresh failed; falling back to saved snapshot." >&2
+      if [[ -f raw/draft_preview_2027_inputs.csv ]]; then
+        python3 script/draft/refresh_2027_stats.py \
+          processed/draft/draft_consensus_projection_ranks_2027.csv "$1/draft-inputs.csv" \
+          --snapshot raw/draft_preview_2027_inputs.csv
+      else
+        cp processed/draft/draft_consensus_projection_ranks_2027.csv "$1/draft-inputs.csv"
+      fi
+    fi
     if ! cmp -s "$1/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv; then
       Rscript --vanilla script/draft/score_2027_preview.R "$1/draft-inputs.csv" "$1/draft-scores.csv"
       cp "$1/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv
+      cp "$1/draft-inputs.csv" raw/draft_preview_2027_inputs.csv
       cp "$1/draft-scores.csv" processed/draft/draft_skill_preview_2027.csv
     fi
   ' _ "$work"
