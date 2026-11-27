@@ -24,6 +24,8 @@ class PublishedAppValues(unittest.TestCase):
             (public/'teams'/f'{team}.json').write_text(json.dumps({'snapshots':[{'date':'2026-11-01','assets':assets}]}))
         model=root/'processed/asset_history/picks/trained_pick_model.json';model.parent.mkdir(parents=True)
         model.write_text(json.dumps({'production_policy':'year-four-assessed-production-paths-v3','stock_policy':'year-four-endpoint-picks-shared-players-v4','pick_curve':[{'pick':i,'quote':100-i}for i in range(1,61)]}))
+        reviews=root/'script/asset_history/backfill/reviewed_trade_packages.json';reviews.parent.mkdir(parents=True)
+        reviews.write_text(json.dumps({'packages':[]}))
         return public
 
     def test_preserves_published_quotes_and_the_complete_annual_path(self):

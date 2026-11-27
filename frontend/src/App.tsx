@@ -3713,11 +3713,11 @@ function TradeSide({
 
 function DraftWorkspace({ data }: { data: AppData }) {
   const years = Array.from(new Set(data.prospects.map((prospect) => prospect.draft_year))).sort((a, b) => b - a);
-  const latestYear = years[0] ?? "All";
+  const latestYear: DraftYearSelection = years.includes(2027) ? 2027 : (years[0] ?? 2027);
   const [year, setYear] = useSessionState<DraftYearSelection>(
-    "draft:year:v2",
+    "draft:year:v3",
     latestYear,
-    (value) => value === "All" || (typeof value === "number" && years.includes(value)) ? value : latestYear
+    (value) => value === "All" || (typeof value === "number" && (years.length === 0 || years.includes(value))) ? value : latestYear
   );
   const [query, setQuery] = useSessionState("draft:query", "");
   const [position, setPosition] = useSessionState("draft:position", "All");
