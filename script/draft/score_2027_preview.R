@@ -7,7 +7,7 @@ rows <- fread(args[[1]])
 stopifnot(nrow(rows) > 0L, all(is.finite(rows$big_board_rank)),
           all(rows$big_board_rank >= 1L), all(diff(rows$big_board_rank) > 0L),
           all(rows$draft_year == 2027L),
-          all(rows$scv_draft == 3), !anyDuplicated(rows$player),
+          all(is.finite(rows$scv_draft) & rows$scv_draft >= 1 & rows$scv_draft <= 5), !anyDuplicated(rows$player),
           all(rows$prediction_pool %in% c("domestic", "no_college")))
 
 rows[, `:=`(X3PA_100 = torvik_estimated_3pa_100, rate_fg_pct = fg_pct / 100,

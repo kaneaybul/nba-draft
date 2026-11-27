@@ -355,8 +355,8 @@ def read_board(path):
     ranks = [int(row["big_board_rank"]) for row in rows]
     if (not rows or ranks[0] < 1 or any(b <= a for a, b in zip(ranks, ranks[1:]))
             or len({row["player"] for row in rows}) != len(rows)
-            or any(row["draft_year"] != str(SEASON) or row["scv_draft"] != "3" for row in rows)):
-        raise ValueError("Expected a curated 2027 draft board with strictly increasing big_board_rank and shot creation set to 3")
+            or any(row["draft_year"] != str(SEASON) or not (1 <= (number(row["scv_draft"]) or 0) <= 5) for row in rows)):
+        raise ValueError("Expected a curated 2027 draft board with strictly increasing big_board_rank and scv_draft in 1..5")
     return columns, rows
 
 
