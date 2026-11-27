@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T20:04:02Z",
+  "generated_at": "2026-11-27T00:27:40Z",
   "note": "Generated from canonical processed/raw CSV outputs. Public runtime uses static_data shards.",
   "datasets": [
     {
@@ -39,7 +39,7 @@
     },
     {
       "dataset": "draft_prospects",
-      "rows": 536,
+      "rows": 538,
       "file": "draft_prospects.json"
     },
     {
@@ -85,7 +85,7 @@
   ],
   "static_data": {
     "schema_version": 2,
-    "generated_at": "2026-11-26T20:22:17.580Z",
+    "generated_at": "2026-11-27T00:28:04.301Z",
     "max_asset_bytes": 26214400,
     "seasons": [
       2027,
@@ -548,10 +548,10 @@
       },
       "draft_prospects": {
         "strategy": "singleton",
-        "rows": 536,
+        "rows": 538,
         "file": "draft_prospects.json",
-        "bytes": 3625624,
-        "sha256": "20dd23fa6dc5d4deb3b68174fe4e5413d14fc8b7416680e4f356f2cdda9df4c6"
+        "bytes": 3630094,
+        "sha256": "ecb3209fbbf840f332efe81c36e3d64afd9c34ef597174ea476584d9bdd9df43"
       },
       "draft_tracker_board_summary": {
         "strategy": "singleton",

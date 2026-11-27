@@ -4,7 +4,9 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 2L) stop("Usage: score_2027_preview.R INPUT_CSV OUTPUT_CSV")
 draft_dir <- "processed/draft"
 rows <- fread(args[[1]])
-stopifnot(identical(rows$big_board_rank, 1:45), all(rows$draft_year == 2027L),
+stopifnot(nrow(rows) > 0L, all(is.finite(rows$big_board_rank)),
+          all(rows$big_board_rank >= 1L), all(diff(rows$big_board_rank) > 0L),
+          all(rows$draft_year == 2027L),
           all(rows$scv_draft == 3), !anyDuplicated(rows$player),
           all(rows$prediction_pool %in% c("domestic", "no_college")))
 
@@ -58,6 +60,6 @@ scores <- adjusted[, c("big_board_rank", "FINAL_rank", score_cols), with = FALSE
 setnames(scores, "FINAL_rank", "model_rank")
 preview <- merge(preview, scores, by = "big_board_rank", all.x = TRUE)
 setcolorder(preview, c("player", "draft_year", "big_board_rank"))
-stopifnot(nrow(preview) == 45, sum(is.finite(preview$model_rank)) == nrow(eligible))
+stopifnot(nrow(preview) == nrow(rows), sum(is.finite(preview$model_rank)) == nrow(eligible))
 fwrite(preview, args[[2]], na = "")
-message("Scored ", nrow(eligible), " of 45 prospects using the saved draft models.")
+message("Scored ", nrow(eligible), " of ", nrow(rows), " prospects using the saved draft models.")

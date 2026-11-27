@@ -1,4 +1,4 @@
-"""Refresh current-season stats for the curated ESPN top 45."""
+"""Refresh current-season stats for the curated 2027 draft board."""
 
 import argparse
 import csv
@@ -155,9 +155,11 @@ def read_board(path):
     with path.open(encoding="utf-8", newline="") as source:
         reader = csv.DictReader(source)
         columns, rows = reader.fieldnames, list(reader)
-    if ([int(row["big_board_rank"]) for row in rows] != list(range(1, 46))
+    ranks = [int(row["big_board_rank"]) for row in rows]
+    if (not rows or ranks[0] < 1 or any(b <= a for a, b in zip(ranks, ranks[1:]))
+            or len({row["player"] for row in rows}) != len(rows)
             or any(row["draft_year"] != str(SEASON) or row["scv_draft"] != "3" for row in rows)):
-        raise ValueError("Expected the curated 2027 ESPN top 45 with shot creation set to 3")
+        raise ValueError("Expected a curated 2027 draft board with strictly increasing big_board_rank and shot creation set to 3")
     return columns, rows
 
 
@@ -166,6 +168,8 @@ def stage_snapshot(input_path, snapshot_path, output_path):
     snapshot_columns, current = read_board(snapshot_path)
     if columns != snapshot_columns:
         raise ValueError("Draft snapshot columns do not match the current board")
+    if len(previous) != len(current):
+        raise ValueError("Draft snapshot prospect count does not match the current board")
     stats_fields = (set(BOX_COLUMNS) | set(SEASON_COLUMNS) | set(REALGM_BOX) | set(REALGM_RATES)
                     | {"games", "minutes", "ppg", "torvik_id", "stats_team", "stats_leagues", "stats_status",
                        "stats_source_url", "torvik_game_source_url", "last_game_in_pull", "fg_pct", "three_pct",
