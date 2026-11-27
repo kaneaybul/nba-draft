@@ -86,9 +86,11 @@ if [[ -f processed/draft/draft_consensus_projection_ranks_2027.csv ]]; then
       fi
     fi
     if ! cmp -s "$1/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv; then
-      Rscript --vanilla script/draft/score_2027_preview.R "$1/draft-inputs.csv" "$1/draft-scores.csv"
       cp "$1/draft-inputs.csv" processed/draft/draft_consensus_projection_ranks_2027.csv
       cp "$1/draft-inputs.csv" raw/draft_preview_2027_inputs.csv
+    fi
+    Rscript --vanilla script/draft/score_2027_preview.R "$1/draft-inputs.csv" "$1/draft-scores.csv"
+    if ! cmp -s "$1/draft-scores.csv" processed/draft/draft_skill_preview_2027.csv; then
       cp "$1/draft-scores.csv" processed/draft/draft_skill_preview_2027.csv
     fi
   ' _ "$work"
