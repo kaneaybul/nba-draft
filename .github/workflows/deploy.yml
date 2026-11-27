@@ -31,6 +31,32 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: Hydrate verified pinned v19/v20 asset history into frontend/public
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib, sys
+          sys.path.insert(0, 'script/frontend')
+          import rehydrate_protected_static as rps
+          policy = json.loads(pathlib.Path('script/frontend/history_release_policy.json').read_text())
+          origin = policy['restore_origin'].rstrip('/')
+          public = pathlib.Path('frontend/public')
+          count = 0
+          for name, digest in sorted(policy['protected_files'].items()):
+              if not name.startswith(('data/asset_history/v19/', 'data/asset_history/v20/')):
+                  continue
+              dest = public / name
+              if dest.is_file() and hashlib.sha256(dest.read_bytes()).hexdigest() == digest:
+                  count += 1
+                  continue
+              data = rps.download(f'{origin}/{name}')
+              if hashlib.sha256(data).hexdigest() != digest:
+                  raise ValueError(f'Pinned SHA-256 mismatch: {name}')
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              dest.write_bytes(data)
+              count += 1
+          print(f'Hydrated {count} verified v19/v20 pinned asset history files into frontend/public')
+          PY
+
       - name: Validate frontend data contract
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
