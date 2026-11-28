@@ -129,6 +129,7 @@ def make_source(canonical,skill_dir,team,agreements,uniform_contracts=False):
     import pandas as pd
     import integrate_monthly as model
     src=model.Inputs()
+    src.shared_native_team=team
     sparse=[dt for dt,rows in src.pairs.items()if len(rows)<300]
     if sparse:raise ValueError('Incomplete league provider panels: '+', '.join(sparse))
     dates={s['asof_date']for s in src.inventory}|set(src.pairs)
