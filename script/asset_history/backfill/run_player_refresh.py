@@ -4,7 +4,7 @@ The outer publisher joins legal pick claims and performs the portfolio gates.
 This command never publishes a player subtotal as total team asset value.
 """
 from __future__ import annotations
-import argparse,csv,gzip,hashlib,json,subprocess,sys,zipfile,shutil,math
+import argparse,csv,gzip,hashlib,json,os,subprocess,sys,zipfile,shutil,math
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -259,6 +259,13 @@ def run(args):
     reseed=stage_state(previous_state,state,args.as_of,args.reseed or policy_changed)
     seed=repo/'processed/asset_history/canonical_runtime_seed.zip'
     if not args.prepared_runtime:unpack(seed,runtime)
+    if os.environ.get('NBA_SHARED_NATIVE_CONFIG'):
+        overlay=repo/'script/frontend/shared_minutes_rollout/native_overlay'
+        proj=runtime/'monthly_reconstruction/projections'
+        shutil.copy2(overlay/'shared_joint_adapter.py',proj/'shared_joint_adapter.py')
+        target_py=proj/'integrate_monthly.py'
+        if 'shared_joint_adapter' not in target_py.read_text():
+            subprocess.run(['patch','-p1','-i',str(overlay/'integrate_monthly.patch')],cwd=runtime,check=True)
     results_path=repo/'raw/live/results.json'
     from archived_inputs import restore_archived_inputs
     restored=restore_archived_inputs(runtime,repo,args.as_of,latest_inputs)

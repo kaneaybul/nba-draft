@@ -234,6 +234,7 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
         first=min(annual,key=lambda r:int(r['season']));year=int(first['season'])
         coefficient=float(first['scale_budget_scenario'])/float(first['salary_cap_scenario'])*164961000.*30/float(first['league_timin'])
         replacement=float(first['replacement']);values=[];sensitivities=[];endpoint_minutes=[]
+        endpoint_versions=[]
         for y in years:
             saved=next((r for r in annual if int(r['season'])==y),None)
             if saved is None or saved.get('endpoint_role_annual_minutes') in (None,''):
@@ -241,11 +242,23 @@ def own_endpoint_path(player, annual, draft, states, runtime, audit=None, canoni
             minutes=float(saved['endpoint_role_annual_minutes'])
             if not math.isfinite(minutes) or minutes<0:
                 raise ValueError(f'Invalid anchored endpoint minutes {y}')
-            values.append((annual_mean(impact,y)-replacement)*minutes*coefficient)
+            shared_version=saved.get('endpoint_shared_forecast_version')
+            endpoint_versions.append(shared_version or None)
+            if shared_version:
+                value=float(saved['endpoint_shared_annual_impact_minutes'])
+                if not math.isfinite(value):
+                    raise ValueError(f'Invalid integrated shared endpoint production {y}')
+                values.append(value*coefficient)
+            else:
+                values.append((annual_mean(impact,y)-replacement)*minutes*coefficient)
             sensitivities.append(minutes*coefficient);endpoint_minutes.append(minutes)
+        if len(set(endpoint_versions))!=1:
+            raise ValueError('Mixed forecast version across four-year appraisal')
         if audit is not None:audit.update(method='same_rolling_path_integrated_year_four_endpoint',
             team_game_clock=clock,years=years,impact_sensitivities=sensitivities,
-            endpoint_annual_minutes=endpoint_minutes,endpoint_minutes_source='endpoint_only_same_origin_preseason_anchor',
+            endpoint_annual_minutes=endpoint_minutes,
+            endpoint_minutes_source='shared_game_ledger' if endpoint_versions[0] else 'endpoint_only_same_origin_preseason_anchor',
+            **({'forecast_version':endpoint_versions[0]} if endpoint_versions[0] else {}),
             impact_path_policy='rolling-team-games-impact-v1')
         return values
     raw = {int(r['season']): float(r['annual_production'])*164961000./float(r['salary_cap_scenario'])

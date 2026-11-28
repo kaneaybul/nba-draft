@@ -144,9 +144,11 @@ Rscript script/frontend/test_live_minutes.R --require-export
 Rscript script/frontend/test_lineup_positions.R
 Rscript script/frontend/test_injury_projections.R --require-export
 
-echo 'Refreshing all 30 asset portfolios using saved contract terms'
+echo 'Refreshing all 30 asset portfolios using shared minutes and saved contract terms'
 python3 script/asset_history/materialize.py --repo "$repo"
 if [[ "$contracts_refreshed" -eq 1 ]]; then
+  python3 script/frontend/prepare_shared_minutes_config.py --repo "$repo" --work-dir "$work/shared-minutes"
+  source "$work/shared-minutes/env.sh"
   if ! python3 script/asset_history/refresh.py --repo "$repo" --work-dir "$work/asset-history" --skip-contract-refresh > "$work/asset_refresh.log" 2>&1; then
     cat "$work/asset_refresh.log" >&2
     echo "::warning::Asset history refresh paused for review; retaining last validated asset-history snapshot."
